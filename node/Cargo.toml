@@ -1,6 +1,6 @@
 [package]
-name = "solochain-template-node"
-description = "A solochain node template built with Substrate, part of Polkadot Sdk. (polkadot v1.15.0)"
+name = "sxt-node"
+description = "The Space and Time Transaction Node"
 version = "0.1.0"
 license = "Unlicense"
 authors.workspace = true
@@ -78,7 +78,7 @@ substrate-frame-rpc-system.workspace = true
 substrate-frame-rpc-system.default-features = true
 frame-benchmarking-cli.workspace = true
 frame-benchmarking-cli.default-features = true
-solochain-template-runtime.workspace = true
+sxt-runtime.workspace = true
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true
@@ -87,14 +87,14 @@ substrate-build-script-utils.default-features = true
 [features]
 default = ["std"]
 std = [
-	"solochain-template-runtime/std",
+	"sxt-runtime/std",
 ]
 # Dependencies that are only required if runtime benchmarking should be build.
 runtime-benchmarks = [
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
-	"solochain-template-runtime/runtime-benchmarks",
+	"sxt-runtime/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
 # Enable features that allow the runtime to be tried and debugged. Name might be subject to change
@@ -102,6 +102,6 @@ runtime-benchmarks = [
 try-runtime = [
 	"frame-system/try-runtime",
 	"pallet-transaction-payment/try-runtime",
-	"solochain-template-runtime/try-runtime",
+	"sxt-runtime/try-runtime",
 	"sp-runtime/try-runtime",
 ]

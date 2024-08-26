@@ -1,19 +1,7 @@
-# Substrate Node Template
+# Space and Time Transaction Node
 
-A fresh [Substrate](https://substrate.io/) node, ready for hacking :rocket:
-
-A standalone version of this template is available for each release of Polkadot
-in the [Substrate Developer Hub Parachain
-Template](https://github.com/substrate-developer-hub/substrate-node-template/)
-repository. The parachain template is generated directly at each Polkadot
-release branch from the [Solochain Template in
-Substrate](https://github.com/paritytech/polkadot-sdk/tree/master/templates/solochain)
-upstream
-
-It is usually best to use the stand-alone version to start a new project. All
-bugs, suggestions, and feature requests should be made upstream in the
-[Substrate](https://github.com/paritytech/polkadot-sdk/tree/master/substrate)
-repository.
+This is the reference implementation of the transaction node, a node built for participating in the 
+Space and Time Chain.
 
 ## Getting Started
 
@@ -28,7 +16,7 @@ installation](#alternatives-installations) options.
 Use the following command to build the node without launching it:
 
 ```sh
-cargo build --package solochain-template-node --release
+cargo build --package sxt-node --release
 ```
 
 ### Embedded Docs
@@ -37,7 +25,7 @@ After you build the project, you can use the following command to explore its
 parameters and subcommands:
 
 ```sh
-./target/release/solochain-template-node -h
+./target/release/sxt-node -h
 ```
 
 You can generate and view the [Rust
@@ -54,19 +42,19 @@ The following command starts a single-node development chain that doesn't
 persist state:
 
 ```sh
-./target/release/solochain-template-node --dev
+./target/release/sxt-node --dev
 ```
 
 To purge the development chain's state, run the following command:
 
 ```sh
-./target/release/solochain-template-node purge-chain --dev
+./target/release/sxt-node purge-chain --dev
 ```
 
 To start the development chain with detailed logging, run the following command:
 
 ```sh
-RUST_BACKTRACE=1 ./target/release/solochain-template-node -ldebug --dev
+RUST_BACKTRACE=1 ./target/release/sxt-node -ldebug --dev
 ```
 
 Development chains:
@@ -86,7 +74,7 @@ similar to the following:
 $ mkdir my-chain-state
 
 // Use of that folder to store the chain state
-$ ./target/release/solochain-template-node --dev --base-path ./my-chain-state/
+$ ./target/release/sxt-node --dev --base-path ./my-chain-state/
 
 // Check the folder structure created inside the base path after running the chain
 $ ls ./my-chain-state

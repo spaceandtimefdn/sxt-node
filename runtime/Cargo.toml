@@ -1,6 +1,6 @@
 [package]
-name = "solochain-template-runtime"
-description = "A solochain runtime template built with Substrate, part of Polkadot Sdk. (polkadot v1.15.0)"
+name = "sxt-runtime"
+description = "Space and Time Transaction Node Runtime"
 version = "0.1.0"
 license = "Unlicense"
 authors.workspace = true
