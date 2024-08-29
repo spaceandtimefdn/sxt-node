@@ -22,6 +22,8 @@ scale-info = { features = [
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
+sxt-core.workspace = true
+sp-runtime = {default-features = false, workspace = true}
 
 [dev-dependencies]
 sp-core = { default-features = true, workspace = true }

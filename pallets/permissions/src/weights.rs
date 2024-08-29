@@ -33,15 +33,26 @@ use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use core::marker::PhantomData;
 
 pub trait WeightInfo {
-
+    fn set_permissions() -> Weight;
+    fn clear_permissions() -> Weight;
 }
 
 /// Weights for pallet_template using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-
+    fn set_permissions() -> Weight {
+        Weight::from_parts(0,0)     
+    }
+    fn clear_permissions() -> Weight {
+        Weight::from_parts(0,0)     
+    }
 }
 
 impl WeightInfo for () {
-
+    fn set_permissions() -> Weight {
+        Weight::from_parts(0,0)     
+    }
+    fn clear_permissions() -> Weight {
+        Weight::from_parts(0,0)     
+    }
 }
