@@ -1,5 +1,6 @@
-use crate as pallet_template;
+use crate as pallet_tables;
 use frame_support::derive_impl;
+use frame_system::pallet;
 use sp_runtime::BuildStorage;
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -9,7 +10,7 @@ frame_support::construct_runtime!(
 	pub enum Test
 	{
 		System: frame_system,
-		TemplateModule: pallet_template,
+		Tables: pallet_tables,
 	}
 );
 
@@ -18,7 +19,7 @@ impl frame_system::Config for Test {
 	type Block = Block;
 }
 
-impl pallet_template::Config for Test {
+impl pallet_tables::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }
