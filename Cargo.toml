@@ -18,6 +18,7 @@ sxt-runtime = { path = "./runtime", default-features = false }
 pallet-template = { path = "./pallets/template", default-features = false }
 pallet-permissions = { path = "pallets/permissions", default-features = false }
 sxt-core = { path = "sxt-core", default-features = false}
+pallet-tables = { path = "pallets/tables", default-features = false}
 clap = { version = "4.5.3" }
 frame-benchmarking-cli = { version = "42.0.0", default-features = false }
 frame-system = { version = "37.0.0", default-features = false }
