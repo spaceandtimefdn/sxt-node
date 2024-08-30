@@ -49,6 +49,7 @@ pub use sp_runtime::{Perbill, Permill};
 /// Import the template pallet.
 pub use pallet_template;
 pub use pallet_permissions;
+pub use pallet_indexing;
 pub use pallet_tables;
 
 /// An index to a block.
@@ -262,11 +263,6 @@ impl pallet_permissions::Config for Runtime {
 	type WeightInfo = pallet_permissions::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_tables::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
-}
-
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -310,10 +306,6 @@ mod runtime {
 
 	#[runtime::pallet_index(8)]
 	pub type Permissions = pallet_permissions;
-
-	#[runtime::pallet_index(9)]
-	pub type Tables = pallet_tables;
-	
 }
 
 /// The address format for describing accounts.

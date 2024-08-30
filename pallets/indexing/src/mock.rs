@@ -8,7 +8,7 @@ frame_support::construct_runtime!(
 	pub enum Test
 	{
 		System: frame_system,
-		IndexingModule: pallet_indexing,
+		Indexing: pallet_indexing,
 	}
 );
 
