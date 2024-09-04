@@ -8,3 +8,12 @@ repository.workspace = true
 itertools = { workspace = true }
 proof-of-sql = { workspace = true }
 curve25519-dalek = { workspace = true }
+snafu = { workspace = true }
+
+[features]
+memory-commitment-map = []
+
+[dev-dependencies]
+proof-of-sql = { workspace = true, features = ["test"] }
+proof-of-sql-parser = { workspace = true }
+fake = { workspace = true }
