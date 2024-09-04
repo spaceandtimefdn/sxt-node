@@ -1,0 +1,10 @@
+[package]
+name = "proof-of-sql-commitment-map"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+itertools = { workspace = true }
+proof-of-sql = { workspace = true }
+curve25519-dalek = { workspace = true }
