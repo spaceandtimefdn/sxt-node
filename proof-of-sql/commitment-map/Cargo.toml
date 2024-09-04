@@ -5,13 +5,20 @@ edition.workspace = true
 repository.workspace = true
 
 [dependencies]
+codec = { workspace = true, features = ["derive"], optional = true }
+curve25519-dalek = { workspace = true }
+frame-support = { workspace = true, optional = true }
+frame-system = { workspace = true, optional = true }
 itertools = { workspace = true }
 proof-of-sql = { workspace = true }
-curve25519-dalek = { workspace = true }
+scale-info = { workspace = true, features = ["derive"], optional = true }
 snafu = { workspace = true }
+sp-core = { workspace = true, features = ["serde"], optional = true }
+sxt-core = { workspace = true, optional = true }
 
 [features]
 memory-commitment-map = []
+substrate = ["dep:frame-support", "dep:frame-system", "dep:codec", "dep:scale-info", "dep:sp-core", "dep:sxt-core"]
 
 [dev-dependencies]
 proof-of-sql = { workspace = true, features = ["test"] }
@@ -20,3 +27,8 @@ fake = { workspace = true }
 
 [lints]
 workspace = true
+
+[[example]]
+name = "pallet"
+required-features = ["substrate"]
+crate-type = ["staticlib"]

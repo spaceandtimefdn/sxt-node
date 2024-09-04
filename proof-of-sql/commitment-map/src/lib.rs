@@ -17,3 +17,11 @@ pub use commitment_map::{CommitmentMap, CommitmentSchemesMismatchError, KeyExist
 mod memory_commitment_map;
 #[cfg(feature = "memory-commitment-map")]
 pub use memory_commitment_map::MemoryCommitmentMap;
+
+#[cfg(feature = "substrate")]
+mod commitment_storage_map;
+#[cfg(feature = "substrate")]
+pub use commitment_storage_map::{
+    CommitmentHash, CommitmentHashType, CommitmentStorageMapHandler, CommitmentStorageMapKey,
+    TypedCommitmentHash,
+};

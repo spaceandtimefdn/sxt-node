@@ -6893,10 +6893,16 @@ version = "0.0.0"
 dependencies = [
  "curve25519-dalek",
  "fake",
+ "frame-support",
+ "frame-system",
  "itertools 0.12.1",
+ "parity-scale-codec",
  "proof-of-sql",
  "proof-of-sql-parser",
+ "scale-info",
  "snafu",
+ "sp-core",
+ "sxt-core",
 ]
 
 [[package]]
