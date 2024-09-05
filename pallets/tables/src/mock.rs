@@ -3,6 +3,7 @@ use frame_support::derive_impl;
 use frame_system::pallet;
 use sp_runtime::BuildStorage;
 
+
 type Block = frame_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pallet.
@@ -10,6 +11,7 @@ frame_support::construct_runtime!(
 	pub enum Test
 	{
 		System: frame_system,
+		Permissions: pallet_permissions,
 		Tables: pallet_tables,
 	}
 );
@@ -20,6 +22,11 @@ impl frame_system::Config for Test {
 }
 
 impl pallet_tables::Config for Test {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
+}
+
+impl pallet_permissions::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }

@@ -3,8 +3,11 @@
 use sp_core::ConstU32;
 use sp_runtime::BoundedVec;
 
-/// Types and functionality related to the permissions system but not a part of the pallet
+/// Types and functionality related to the permissions system
 pub mod permissions;
+
+/// Types and functionality realt
+pub mod tables;
 
 const IDENT_LENGTH: u32 = 64;
 

@@ -33,12 +33,19 @@ use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use core::marker::PhantomData;
 
 pub trait WeightInfo {
+	fn update_tables() -> Weight;
 }
 
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+	fn update_tables() -> Weight {
+		Weight::from_parts(0,0)
+	}
 }
 
 // For backwards compatibility and tests
 impl WeightInfo for () {
+	fn update_tables() -> Weight {
+		Weight::from_parts(0,0)
+	}
 }
