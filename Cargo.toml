@@ -9,8 +9,10 @@ edition = "2021"
 members = [
     "node",
     "pallets/template",
-    "proof-of-sql/commitment-map",
     "pallets/indexing",
+    "pallets/tables",
+    "pallets/permissions",
+    "proof-of-sql/commitment-map",
     "runtime",
     "sxt-core",
     "proof-of-sql/on-chain-table",
@@ -69,6 +71,7 @@ sp-io = { version = "38.0.0", default-features = false }
 sp-keyring = { version = "39.0.0", default-features = false }
 sp-runtime = { version = "39.0.0", default-features = false }
 sp-timestamp = { version = "34.0.0", default-features = false }
+sp-std = { version = "14.0.0", default-features = false }
 substrate-frame-rpc-system = { version = "38.0.0", default-features = false }
 substrate-build-script-utils = { version = "11.0.0", default-features = false }
 codec = { version = "3.6.12", default-features = false, package = "parity-scale-codec" }

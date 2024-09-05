@@ -32,9 +32,24 @@
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use core::marker::PhantomData;
 
-pub trait WeightInfo {}
+/// Standard Weight Info Trait for the Indexing Pallet
+pub trait WeightInfo {
+    /// Returns the weight for the submit data extrinsic
+    fn submit_data() -> Weight;
+}
 
+/// Standard Weight Struct
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {}
+impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+    /// Implementation for the submit_data extrinsic's weight
+    fn submit_data() -> Weight {
+        Weight::from_parts(0,0)
+    }
+}
 
-impl WeightInfo for () {}
+// For backwards compatibility and tests
+impl WeightInfo for () {
+    fn submit_data() -> Weight {
+        Weight::from_parts(0,0)
+    }
+}

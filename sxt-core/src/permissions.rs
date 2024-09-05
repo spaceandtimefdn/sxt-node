@@ -24,8 +24,10 @@ pub enum PermissionLevel {
 
     /// Permissions related to the governance pallet
     GovernancePallet(GovernancePalletPermission),
-}
 
+    /// Premisions related to the governance pallet
+    IndexingPallet(IndexingPalletPermission),
+}
 
 /// Permissions for pallet_tables
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -43,6 +45,13 @@ pub enum GovernancePalletPermission {
     AddIndexer,
     /// TODO: add docs
     RemoveIndexer,
+}
+
+/// Permissions used by the indexing pallet
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum IndexingPalletPermission {
+    /// Represents the permission needed to submit data as an indexer
+    SubmitData,
 }
 
 /// A collection of user permissions
