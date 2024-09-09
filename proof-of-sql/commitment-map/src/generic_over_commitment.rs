@@ -1,0 +1,67 @@
+//! Abstraction for types that are generic over commitments.
+//!
+//! Contains [`GenericOverCommitment`] and its implementors.
+
+use core::marker::PhantomData;
+use proof_of_sql::base::commitment::{
+    ColumnCommitments, Commitment, QueryCommitments, TableCommitment,
+};
+
+/// Abstraction for types that are generic over commitments.
+///
+/// This offers pseudo-higher-kinded-type functionality for one specific use case.
+/// Good for code that..
+/// - is intended to deal with all commitment types simultaneously
+/// - doesn't actually care about the specifics of the type, just that it is commitment-generic.
+pub trait GenericOverCommitment {
+    /// Generic type associated with this concrete type.
+    type WithCommitment<C: Commitment>;
+}
+
+/// Concrete type associated with `Commitment` implementors.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct CommitmentType;
+
+impl GenericOverCommitment for CommitmentType {
+    type WithCommitment<C: Commitment> = C;
+}
+
+/// Concrete type associated with the generic `ColumnCommitments<C: Commitment>`.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct ColumnCommitmentsType;
+
+impl GenericOverCommitment for ColumnCommitmentsType {
+    type WithCommitment<C: Commitment> = ColumnCommitments<C>;
+}
+
+/// Concrete type associated with the generic `TableCommitment<C: Commitment>`.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct TableCommitmentType;
+
+impl GenericOverCommitment for TableCommitmentType {
+    type WithCommitment<C: Commitment> = TableCommitment<C>;
+}
+
+/// Concrete type associated with the generic `QueryCommitments<C: Commitment>`.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct QueryCommitmentsType;
+
+impl GenericOverCommitment for QueryCommitmentsType {
+    type WithCommitment<C: Commitment> = QueryCommitments<C>;
+}
+
+/// Concrete type associated with `Commitment` implementors' `C::PublicSetup` types.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct AssociatedPublicSetupType<'a>(PhantomData<&'a ()>);
+
+impl<'a> GenericOverCommitment for AssociatedPublicSetupType<'a> {
+    type WithCommitment<C: Commitment> = C::PublicSetup<'a>;
+}
+
+/// Concrete type associated with `Commitment` implementors' `C::Scalar` types.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct AssociatedScalarType;
+
+impl GenericOverCommitment for AssociatedScalarType {
+    type WithCommitment<C: Commitment> = C::Scalar;
+}

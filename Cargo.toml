@@ -10,6 +10,7 @@ members = [
     "node",
     "pallets/template",
     "runtime", "sxt-core",
+    "proof-of-sql/commitment-map",
 ]
 resolver = "2"
 
@@ -20,10 +21,13 @@ pallet-permissions = { path = "pallets/permissions", default-features = false }
 sxt-core = { path = "sxt-core", default-features = false}
 pallet-tables = { path = "pallets/tables", default-features = false}
 clap = { version = "4.5.3" }
+curve25519-dalek = { version = "4.1.3", default-features = false }
 frame-benchmarking-cli = { version = "42.0.0", default-features = false }
 frame-system = { version = "37.0.0", default-features = false }
 futures = { version = "0.3.30" }
+itertools = { version = "0.12.1", default-features = false }
 jsonrpsee = { version = "0.23.2" }
+proof-of-sql = { version = "0.12.3", default-features = false }
 pallet-transaction-payment = { version = "37.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "40.0.0", default-features = false }
 sc-basic-authorship = { version = "0.44.0", default-features = false }
