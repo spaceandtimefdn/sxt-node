@@ -7,3 +7,13 @@ mod commitment_scheme;
 pub use commitment_scheme::{
     AnyCommitmentScheme, CommitmentScheme, CommitmentSchemeFlags, PerCommitmentScheme,
 };
+
+mod commitment_map_implementor;
+
+mod commitment_map;
+pub use commitment_map::{CommitmentMap, CommitmentSchemesMismatchError, KeyExistsError};
+
+#[cfg(feature = "memory-commitment-map")]
+mod memory_commitment_map;
+#[cfg(feature = "memory-commitment-map")]
+pub use memory_commitment_map::MemoryCommitmentMap;
