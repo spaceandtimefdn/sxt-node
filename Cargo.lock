@@ -5867,6 +5867,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-tables"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-permissions",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sxt-core",
+]
+
+[[package]]
 name = "pallet-template"
 version = "0.1.0"
 dependencies = [
@@ -10214,6 +10230,7 @@ dependencies = [
  "pallet-grandpa",
  "pallet-permissions",
  "pallet-sudo",
+ "pallet-tables",
  "pallet-template",
  "pallet-timestamp",
  "pallet-transaction-payment",
