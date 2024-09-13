@@ -105,3 +105,6 @@ try-runtime = [
 	"sxt-runtime/try-runtime",
 	"sp-runtime/try-runtime",
 ]
+
+[lints]
+workspace = true
