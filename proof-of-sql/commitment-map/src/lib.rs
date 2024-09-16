@@ -22,6 +22,5 @@ pub use memory_commitment_map::MemoryCommitmentMap;
 mod commitment_storage_map;
 #[cfg(feature = "substrate")]
 pub use commitment_storage_map::{
-    CommitmentHash, CommitmentHashType, CommitmentStorageMapHandler, CommitmentStorageMapKey,
-    TypedCommitmentHash,
+    CommitmentHash, CommitmentHashType, CommitmentStorageMapHandler, TypedCommitmentHash,
 };

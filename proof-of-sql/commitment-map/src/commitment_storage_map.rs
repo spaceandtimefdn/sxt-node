@@ -6,13 +6,10 @@ use crate::{
     generic_over_commitment::GenericOverCommitment,
 };
 use core::marker::PhantomData;
-use frame_support::storage::StorageMap;
+use frame_support::storage::StorageDoubleMap;
 use proof_of_sql::base::commitment::Commitment;
 use sp_core::H256;
 use sxt_core::tables::TableIdentifier;
-
-/// Key used by substrate [`CommitmentMap`] implementation.
-pub type CommitmentStorageMapKey = (TableIdentifier, CommitmentScheme);
 
 /// Value used by substrate [`CommitmentMap`] implementation.
 pub type CommitmentHash = H256;
@@ -51,11 +48,21 @@ impl GenericOverCommitment for CommitmentHashType {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct CommitmentStorageMapHandler<S>(PhantomData<S>)
 where
-    S: StorageMap<CommitmentStorageMapKey, CommitmentHash, Query = Option<CommitmentHash>>;
+    S: StorageDoubleMap<
+        TableIdentifier,
+        CommitmentScheme,
+        CommitmentHash,
+        Query = Option<CommitmentHash>,
+    >;
 
 impl<S> CommitmentStorageMapHandler<S>
 where
-    S: StorageMap<CommitmentStorageMapKey, CommitmentHash, Query = Option<CommitmentHash>>,
+    S: StorageDoubleMap<
+        TableIdentifier,
+        CommitmentScheme,
+        CommitmentHash,
+        Query = Option<CommitmentHash>,
+    >,
 {
     /// Construct a new [`CommitmentStorageMapHandler`].
     pub fn new() -> Self {
@@ -66,10 +73,15 @@ where
 impl<S> CommitmentMapImplementor<TableIdentifier, CommitmentHashType>
     for CommitmentStorageMapHandler<S>
 where
-    S: StorageMap<CommitmentStorageMapKey, CommitmentHash, Query = Option<CommitmentHash>>,
+    S: StorageDoubleMap<
+        TableIdentifier,
+        CommitmentScheme,
+        CommitmentHash,
+        Query = Option<CommitmentHash>,
+    >,
 {
     fn has_key_and_scheme_impl(&self, key: &TableIdentifier, scheme: &CommitmentScheme) -> bool {
-        S::contains_key((key, scheme))
+        S::contains_key(key, scheme)
     }
 
     fn set_commitment_for_any_scheme_impl(
@@ -84,7 +96,7 @@ where
             AnyCommitmentScheme::Dory(typed_hash) => typed_hash.get(),
         };
 
-        S::insert((key, scheme), commitment_hash);
+        S::insert(key, scheme, commitment_hash);
     }
 
     fn delete_commitment_for_any_scheme_impl(
@@ -92,6 +104,6 @@ where
         key: &TableIdentifier,
         scheme: &CommitmentScheme,
     ) {
-        S::remove((key, scheme));
+        S::remove(key, scheme);
     }
 }

@@ -13,8 +13,8 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use proof_of_sql_commitment_map::{
-        CommitmentHash, CommitmentHashType, CommitmentMap, CommitmentStorageMapHandler,
-        CommitmentStorageMapKey, PerCommitmentScheme, TypedCommitmentHash,
+        CommitmentHash, CommitmentHashType, CommitmentMap, CommitmentScheme,
+        CommitmentStorageMapHandler, PerCommitmentScheme, TypedCommitmentHash,
     };
     use sp_core::H256;
     use sxt_core::tables::TableIdentifier;
@@ -25,10 +25,17 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config {}
 
-    /// Typing for the substrate implementation of the `CommitmentMap` as a substrate `StorageMap`.
+    /// Typing for the substrate implementation of the `CommitmentMap` as a substrate
+    /// `StorageDoubleMap`.
     #[pallet::storage]
-    pub type CommitmentStorageMap<T: Config> =
-        StorageMap<_, Blake2_128Concat, CommitmentStorageMapKey, CommitmentHash>;
+    pub type CommitmentStorageMap<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        TableIdentifier,
+        Blake2_128Concat,
+        CommitmentScheme,
+        CommitmentHash,
+    >;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
