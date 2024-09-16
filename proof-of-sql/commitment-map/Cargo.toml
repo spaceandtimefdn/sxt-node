@@ -17,3 +17,6 @@ memory-commitment-map = []
 proof-of-sql = { workspace = true, features = ["test"] }
 proof-of-sql-parser = { workspace = true }
 fake = { workspace = true }
+
+[lints]
+workspace = true

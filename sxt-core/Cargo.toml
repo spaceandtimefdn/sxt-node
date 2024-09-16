@@ -27,3 +27,6 @@ std = [
 	"frame-system/std",
 	"scale-info/std",
 ]
+
+[lints]
+workspace = true
