@@ -1,9 +1,14 @@
 use crate::generic_over_commitment::GenericOverCommitment;
 use curve25519_dalek::RistrettoPoint;
+#[cfg(feature = "substrate")]
+use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
 use proof_of_sql::proof_primitive::dory::DoryCommitment;
+#[cfg(feature = "substrate")]
+use scale_info::TypeInfo;
 
 /// Identifier for proof-of-sql commitment schemes.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
 pub enum CommitmentScheme {
     /// Scheme with commitments in the ristretto group, proven by inner-product-argument.
     Ipa,
