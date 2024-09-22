@@ -153,6 +153,24 @@ impl<T: GenericOverCommitment> IntoIterator for PerCommitmentScheme<T> {
     }
 }
 
+impl<G: GenericOverCommitment> FromIterator<AnyCommitmentScheme<G>>
+    for PerCommitmentScheme<OptionType<G>>
+{
+    fn from_iter<T: IntoIterator<Item = AnyCommitmentScheme<G>>>(iter: T) -> Self {
+        iter.into_iter()
+            .fold(PerCommitmentScheme::default(), |acc, scheme| match scheme {
+                AnyCommitmentScheme::Ipa(data) => PerCommitmentScheme {
+                    ipa: Some(data),
+                    ..acc
+                },
+                AnyCommitmentScheme::Dory(data) => PerCommitmentScheme {
+                    dory: Some(data),
+                    ..acc
+                },
+            })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -301,16 +319,17 @@ mod tests {
     }
 
     #[test]
-    fn we_can_iterate_over_flattened_per_commitment_scheme_with_option_type() {
+    fn we_can_collect_per_commitment_scheme_with_option_type_from_iter_and_into_flat_iter() {
         let no_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: None,
             dory: None,
         };
         let no_iterator = vec![];
         assert_eq!(
-            no_commitments.into_flat_iter().collect::<Vec<_>>(),
-            no_iterator
+            no_commitments.clone().into_flat_iter().collect::<Vec<_>>(),
+            no_iterator.clone()
         );
+        assert_eq!(PerCommitmentScheme::from_iter(no_iterator), no_commitments);
 
         let ipa_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: Some(Default::default()),
@@ -320,8 +339,12 @@ mod tests {
             Default::default(),
         )];
         assert_eq!(
-            ipa_commitments.into_flat_iter().collect::<Vec<_>>(),
-            ipa_iterator,
+            ipa_commitments.clone().into_flat_iter().collect::<Vec<_>>(),
+            ipa_iterator.clone(),
+        );
+        assert_eq!(
+            PerCommitmentScheme::from_iter(ipa_iterator),
+            ipa_commitments
         );
 
         let dory_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
@@ -332,8 +355,15 @@ mod tests {
             Default::default(),
         )];
         assert_eq!(
-            dory_commitments.into_flat_iter().collect::<Vec<_>>(),
-            dory_iterator,
+            dory_commitments
+                .clone()
+                .into_flat_iter()
+                .collect::<Vec<_>>(),
+            dory_iterator.clone(),
+        );
+        assert_eq!(
+            PerCommitmentScheme::from_iter(dory_iterator),
+            dory_commitments
         );
 
         let all_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
@@ -345,8 +375,12 @@ mod tests {
             AnyCommitmentScheme::<CommitmentType>::Dory(Default::default()),
         ];
         assert_eq!(
-            all_commitments.into_flat_iter().collect::<Vec<_>>(),
-            all_iterator
+            all_commitments.clone().into_flat_iter().collect::<Vec<_>>(),
+            all_iterator.clone()
+        );
+        assert_eq!(
+            PerCommitmentScheme::from_iter(all_iterator),
+            all_commitments
         );
     }
 }
