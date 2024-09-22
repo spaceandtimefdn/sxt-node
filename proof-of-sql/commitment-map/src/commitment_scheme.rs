@@ -99,7 +99,7 @@ impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentSchem
 }
 
 /// Collection of commitment-associated data, with one element per commitment scheme.
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PerCommitmentScheme<T: GenericOverCommitment> {
     /// Element with [`CommitmentScheme::Ipa`].
     pub ipa: T::WithCommitment<RistrettoPoint>,
@@ -125,6 +125,15 @@ impl<T: GenericOverCommitment> From<&PerCommitmentScheme<OptionType<T>>> for Com
         CommitmentSchemeFlags {
             ipa: ipa.is_some(),
             dory: dory.is_some(),
+        }
+    }
+}
+
+impl<T: GenericOverCommitment> Default for PerCommitmentScheme<OptionType<T>> {
+    fn default() -> Self {
+        PerCommitmentScheme {
+            ipa: None,
+            dory: None,
         }
     }
 }
