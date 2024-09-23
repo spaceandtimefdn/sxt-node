@@ -50,6 +50,7 @@ sc-service = { version = "0.45.0", default-features = false }
 sc-telemetry = { version = "24.0.0", default-features = false }
 sc-transaction-pool = { version = "37.0.0", default-features = false }
 sc-transaction-pool-api = { version = "37.0.0", default-features = false }
+serde = { version = "1.0.210", default-features = false }
 serde_json = { version = "1.0.114", default-features = false }
 sp-api = { version = "34.0.0", default-features = false }
 sp-block-builder = { version = "34.0.0", default-features = false }
