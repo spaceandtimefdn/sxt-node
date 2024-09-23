@@ -11,6 +11,7 @@ members = [
     "pallets/template",
     "runtime", "sxt-core",
     "proof-of-sql/commitment-map",
+    "proof-of-sql/on-chain-table",
 ]
 resolver = "2"
 
