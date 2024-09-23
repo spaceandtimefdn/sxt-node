@@ -5662,6 +5662,11 @@ dependencies = [
 [[package]]
 name = "on-chain-table"
 version = "0.1.0"
+dependencies = [
+ "arrow",
+ "primitive-types",
+ "snafu",
+]
 
 [[package]]
 name = "once_cell"

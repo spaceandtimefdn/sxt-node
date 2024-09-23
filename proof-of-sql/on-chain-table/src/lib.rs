@@ -3,3 +3,6 @@
 #![warn(missing_docs)]
 
 extern crate alloc;
+
+#[cfg(feature = "arrow")]
+mod i256_conversion;
