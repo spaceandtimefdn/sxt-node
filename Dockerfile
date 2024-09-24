@@ -3,6 +3,8 @@ FROM docker.io/paritytech/ci-unified:latest as builder
 WORKDIR /polkadot
 COPY . /polkadot
 
+RUN rustup component add rust-src
+RUN rustup target add wasm32-unknown-unknown
 RUN cargo fetch
 RUN cargo build --locked --release
 

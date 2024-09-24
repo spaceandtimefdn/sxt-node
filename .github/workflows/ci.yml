@@ -80,5 +80,5 @@ jobs:
       - uses: ./.github/actions/free-disk-space
 
       - name: Build the Dockerfile
-        run: docker build . -t polkadot-sdk-solochain-template
+        run: docker build . -t sxt-node
         timeout-minutes: 90
