@@ -28,6 +28,7 @@ fake = { version = "2.9.2", default-features = false }
 frame-benchmarking-cli = { version = "42.0.0", default-features = false }
 frame-system = { version = "37.0.0", default-features = false }
 futures = { version = "0.3.30" }
+indexmap = { version = "2.5.0", default-features = false }
 itertools = { version = "0.12.1", default-features = false }
 jsonrpsee = { version = "0.23.2" }
 primitive-types = { version = "0.12.2" }

@@ -14,3 +14,11 @@ pub use column::OnChainColumn;
 mod arrow_column_conversion;
 #[cfg(feature = "arrow")]
 pub use arrow_column_conversion::ArrowToOnChainColumnError;
+
+mod table;
+pub use table::{OnChainTable, OnChainTableError};
+
+#[cfg(feature = "arrow")]
+mod arrow_table_conversion;
+#[cfg(feature = "arrow")]
+pub use arrow_table_conversion::ArrowToOnChainTableError;
