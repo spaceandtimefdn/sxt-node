@@ -1,3 +1,12 @@
+## [0.2.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.0...v0.2.1) (2024-09-25)
+
+
+### Bug Fixes
+
+* docker and artifacts upload to jfrog ([4739131](https://github.com/spaceandtimelabs/sxt-node/commit/473913191bd8a87cda533112cd15599cb7767935))
+
+
+
 # [0.2.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.1.0...v0.2.0) (2024-09-25)
 
 
