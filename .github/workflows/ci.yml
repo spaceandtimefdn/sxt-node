@@ -2,10 +2,8 @@ name: CI
 
 on:
   pull_request:
-  push:
     branches:
       - main
-      - master
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -80,5 +78,9 @@ jobs:
       - uses: ./.github/actions/free-disk-space
 
       - name: Build the Dockerfile
-        run: docker build . -t sxt-node
+        run: |-
+          docker buildx version
+          docker buildx ls
+          export ARTIFACTORY_LOGIN=$ARTIFACTORY_USER:$ARTIFACTORY_API_KEY
+          docker buildx build -f ./sxtnode.Dockerfile --secret id=ARTIFACTORY_LOGIN . -t sxt-node
         timeout-minutes: 90
