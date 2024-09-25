@@ -1,4 +1,13 @@
-# 0.1.0 (2024-09-25)
+# [0.2.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.1.0...v0.2.0) (2024-09-25)
+
+
+### Features
+
+* package sxt-node with postgres and flightsql in docker ([4927a29](https://github.com/spaceandtimelabs/sxt-node/commit/4927a2900a7350de016c28905bcb78e1d258c65f))
+
+
+
+# [0.1.0](https://github.com/spaceandtimelabs/sxt-node/compare/ab0623ee0796d6f3dc52f58e0ed423bd127f6751...v0.1.0) (2024-09-25)
 
 
 ### Bug Fixes
