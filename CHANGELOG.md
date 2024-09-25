@@ -1,3 +1,12 @@
+## [0.2.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.1...v0.2.2) (2024-09-25)
+
+
+### Bug Fixes
+
+* use version as tag in docker image, instead of latest ([f7e7551](https://github.com/spaceandtimelabs/sxt-node/commit/f7e75517b83c43bc197baa4cbb91d8449e80ed45))
+
+
+
 ## [0.2.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.0...v0.2.1) (2024-09-25)
 
 
