@@ -92,7 +92,7 @@ jobs:
 
       - name: Build and Release Dockerfile
         env:
-          DOCKERTAG: spaceandtime.jfrog.io/sxtnode-docker-local/sxt-node-${{ steps.conventional-changelog.outputs.version }}
+          DOCKERTAG: spaceandtime.jfrog.io/sxtnode-docker-local/sxt-node:${{ steps.conventional-changelog.outputs.version }}
         run: |-
           docker buildx version
           docker buildx ls
