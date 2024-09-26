@@ -101,10 +101,20 @@ jobs:
           jf docker push $DOCKERTAG
         timeout-minutes: 90
 
+      # Need to regenerate Github App token as previous steps take more than 60 minutes to complete
+      # and hence previous token expires.
+      - name: Re-create GitHub App Token
+        id: app-token-release
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ env.GITHUB_APP_ID }}
+          private-key: ${{ env.GITHUB_PRIVATE_KEY }}
+
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.conventional-changelog.outputs.tag }}
           body: ${{ steps.conventional-changelog.outputs.changelog }}
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.app-token-release.outputs.token }} # Using Github Auth token created in step above
           makeLatest: true
