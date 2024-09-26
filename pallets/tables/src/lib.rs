@@ -16,13 +16,17 @@ pub use weights::*;
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use frame_support::pallet_prelude::{StorageDoubleMap, *};
-    use frame_support::Blake2_128Concat;
+    use frame_support::{
+        pallet_prelude::{StorageDoubleMap, *},
+        Blake2_128Concat,
+    };
     use frame_system::pallet_prelude::*;
-    use sxt_core::permissions::*;
-    use sxt_core::tables::{
-        CreateStatement, IndexerMode, Source, SourceAndMode, TableIdentifier, TableName,
-        TableNamespace, UpdateTableList, SnapshotUrl
+    use sxt_core::{
+        permissions::*,
+        tables::{
+            CreateStatement, IndexerMode, Source, SourceAndMode, TableIdentifier, TableName,
+            TableNamespace, UpdateTableList,
+        },
     };
     use proof_of_sql_commitment_map::generic_over_commitment::{ConcreteType, OptionType};
     use proof_of_sql_commitment_map::{

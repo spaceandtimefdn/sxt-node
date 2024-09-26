@@ -18,7 +18,6 @@ pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-
     use sxt_core::permissions::{PermissionLevel, PermissionList};
 
     #[pallet::pallet]
