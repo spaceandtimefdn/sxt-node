@@ -1,3 +1,4 @@
+//! TODO: add docs
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
@@ -15,7 +16,6 @@ pub use weights::*;
 pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::{StorageDoubleMap, *};
-    use frame_support::traits::fungibles::Create;
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
     use sxt_core::permissions::*;
@@ -29,7 +29,9 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_permissions::Config {
+        /// TODO: add docs
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        /// TODO: add docs
         type WeightInfo: WeightInfo;
     }
 
@@ -73,6 +75,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
         #[pallet::weight(<T as Config>::WeightInfo::update_tables())]
+        /// TODO: add docs
         pub fn update_tables(
             origin: OriginFor<T>,
             source_and_mode: SourceAndMode,
@@ -91,7 +94,7 @@ pub mod pallet {
                 Schemas::<T>::insert(namespace, name, statement.clone());
             }
 
-            Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode, tables).into());
+            Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode, tables));
 
             Ok(())
         }

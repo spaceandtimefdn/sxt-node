@@ -1,9 +1,7 @@
-use std::io::Read;
-
 use crate::mock::*;
 
 use frame_support::assert_ok;
-use sxt_core::tables::{IPCSchema, Source, SourceAndMode, TableIdentifier, UpdateTableList};
+use sxt_core::tables::{SourceAndMode, UpdateTableList};
 
 #[test]
 fn test_pallet() {

@@ -1,3 +1,4 @@
+//! TODO: add docs
 fn main() {
 	#[cfg(feature = "std")]
 	{

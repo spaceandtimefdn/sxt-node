@@ -32,8 +32,11 @@
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use core::marker::PhantomData;
 
+/// TODO: add docs
 pub trait WeightInfo {
+    /// TODO: add docs
     fn set_permissions() -> Weight;
+    /// TODO: add docs
     fn clear_permissions() -> Weight;
 }
 

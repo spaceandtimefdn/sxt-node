@@ -1,3 +1,4 @@
+//! TODO: add docs
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
@@ -17,7 +18,6 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
 
-    use sp_runtime::traits::BadOrigin;
     use sxt_core::permissions::{PermissionLevel, PermissionList};
 
     #[pallet::pallet]
@@ -25,7 +25,9 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        /// TODO: add docs
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        /// TODO: add docs
         type WeightInfo: WeightInfo;
     }
 
@@ -61,6 +63,7 @@ pub mod pallet {
         /// Set the permissions for an account id
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::set_permissions())]
+        /// TODO: add docs
         pub fn set_permissions(
             origin: OriginFor<T>,
             who: T::AccountId,
@@ -76,6 +79,7 @@ pub mod pallet {
 
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::clear_permissions())]
+        /// TODO: add docs
         pub fn clear_permissions(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             Self::ensure_root_or_permissioned(origin, &PermissionLevel::UpdatePermissions)?;
 
@@ -107,7 +111,7 @@ pub mod pallet {
                     ensure_signed(origin.clone())
                         .map_err(|_| Error::<T>::UnsignedTransaction.into())
                         .and_then(|c| {
-                            Self::has_permissions(&c, &permission)
+                            Self::has_permissions(&c, permission)
                                 .then_some(())
                                 .ok_or(Error::<T>::InsufficientPermissions.into())
                         })

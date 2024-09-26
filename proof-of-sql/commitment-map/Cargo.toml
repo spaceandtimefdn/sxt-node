@@ -19,6 +19,8 @@ sxt-core = { workspace = true, optional = true }
 [features]
 memory-commitment-map = []
 substrate = ["dep:frame-support", "dep:frame-system", "dep:codec", "dep:scale-info", "dep:sp-core", "dep:sxt-core"]
+std = []
+try-runtime = []
 
 [dev-dependencies]
 proof-of-sql = { workspace = true, features = ["test"] }
