@@ -30,14 +30,18 @@ pub enum PermissionLevel {
 /// Permissions for pallet_tables
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum TablesPalletPermission {
+    /// TODO: add docs
     EditSchema,
+    /// TODO: add docs
     EditRewards,
 }
 
 /// Permissions for pallet_governance TODO
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum GovernancePalletPermission {
+    /// TODO: add docs
     AddIndexer,
+    /// TODO: add docs
     RemoveIndexer,
 }
 

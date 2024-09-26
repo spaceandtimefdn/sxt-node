@@ -1,3 +1,4 @@
+//! TODO: add docs
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
@@ -28,7 +29,9 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_permissions::Config {
+        /// TODO: add docs
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        /// TODO: add docs
         type WeightInfo: WeightInfo;
     }
 
@@ -72,6 +75,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
         #[pallet::weight(<T as Config>::WeightInfo::update_tables())]
+        /// TODO: add docs
         pub fn update_tables(
             origin: OriginFor<T>,
             source_and_mode: SourceAndMode,
