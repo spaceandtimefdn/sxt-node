@@ -30,7 +30,7 @@ jobs:
         timeout-minutes: 90
 
       - name: Run fmt
-        run: cargo fmt --all -- --check
+        run: cargo fmt --all -- --config imports_granularity=Crate,group_imports=One --check
         timeout-minutes: 30
 
       - name: Run clippy
