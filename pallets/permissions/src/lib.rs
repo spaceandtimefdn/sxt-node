@@ -107,16 +107,15 @@ pub mod pallet {
             origin: OriginFor<T>,
             permission: &PermissionLevel,
         ) -> Result<(), DispatchError> {
-            ensure_root(origin.clone())
-                .or_else(|_| {
-                    ensure_signed(origin.clone())
-                        .map_err(|_| Error::<T>::UnsignedTransaction.into())
-                        .and_then(|c| {
-                            Self::has_permissions(&c, permission)
-                                .then_some(())
-                                .ok_or(Error::<T>::InsufficientPermissions.into())
-                        })
-                })
+            ensure_root(origin.clone()).or_else(|_| {
+                ensure_signed(origin.clone())
+                    .map_err(|_| Error::<T>::UnsignedTransaction.into())
+                    .and_then(|c| {
+                        Self::has_permissions(&c, permission)
+                            .then_some(())
+                            .ok_or(Error::<T>::InsufficientPermissions.into())
+                    })
+            })
         }
     }
 }

@@ -324,12 +324,15 @@ mod runtime {
 
     #[runtime::pallet_index(9)]
     pub type Tables = pallet_tables;
+<<<<<<< HEAD
 
     #[runtime::pallet_index(10)]
     pub type Indexing = native_pallets::native_pallet_indexing;
 
     #[runtime::pallet_index(11)]
     pub type Commitments = pallet_commitments;
+=======
+>>>>>>> ddeef72 (style: run `cargo fmt --all`)
 }
 
 /// The address format for describing accounts.
