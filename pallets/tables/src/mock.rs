@@ -1,6 +1,5 @@
 use crate as pallet_tables;
 use frame_support::derive_impl;
-use frame_system::pallet;
 use sp_runtime::BuildStorage;
 
 

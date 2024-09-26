@@ -1,6 +1,6 @@
 use crate::{mock::*, Error, Event};
 use frame_support::{assert_err, assert_ok};
-use sp_runtime::{traits::BadOrigin, BoundedVec};
+use sp_runtime::BoundedVec;
 use sxt_core::permissions::*;
 
 /// Calling set_permissions should fail when the signer is not root or does not have the proper permissions set

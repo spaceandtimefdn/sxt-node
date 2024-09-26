@@ -15,7 +15,6 @@ pub use weights::*;
 pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::{StorageDoubleMap, *};
-    use frame_support::traits::fungibles::Create;
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
     use sxt_core::permissions::*;
@@ -91,7 +90,7 @@ pub mod pallet {
                 Schemas::<T>::insert(namespace, name, statement.clone());
             }
 
-            Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode, tables).into());
+            Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode, tables));
 
             Ok(())
         }

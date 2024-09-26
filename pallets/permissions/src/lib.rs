@@ -17,7 +17,6 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
 
-    use sp_runtime::traits::BadOrigin;
     use sxt_core::permissions::{PermissionLevel, PermissionList};
 
     #[pallet::pallet]
@@ -107,7 +106,7 @@ pub mod pallet {
                     ensure_signed(origin.clone())
                         .map_err(|_| Error::<T>::UnsignedTransaction.into())
                         .and_then(|c| {
-                            Self::has_permissions(&c, &permission)
+                            Self::has_permissions(&c, permission)
                                 .then_some(())
                                 .ok_or(Error::<T>::InsufficientPermissions.into())
                         })
