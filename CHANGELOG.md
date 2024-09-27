@@ -1,3 +1,15 @@
+# [0.3.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.4...v0.3.0) (2024-09-27)
+
+
+### Features
+
+* add on-chain-table crate ([314c929](https://github.com/spaceandtimelabs/sxt-node/commit/314c929ab416a30a9f5441dfcf8b3b73e0ecb446))
+* add OnChainColumn as no_std insert column type ([91623c6](https://github.com/spaceandtimelabs/sxt-node/commit/91623c61329d479664ea73b00d9c759eaf876d53))
+* add OnChainTable type for no_std insert data ([d658551](https://github.com/spaceandtimelabs/sxt-node/commit/d6585515db44f371779e1530e69744d32e3a1d5d))
+* add U256 and arrow i256 conversion utilities ([c788a0b](https://github.com/spaceandtimelabs/sxt-node/commit/c788a0baa134c6cd1188f668b17c5d0545765ca8))
+
+
+
 ## [0.2.4](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.3...v0.2.4) (2024-09-26)
 
 
@@ -26,15 +38,6 @@
 ### Bug Fixes
 
 * docker and artifacts upload to jfrog ([4739131](https://github.com/spaceandtimelabs/sxt-node/commit/473913191bd8a87cda533112cd15599cb7767935))
-
-
-
-# [0.2.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.1.0...v0.2.0) (2024-09-25)
-
-
-### Features
-
-* package sxt-node with postgres and flightsql in docker ([4927a29](https://github.com/spaceandtimelabs/sxt-node/commit/4927a2900a7350de016c28905bcb78e1d258c65f))
 
 
 
