@@ -8,6 +8,7 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+ahash = { workspace = true }
 arrow = { workspace = true, optional = true }
 primitive-types = { workspace = true, features = ["impl-serde"] }
 indexmap.workspace = true

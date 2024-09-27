@@ -5663,6 +5663,7 @@ dependencies = [
 name = "on-chain-table"
 version = "0.1.0"
 dependencies = [
+ "ahash",
  "arrow",
  "indexmap 2.5.0",
  "primitive-types",

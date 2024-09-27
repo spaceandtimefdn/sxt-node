@@ -16,6 +16,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
+ahash = { version = "0.8.11", default-features = false }
 arrow = { version = "51.0.0", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-template = { path = "./pallets/template", default-features = false }
