@@ -11,10 +11,12 @@ members = [
     "pallets/template",
     "runtime", "sxt-core",
     "proof-of-sql/commitment-map",
+    "proof-of-sql/on-chain-table",
 ]
 resolver = "2"
 
 [workspace.dependencies]
+arrow = { version = "51.0.0", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-template = { path = "./pallets/template", default-features = false }
 pallet-permissions = { path = "pallets/permissions", default-features = false }
@@ -26,8 +28,10 @@ fake = { version = "2.9.2", default-features = false }
 frame-benchmarking-cli = { version = "42.0.0", default-features = false }
 frame-system = { version = "37.0.0", default-features = false }
 futures = { version = "0.3.30" }
+indexmap = { version = "2.5.0", default-features = false }
 itertools = { version = "0.12.1", default-features = false }
 jsonrpsee = { version = "0.23.2" }
+primitive-types = { version = "0.12.2" }
 proof-of-sql = { version = "0.12.3", default-features = false }
 proof-of-sql-parser = { version = "0.12.3", default-features = false }
 snafu = { version = "0.8.4", default-features = false }
@@ -47,6 +51,7 @@ sc-service = { version = "0.45.0", default-features = false }
 sc-telemetry = { version = "24.0.0", default-features = false }
 sc-transaction-pool = { version = "37.0.0", default-features = false }
 sc-transaction-pool-api = { version = "37.0.0", default-features = false }
+serde = { version = "1.0.210", default-features = false }
 serde_json = { version = "1.0.114", default-features = false }
 sp-api = { version = "34.0.0", default-features = false }
 sp-block-builder = { version = "34.0.0", default-features = false }
