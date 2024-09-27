@@ -27,6 +27,7 @@ RUN useradd -m -u 1001 -U -s /bin/sh -d /sxtuser sxtuser && \
     postgresql \
     postgresql-contrib \
     curl \
+    apache2-utils && \
     && apt-get clean && \
     chown -R sxtuser:sxtuser /var/run/postgresql && \
     rm -rf /var/lib/apt/lists/*
