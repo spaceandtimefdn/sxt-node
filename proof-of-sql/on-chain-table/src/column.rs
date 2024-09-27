@@ -1,6 +1,7 @@
+use crate::{u256_scalar_conversion::u256_to_scalar, OutOfScalarBounds};
 use alloc::{string::String, vec::Vec};
 use primitive_types::U256;
-use proof_of_sql::base::math::decimal::Precision;
+use proof_of_sql::base::{commitment::CommittableColumn, math::decimal::Precision, scalar::Scalar};
 use proof_of_sql_parser::posql_time::{PoSQLTimeUnit, PoSQLTimeZone};
 use serde::{Deserialize, Serialize};
 
@@ -56,12 +57,46 @@ impl OnChainColumn {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
+    /// Performs conversion to a proof-of-sql `CommittableColumn` in the scalar field `S`.
+    pub fn try_to_committable_column<S: Scalar>(
+        &self,
+    ) -> Result<CommittableColumn, OutOfScalarBounds> {
+        match &self {
+            OnChainColumn::Boolean(bools) => Ok(CommittableColumn::Boolean(bools)),
+            OnChainColumn::SmallInt(ints) => Ok(CommittableColumn::SmallInt(ints)),
+            OnChainColumn::Int(ints) => Ok(CommittableColumn::Int(ints)),
+            OnChainColumn::BigInt(ints) => Ok(CommittableColumn::BigInt(ints)),
+            OnChainColumn::Int128(ints) => Ok(CommittableColumn::Int128(ints)),
+            OnChainColumn::VarChar(strings) => Ok(CommittableColumn::VarChar(
+                strings
+                    .iter()
+                    .map(Into::<S>::into)
+                    .map(Into::<[u64; 4]>::into)
+                    .collect(),
+            )),
+            OnChainColumn::Decimal75(precision, scale, ints) => Ok(CommittableColumn::Decimal75(
+                *precision,
+                *scale,
+                ints.iter()
+                    .map(|int| u256_to_scalar::<S>(int).map(Into::<[u64; 4]>::into))
+                    .collect::<Result<_, _>>()?,
+            )),
+            OnChainColumn::TimestampTZ(time_unit, timezone, ints) => {
+                Ok(CommittableColumn::TimestampTZ(*time_unit, *timezone, ints))
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use alloc::vec;
+    use proof_of_sql::{
+        base::{database::OwnedColumn, scalar::Curve25519Scalar},
+        proof_primitive::dory::DoryScalar,
+    };
 
     #[test]
     fn we_can_get_column_length() {
@@ -99,5 +134,139 @@ mod tests {
             vec![1, 2, 3, 4, 5, 6],
         );
         assert_eq!(column.len(), 6);
+    }
+
+    fn we_can_convert_on_chain_column_to_committable_column<S: Scalar>() {
+        let data = vec![true, false, true];
+        let on_chain_bool_column = OnChainColumn::Boolean(data.clone());
+        let owned_bool_column = OwnedColumn::<S>::Boolean(data);
+        assert_eq!(
+            on_chain_bool_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_bool_column)
+        );
+
+        let data = vec![-10, 0, 20];
+        let on_chain_smallint_column = OnChainColumn::SmallInt(data.clone());
+        let owned_smallint_column = OwnedColumn::<S>::SmallInt(data);
+        assert_eq!(
+            on_chain_smallint_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_smallint_column)
+        );
+
+        let data = vec![-10, 0, 20];
+        let on_chain_int_column = OnChainColumn::Int(data.clone());
+        let owned_int_column = OwnedColumn::<S>::Int(data);
+        assert_eq!(
+            on_chain_int_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_int_column)
+        );
+
+        let data = vec![-10, 0, 20];
+        let on_chain_bigint_column = OnChainColumn::BigInt(data.clone());
+        let owned_bigint_column = OwnedColumn::<S>::BigInt(data);
+        assert_eq!(
+            on_chain_bigint_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_bigint_column)
+        );
+
+        let data = vec![-10, 0, 20];
+        let on_chain_int128_column = OnChainColumn::Int128(data.clone());
+        let owned_int128_column = OwnedColumn::<S>::Int128(data);
+        assert_eq!(
+            on_chain_int128_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_int128_column)
+        );
+
+        let data = vec![-10, 0, 20];
+        let on_chain_int128_column = OnChainColumn::Int128(data.clone());
+        let owned_int128_column = OwnedColumn::<S>::Int128(data);
+        assert_eq!(
+            on_chain_int128_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_int128_column)
+        );
+
+        let data = ["lorem", "ipsum", "dolor"].map(String::from).to_vec();
+        let on_chain_varchar_column = OnChainColumn::VarChar(data.clone());
+        let owned_varchar_column = OwnedColumn::<S>::VarChar(data);
+        assert_eq!(
+            on_chain_varchar_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_varchar_column)
+        );
+
+        let on_chain_decimal_column = OnChainColumn::Decimal75(
+            Precision::new(38).unwrap(),
+            10,
+            vec![U256::MAX, U256::zero(), U256::one()],
+        );
+        let owned_decimal_column = OwnedColumn::<S>::Decimal75(
+            Precision::new(38).unwrap(),
+            10,
+            vec![-S::ONE, S::ZERO, S::ONE],
+        );
+        assert_eq!(
+            on_chain_decimal_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_decimal_column)
+        );
+
+        let data = vec![-10, 0, 20];
+        let on_chain_timestamp_column =
+            OnChainColumn::TimestampTZ(PoSQLTimeUnit::Nanosecond, PoSQLTimeZone::Utc, data.clone());
+        let owned_timestamp_column =
+            OwnedColumn::<S>::TimestampTZ(PoSQLTimeUnit::Nanosecond, PoSQLTimeZone::Utc, data);
+        assert_eq!(
+            on_chain_timestamp_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_timestamp_column)
+        );
+    }
+
+    #[test]
+    fn we_can_convert_on_chain_column_to_dory_committable_column() {
+        we_can_convert_on_chain_column_to_committable_column::<DoryScalar>()
+    }
+
+    #[test]
+    fn we_can_convert_on_chain_column_to_ipa_committable_column() {
+        we_can_convert_on_chain_column_to_committable_column::<Curve25519Scalar>()
+    }
+
+    fn we_cannot_convert_out_of_bounds_on_chain_column_to_committable_column<S: Scalar>() {
+        let on_chain_decimal_column = OnChainColumn::Decimal75(
+            Precision::new(75).unwrap(),
+            0,
+            vec![U256::MAX, U256::MAX / 2, U256::one()],
+        );
+
+        assert!(matches!(
+            on_chain_decimal_column.try_to_committable_column::<S>(),
+            Err(OutOfScalarBounds)
+        ));
+    }
+
+    #[test]
+    fn we_cannot_convert_out_of_bounds_on_chain_column_to_dory_committable_column() {
+        we_cannot_convert_out_of_bounds_on_chain_column_to_committable_column::<DoryScalar>()
+    }
+
+    #[test]
+    fn we_cannot_convert_out_of_bounds_on_chain_column_to_ipa_committable_column() {
+        we_cannot_convert_out_of_bounds_on_chain_column_to_committable_column::<Curve25519Scalar>()
     }
 }
