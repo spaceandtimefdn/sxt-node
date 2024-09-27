@@ -1,7 +1,9 @@
 use crate::{u256_scalar_conversion::u256_to_scalar, OutOfScalarBounds};
-use alloc::{string::String, vec::Vec};
+use alloc::{string::String, vec, vec::Vec};
 use primitive_types::U256;
-use proof_of_sql::base::{commitment::CommittableColumn, math::decimal::Precision, scalar::Scalar};
+use proof_of_sql::base::{
+    commitment::CommittableColumn, database::ColumnType, math::decimal::Precision, scalar::Scalar,
+};
 use proof_of_sql_parser::posql_time::{PoSQLTimeUnit, PoSQLTimeZone};
 use serde::{Deserialize, Serialize};
 
@@ -56,6 +58,28 @@ impl OnChainColumn {
     /// Returns `true` if the column has no elements.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /// Returns an empty column of the given proof-of-sql `ColumnType`.
+    ///
+    /// # Panics
+    /// Panics if the `Scalar` type is requested.
+    pub fn empty_with_type(column_type: ColumnType) -> OnChainColumn {
+        match column_type {
+            ColumnType::Boolean => OnChainColumn::Boolean(vec![]),
+            ColumnType::VarChar => OnChainColumn::VarChar(vec![]),
+            ColumnType::SmallInt => OnChainColumn::SmallInt(vec![]),
+            ColumnType::Int => OnChainColumn::Int(vec![]),
+            ColumnType::BigInt => OnChainColumn::BigInt(vec![]),
+            ColumnType::Int128 => OnChainColumn::Int128(vec![]),
+            ColumnType::Decimal75(precision, scale) => {
+                OnChainColumn::Decimal75(precision, scale, vec![])
+            }
+            ColumnType::TimestampTZ(time_unit, time_zone) => {
+                OnChainColumn::TimestampTZ(time_unit, time_zone, vec![])
+            }
+            ColumnType::Scalar => unimplemented!(),
+        }
     }
 
     /// Performs conversion to a proof-of-sql `CommittableColumn` in the scalar field `S`.
@@ -134,6 +158,43 @@ mod tests {
             vec![1, 2, 3, 4, 5, 6],
         );
         assert_eq!(column.len(), 6);
+    }
+
+    #[test]
+    fn we_can_get_empty_column() {
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::Boolean);
+        assert!(empty_column.is_empty());
+
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::SmallInt);
+        assert!(empty_column.is_empty());
+
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::Int);
+        assert!(empty_column.is_empty());
+
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::BigInt);
+        assert!(empty_column.is_empty());
+
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::Int128);
+        assert!(empty_column.is_empty());
+
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::VarChar);
+        assert!(empty_column.is_empty());
+
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::TimestampTZ(
+            PoSQLTimeUnit::Second,
+            PoSQLTimeZone::Utc,
+        ));
+        assert!(empty_column.is_empty());
+
+        let empty_column =
+            OnChainColumn::empty_with_type(ColumnType::Decimal75(Precision::new(75).unwrap(), 0));
+        assert!(empty_column.is_empty());
+    }
+
+    #[test]
+    #[should_panic]
+    fn we_cannot_get_empty_scalar_column() {
+        let _should_panic = OnChainColumn::empty_with_type(ColumnType::Scalar);
     }
 
     fn we_can_convert_on_chain_column_to_committable_column<S: Scalar>() {
