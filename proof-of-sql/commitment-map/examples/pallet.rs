@@ -6,6 +6,7 @@
 /// Generic dev_mode pallet boilerplate uncustomized for this example
 pub use pallet::*;
 
+#[allow(clippy::manual_inspect)]
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
     use super::*;

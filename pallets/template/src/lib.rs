@@ -61,6 +61,7 @@ pub mod weights;
 pub use weights::*;
 
 // All pallet logic is defined in its own module and must be annotated by the `pallet` attribute.
+#[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
 	// Import various useful types required by all FRAME pallets.

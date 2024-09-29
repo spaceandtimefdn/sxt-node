@@ -12,6 +12,7 @@ mod tests;
 pub mod weights;
 pub use weights::*;
 
+#[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
