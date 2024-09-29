@@ -33,8 +33,8 @@ indexmap = { version = "2.5.0", default-features = false }
 itertools = { version = "0.12.1", default-features = false }
 jsonrpsee = { version = "0.23.2" }
 primitive-types = { version = "0.12.2", default-features = false }
-proof-of-sql = { version = "0.12.3", default-features = false }
-proof-of-sql-parser = { version = "0.12.3", default-features = false }
+proof-of-sql = { version = "0.25.3", default-features = false }
+proof-of-sql-parser = { version = "0.25.3", default-features = false }
 snafu = { version = "0.8.4", default-features = false }
 pallet-transaction-payment = { version = "37.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "40.0.0", default-features = false }
