@@ -827,18 +827,18 @@ checksum = "80c3c396ee3931c84f3c584ef7ddba7de13cf14be41b933a4be39ac729beeb87"
 
 [[package]]
 name = "bit-set"
-version = "0.6.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0481a0e032742109b1133a095184ee93d88f3dc9e0d28a5d033dc77a073f44f"
+checksum = "08807e080ed7f9d5433fa9b275196cfc35414f66a0c79d864dc51a0d825231a3"
 dependencies = [
  "bit-vec",
 ]
 
 [[package]]
 name = "bit-vec"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2c54ff287cfc0a34f38a6b832ea1bd8e448a330b3e40a50859e6488bee07f22"
+checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
 
 [[package]]
 name = "bitcoin-internals"
@@ -3810,8 +3810,7 @@ dependencies = [
 [[package]]
 name = "lalrpop"
 version = "0.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e56f323e2d610628d1f5bdd39168a774674ac7989ed67011963bb3f71edd797"
+source = "git+https://github.com/lalrpop/lalrpop?rev=be84d1e54a7b8b600d0da180f815f29c76b36e65#be84d1e54a7b8b600d0da180f815f29c76b36e65"
 dependencies = [
  "ascii-canvas",
  "bit-set",
@@ -3832,10 +3831,10 @@ dependencies = [
 [[package]]
 name = "lalrpop-util"
 version = "0.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "108dc8f5dabad92c65a03523055577d847f5dcc00f3e7d3a68bc4d48e01d8fe1"
+source = "git+https://github.com/lalrpop/lalrpop?rev=be84d1e54a7b8b600d0da180f815f29c76b36e65#be84d1e54a7b8b600d0da180f815f29c76b36e65"
 dependencies = [
  "regex-automata 0.4.7",
+ "rustversion",
 ]
 
 [[package]]
