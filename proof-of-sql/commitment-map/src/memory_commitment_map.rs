@@ -61,29 +61,7 @@ mod tests {
         PerCommitmentScheme,
     };
     use core::marker::PhantomData;
-    use fake::{Dummy, Fake, Faker, Rng, StringFaker};
     use proof_of_sql::base::commitment::Commitment;
-    use proof_of_sql_parser::{Identifier, ResourceId};
-
-    const ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
-
-    struct IdentifierFaker;
-
-    impl Dummy<IdentifierFaker> for Identifier {
-        fn dummy_with_rng<R: Rng + ?Sized>(_config: &IdentifierFaker, rng: &mut R) -> Self {
-            let string: String = StringFaker::with(Vec::from(ALPHABET), 5..32).fake_with_rng(rng);
-
-            string.parse().unwrap()
-        }
-    }
-
-    impl Dummy<IdentifierFaker> for TableRef {
-        fn dummy_with_rng<R: Rng + ?Sized>(config: &IdentifierFaker, rng: &mut R) -> Self {
-            let schema_id = config.fake_with_rng(rng);
-            let table_id = config.fake_with_rng(rng);
-            TableRef::new(ResourceId::new(schema_id, table_id))
-        }
-    }
 
     /// An example of a GenericOverCommitment value for testing.
     ///
@@ -96,22 +74,21 @@ mod tests {
         phantom_data: PhantomData<C>,
     }
 
-    #[derive(Copy, Clone, PartialEq, Eq, Default, Debug)]
-    struct TestCommitmentMetadataType;
-
-    impl GenericOverCommitment for TestCommitmentMetadataType {
-        type WithCommitment<C: Commitment> = TestCommitmentMetadata<C>;
-    }
-
-    impl<C: Commitment> Dummy<Faker> for TestCommitmentMetadata<C> {
-        fn dummy_with_rng<R: Rng + ?Sized>(config: &Faker, rng: &mut R) -> Self {
-            let metadata: usize = config.fake_with_rng(rng);
-
+    impl<C: Commitment> TestCommitmentMetadata<C> {
+        /// Construct a new [`TestCommitmentMetadata`].
+        fn new(metadata: usize) -> Self {
             TestCommitmentMetadata {
                 metadata,
                 phantom_data: PhantomData,
             }
         }
+    }
+
+    #[derive(Copy, Clone, PartialEq, Eq, Default, Debug)]
+    struct TestCommitmentMetadataType;
+
+    impl GenericOverCommitment for TestCommitmentMetadataType {
+        type WithCommitment<C: Commitment> = TestCommitmentMetadata<C>;
     }
 
     struct CombinationsCommitmentMapRefs {
@@ -124,15 +101,15 @@ mod tests {
         MemoryCommitmentMap<TestCommitmentMetadataType>,
         CombinationsCommitmentMapRefs,
     ) {
-        let ipa_ref: TableRef = IdentifierFaker.fake();
-        let ipa_ref_ipa_commitment: TestCommitmentMetadata<RistrettoPoint> = Faker.fake();
+        let ipa_ref: TableRef = "table.ipa_only".parse().unwrap();
+        let ipa_ref_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(1);
 
-        let dory_ref: TableRef = IdentifierFaker.fake();
-        let dory_ref_dory_commitment: TestCommitmentMetadata<DoryCommitment> = Faker.fake();
+        let dory_ref: TableRef = "table.dory_only".parse().unwrap();
+        let dory_ref_dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(2);
 
-        let all_ref: TableRef = IdentifierFaker.fake();
-        let all_ref_ipa_commitment: TestCommitmentMetadata<RistrettoPoint> = Faker.fake();
-        let all_ref_dory_commitment: TestCommitmentMetadata<DoryCommitment> = Faker.fake();
+        let all_ref: TableRef = "table.all_schemes".parse().unwrap();
+        let all_ref_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(3);
+        let all_ref_dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(3);
 
         let commitment_map = MemoryCommitmentMap {
             ipa_map: HashMap::from_iter([
@@ -183,24 +160,24 @@ mod tests {
             CommitmentSchemeFlags::all()
         );
         assert_eq!(
-            commitment_map.schemes_for_key(&IdentifierFaker.fake()),
+            commitment_map.schemes_for_key(&"does_not.exist".parse().unwrap()),
             CommitmentSchemeFlags::default()
         );
 
         assert!(commitment_map.has_key(&refs.ipa_ref));
         assert!(commitment_map.has_key(&refs.dory_ref));
         assert!(commitment_map.has_key(&refs.all_ref));
-        assert!(!commitment_map.has_key(&IdentifierFaker.fake()));
+        assert!(!commitment_map.has_key(&"does_not.exist".parse().unwrap()));
     }
 
     #[test]
     fn we_can_create_tables() {
-        let ipa_ref: TableRef = IdentifierFaker.fake();
-        let dory_ref: TableRef = IdentifierFaker.fake();
-        let all_ref: TableRef = IdentifierFaker.fake();
+        let ipa_ref: TableRef = "table.ipa_only".parse().unwrap();
+        let dory_ref: TableRef = "table.dory_only".parse().unwrap();
+        let all_ref: TableRef = "table.all_schemes".parse().unwrap();
 
-        let ipa_commitment: TestCommitmentMetadata<RistrettoPoint> = Faker.fake();
-        let dory_commitment: TestCommitmentMetadata<DoryCommitment> = Faker.fake();
+        let ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(1);
+        let dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(2);
 
         let mut commitment_map = MemoryCommitmentMap::<TestCommitmentMetadataType>::default();
 
@@ -247,8 +224,8 @@ mod tests {
         let (mut commitment_map, refs) = all_combinations_commitment_map();
         let original_commitment_map = commitment_map.clone();
 
-        let ipa_commitment: TestCommitmentMetadata<RistrettoPoint> = Faker.fake();
-        let dory_commitment: TestCommitmentMetadata<DoryCommitment> = Faker.fake();
+        let ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(10);
+        let dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(20);
 
         assert!(matches!(
             commitment_map.create_commitments(refs.ipa_ref, PerCommitmentScheme::default()),
@@ -312,8 +289,8 @@ mod tests {
     fn we_can_update_tables() {
         let (mut commitment_map, refs) = all_combinations_commitment_map();
 
-        let new_ipa_commitment: TestCommitmentMetadata<RistrettoPoint> = Faker.fake();
-        let new_dory_commitment: TestCommitmentMetadata<DoryCommitment> = Faker.fake();
+        let new_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(10);
+        let new_dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(20);
 
         assert_ne!(
             commitment_map.ipa_map.get(&refs.ipa_ref).unwrap(),
@@ -383,8 +360,8 @@ mod tests {
         let (mut commitment_map, refs) = all_combinations_commitment_map();
         let original_commitment_map = commitment_map.clone();
 
-        let new_ipa_commitment: TestCommitmentMetadata<RistrettoPoint> = Faker.fake();
-        let new_dory_commitment: TestCommitmentMetadata<DoryCommitment> = Faker.fake();
+        let new_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(10);
+        let new_dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(20);
 
         let no_commitments = PerCommitmentScheme::default();
         assert!(matches!(
