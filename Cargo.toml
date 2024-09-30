@@ -16,6 +16,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
+ahash = { version = "0.8.11", default-features = false }
 arrow = { version = "51.0.0", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-template = { path = "./pallets/template", default-features = false }
@@ -31,9 +32,10 @@ futures = { version = "0.3.30" }
 indexmap = { version = "2.5.0", default-features = false }
 itertools = { version = "0.12.1", default-features = false }
 jsonrpsee = { version = "0.23.2" }
-primitive-types = { version = "0.12.2" }
-proof-of-sql = { version = "0.12.3", default-features = false }
-proof-of-sql-parser = { version = "0.12.3", default-features = false }
+on-chain-table = { path = "./proof-of-sql/on-chain-table/", default-features = false }
+primitive-types = { version = "0.12.2", default-features = false }
+proof-of-sql = { version = "0.25.3", default-features = false }
+proof-of-sql-parser = { version = "0.25.3", default-features = false }
 snafu = { version = "0.8.4", default-features = false }
 pallet-transaction-payment = { version = "37.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "40.0.0", default-features = false }
@@ -91,3 +93,7 @@ substrate-wasm-builder = { version = "24.0.0", default-features = false }
 [workspace.lints]
 rust.missing_docs = "warn"
 clippy.missing_docs_in_private_items = "warn"
+
+[patch.crates-io]
+lalrpop = { git = "https://github.com/lalrpop/lalrpop", rev = "be84d1e54a7b8b600d0da180f815f29c76b36e65" }
+lalrpop-util = { git = "https://github.com/lalrpop/lalrpop", rev = "be84d1e54a7b8b600d0da180f815f29c76b36e65" }

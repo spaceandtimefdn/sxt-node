@@ -1,7 +1,6 @@
-use crate::{ArrowToOnChainColumnError, OnChainColumn, OnChainTable};
+use crate::{map::IndexSet, ArrowToOnChainColumnError, OnChainColumn, OnChainTable};
 use alloc::vec::Vec;
 use arrow::array::RecordBatch;
-use indexmap::IndexSet;
 use proof_of_sql_parser::ParseError;
 use snafu::Snafu;
 

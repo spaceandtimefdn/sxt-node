@@ -1,8 +1,5 @@
-use crate::column::OnChainColumn;
-use indexmap::{
-    map::{IntoIter, Iter},
-    IndexMap,
-};
+use crate::{column::OnChainColumn, map::IndexMap};
+use indexmap::map::{IntoIter, Iter};
 use proof_of_sql_parser::Identifier;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;

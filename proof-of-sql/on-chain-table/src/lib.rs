@@ -7,6 +7,8 @@ extern crate alloc;
 #[cfg(feature = "arrow")]
 mod i256_conversion;
 
+mod map;
+
 mod column;
 pub use column::OnChainColumn;
 
