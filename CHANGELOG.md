@@ -1,3 +1,13 @@
+# [0.4.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.3.0...v0.4.0) (2024-09-30)
+
+
+### Bug Fixes
+
+* disable default-features for primitive-types ([ff93198](https://github.com/spaceandtimelabs/sxt-node/commit/ff93198a0ef11c6d79d85e4661a8853cce94fb35))
+* hash indexmap with ahash in on-chain-table ([6f44839](https://github.com/spaceandtimelabs/sxt-node/commit/6f44839063bf37734fab3f794d84f50ce27bb55a))
+
+
+
 # [0.3.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.4...v0.3.0) (2024-09-27)
 
 
@@ -29,15 +39,6 @@
 ### Bug Fixes
 
 * use version as tag in docker image, instead of latest ([f7e7551](https://github.com/spaceandtimelabs/sxt-node/commit/f7e75517b83c43bc197baa4cbb91d8449e80ed45))
-
-
-
-## [0.2.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.0...v0.2.1) (2024-09-25)
-
-
-### Bug Fixes
-
-* docker and artifacts upload to jfrog ([4739131](https://github.com/spaceandtimelabs/sxt-node/commit/473913191bd8a87cda533112cd15599cb7767935))
 
 
 
