@@ -65,3 +65,11 @@ pub struct AssociatedScalarType;
 impl GenericOverCommitment for AssociatedScalarType {
     type WithCommitment<C: Commitment> = C::Scalar;
 }
+
+/// Concrete type associated with `Option<G::WithCommitment<C: Commitment>>` types.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct OptionType<G: GenericOverCommitment>(PhantomData<G>);
+
+impl<G: GenericOverCommitment> GenericOverCommitment for OptionType<G> {
+    type WithCommitment<C: Commitment> = Option<G::WithCommitment<C>>;
+}

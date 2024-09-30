@@ -1,4 +1,4 @@
-use crate::generic_over_commitment::GenericOverCommitment;
+use crate::generic_over_commitment::{GenericOverCommitment, OptionType};
 use curve25519_dalek::RistrettoPoint;
 #[cfg(feature = "substrate")]
 use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
@@ -78,6 +78,17 @@ impl<T: GenericOverCommitment> AnyCommitmentScheme<T> {
     }
 }
 
+impl<T: GenericOverCommitment> AnyCommitmentScheme<OptionType<T>> {
+    /// Transpose an `AnyCommitmentScheme<Option<T>>` to an `Option<AnyCommitmentScheme<T>>`.
+    pub fn transpose_option(self) -> Option<AnyCommitmentScheme<T>> {
+        match self {
+            AnyCommitmentScheme::Ipa(Some(data)) => Some(AnyCommitmentScheme::Ipa(data)),
+            AnyCommitmentScheme::Dory(Some(data)) => Some(AnyCommitmentScheme::Dory(data)),
+            AnyCommitmentScheme::Ipa(None) | AnyCommitmentScheme::Dory(None) => None,
+        }
+    }
+}
+
 impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentScheme {
     fn from(commitment: &AnyCommitmentScheme<T>) -> Self {
         match commitment {
@@ -87,24 +98,30 @@ impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentSchem
     }
 }
 
-/// Collection of commitment-associated data, with at most one element per commitment scheme.
+/// Collection of commitment-associated data, with one element per commitment scheme.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct PerCommitmentScheme<T: GenericOverCommitment> {
-    /// Element with [`CommitmentScheme::Ipa`], if it exists.
-    pub ipa: Option<T::WithCommitment<RistrettoPoint>>,
-    /// Element with [`CommitmentScheme::Dory`], if it exists.
-    pub dory: Option<T::WithCommitment<DoryCommitment>>,
+    /// Element with [`CommitmentScheme::Ipa`].
+    pub ipa: T::WithCommitment<RistrettoPoint>,
+    /// Element with [`CommitmentScheme::Dory`].
+    pub dory: T::WithCommitment<DoryCommitment>,
 }
 
-impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
+impl<T: GenericOverCommitment> PerCommitmentScheme<OptionType<T>> {
     /// Returns the schemes present in this collection as a [`CommitmentSchemeFlags`].
     pub fn to_flags(&self) -> CommitmentSchemeFlags {
         self.into()
     }
+
+    /// Returns an iterator over `AnyCommitmentScheme<T>`, flattening out the internal `Option`.
+    pub fn into_flat_iter(self) -> impl Iterator<Item = AnyCommitmentScheme<T>> {
+        self.into_iter()
+            .flat_map(AnyCommitmentScheme::transpose_option)
+    }
 }
 
-impl<T: GenericOverCommitment> From<&PerCommitmentScheme<T>> for CommitmentSchemeFlags {
-    fn from(PerCommitmentScheme { ipa, dory }: &PerCommitmentScheme<T>) -> Self {
+impl<T: GenericOverCommitment> From<&PerCommitmentScheme<OptionType<T>>> for CommitmentSchemeFlags {
+    fn from(PerCommitmentScheme { ipa, dory }: &PerCommitmentScheme<OptionType<T>>) -> Self {
         CommitmentSchemeFlags {
             ipa: ipa.is_some(),
             dory: dory.is_some(),
@@ -114,16 +131,16 @@ impl<T: GenericOverCommitment> From<&PerCommitmentScheme<T>> for CommitmentSchem
 
 impl<T: GenericOverCommitment> IntoIterator for PerCommitmentScheme<T> {
     type Item = AnyCommitmentScheme<T>;
-    type IntoIter =
-        core::iter::Chain<core::option::IntoIter<Self::Item>, core::option::IntoIter<Self::Item>>;
+    type IntoIter = alloc::vec::IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
         let PerCommitmentScheme { ipa, dory } = self;
 
-        itertools::chain!(
-            ipa.map(AnyCommitmentScheme::Ipa),
-            dory.map(AnyCommitmentScheme::Dory)
-        )
+        alloc::vec![
+            AnyCommitmentScheme::Ipa(ipa),
+            AnyCommitmentScheme::Dory(dory),
+        ]
+        .into_iter()
     }
 }
 
@@ -190,33 +207,9 @@ mod tests {
 
     #[test]
     fn we_can_iterate_over_commitments_in_per_commitment_scheme() {
-        let no_commitments = PerCommitmentScheme::<CommitmentType> {
-            ipa: None,
-            dory: None,
-        };
-        assert_eq!(Vec::from_iter(no_commitments), vec![]);
-
-        let ipa_commitments = PerCommitmentScheme::<CommitmentType> {
-            ipa: Some(Default::default()),
-            dory: None,
-        };
-        assert_eq!(
-            Vec::from_iter(ipa_commitments),
-            vec![AnyCommitmentScheme::Ipa(Default::default())]
-        );
-
-        let dory_commitments = PerCommitmentScheme::<CommitmentType> {
-            ipa: None,
-            dory: Some(Default::default()),
-        };
-        assert_eq!(
-            Vec::from_iter(dory_commitments),
-            vec![AnyCommitmentScheme::Dory(Default::default())]
-        );
-
         let all_commitments = PerCommitmentScheme::<CommitmentType> {
-            ipa: Some(Default::default()),
-            dory: Some(Default::default()),
+            ipa: Default::default(),
+            dory: Default::default(),
         };
         assert_eq!(
             Vec::from_iter(all_commitments),
@@ -238,13 +231,13 @@ mod tests {
 
     #[test]
     fn we_can_convert_per_commitment_scheme_to_flags() {
-        let no_commitments = PerCommitmentScheme::<CommitmentType> {
+        let no_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: None,
             dory: None,
         };
         assert_eq!(no_commitments.to_flags(), CommitmentSchemeFlags::default());
 
-        let ipa_commitments = PerCommitmentScheme::<CommitmentType> {
+        let ipa_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: Some(Default::default()),
             dory: None,
         };
@@ -256,7 +249,7 @@ mod tests {
             }
         );
 
-        let dory_commitments = PerCommitmentScheme::<CommitmentType> {
+        let dory_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: None,
             dory: Some(Default::default()),
         };
@@ -268,10 +261,83 @@ mod tests {
             }
         );
 
-        let all_commitments = PerCommitmentScheme::<CommitmentType> {
+        let all_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: Some(Default::default()),
             dory: Some(Default::default()),
         };
         assert_eq!(all_commitments.to_flags(), CommitmentSchemeFlags::all());
+    }
+
+    #[test]
+    fn we_can_transpose_any_commitment_scheme_with_option_type() {
+        let ipa_commitment =
+            AnyCommitmentScheme::<OptionType<CommitmentType>>::Ipa(Some(Default::default()));
+        assert_eq!(
+            ipa_commitment.transpose_option(),
+            Some(AnyCommitmentScheme::Ipa(Default::default()))
+        );
+
+        let dory_commitment =
+            AnyCommitmentScheme::<OptionType<CommitmentType>>::Dory(Some(Default::default()));
+        assert_eq!(
+            dory_commitment.transpose_option(),
+            Some(AnyCommitmentScheme::Dory(Default::default()))
+        );
+
+        let ipa_commitment = AnyCommitmentScheme::<OptionType<CommitmentType>>::Ipa(None);
+        assert_eq!(ipa_commitment.transpose_option(), None);
+
+        let dory_commitment = AnyCommitmentScheme::<OptionType<CommitmentType>>::Dory(None);
+        assert_eq!(dory_commitment.transpose_option(), None);
+    }
+
+    #[test]
+    fn we_can_iterate_over_flattened_per_commitment_scheme_with_option_type() {
+        let no_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
+            ipa: None,
+            dory: None,
+        };
+        let no_iterator = vec![];
+        assert_eq!(
+            no_commitments.into_flat_iter().collect::<Vec<_>>(),
+            no_iterator
+        );
+
+        let ipa_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
+            ipa: Some(Default::default()),
+            dory: None,
+        };
+        let ipa_iterator = vec![AnyCommitmentScheme::<CommitmentType>::Ipa(
+            Default::default(),
+        )];
+        assert_eq!(
+            ipa_commitments.into_flat_iter().collect::<Vec<_>>(),
+            ipa_iterator,
+        );
+
+        let dory_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
+            ipa: None,
+            dory: Some(Default::default()),
+        };
+        let dory_iterator = vec![AnyCommitmentScheme::<CommitmentType>::Dory(
+            Default::default(),
+        )];
+        assert_eq!(
+            dory_commitments.into_flat_iter().collect::<Vec<_>>(),
+            dory_iterator,
+        );
+
+        let all_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
+            ipa: Some(Default::default()),
+            dory: Some(Default::default()),
+        };
+        let all_iterator = vec![
+            AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default()),
+            AnyCommitmentScheme::<CommitmentType>::Dory(Default::default()),
+        ];
+        assert_eq!(
+            all_commitments.into_flat_iter().collect::<Vec<_>>(),
+            all_iterator
+        );
     }
 }

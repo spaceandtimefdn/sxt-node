@@ -1,6 +1,6 @@
 use crate::{
-    generic_over_commitment::GenericOverCommitment, CommitmentScheme, CommitmentSchemeFlags,
-    PerCommitmentScheme,
+    generic_over_commitment::{GenericOverCommitment, OptionType},
+    CommitmentScheme, CommitmentSchemeFlags, PerCommitmentScheme,
 };
 use core::fmt::Debug;
 use snafu::Snafu;
@@ -42,7 +42,7 @@ pub trait CommitmentMap<K: Debug, V: GenericOverCommitment> {
     fn update_commitments(
         &mut self,
         key: K,
-        commitments: PerCommitmentScheme<V>,
+        commitments: PerCommitmentScheme<OptionType<V>>,
     ) -> Result<(), CommitmentSchemesMismatchError>;
 
     /// Create empty commitment for a particular key and a combination of schemes.
@@ -51,7 +51,7 @@ pub trait CommitmentMap<K: Debug, V: GenericOverCommitment> {
     fn create_commitments(
         &mut self,
         key: K,
-        commitments: PerCommitmentScheme<V>,
+        commitments: PerCommitmentScheme<OptionType<V>>,
     ) -> Result<(), KeyExistsError<K>>;
 
     /// Delete all commitments for a particular key.
