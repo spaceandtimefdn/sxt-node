@@ -12,6 +12,19 @@ echo "Running Postgres initialization script"
 
 # Start sxt-node in the background
 echo "Starting sxt-node with $@"
+/usr/local/bin/sxt-node "$@" &
 
-/usr/local/bin/sxt-node "$@"
+cleanup() {
+  echo "DEBUG: Cleaning up"
+  kill -3 `pgrep postgres` &> /dev/null
+  kill -9 `pgrep flightsql-pg`&> /dev/null
+  pkill -P $$
+  exit
+}
 
+trap cleanup SIGINT SIGTERM SIGKILL SIGQUIT EXIT
+
+# Loop that mimic tiny initd to keep container alive and trap signals
+while true; do
+  sleep 1;
+done
