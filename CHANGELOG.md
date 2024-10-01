@@ -1,3 +1,14 @@
+# [0.6.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.5.0...v0.6.0) (2024-10-01)
+
+
+### Features
+
+* Copy the template pallet folder to create the skeleton for the indexing ([9bb907a](https://github.com/spaceandtimelabs/sxt-node/commit/9bb907a7cab93a5612dee8e2966c7e31f120cece))
+* Implement Indexing pallet with basic data submissions and quorum ([e9322db](https://github.com/spaceandtimelabs/sxt-node/commit/e9322db337d48f0076015f95a9621ba2adcbbcc5))
+* Integrate the indexing pallet into the runtime ([41798b8](https://github.com/spaceandtimelabs/sxt-node/commit/41798b8221f83948b1fb882dbd1e5146172f6d59))
+
+
+
 # [0.5.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.4.0...v0.5.0) (2024-10-01)
 
 
@@ -35,15 +46,6 @@
 
 
 ## [0.2.4](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.3...v0.2.4) (2024-09-26)
-
-
-
-## [0.2.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.2...v0.2.3) (2024-09-26)
-
-
-### Bug Fixes
-
-* auth issue for release job ([cc68af8](https://github.com/spaceandtimelabs/sxt-node/commit/cc68af8bc4654121dff75f86c96de39bb8a2e722))
 
 
 
