@@ -86,3 +86,11 @@ impl<G0: GenericOverCommitment, G1: GenericOverCommitment> GenericOverCommitment
 {
     type WithCommitment<C: Commitment> = (G0::WithCommitment<C>, G1::WithCommitment<C>);
 }
+
+/// Concrete type associated with `T`, which is not necessarily generic over commitments.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct ConcreteType<T>(PhantomData<T>);
+
+impl<T> GenericOverCommitment for ConcreteType<T> {
+    type WithCommitment<C: Commitment> = T;
+}

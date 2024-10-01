@@ -1,5 +1,5 @@
 use crate::{
-    generic_over_commitment::{GenericOverCommitment, OptionType, PairType},
+    generic_over_commitment::{ConcreteType, GenericOverCommitment, OptionType, PairType},
     GenericOverCommitmentFn,
 };
 use curve25519_dalek::RistrettoPoint;
@@ -115,6 +115,16 @@ impl<T: GenericOverCommitment, U: GenericOverCommitment> AnyCommitmentScheme<Pai
                 AnyCommitmentScheme::Dory(left),
                 AnyCommitmentScheme::Dory(right),
             ),
+        }
+    }
+}
+
+impl<T> AnyCommitmentScheme<ConcreteType<T>> {
+    /// Unwraps an `AnyCommitmentScheme` with a concrete type into its internal value
+    pub fn unwrap(self) -> T {
+        match self {
+            AnyCommitmentScheme::Ipa(data) => data,
+            AnyCommitmentScheme::Dory(data) => data,
         }
     }
 }
@@ -600,5 +610,14 @@ mod tests {
                 AnyCommitmentScheme::<AssociatedScalarType>::Dory(DoryScalar::TWO)
             )
         );
+    }
+
+    #[test]
+    fn we_can_unwrap_any_commitment_scheme_with_concrete_type() {
+        let ipa_usize = AnyCommitmentScheme::<ConcreteType<usize>>::Ipa(123);
+        assert_eq!(ipa_usize.unwrap(), 123);
+
+        let dory_usize = AnyCommitmentScheme::<ConcreteType<usize>>::Dory(456);
+        assert_eq!(dory_usize.unwrap(), 456);
     }
 }
