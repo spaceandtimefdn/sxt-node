@@ -1,3 +1,17 @@
+# [0.5.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.4.0...v0.5.0) (2024-10-01)
+
+
+### Bug Fixes
+
+* typo ([f92933a](https://github.com/spaceandtimelabs/sxt-node/commit/f92933ac28875cd0628a5506184f207a2074eb9d))
+
+
+### Features
+
+* adding ratatelogs from apache2-utils to handle pg logs, also change the way script works to act like simple init process to trap system signals after initial process spwan ([bc4d2ee](https://github.com/spaceandtimelabs/sxt-node/commit/bc4d2ee629c6fa53c95487bd4374b4faf8b340ef))
+
+
+
 # [0.4.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.3.0...v0.4.0) (2024-09-30)
 
 
@@ -30,15 +44,6 @@
 ### Bug Fixes
 
 * auth issue for release job ([cc68af8](https://github.com/spaceandtimelabs/sxt-node/commit/cc68af8bc4654121dff75f86c96de39bb8a2e722))
-
-
-
-## [0.2.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.1...v0.2.2) (2024-09-25)
-
-
-### Bug Fixes
-
-* use version as tag in docker image, instead of latest ([f7e7551](https://github.com/spaceandtimelabs/sxt-node/commit/f7e75517b83c43bc197baa4cbb91d8449e80ed45))
 
 
 
