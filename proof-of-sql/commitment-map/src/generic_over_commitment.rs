@@ -73,3 +73,16 @@ pub struct OptionType<G: GenericOverCommitment>(PhantomData<G>);
 impl<G: GenericOverCommitment> GenericOverCommitment for OptionType<G> {
     type WithCommitment<C: Commitment> = Option<G::WithCommitment<C>>;
 }
+
+/// Concrete type associated with a 2-tuple `(G0::WithCommitment<C>, G1::WithCommitment<C>)`.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct PairType<G0: GenericOverCommitment, G1: GenericOverCommitment>(
+    PhantomData<G0>,
+    PhantomData<G1>,
+);
+
+impl<G0: GenericOverCommitment, G1: GenericOverCommitment> GenericOverCommitment
+    for PairType<G0, G1>
+{
+    type WithCommitment<C: Commitment> = (G0::WithCommitment<C>, G1::WithCommitment<C>);
+}

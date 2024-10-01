@@ -1,5 +1,5 @@
 use crate::{
-    generic_over_commitment::{GenericOverCommitment, OptionType},
+    generic_over_commitment::{GenericOverCommitment, OptionType, PairType},
     GenericOverCommitmentFn,
 };
 use curve25519_dalek::RistrettoPoint;
@@ -103,6 +103,22 @@ impl<T: GenericOverCommitment> AnyCommitmentScheme<OptionType<T>> {
     }
 }
 
+impl<T: GenericOverCommitment, U: GenericOverCommitment> AnyCommitmentScheme<PairType<T, U>> {
+    /// Unzips a `AnyCommitmentScheme` containing a pair into a pair of `AnyCommitmentScheme`s.
+    pub fn unzip(self) -> (AnyCommitmentScheme<T>, AnyCommitmentScheme<U>) {
+        match self {
+            AnyCommitmentScheme::Ipa((left, right)) => (
+                AnyCommitmentScheme::Ipa(left),
+                AnyCommitmentScheme::Ipa(right),
+            ),
+            AnyCommitmentScheme::Dory((left, right)) => (
+                AnyCommitmentScheme::Dory(left),
+                AnyCommitmentScheme::Dory(right),
+            ),
+        }
+    }
+}
+
 impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentScheme {
     fn from(commitment: &AnyCommitmentScheme<T>) -> Self {
         match commitment {
@@ -139,6 +155,33 @@ impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
             ipa: flags.ipa.then_some(self.ipa),
             dory: flags.dory.then_some(self.dory),
         }
+    }
+
+    /// Zips `self` with another `PerCommitmentScheme`.
+    pub fn zip<U: GenericOverCommitment>(
+        self,
+        other: PerCommitmentScheme<U>,
+    ) -> PerCommitmentScheme<PairType<T, U>> {
+        PerCommitmentScheme {
+            ipa: (self.ipa, other.ipa),
+            dory: (self.dory, other.dory),
+        }
+    }
+}
+
+impl<T: GenericOverCommitment, U: GenericOverCommitment> PerCommitmentScheme<PairType<T, U>> {
+    /// Unzips a `PerCommitmentScheme` containing a pair into a pair of `PerCommitmentScheme`s.
+    pub fn unzip(self) -> (PerCommitmentScheme<T>, PerCommitmentScheme<U>) {
+        (
+            PerCommitmentScheme {
+                ipa: self.ipa.0,
+                dory: self.dory.0,
+            },
+            PerCommitmentScheme {
+                ipa: self.ipa.1,
+                dory: self.dory.1,
+            },
+        )
     }
 }
 
@@ -210,9 +253,14 @@ impl<G: GenericOverCommitment> FromIterator<AnyCommitmentScheme<G>>
 mod tests {
     use super::*;
     use crate::{
-        generic_over_commitment::CommitmentType, generic_over_commitment_fn::tests::SomeFn,
+        generic_over_commitment::{AssociatedScalarType, CommitmentType},
+        generic_over_commitment_fn::tests::SomeFn,
     };
     use alloc::{vec, vec::Vec};
+    use proof_of_sql::{
+        base::scalar::{Curve25519Scalar, Scalar},
+        proof_primitive::dory::DoryScalar,
+    };
 
     #[test]
     fn we_can_iterate_over_commitment_schemes_in_commitment_scheme_flags() {
@@ -499,6 +547,58 @@ mod tests {
                 ipa: Some(Default::default()),
                 dory: Some(Default::default()),
             }
+        );
+    }
+
+    #[test]
+    fn we_can_zip_and_unzip_per_commitment_scheme() {
+        let commitments = PerCommitmentScheme::<CommitmentType> {
+            ipa: Default::default(),
+            dory: Default::default(),
+        };
+
+        let scalars = PerCommitmentScheme::<AssociatedScalarType> {
+            ipa: Curve25519Scalar::ZERO,
+            dory: DoryScalar::ONE,
+        };
+
+        let commitments_with_scalars =
+            PerCommitmentScheme::<PairType<CommitmentType, AssociatedScalarType>> {
+                ipa: (Default::default(), Curve25519Scalar::ZERO),
+                dory: (Default::default(), DoryScalar::ONE),
+            };
+
+        assert_eq!(
+            commitments.clone().zip(scalars.clone()),
+            commitments_with_scalars
+        );
+        assert_eq!(commitments_with_scalars.unzip(), (commitments, scalars));
+    }
+
+    #[test]
+    fn we_can_unzip_any_commitment_scheme() {
+        let ipa_commitment_with_scalar =
+            AnyCommitmentScheme::<PairType<CommitmentType, AssociatedScalarType>>::Ipa((
+                Default::default(),
+                Curve25519Scalar::ONE,
+            ));
+        assert_eq!(
+            ipa_commitment_with_scalar.unzip(),
+            (
+                AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default()),
+                AnyCommitmentScheme::<AssociatedScalarType>::Ipa(Curve25519Scalar::ONE)
+            )
+        );
+
+        let dory_commitment_with_scalar = AnyCommitmentScheme::<
+            PairType<CommitmentType, AssociatedScalarType>,
+        >::Dory((Default::default(), DoryScalar::TWO));
+        assert_eq!(
+            dory_commitment_with_scalar.unzip(),
+            (
+                AnyCommitmentScheme::<CommitmentType>::Dory(Default::default()),
+                AnyCommitmentScheme::<AssociatedScalarType>::Dory(DoryScalar::TWO)
+            )
         );
     }
 }
