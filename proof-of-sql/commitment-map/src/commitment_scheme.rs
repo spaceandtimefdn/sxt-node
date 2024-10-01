@@ -132,6 +132,14 @@ impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
             dory: mapper.call(self.dory),
         }
     }
+
+    /// Returns this collection including only the elements selected by `flags`.
+    pub fn select(self, flags: &CommitmentSchemeFlags) -> PerCommitmentScheme<OptionType<T>> {
+        PerCommitmentScheme {
+            ipa: flags.ipa.then_some(self.ipa),
+            dory: flags.dory.then_some(self.dory),
+        }
+    }
 }
 
 impl<T: GenericOverCommitment> PerCommitmentScheme<OptionType<T>> {
@@ -444,6 +452,53 @@ mod tests {
         assert_eq!(
             per_commitment_scheme.map(some_fn),
             some_per_commitment_scheme
+        );
+    }
+
+    #[test]
+    fn we_can_select_per_commitment_scheme_by_flags() {
+        let per_commitment_scheme = PerCommitmentScheme::<CommitmentType> {
+            ipa: Default::default(),
+            dory: Default::default(),
+        };
+
+        let no_flags = CommitmentSchemeFlags::default();
+        assert_eq!(
+            per_commitment_scheme.clone().select(&no_flags),
+            PerCommitmentScheme::<OptionType<CommitmentType>>::default()
+        );
+
+        let ipa_flags = CommitmentSchemeFlags {
+            ipa: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            per_commitment_scheme.clone().select(&ipa_flags),
+            PerCommitmentScheme::<OptionType<CommitmentType>> {
+                ipa: Some(Default::default()),
+                dory: None,
+            }
+        );
+
+        let dory_flags = CommitmentSchemeFlags {
+            dory: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            per_commitment_scheme.clone().select(&dory_flags),
+            PerCommitmentScheme::<OptionType<CommitmentType>> {
+                ipa: None,
+                dory: Some(Default::default()),
+            }
+        );
+
+        let all_flags = CommitmentSchemeFlags::all();
+        assert_eq!(
+            per_commitment_scheme.clone().select(&all_flags),
+            PerCommitmentScheme::<OptionType<CommitmentType>> {
+                ipa: Some(Default::default()),
+                dory: Some(Default::default()),
+            }
         );
     }
 }
