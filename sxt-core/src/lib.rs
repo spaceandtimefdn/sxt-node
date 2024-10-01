@@ -7,9 +7,13 @@ use sp_runtime::BoundedVec;
 /// Types and functionality related to the permissions system
 pub mod permissions;
 
-/// Types and functionality realt
+/// Types and functionality related to tables
 pub mod tables;
 
+/// Types primarily used by the indexing pallet for data submissions and quorum finding
+pub mod indexing;
+
+/// The maximum length of Identifiers
 const IDENT_LENGTH: u32 = 64;
 
 /// The maximum length of u8 strings in the system

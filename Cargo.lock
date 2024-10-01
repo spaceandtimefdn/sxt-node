@@ -5517,6 +5517,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-indexing"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-permissions",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "sxt-core",
+]
+
+[[package]]
 name = "pallet-permissions"
 version = "0.1.0"
 dependencies = [
@@ -9641,6 +9658,7 @@ dependencies = [
  "pallet-aura",
  "pallet-balances",
  "pallet-grandpa",
+ "pallet-indexing",
  "pallet-permissions",
  "pallet-sudo",
  "pallet-tables",
