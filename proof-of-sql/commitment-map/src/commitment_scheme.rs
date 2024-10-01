@@ -1,4 +1,7 @@
-use crate::generic_over_commitment::{GenericOverCommitment, OptionType};
+use crate::{
+    generic_over_commitment::{GenericOverCommitment, OptionType},
+    GenericOverCommitmentFn,
+};
 use curve25519_dalek::RistrettoPoint;
 #[cfg(feature = "substrate")]
 use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
@@ -76,6 +79,17 @@ impl<T: GenericOverCommitment> AnyCommitmentScheme<T> {
     pub fn to_scheme(&self) -> CommitmentScheme {
         self.into()
     }
+
+    /// Maps a `AnyCommitmentScheme<T>` to an `AnyCommitmentScheme<M::Out>` by applying the mapper.
+    pub fn map<M>(self, mapper: M) -> AnyCommitmentScheme<M::Out>
+    where
+        M: GenericOverCommitmentFn<In = T>,
+    {
+        match self {
+            AnyCommitmentScheme::Ipa(data) => AnyCommitmentScheme::Ipa(mapper.call(data)),
+            AnyCommitmentScheme::Dory(data) => AnyCommitmentScheme::Dory(mapper.call(data)),
+        }
+    }
 }
 
 impl<T: GenericOverCommitment> AnyCommitmentScheme<OptionType<T>> {
@@ -105,6 +119,19 @@ pub struct PerCommitmentScheme<T: GenericOverCommitment> {
     pub ipa: T::WithCommitment<RistrettoPoint>,
     /// Element with [`CommitmentScheme::Dory`].
     pub dory: T::WithCommitment<DoryCommitment>,
+}
+
+impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
+    /// Maps a `PerCommitmentScheme<T>` to a `PerCommitmentScheme<M::Out>` by applying the mapper.
+    pub fn map<M>(self, mapper: M) -> PerCommitmentScheme<M::Out>
+    where
+        M: GenericOverCommitmentFn<In = T>,
+    {
+        PerCommitmentScheme {
+            ipa: mapper.call(self.ipa),
+            dory: mapper.call(self.dory),
+        }
+    }
 }
 
 impl<T: GenericOverCommitment> PerCommitmentScheme<OptionType<T>> {
@@ -174,7 +201,9 @@ impl<G: GenericOverCommitment> FromIterator<AnyCommitmentScheme<G>>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::generic_over_commitment::CommitmentType;
+    use crate::{
+        generic_over_commitment::CommitmentType, generic_over_commitment_fn::tests::SomeFn,
+    };
     use alloc::{vec, vec::Vec};
 
     #[test]
@@ -381,6 +410,40 @@ mod tests {
         assert_eq!(
             PerCommitmentScheme::from_iter(all_iterator),
             all_commitments
+        );
+    }
+
+    #[test]
+    fn we_can_map_any_commitment_scheme_to_another() {
+        let some_fn = SomeFn::<CommitmentType>::new();
+
+        let ipa_commitment = AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default());
+        let some_ipa_commitment =
+            AnyCommitmentScheme::<OptionType<CommitmentType>>::Ipa(Some(Default::default()));
+        assert_eq!(ipa_commitment.map(&some_fn), some_ipa_commitment);
+
+        let dory_commitment = AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default());
+        let some_dory_commitment =
+            AnyCommitmentScheme::<OptionType<CommitmentType>>::Ipa(Some(Default::default()));
+        assert_eq!(dory_commitment.map(some_fn), some_dory_commitment);
+    }
+
+    #[test]
+    fn we_can_map_per_commitment_scheme_to_another() {
+        let some_fn = SomeFn::<CommitmentType>::new();
+
+        let per_commitment_scheme = PerCommitmentScheme::<CommitmentType> {
+            ipa: Default::default(),
+            dory: Default::default(),
+        };
+        let some_per_commitment_scheme = PerCommitmentScheme::<OptionType<CommitmentType>> {
+            ipa: Some(Default::default()),
+            dory: Some(Default::default()),
+        };
+
+        assert_eq!(
+            per_commitment_scheme.map(some_fn),
+            some_per_commitment_scheme
         );
     }
 }
