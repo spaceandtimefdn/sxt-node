@@ -8,7 +8,10 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+const_format.workspace = true
+indexmap.workspace = true
 itertools.workspace = true
+on-chain-table.workspace = true
 proof-of-sql.workspace = true
 proof-of-sql-parser.workspace = true
 snafu.workspace = true

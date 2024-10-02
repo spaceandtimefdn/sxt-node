@@ -8,3 +8,5 @@ mod column_options;
 mod column_type_conversion;
 
 mod metadata_prefix;
+
+mod row_number_column;
