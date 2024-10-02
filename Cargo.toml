@@ -51,6 +51,7 @@ proof-of-sql-parser = { version = "0.28.10", default-features = false }
 rand = { version = "0.8.5", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 snafu = { version = "0.8.4", default-features = false }
+sqlparser = { version = "0.45.0", default-features = false }
 pallet-transaction-payment = { version = "37.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "40.0.0", default-features = false }
 sc-basic-authorship = { version = "0.44.0", default-features = false }

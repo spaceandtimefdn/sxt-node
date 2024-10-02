@@ -8,6 +8,10 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+proof-of-sql.workspace = true
+proof-of-sql-parser.workspace = true
+snafu.workspace = true
+sqlparser.workspace = true
 
 [features]
 std = []

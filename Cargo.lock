@@ -1327,6 +1327,12 @@ dependencies = [
 [[package]]
 name = "commitment-sql"
 version = "0.1.0"
+dependencies = [
+ "proof-of-sql",
+ "proof-of-sql-parser",
+ "snafu",
+ "sqlparser",
+]
 
 [[package]]
 name = "common-path"
@@ -9368,6 +9374,15 @@ checksum = "d91ed6c858b01f942cd56b37a94b3e0a1798290327d1236e4d9cf4eaca44d29d"
 dependencies = [
  "base64ct",
  "der",
+]
+
+[[package]]
+name = "sqlparser"
+version = "0.45.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7bbffee862a796d67959a89859d6b1046bb5016d63e23835ad0da182777bbe0"
+dependencies = [
+ "log",
 ]
 
 [[package]]
