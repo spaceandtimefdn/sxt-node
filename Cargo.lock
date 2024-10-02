@@ -1333,6 +1333,7 @@ dependencies = [
  "indexmap 2.5.0",
  "itertools 0.12.1",
  "on-chain-table",
+ "primitive-types",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
  "proof-of-sql-parser",
