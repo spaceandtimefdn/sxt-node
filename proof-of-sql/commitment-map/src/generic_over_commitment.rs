@@ -74,6 +74,14 @@ impl<G: GenericOverCommitment> GenericOverCommitment for OptionType<G> {
     type WithCommitment<C: Commitment> = Option<G::WithCommitment<C>>;
 }
 
+/// Concrete type associated with `Result<G::WithCommitment<C: Commitment>, E>` types.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct ResultOkType<G: GenericOverCommitment, E>(PhantomData<G>, PhantomData<E>);
+
+impl<G: GenericOverCommitment, E> GenericOverCommitment for ResultOkType<G, E> {
+    type WithCommitment<C: Commitment> = Result<G::WithCommitment<C>, E>;
+}
+
 /// Concrete type associated with a 2-tuple `(G0::WithCommitment<C>, G1::WithCommitment<C>)`.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct PairType<G0: GenericOverCommitment, G1: GenericOverCommitment>(

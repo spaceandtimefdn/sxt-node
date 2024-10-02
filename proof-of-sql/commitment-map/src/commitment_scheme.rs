@@ -1,5 +1,7 @@
 use crate::{
-    generic_over_commitment::{ConcreteType, GenericOverCommitment, OptionType, PairType},
+    generic_over_commitment::{
+        ConcreteType, GenericOverCommitment, OptionType, PairType, ResultOkType,
+    },
     GenericOverCommitmentFn,
 };
 use curve25519_dalek::RistrettoPoint;
@@ -99,6 +101,17 @@ impl<T: GenericOverCommitment> AnyCommitmentScheme<OptionType<T>> {
             AnyCommitmentScheme::Ipa(Some(data)) => Some(AnyCommitmentScheme::Ipa(data)),
             AnyCommitmentScheme::Dory(Some(data)) => Some(AnyCommitmentScheme::Dory(data)),
             AnyCommitmentScheme::Ipa(None) | AnyCommitmentScheme::Dory(None) => None,
+        }
+    }
+}
+
+impl<T: GenericOverCommitment, E> AnyCommitmentScheme<ResultOkType<T, E>> {
+    /// Transpose an `AnyCommitmentScheme<Result<T, E>>` to an `Result<AnyCommitmentScheme<T>, E>`.
+    pub fn transpose_result(self) -> Result<AnyCommitmentScheme<T>, E> {
+        match self {
+            AnyCommitmentScheme::Ipa(Ok(data)) => Ok(AnyCommitmentScheme::Ipa(data)),
+            AnyCommitmentScheme::Dory(Ok(data)) => Ok(AnyCommitmentScheme::Dory(data)),
+            AnyCommitmentScheme::Ipa(Err(e)) | AnyCommitmentScheme::Dory(Err(e)) => Err(e),
         }
     }
 }
@@ -411,6 +424,32 @@ mod tests {
 
         let dory_commitment = AnyCommitmentScheme::<OptionType<CommitmentType>>::Dory(None);
         assert_eq!(dory_commitment.transpose_option(), None);
+    }
+
+    #[test]
+    fn we_can_transpose_any_commitment_scheme_with_result_type() {
+        let ipa_commitment =
+            AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::Ipa(Ok(Default::default()));
+        assert_eq!(
+            ipa_commitment.transpose_result(),
+            Ok(AnyCommitmentScheme::Ipa(Default::default()))
+        );
+
+        let dory_commitment = AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::Dory(Ok(
+            Default::default(),
+        ));
+        assert_eq!(
+            dory_commitment.transpose_result(),
+            Ok(AnyCommitmentScheme::Dory(Default::default()))
+        );
+
+        let ipa_commitment =
+            AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::Ipa(Err(1));
+        assert_eq!(ipa_commitment.transpose_result(), Err(1));
+
+        let dory_commitment =
+            AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::Dory(Err(2));
+        assert_eq!(dory_commitment.transpose_result(), Err(2));
     }
 
     #[test]
