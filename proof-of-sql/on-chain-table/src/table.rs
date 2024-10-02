@@ -1,5 +1,6 @@
-use crate::{column::OnChainColumn, map::IndexMap};
+use crate::{column::OnChainColumn, map::IndexMap, OutOfScalarBounds};
 use indexmap::map::{IntoIter, Iter};
+use proof_of_sql::base::{commitment::CommittableColumn, scalar::Scalar};
 use proof_of_sql_parser::Identifier;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
@@ -69,6 +70,19 @@ impl OnChainTable {
     pub fn iter(&self) -> Iter<Identifier, OnChainColumn> {
         self.into_iter()
     }
+
+    /// Returns an iterator over this table with committable columns in the scalar field `S`.
+    ///
+    /// After the error is handled, this can be supplied to the `proof-of-sql` commitment API.
+    pub fn iter_committable<S: Scalar>(
+        &self,
+    ) -> impl Iterator<Item = Result<(&Identifier, CommittableColumn), OutOfScalarBounds>> {
+        self.iter().map(|(id, column)| {
+            column
+                .try_to_committable_column::<S>()
+                .map(|column| (id, column))
+        })
+    }
 }
 
 impl IntoIterator for OnChainTable {
@@ -93,6 +107,13 @@ impl<'a> IntoIterator for &'a OnChainTable {
 mod tests {
     use super::*;
     use alloc::{string::String, vec, vec::Vec};
+    use proof_of_sql::{
+        base::{
+            database::{OwnedColumn, OwnedTable},
+            scalar::Curve25519Scalar,
+        },
+        proof_primitive::dory::DoryScalar,
+    };
 
     #[test]
     fn we_can_convert_table_to_and_from_iter() {
@@ -201,5 +222,48 @@ mod tests {
             OnChainTable::try_from_iter(data),
             Err(OnChainTableError::ColumnLengthMismatch)
         ));
+    }
+
+    fn we_can_iter_table_with_committable_columns<S: Scalar>() {
+        let bigint_id = "bigint_col".parse().unwrap();
+        let bigint_data = vec![-10, 0, 3];
+
+        let varchar_id = "varchar_col".parse().unwrap();
+        let varchar_data = ["lorem", "ipsum", "dolor"].map(String::from).to_vec();
+
+        let on_chain_data = [
+            (bigint_id, OnChainColumn::BigInt(bigint_data.clone())),
+            (varchar_id, OnChainColumn::VarChar(varchar_data.clone())),
+        ];
+        let on_chain_table = OnChainTable::try_from_iter(on_chain_data.clone()).unwrap();
+
+        let owned_table_data = [
+            (bigint_id, OwnedColumn::<S>::BigInt(bigint_data)),
+            (varchar_id, OwnedColumn::<S>::VarChar(varchar_data)),
+        ];
+        let owned_table = OwnedTable::<S>::try_from_iter(owned_table_data).unwrap();
+
+        let committable_columns = on_chain_table
+            .iter_committable::<S>()
+            .map(Result::unwrap)
+            .collect::<Vec<_>>();
+
+        let expected = owned_table
+            .inner_table()
+            .iter()
+            .map(|(id, column)| (id, CommittableColumn::from(column)))
+            .collect::<Vec<_>>();
+
+        assert_eq!(committable_columns, expected);
+    }
+
+    #[test]
+    fn we_can_iter_table_with_dory_committable_columns() {
+        we_can_iter_table_with_committable_columns::<DoryScalar>()
+    }
+
+    #[test]
+    fn we_can_iter_table_with_ipa_committable_columns() {
+        we_can_iter_table_with_committable_columns::<Curve25519Scalar>()
     }
 }

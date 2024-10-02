@@ -7,6 +7,9 @@ extern crate alloc;
 #[cfg(feature = "arrow")]
 mod i256_conversion;
 
+mod u256_scalar_conversion;
+pub use u256_scalar_conversion::OutOfScalarBounds;
+
 mod map;
 
 mod column;
