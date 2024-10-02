@@ -1334,9 +1334,13 @@ dependencies = [
  "itertools 0.12.1",
  "on-chain-table",
  "proof-of-sql",
+ "proof-of-sql-commitment-map",
  "proof-of-sql-parser",
+ "rand",
+ "rand_chacha",
  "snafu",
  "sqlparser",
+ "sxt-core",
 ]
 
 [[package]]

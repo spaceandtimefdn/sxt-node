@@ -15,3 +15,6 @@ mod row_number_column;
 
 mod validated_create_table;
 pub use validated_create_table::{InvalidCreateTable, ValidatedCreateTable};
+
+mod create_table;
+pub use create_table::{process_create_table, CreateTableAndCommitmentMetadata};

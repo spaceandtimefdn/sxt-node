@@ -14,9 +14,15 @@ indexmap.workspace = true
 itertools.workspace = true
 on-chain-table.workspace = true
 proof-of-sql.workspace = true
+proof-of-sql-commitment-map.workspace = true
 proof-of-sql-parser.workspace = true
 snafu.workspace = true
 sqlparser.workspace = true
+sxt-core.workspace = true
+
+[dev-dependencies]
+rand.workspace = true
+rand_chacha.workspace = true
 
 [features]
 std = []
