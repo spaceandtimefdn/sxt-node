@@ -1,3 +1,13 @@
+# [0.8.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.7.0...v0.8.0) (2024-10-03)
+
+
+### Features
+
+* create chainspecs and testnet spec ([d5f54c8](https://github.com/spaceandtimelabs/sxt-node/commit/d5f54c823bda3ab04c5d00669c6f21c169895430))
+* preload testnet chainspecs into container ([448f7a3](https://github.com/spaceandtimelabs/sxt-node/commit/448f7a34747cc6440739dc24b70aab259cc28b8f))
+
+
+
 # [0.7.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.6.0...v0.7.0) (2024-10-02)
 
 
@@ -42,18 +52,6 @@
 
 * disable default-features for primitive-types ([ff93198](https://github.com/spaceandtimelabs/sxt-node/commit/ff93198a0ef11c6d79d85e4661a8853cce94fb35))
 * hash indexmap with ahash in on-chain-table ([6f44839](https://github.com/spaceandtimelabs/sxt-node/commit/6f44839063bf37734fab3f794d84f50ce27bb55a))
-
-
-
-# [0.3.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.2.4...v0.3.0) (2024-09-27)
-
-
-### Features
-
-* add on-chain-table crate ([314c929](https://github.com/spaceandtimelabs/sxt-node/commit/314c929ab416a30a9f5441dfcf8b3b73e0ecb446))
-* add OnChainColumn as no_std insert column type ([91623c6](https://github.com/spaceandtimelabs/sxt-node/commit/91623c61329d479664ea73b00d9c759eaf876d53))
-* add OnChainTable type for no_std insert data ([d658551](https://github.com/spaceandtimelabs/sxt-node/commit/d6585515db44f371779e1530e69744d32e3a1d5d))
-* add U256 and arrow i256 conversion utilities ([c788a0b](https://github.com/spaceandtimelabs/sxt-node/commit/c788a0baa134c6cd1188f668b17c5d0545765ca8))
 
 
 
