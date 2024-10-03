@@ -59,6 +59,10 @@ COPY --from=builder --chmod=755 /opt/sxt/target/release/sxt-node /usr/local/bin
 # Copy SxT Initializetion scripts
 COPY --chmod=755 scripts/* /opt
 
+# Chainspecs
+RUN mkdir -p /opt/chainspecs
+COPY --chmod=644 chainspecs/raw/testnet-spec.json /opt/chainspecs/
+
 # Switch to sxtuser
 USER sxtuser
 
