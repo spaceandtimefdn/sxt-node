@@ -17,15 +17,14 @@ sp-core = { workspace = true, features = ["serde"], optional = true }
 sxt-core = { workspace = true, optional = true }
 
 [features]
-memory-commitment-map = []
+memory-commitment-map = ["std"]
 substrate = ["dep:frame-support", "dep:frame-system", "dep:codec", "dep:scale-info", "dep:sp-core", "dep:sxt-core"]
 std = []
 try-runtime = []
 
 [dev-dependencies]
-proof-of-sql = { workspace = true, features = ["test"] }
+proof-of-sql = { workspace = true }
 proof-of-sql-parser = { workspace = true }
-fake = { workspace = true }
 
 [lints]
 workspace = true

@@ -131,6 +131,7 @@ impl<T: GenericOverCommitment> IntoIterator for PerCommitmentScheme<T> {
 mod tests {
     use super::*;
     use crate::generic_over_commitment::CommitmentType;
+    use alloc::{vec, vec::Vec};
 
     #[test]
     fn we_can_iterate_over_commitment_schemes_in_commitment_scheme_flags() {
