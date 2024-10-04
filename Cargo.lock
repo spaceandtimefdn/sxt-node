@@ -1328,6 +1328,7 @@ dependencies = [
 name = "commitment-sql"
 version = "0.1.0"
 dependencies = [
+ "ahash",
  "const_format",
  "indexmap 2.5.0",
  "itertools 0.12.1",

@@ -3,6 +3,8 @@
 
 extern crate alloc;
 
+mod map;
+
 mod column_options;
 
 mod column_type_conversion;
@@ -10,3 +12,6 @@ mod column_type_conversion;
 mod metadata_prefix;
 
 mod row_number_column;
+
+mod validated_create_table;
+pub use validated_create_table::{InvalidCreateTable, ValidatedCreateTable};
