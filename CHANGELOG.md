@@ -1,3 +1,12 @@
+# [0.9.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.8.0...v0.9.0) (2024-10-04)
+
+
+### Features
+
+* standardize commitment-map no_std support ([1a7f877](https://github.com/spaceandtimelabs/sxt-node/commit/1a7f877fd79caf0550e719f5becb90a813fd0061))
+
+
+
 # [0.8.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.7.0...v0.8.0) (2024-10-03)
 
 
@@ -42,16 +51,6 @@
 ### Features
 
 * adding ratatelogs from apache2-utils to handle pg logs, also change the way script works to act like simple init process to trap system signals after initial process spwan ([bc4d2ee](https://github.com/spaceandtimelabs/sxt-node/commit/bc4d2ee629c6fa53c95487bd4374b4faf8b340ef))
-
-
-
-# [0.4.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.3.0...v0.4.0) (2024-09-30)
-
-
-### Bug Fixes
-
-* disable default-features for primitive-types ([ff93198](https://github.com/spaceandtimelabs/sxt-node/commit/ff93198a0ef11c6d79d85e4661a8853cce94fb35))
-* hash indexmap with ahash in on-chain-table ([6f44839](https://github.com/spaceandtimelabs/sxt-node/commit/6f44839063bf37734fab3f794d84f50ce27bb55a))
 
 
 
