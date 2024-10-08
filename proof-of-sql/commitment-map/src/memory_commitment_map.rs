@@ -186,6 +186,44 @@ mod tests {
     }
 
     #[test]
+    fn we_can_get_table_commitments() {
+        let (commitment_map, refs) = all_combinations_commitment_map();
+
+        let none_commitments = PerCommitmentScheme::default();
+        assert_eq!(
+            commitment_map.get_commitments(&"does_not.exist".parse().unwrap()),
+            none_commitments
+        );
+
+        let ipa_commitments = PerCommitmentScheme {
+            ipa: Some(TestCommitmentMetadata::<RistrettoPoint>::new(1)),
+            dory: None,
+        };
+        assert_eq!(
+            commitment_map.get_commitments(&refs.ipa_ref),
+            ipa_commitments
+        );
+
+        let dory_commitments = PerCommitmentScheme {
+            ipa: None,
+            dory: Some(TestCommitmentMetadata::<DoryCommitment>::new(2)),
+        };
+        assert_eq!(
+            commitment_map.get_commitments(&refs.dory_ref),
+            dory_commitments
+        );
+
+        let all_commitments = PerCommitmentScheme {
+            ipa: Some(TestCommitmentMetadata::<RistrettoPoint>::new(3)),
+            dory: Some(TestCommitmentMetadata::<DoryCommitment>::new(3)),
+        };
+        assert_eq!(
+            commitment_map.get_commitments(&refs.all_ref),
+            all_commitments
+        );
+    }
+
+    #[test]
     fn we_can_create_tables() {
         let ipa_ref: TableRef = "table.ipa_only".parse().unwrap();
         let dory_ref: TableRef = "table.dory_only".parse().unwrap();

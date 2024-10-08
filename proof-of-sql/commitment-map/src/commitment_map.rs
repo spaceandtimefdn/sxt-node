@@ -36,6 +36,9 @@ pub trait CommitmentMap<K: Debug, V: GenericOverCommitment> {
     /// Returns `true` if this map contains this key.
     fn has_key(&self, key: &K) -> bool;
 
+    /// Returns the commitments in this map for a particular key.
+    fn get_commitments(&self, key: &K) -> PerCommitmentScheme<OptionType<V>>;
+
     /// Update the commitments in this map for a particular key and a combination of schemes.
     ///
     /// Fails if the new commitments do not match the existing commitment schemes for the key.

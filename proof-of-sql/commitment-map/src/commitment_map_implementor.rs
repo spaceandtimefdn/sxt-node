@@ -52,6 +52,16 @@ impl<M: CommitmentMapImplementor<K, V>, K: Clone + Debug, V: GenericOverCommitme
         self.schemes_for_key(key).into_iter().count() > 0
     }
 
+    fn get_commitments(&self, key: &K) -> PerCommitmentScheme<OptionType<V>> {
+        CommitmentSchemeFlags::all()
+            .into_iter()
+            .flat_map(|scheme| {
+                self.get_commitment_for_any_scheme_impl(key, &scheme)
+                    .transpose_option()
+            })
+            .collect()
+    }
+
     fn update_commitments(
         &mut self,
         key: K,
