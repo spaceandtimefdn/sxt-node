@@ -1,7 +1,7 @@
 use crate::{
-    generic_over_commitment::GenericOverCommitment, AnyCommitmentScheme, CommitmentMap,
-    CommitmentScheme, CommitmentSchemeFlags, CommitmentSchemesMismatchError, KeyExistsError,
-    PerCommitmentScheme,
+    generic_over_commitment::{GenericOverCommitment, OptionType},
+    AnyCommitmentScheme, CommitmentMap, CommitmentScheme, CommitmentSchemeFlags,
+    CommitmentSchemesMismatchError, KeyExistsError, PerCommitmentScheme,
 };
 use core::fmt::Debug;
 
@@ -48,7 +48,7 @@ impl<M: CommitmentMapImplementor<K, V>, K: Clone + Debug, V: GenericOverCommitme
     fn update_commitments(
         &mut self,
         key: K,
-        commitments: PerCommitmentScheme<V>,
+        commitments: PerCommitmentScheme<OptionType<V>>,
     ) -> Result<(), CommitmentSchemesMismatchError> {
         let original_schemes = self.schemes_for_key(&key);
 
@@ -62,7 +62,7 @@ impl<M: CommitmentMapImplementor<K, V>, K: Clone + Debug, V: GenericOverCommitme
         }
 
         commitments
-            .into_iter()
+            .into_flat_iter()
             .for_each(|c| self.set_commitment_for_any_scheme_impl(key.clone(), c));
         Ok(())
     }
@@ -70,14 +70,14 @@ impl<M: CommitmentMapImplementor<K, V>, K: Clone + Debug, V: GenericOverCommitme
     fn create_commitments(
         &mut self,
         key: K,
-        commitments: PerCommitmentScheme<V>,
+        commitments: PerCommitmentScheme<OptionType<V>>,
     ) -> Result<(), KeyExistsError<K>> {
         if self.has_key(&key) {
             return Err(KeyExistsError { key });
         }
 
         commitments
-            .into_iter()
+            .into_flat_iter()
             .for_each(|c| self.set_commitment_for_any_scheme_impl(key.clone(), c));
         Ok(())
     }

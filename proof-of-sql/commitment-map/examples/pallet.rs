@@ -14,8 +14,8 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use proof_of_sql_commitment_map::{
-        CommitmentHash, CommitmentHashType, CommitmentMap, CommitmentScheme,
-        CommitmentStorageMapHandler, PerCommitmentScheme, TypedCommitmentHash,
+        generic_over_commitment::OptionType, CommitmentHash, CommitmentHashType, CommitmentMap,
+        CommitmentScheme, CommitmentStorageMapHandler, PerCommitmentScheme, TypedCommitmentHash,
     };
     use sp_core::H256;
     use sxt_core::tables::TableIdentifier;
@@ -50,7 +50,7 @@ pub mod pallet {
             // Instantiate a handler for accessing the `CommitmentMap` methods.
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 
-            let zero_hashes = PerCommitmentScheme::<CommitmentHashType> {
+            let zero_hashes = PerCommitmentScheme::<OptionType<CommitmentHashType>> {
                 ipa: Some(TypedCommitmentHash::new(H256::zero())),
                 dory: Some(TypedCommitmentHash::new(H256::zero())),
             };

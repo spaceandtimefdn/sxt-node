@@ -65,3 +65,40 @@ pub struct AssociatedScalarType;
 impl GenericOverCommitment for AssociatedScalarType {
     type WithCommitment<C: Commitment> = C::Scalar;
 }
+
+/// Concrete type associated with `Option<G::WithCommitment<C: Commitment>>` types.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct OptionType<G: GenericOverCommitment>(PhantomData<G>);
+
+impl<G: GenericOverCommitment> GenericOverCommitment for OptionType<G> {
+    type WithCommitment<C: Commitment> = Option<G::WithCommitment<C>>;
+}
+
+/// Concrete type associated with `Result<G::WithCommitment<C: Commitment>, E>` types.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct ResultOkType<G: GenericOverCommitment, E>(PhantomData<G>, PhantomData<E>);
+
+impl<G: GenericOverCommitment, E> GenericOverCommitment for ResultOkType<G, E> {
+    type WithCommitment<C: Commitment> = Result<G::WithCommitment<C>, E>;
+}
+
+/// Concrete type associated with a 2-tuple `(G0::WithCommitment<C>, G1::WithCommitment<C>)`.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct PairType<G0: GenericOverCommitment, G1: GenericOverCommitment>(
+    PhantomData<G0>,
+    PhantomData<G1>,
+);
+
+impl<G0: GenericOverCommitment, G1: GenericOverCommitment> GenericOverCommitment
+    for PairType<G0, G1>
+{
+    type WithCommitment<C: Commitment> = (G0::WithCommitment<C>, G1::WithCommitment<C>);
+}
+
+/// Concrete type associated with `T`, which is not necessarily generic over commitments.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct ConcreteType<T>(PhantomData<T>);
+
+impl<T> GenericOverCommitment for ConcreteType<T> {
+    type WithCommitment<C: Commitment> = T;
+}

@@ -6,6 +6,9 @@ extern crate alloc;
 
 pub mod generic_over_commitment;
 
+mod generic_over_commitment_fn;
+pub use generic_over_commitment_fn::GenericOverCommitmentFn;
+
 mod commitment_scheme;
 pub use commitment_scheme::{
     AnyCommitmentScheme, CommitmentScheme, CommitmentSchemeFlags, PerCommitmentScheme,
