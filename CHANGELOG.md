@@ -1,3 +1,19 @@
+# [0.11.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.10.0...v0.11.0) (2024-10-08)
+
+
+### Features
+
+* add commitment scheme mapping API ([ef4a2eb](https://github.com/spaceandtimelabs/sxt-node/commit/ef4a2eb08009580051cb84681459e0fb0c312ba0))
+* add commitment scheme zip and unzip APIs ([5936733](https://github.com/spaceandtimelabs/sxt-node/commit/5936733f2fcf00b9fb66a69868cb6672a0d19c9d))
+* add PerCommitmentScheme::select method ([161d788](https://github.com/spaceandtimelabs/sxt-node/commit/161d78821b48f51c44a6d0aa807e5988847fdfba))
+* allow non-generics in commitment scheme types ([8b4bb27](https://github.com/spaceandtimelabs/sxt-node/commit/8b4bb27d6579386ecddf81a52683a0eb40a53723))
+* allow Results in commitment scheme types ([62cf223](https://github.com/spaceandtimelabs/sxt-node/commit/62cf2236c74a5c7f8ed2dbd330786888d7db573f))
+* implement Default for PerCommitmentScheme<OptionType<T>> ([c70df2b](https://github.com/spaceandtimelabs/sxt-node/commit/c70df2beae2e4181398f5da2b3ff1392dbfb7d00))
+* implement FromIterator for PerCommitmentScheme<OptionType<T>> ([a669758](https://github.com/spaceandtimelabs/sxt-node/commit/a669758c6f8a5256ce7639b09421c6329a34b063))
+* promote optional PerCommitmentScheme fields to higher kinded types ([9fc34d9](https://github.com/spaceandtimelabs/sxt-node/commit/9fc34d9d249a344edadc94d695c00d5f5784e21d))
+
+
+
 # [0.10.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.9.0...v0.10.0) (2024-10-08)
 
 
@@ -35,17 +51,6 @@
 * add OnChainColumn::try_to_committable_column method ([e3ebd4a](https://github.com/spaceandtimelabs/sxt-node/commit/e3ebd4ac6f5532898fcfbad690290e88a5b05ea3))
 * add OnChainTable::iter_committable method ([519eedd](https://github.com/spaceandtimelabs/sxt-node/commit/519eedde2ed6650338902c55d83c212721b60b6a))
 * implement conversion from U256 to scalar ([cd9577c](https://github.com/spaceandtimelabs/sxt-node/commit/cd9577c9e22dea58e2c42808b033c0beb8ffb31c))
-
-
-
-# [0.6.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.5.0...v0.6.0) (2024-10-01)
-
-
-### Features
-
-* Copy the template pallet folder to create the skeleton for the indexing ([9bb907a](https://github.com/spaceandtimelabs/sxt-node/commit/9bb907a7cab93a5612dee8e2966c7e31f120cece))
-* Implement Indexing pallet with basic data submissions and quorum ([e9322db](https://github.com/spaceandtimelabs/sxt-node/commit/e9322db337d48f0076015f95a9621ba2adcbbcc5))
-* Integrate the indexing pallet into the runtime ([41798b8](https://github.com/spaceandtimelabs/sxt-node/commit/41798b8221f83948b1fb882dbd1e5146172f6d59))
 
 
 
