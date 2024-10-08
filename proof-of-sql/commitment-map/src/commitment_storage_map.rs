@@ -119,6 +119,17 @@ where
         S::contains_key(key, scheme)
     }
 
+    fn get_commitment_for_any_scheme_impl(
+        &self,
+        key: &TableIdentifier,
+        scheme: &CommitmentScheme,
+    ) -> AnyCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>> {
+        match scheme {
+            CommitmentScheme::Ipa => AnyCommitmentScheme::Ipa(S::get(key, scheme)),
+            CommitmentScheme::Dory => AnyCommitmentScheme::Dory(S::get(key, scheme)),
+        }
+    }
+
     fn set_commitment_for_any_scheme_impl(
         &mut self,
         key: TableIdentifier,

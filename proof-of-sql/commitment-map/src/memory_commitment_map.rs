@@ -1,7 +1,7 @@
 use crate::{
     commitment_map_implementor::CommitmentMapImplementor,
     commitment_scheme::{AnyCommitmentScheme, CommitmentScheme},
-    generic_over_commitment::GenericOverCommitment,
+    generic_over_commitment::{GenericOverCommitment, OptionType},
 };
 use curve25519_dalek::RistrettoPoint;
 use proof_of_sql::{base::database::TableRef, proof_primitive::dory::DoryCommitment};
@@ -18,11 +18,26 @@ pub struct MemoryCommitmentMap<V: GenericOverCommitment> {
     dory_map: HashMap<TableRef, V::WithCommitment<DoryCommitment>>,
 }
 
-impl<V: GenericOverCommitment> CommitmentMapImplementor<TableRef, V> for MemoryCommitmentMap<V> {
+impl<V: GenericOverCommitment> CommitmentMapImplementor<TableRef, V> for MemoryCommitmentMap<V>
+where
+    V::WithCommitment<DoryCommitment>: Clone,
+    V::WithCommitment<RistrettoPoint>: Clone,
+{
     fn has_key_and_scheme_impl(&self, key: &TableRef, scheme: &CommitmentScheme) -> bool {
         match scheme {
             CommitmentScheme::Ipa => self.ipa_map.contains_key(key),
             CommitmentScheme::Dory => self.dory_map.contains_key(key),
+        }
+    }
+
+    fn get_commitment_for_any_scheme_impl(
+        &self,
+        key: &TableRef,
+        scheme: &CommitmentScheme,
+    ) -> AnyCommitmentScheme<OptionType<V>> {
+        match scheme {
+            CommitmentScheme::Ipa => AnyCommitmentScheme::Ipa(self.ipa_map.get(key).cloned()),
+            CommitmentScheme::Dory => AnyCommitmentScheme::Dory(self.dory_map.get(key).cloned()),
         }
     }
 
