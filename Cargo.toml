@@ -12,6 +12,7 @@ members = [
     "pallets/indexing",
     "pallets/tables",
     "pallets/permissions",
+    "pallets/commitments",
     "proof-of-sql/commitment-map",
     "runtime",
     "sxt-core",
