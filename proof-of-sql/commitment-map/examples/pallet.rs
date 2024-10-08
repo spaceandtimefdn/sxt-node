@@ -11,13 +11,15 @@ pub use pallet::*;
 pub mod pallet {
     use super::*;
     use core::str;
+    use curve25519_dalek::RistrettoPoint;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
+    use proof_of_sql::{base::commitment::TableCommitment, proof_primitive::dory::DoryCommitment};
     use proof_of_sql_commitment_map::{
-        generic_over_commitment::OptionType, CommitmentHash, CommitmentHashType, CommitmentMap,
-        CommitmentScheme, CommitmentStorageMapHandler, PerCommitmentScheme, TypedCommitmentHash,
+        generic_over_commitment::{ConcreteType, OptionType, TableCommitmentType},
+        CommitmentMap, CommitmentScheme, CommitmentStorageMapHandler, PerCommitmentScheme,
+        TableCommitmentBytes,
     };
-    use sp_core::H256;
     use sxt_core::tables::TableIdentifier;
 
     #[pallet::pallet]
@@ -35,7 +37,7 @@ pub mod pallet {
         TableIdentifier,
         Blake2_128Concat,
         CommitmentScheme,
-        CommitmentHash,
+        TableCommitmentBytes,
     >;
 
     #[pallet::call]
@@ -50,9 +52,17 @@ pub mod pallet {
             // Instantiate a handler for accessing the `CommitmentMap` methods.
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 
-            let zero_hashes = PerCommitmentScheme::<OptionType<CommitmentHashType>> {
-                ipa: Some(TypedCommitmentHash::new(H256::zero())),
-                dory: Some(TypedCommitmentHash::new(H256::zero())),
+            let zero_hashes = PerCommitmentScheme::<OptionType<ConcreteType<TableCommitmentBytes>>> {
+                ipa: Some(
+                    (&TableCommitment::<RistrettoPoint>::default())
+                        .try_into()
+                        .unwrap(),
+                ),
+                dory: Some(
+                    (&TableCommitment::<DoryCommitment>::default())
+                        .try_into()
+                        .unwrap(),
+                ),
             };
 
             handler
