@@ -1,3 +1,12 @@
+# [0.10.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.9.0...v0.10.0) (2024-10-08)
+
+
+### Features
+
+* adding subkey command into final docker image for 3rd party validators ([9e12f41](https://github.com/spaceandtimelabs/sxt-node/commit/9e12f410569d5e52ca5364baa0da233fb1aeece8))
+
+
+
 # [0.9.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.8.0...v0.9.0) (2024-10-04)
 
 
@@ -37,20 +46,6 @@
 * Copy the template pallet folder to create the skeleton for the indexing ([9bb907a](https://github.com/spaceandtimelabs/sxt-node/commit/9bb907a7cab93a5612dee8e2966c7e31f120cece))
 * Implement Indexing pallet with basic data submissions and quorum ([e9322db](https://github.com/spaceandtimelabs/sxt-node/commit/e9322db337d48f0076015f95a9621ba2adcbbcc5))
 * Integrate the indexing pallet into the runtime ([41798b8](https://github.com/spaceandtimelabs/sxt-node/commit/41798b8221f83948b1fb882dbd1e5146172f6d59))
-
-
-
-# [0.5.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.4.0...v0.5.0) (2024-10-01)
-
-
-### Bug Fixes
-
-* typo ([f92933a](https://github.com/spaceandtimelabs/sxt-node/commit/f92933ac28875cd0628a5506184f207a2074eb9d))
-
-
-### Features
-
-* adding ratatelogs from apache2-utils to handle pg logs, also change the way script works to act like simple init process to trap system signals after initial process spwan ([bc4d2ee](https://github.com/spaceandtimelabs/sxt-node/commit/bc4d2ee629c6fa53c95487bd4374b4faf8b340ef))
 
 
 
