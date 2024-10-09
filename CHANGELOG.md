@@ -1,3 +1,12 @@
+# [0.12.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.11.0...v0.12.0) (2024-10-09)
+
+
+### Features
+
+* store unhashed table commitment bytes ([2925419](https://github.com/spaceandtimelabs/sxt-node/commit/2925419b6ee27d2402f81ac9d3c9c0eb3b94a16f))
+
+
+
 # [0.11.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.10.0...v0.11.0) (2024-10-08)
 
 
@@ -39,18 +48,6 @@
 
 * create chainspecs and testnet spec ([d5f54c8](https://github.com/spaceandtimelabs/sxt-node/commit/d5f54c823bda3ab04c5d00669c6f21c169895430))
 * preload testnet chainspecs into container ([448f7a3](https://github.com/spaceandtimelabs/sxt-node/commit/448f7a34747cc6440739dc24b70aab259cc28b8f))
-
-
-
-# [0.7.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.6.0...v0.7.0) (2024-10-02)
-
-
-### Features
-
-* add OnChainColumn::empty_with_type method ([0e0ffe1](https://github.com/spaceandtimelabs/sxt-node/commit/0e0ffe1860ac7513549bec3fc075d4c95c7e6da5))
-* add OnChainColumn::try_to_committable_column method ([e3ebd4a](https://github.com/spaceandtimelabs/sxt-node/commit/e3ebd4ac6f5532898fcfbad690290e88a5b05ea3))
-* add OnChainTable::iter_committable method ([519eedd](https://github.com/spaceandtimelabs/sxt-node/commit/519eedde2ed6650338902c55d83c212721b60b6a))
-* implement conversion from U256 to scalar ([cd9577c](https://github.com/spaceandtimelabs/sxt-node/commit/cd9577c9e22dea58e2c42808b033c0beb8ffb31c))
 
 
 
