@@ -1,33 +1,76 @@
-use crate::{mock::*, Error, Event, Something};
-use frame_support::{assert_noop, assert_ok};
+use crate::mock::*;
+use frame_support::assert_noop;
+use proof_of_sql::{base::commitment::TableCommitment, proof_primitive::dory::DoryCommitment};
+use proof_of_sql_commitment_map::{
+    generic_over_commitment::{ConcreteType, OptionType},
+    CommitmentScheme, KeyExistsError, PerCommitmentScheme, TableCommitmentBytes,
+};
+use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
 
 #[test]
-fn it_works_for_default_value() {
+fn we_can_initiate_precomputed_commitments() {
     new_test_ext().execute_with(|| {
-        // Go past genesis block so events get deposited
-        System::set_block_number(1);
-        // Dispatch a signed extrinsic.
-        assert_ok!(TemplateModule::do_something(RuntimeOrigin::signed(1), 42));
-        // Read pallet storage and assert an expected result.
-        assert_eq!(Something::<Test>::get(), Some(42));
-        // Assert that the correct event was deposited
-        System::assert_last_event(
-            Event::SomethingStored {
-                something: 42,
-                who: 1,
-            }
-            .into(),
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"test".to_owned().to_vec()).unwrap(),
+            name: TableName::try_from(b"table".to_owned().to_vec()).unwrap(),
+        };
+
+        let commitment =
+            TableCommitmentBytes::try_from(&TableCommitment::<DoryCommitment>::default()).unwrap();
+
+        let per_commitment_scheme =
+            PerCommitmentScheme::<OptionType<ConcreteType<TableCommitmentBytes>>> {
+                ipa: None,
+                dory: Some(commitment.clone()),
+            };
+
+        CommitmentsModule::initiate_precomputed_commitments(
+            table_id.clone(),
+            per_commitment_scheme,
+        )
+        .unwrap();
+
+        assert_eq!(
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Ipa),
+            None
+        );
+
+        assert_eq!(
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Dory),
+            Some(commitment)
         );
     });
 }
 
 #[test]
-fn correct_error_for_none_value() {
+fn we_cannot_initiate_commitments_if_table_already_exists() {
     new_test_ext().execute_with(|| {
-        // Ensure the expected error is thrown when no value is present.
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"test".to_owned().to_vec()).unwrap(),
+            name: TableName::try_from(b"table".to_owned().to_vec()).unwrap(),
+        };
+
+        let commitment =
+            TableCommitmentBytes::try_from(&TableCommitment::<DoryCommitment>::default()).unwrap();
+
+        let per_commitment_scheme =
+            PerCommitmentScheme::<OptionType<ConcreteType<TableCommitmentBytes>>> {
+                ipa: None,
+                dory: Some(commitment.clone()),
+            };
+
+        CommitmentsModule::initiate_precomputed_commitments(
+            table_id.clone(),
+            per_commitment_scheme.clone(),
+        )
+        .unwrap();
+
         assert_noop!(
-            TemplateModule::cause_error(RuntimeOrigin::signed(1)),
-            Error::<Test>::NoneValue
+            CommitmentsModule::initiate_precomputed_commitments(
+                table_id.clone(),
+                per_commitment_scheme
+            ),
+            KeyExistsError { key: table_id },
         );
     });
 }

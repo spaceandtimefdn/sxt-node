@@ -23,7 +23,9 @@ resolver = "2"
 [workspace.dependencies]
 ahash = { version = "0.8.11", default-features = false }
 arrow = { version = "51.0.0", default-features = false }
+proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
+pallet-commitments = { path = "./pallets/commitments", default-features = false }
 pallet-template = { path = "./pallets/template", default-features = false }
 pallet-permissions = { path = "pallets/permissions", default-features = false }
 sxt-core = { path = "sxt-core", default-features = false}

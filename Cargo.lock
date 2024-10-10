@@ -5485,10 +5485,13 @@ dependencies = [
  "frame-support",
  "frame-system",
  "parity-scale-codec",
+ "proof-of-sql",
+ "proof-of-sql-commitment-map",
  "scale-info",
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sxt-core",
 ]
 
 [[package]]
@@ -9658,6 +9661,7 @@ dependencies = [
  "frame-try-runtime",
  "pallet-aura",
  "pallet-balances",
+ "pallet-commitments",
  "pallet-grandpa",
  "pallet-indexing",
  "pallet-permissions",

@@ -1,6 +1,6 @@
 [package]
 name = "pallet-commitments"
-description = "FRAME pallet template for defining custom runtime logic. (polkadot v1.15.0)"
+description = "Commitments pallet which manages proof-of-sql commitments."
 version = "0.1.0"
 license = "Unlicense"
 authors.workspace = true
@@ -22,8 +22,11 @@ scale-info = { features = [
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
+proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
+sxt-core.workspace = true
 
 [dev-dependencies]
+proof-of-sql.workspace = true
 sp-core = { default-features = true, workspace = true }
 sp-io = { default-features = true, workspace = true }
 sp-runtime = { default-features = true, workspace = true }
