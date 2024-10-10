@@ -1,3 +1,14 @@
+# [0.13.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.12.0...v0.13.0) (2024-10-10)
+
+
+### Features
+
+* derive Eq for commitment-map KeyExistsError ([a62a19a](https://github.com/spaceandtimelabs/sxt-node/commit/a62a19a320315ef6d2793629b55458c0ec98cbed))
+* implement pallet-commitments storage and limited API ([c345e6f](https://github.com/spaceandtimelabs/sxt-node/commit/c345e6f48e84f89f64a4bbf77a72f7513b36c86b))
+* integrate commitments pallet into runtime ([3e1f9de](https://github.com/spaceandtimelabs/sxt-node/commit/3e1f9dee71ea174d5d1e377c3027db70b996687c))
+
+
+
 # [0.12.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.11.0...v0.12.0) (2024-10-09)
 
 
@@ -38,16 +49,6 @@
 ### Features
 
 * standardize commitment-map no_std support ([1a7f877](https://github.com/spaceandtimelabs/sxt-node/commit/1a7f877fd79caf0550e719f5becb90a813fd0061))
-
-
-
-# [0.8.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.7.0...v0.8.0) (2024-10-03)
-
-
-### Features
-
-* create chainspecs and testnet spec ([d5f54c8](https://github.com/spaceandtimelabs/sxt-node/commit/d5f54c823bda3ab04c5d00669c6f21c169895430))
-* preload testnet chainspecs into container ([448f7a3](https://github.com/spaceandtimelabs/sxt-node/commit/448f7a34747cc6440739dc24b70aab259cc28b8f))
 
 
 
