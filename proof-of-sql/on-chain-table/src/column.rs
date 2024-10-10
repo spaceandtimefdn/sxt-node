@@ -16,6 +16,8 @@ use serde::{Deserialize, Serialize};
 pub enum OnChainColumn {
     /// Column of bools.
     Boolean(Vec<bool>),
+    /// Column of 8-bit integerss.
+    TinyInt(Vec<i8>),
     /// Column of 16-bit integerss.
     SmallInt(Vec<i16>),
     /// Column of 32-bit integerss.
@@ -45,6 +47,7 @@ impl OnChainColumn {
     pub fn len(&self) -> usize {
         match self {
             OnChainColumn::Boolean(bools) => bools.len(),
+            OnChainColumn::TinyInt(ints) => ints.len(),
             OnChainColumn::SmallInt(ints) => ints.len(),
             OnChainColumn::Int(ints) => ints.len(),
             OnChainColumn::BigInt(ints) => ints.len(),
@@ -68,6 +71,7 @@ impl OnChainColumn {
         match column_type {
             ColumnType::Boolean => OnChainColumn::Boolean(vec![]),
             ColumnType::VarChar => OnChainColumn::VarChar(vec![]),
+            ColumnType::TinyInt => OnChainColumn::TinyInt(vec![]),
             ColumnType::SmallInt => OnChainColumn::SmallInt(vec![]),
             ColumnType::Int => OnChainColumn::Int(vec![]),
             ColumnType::BigInt => OnChainColumn::BigInt(vec![]),
@@ -88,6 +92,7 @@ impl OnChainColumn {
     ) -> Result<CommittableColumn, OutOfScalarBounds> {
         match &self {
             OnChainColumn::Boolean(bools) => Ok(CommittableColumn::Boolean(bools)),
+            OnChainColumn::TinyInt(ints) => Ok(CommittableColumn::TinyInt(ints)),
             OnChainColumn::SmallInt(ints) => Ok(CommittableColumn::SmallInt(ints)),
             OnChainColumn::Int(ints) => Ok(CommittableColumn::Int(ints)),
             OnChainColumn::BigInt(ints) => Ok(CommittableColumn::BigInt(ints)),
@@ -128,6 +133,10 @@ mod tests {
         assert_eq!(empty_column.len(), 0);
         assert!(empty_column.is_empty());
 
+        let column = OnChainColumn::TinyInt(vec![0]);
+        assert_eq!(column.len(), 1);
+        assert!(!column.is_empty());
+
         let column = OnChainColumn::SmallInt(vec![1]);
         assert_eq!(column.len(), 1);
         assert!(!column.is_empty());
@@ -163,6 +172,9 @@ mod tests {
     #[test]
     fn we_can_get_empty_column() {
         let empty_column = OnChainColumn::empty_with_type(ColumnType::Boolean);
+        assert!(empty_column.is_empty());
+
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::TinyInt);
         assert!(empty_column.is_empty());
 
         let empty_column = OnChainColumn::empty_with_type(ColumnType::SmallInt);
@@ -206,6 +218,16 @@ mod tests {
                 .try_to_committable_column::<S>()
                 .unwrap(),
             CommittableColumn::from(&owned_bool_column)
+        );
+
+        let data = vec![-10, 0, 20];
+        let on_chain_tinyint_column = OnChainColumn::TinyInt(data.clone());
+        let owned_tinyint_column = OwnedColumn::<S>::TinyInt(data);
+        assert_eq!(
+            on_chain_tinyint_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_tinyint_column)
         );
 
         let data = vec![-10, 0, 20];

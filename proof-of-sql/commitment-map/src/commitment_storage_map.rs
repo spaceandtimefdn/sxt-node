@@ -146,11 +146,12 @@ mod tests {
     use proof_of_sql::proof_primitive::dory::{
         DoryCommitment, DoryProverPublicSetup, DoryScalar, ProverSetup, PublicParameters,
     };
-    use rand::{rngs::SmallRng, SeedableRng};
+    use rand::SeedableRng;
+    use rand_chacha::ChaCha20Rng;
 
     #[test]
     fn we_can_deserialize_and_reserialize_dory_table_commitment_to_bytes() {
-        let public_parameters = PublicParameters::rand(4, &mut SmallRng::seed_from_u64(123));
+        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
         let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
@@ -182,7 +183,7 @@ mod tests {
 
     #[test]
     fn table_commitment_max_length_is_a_reasonable_estimate() {
-        let public_parameters = PublicParameters::rand(4, &mut SmallRng::seed_from_u64(123));
+        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
         let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
@@ -210,7 +211,7 @@ mod tests {
 
     #[test]
     fn we_cannot_create_bytes_from_table_commitment_with_too_many_columns() {
-        let public_parameters = PublicParameters::rand(4, &mut SmallRng::seed_from_u64(123));
+        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
         let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 

@@ -43,9 +43,10 @@ jsonrpsee = { version = "0.23.2" }
 on-chain-table = { path = "./proof-of-sql/on-chain-table/", default-features = false }
 postcard = { version = "1.0.10", default-features = false }
 primitive-types = { version = "0.12.2", default-features = false }
-proof-of-sql = { version = "0.25.3", default-features = false }
-proof-of-sql-parser = { version = "0.25.3", default-features = false }
+proof-of-sql = { version = "0.28.10", default-features = false }
+proof-of-sql-parser = { version = "0.28.10", default-features = false }
 rand = { version = "0.8.5", default-features = false }
+rand_chacha = { version = "0.3.1", default-features = false }
 snafu = { version = "0.8.4", default-features = false }
 pallet-transaction-payment = { version = "37.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "40.0.0", default-features = false }
@@ -104,7 +105,3 @@ substrate-wasm-builder = { version = "24.0.0", default-features = false }
 [workspace.lints]
 rust.missing_docs = "warn"
 clippy.missing_docs_in_private_items = "warn"
-
-[patch.crates-io]
-lalrpop = { git = "https://github.com/lalrpop/lalrpop", rev = "be84d1e54a7b8b600d0da180f815f29c76b36e65" }
-lalrpop-util = { git = "https://github.com/lalrpop/lalrpop", rev = "be84d1e54a7b8b600d0da180f815f29c76b36e65" }
