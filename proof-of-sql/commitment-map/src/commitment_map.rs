@@ -6,7 +6,7 @@ use core::fmt::Debug;
 use snafu::Snafu;
 
 /// Cannot create key that already exists.
-#[derive(Debug, Snafu)]
+#[derive(Debug, Snafu, PartialEq, Eq)]
 #[snafu(display("cannot create key that already exists: {key:?}"))]
 pub struct KeyExistsError<K: Debug> {
     /// Table ref that already exists.
