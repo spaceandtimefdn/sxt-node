@@ -1,3 +1,13 @@
+# [0.14.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.13.0...v0.14.0) (2024-10-10)
+
+
+### Features
+
+* add TableCommitmentBytesPerCommitmentScheme type alias ([0727aa5](https://github.com/spaceandtimelabs/sxt-node/commit/0727aa5e6487cb8f5ef450fb37471556ae0465aa))
+* derive codec traits for generic over commitment types ([24f8055](https://github.com/spaceandtimelabs/sxt-node/commit/24f805503ed35e08fa99a60b5f19f63a5a2f4b07))
+
+
+
 # [0.13.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.12.0...v0.13.0) (2024-10-10)
 
 
@@ -40,15 +50,6 @@
 ### Features
 
 * adding subkey command into final docker image for 3rd party validators ([9e12f41](https://github.com/spaceandtimelabs/sxt-node/commit/9e12f410569d5e52ca5364baa0da233fb1aeece8))
-
-
-
-# [0.9.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.8.0...v0.9.0) (2024-10-04)
-
-
-### Features
-
-* standardize commitment-map no_std support ([1a7f877](https://github.com/spaceandtimelabs/sxt-node/commit/1a7f877fd79caf0550e719f5becb90a813fd0061))
 
 
 
