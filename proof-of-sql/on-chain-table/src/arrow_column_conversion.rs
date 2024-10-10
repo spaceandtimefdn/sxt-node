@@ -6,7 +6,7 @@ use alloc::{string::ToString, sync::Arc};
 use arrow::{
     array::{
         ArrayRef, BooleanArray, Decimal128Array, Decimal256Array, Int16Array, Int32Array,
-        Int64Array, StringArray, TimestampMicrosecondArray, TimestampMillisecondArray,
+        Int64Array, Int8Array, StringArray, TimestampMicrosecondArray, TimestampMillisecondArray,
         TimestampNanosecondArray, TimestampSecondArray,
     },
     datatypes::{DataType, TimeUnit},
@@ -59,6 +59,14 @@ impl TryFrom<&ArrayRef> for OnChainColumn {
                     .iter()
                     .collect::<Option<Vec<bool>>>()
                     .ok_or(ArrowToOnChainColumnError::UnsupportedNull)?,
+            )),
+            DataType::Int8 => Ok(Self::TinyInt(
+                value
+                    .as_any()
+                    .downcast_ref::<Int8Array>()
+                    .unwrap()
+                    .values()
+                    .to_vec(),
             )),
             DataType::Int16 => Ok(Self::SmallInt(
                 value
@@ -175,6 +183,7 @@ impl From<OnChainColumn> for ArrayRef {
     fn from(value: OnChainColumn) -> Self {
         match value {
             OnChainColumn::Boolean(col) => Arc::new(BooleanArray::from(col)),
+            OnChainColumn::TinyInt(col) => Arc::new(Int8Array::from(col)),
             OnChainColumn::SmallInt(col) => Arc::new(Int16Array::from(col)),
             OnChainColumn::Int(col) => Arc::new(Int32Array::from(col)),
             OnChainColumn::BigInt(col) => Arc::new(Int64Array::from(col)),
@@ -224,6 +233,12 @@ mod tests {
         assert_eq!(
             OnChainColumn::try_from(&array).unwrap(),
             OnChainColumn::Boolean(data)
+        );
+        let data = vec![1, 2, 3];
+        let array: ArrayRef = Arc::new(Int8Array::from(data.clone()));
+        assert_eq!(
+            OnChainColumn::try_from(&array).unwrap(),
+            OnChainColumn::TinyInt(data)
         );
 
         let data = vec![1, 10, -20, 30];
@@ -390,6 +405,10 @@ mod tests {
         let expected: ArrayRef = Arc::new(BooleanArray::from(data.clone()));
         // assert_eq! is not ArrayRef-friendly
         assert!(ArrayRef::from(OnChainColumn::Boolean(data)) == expected);
+
+        let data = vec![1, 2, 3];
+        let expected: ArrayRef = Arc::new(Int8Array::from(data.clone()));
+        assert!(ArrayRef::from(OnChainColumn::TinyInt(data)) == expected,);
 
         let data = vec![1, 10, -20, 30];
         let expected: ArrayRef = Arc::new(Int16Array::from(data.clone()));

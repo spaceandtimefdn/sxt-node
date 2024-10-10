@@ -524,9 +524,9 @@ dependencies = [
 
 [[package]]
 name = "ascii-canvas"
-version = "3.0.0"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8824ecca2e851cec16968d54a01dd372ef8f95b244fb84b84e70128be347c3c6"
+checksum = "ef1e3e699d84ab1b0911a1010c5c106aa34ae89aeac103be5ce0c3859db1e891"
 dependencies = [
  "term",
 ]
@@ -1894,16 +1894,6 @@ name = "directories-next"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "339ee130d97a610ea5a5872d2bbb130fdf68884ff09d3028b81bec8a1ac23bbc"
-dependencies = [
- "cfg-if",
- "dirs-sys-next",
-]
-
-[[package]]
-name = "dirs-next"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b98cf8ebf19c3d1b223e151f99a4f9f0690dca41414773390fc824184ac833e1"
 dependencies = [
  "cfg-if",
  "dirs-sys-next",
@@ -3793,8 +3783,9 @@ dependencies = [
 
 [[package]]
 name = "lalrpop"
-version = "0.21.0"
-source = "git+https://github.com/lalrpop/lalrpop?rev=be84d1e54a7b8b600d0da180f815f29c76b36e65#be84d1e54a7b8b600d0da180f815f29c76b36e65"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06093b57658c723a21da679530e061a8c25340fa5a6f98e313b542268c7e2a1f"
 dependencies = [
  "ascii-canvas",
  "bit-set",
@@ -3814,8 +3805,9 @@ dependencies = [
 
 [[package]]
 name = "lalrpop-util"
-version = "0.21.0"
-source = "git+https://github.com/lalrpop/lalrpop?rev=be84d1e54a7b8b600d0da180f815f29c76b36e65#be84d1e54a7b8b600d0da180f815f29c76b36e65"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "feee752d43abd0f4807a921958ab4131f692a44d4d599733d4419c5d586176ce"
 dependencies = [
  "regex-automata 0.4.7",
  "rustversion",
@@ -6323,9 +6315,9 @@ dependencies = [
 
 [[package]]
 name = "proof-of-sql"
-version = "0.25.3"
+version = "0.28.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82ab0001d0c96c3483220e4a924ea387bfe7bc65ca11ac84a416e6d633009deb"
+checksum = "6ebb98863a7bf22a17fa8b6f3ad19b9bfc484921ea7d7bb522b262732acd00c1"
 dependencies = [
  "ahash",
  "ark-bls12-381",
@@ -6373,6 +6365,7 @@ dependencies = [
  "proof-of-sql",
  "proof-of-sql-parser",
  "rand",
+ "rand_chacha",
  "scale-info",
  "serde",
  "snafu",
@@ -6382,9 +6375,9 @@ dependencies = [
 
 [[package]]
 name = "proof-of-sql-parser"
-version = "0.25.3"
+version = "0.28.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c17cda5a0a8f80ced6bcad625c5e0a7c187042dfabf799858527199a5907e57"
+checksum = "fab33b18cc7296b8bc4fa0d15cd9db884b2994410237309e696ef641e5f0a50c"
 dependencies = [
  "arrayvec",
  "bigdecimal",
@@ -9782,13 +9775,12 @@ dependencies = [
 
 [[package]]
 name = "term"
-version = "0.7.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c59df8ac95d96ff9bede18eb7300b0fda5e5d8d90960e76f8e14ae765eedbf1f"
+checksum = "4df4175de05129f31b80458c6df371a15e7fc3fd367272e6bf938e5c351c7ea0"
 dependencies = [
- "dirs-next",
- "rustversion",
- "winapi",
+ "home",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
