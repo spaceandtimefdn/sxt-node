@@ -49,6 +49,7 @@ pub use sp_runtime::{Perbill, Permill};
 pub use pallet_indexing;
 pub use pallet_permissions;
 pub use pallet_tables;
+pub use pallet_commitments;
 /// Import the template pallet.
 pub use pallet_template;
 
@@ -275,6 +276,8 @@ impl pallet_indexing::Config for Runtime {
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_commitments::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -324,6 +327,9 @@ mod runtime {
 
     #[runtime::pallet_index(10)]
     pub type Indexing = pallet_indexing;
+
+    #[runtime::pallet_index(11)]
+    pub type Commitments = pallet_commitments;
 }
 
 /// The address format for describing accounts.
