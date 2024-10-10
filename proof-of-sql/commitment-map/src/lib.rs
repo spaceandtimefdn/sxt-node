@@ -27,4 +27,6 @@ pub use memory_commitment_map::MemoryCommitmentMap;
 #[cfg(feature = "substrate")]
 mod commitment_storage_map;
 #[cfg(feature = "substrate")]
-pub use commitment_storage_map::{CommitmentStorageMapHandler, TableCommitmentBytes};
+pub use commitment_storage_map::{
+    CommitmentStorageMapHandler, TableCommitmentBytes, TableCommitmentBytesPerCommitmentScheme,
+};

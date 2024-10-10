@@ -2,8 +2,7 @@ use crate::mock::*;
 use frame_support::assert_noop;
 use proof_of_sql::{base::commitment::TableCommitment, proof_primitive::dory::DoryCommitment};
 use proof_of_sql_commitment_map::{
-    generic_over_commitment::{ConcreteType, OptionType},
-    CommitmentScheme, KeyExistsError, PerCommitmentScheme, TableCommitmentBytes,
+    CommitmentScheme, KeyExistsError, TableCommitmentBytes, TableCommitmentBytesPerCommitmentScheme,
 };
 use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
 
@@ -18,11 +17,10 @@ fn we_can_initiate_precomputed_commitments() {
         let commitment =
             TableCommitmentBytes::try_from(&TableCommitment::<DoryCommitment>::default()).unwrap();
 
-        let per_commitment_scheme =
-            PerCommitmentScheme::<OptionType<ConcreteType<TableCommitmentBytes>>> {
-                ipa: None,
-                dory: Some(commitment.clone()),
-            };
+        let per_commitment_scheme = TableCommitmentBytesPerCommitmentScheme {
+            ipa: None,
+            dory: Some(commitment.clone()),
+        };
 
         CommitmentsModule::initiate_precomputed_commitments(
             table_id.clone(),
@@ -53,11 +51,10 @@ fn we_cannot_initiate_commitments_if_table_already_exists() {
         let commitment =
             TableCommitmentBytes::try_from(&TableCommitment::<DoryCommitment>::default()).unwrap();
 
-        let per_commitment_scheme =
-            PerCommitmentScheme::<OptionType<ConcreteType<TableCommitmentBytes>>> {
-                ipa: None,
-                dory: Some(commitment.clone()),
-            };
+        let per_commitment_scheme = TableCommitmentBytesPerCommitmentScheme {
+            ipa: None,
+            dory: Some(commitment.clone()),
+        };
 
         CommitmentsModule::initiate_precomputed_commitments(
             table_id.clone(),
