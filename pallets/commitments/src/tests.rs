@@ -1,0 +1,76 @@
+use crate::mock::*;
+use frame_support::assert_noop;
+use proof_of_sql::{base::commitment::TableCommitment, proof_primitive::dory::DoryCommitment};
+use proof_of_sql_commitment_map::{
+    generic_over_commitment::{ConcreteType, OptionType},
+    CommitmentScheme, KeyExistsError, PerCommitmentScheme, TableCommitmentBytes,
+};
+use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
+
+#[test]
+fn we_can_initiate_precomputed_commitments() {
+    new_test_ext().execute_with(|| {
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"test".to_owned().to_vec()).unwrap(),
+            name: TableName::try_from(b"table".to_owned().to_vec()).unwrap(),
+        };
+
+        let commitment =
+            TableCommitmentBytes::try_from(&TableCommitment::<DoryCommitment>::default()).unwrap();
+
+        let per_commitment_scheme =
+            PerCommitmentScheme::<OptionType<ConcreteType<TableCommitmentBytes>>> {
+                ipa: None,
+                dory: Some(commitment.clone()),
+            };
+
+        CommitmentsModule::initiate_precomputed_commitments(
+            table_id.clone(),
+            per_commitment_scheme,
+        )
+        .unwrap();
+
+        assert_eq!(
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Ipa),
+            None
+        );
+
+        assert_eq!(
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Dory),
+            Some(commitment)
+        );
+    });
+}
+
+#[test]
+fn we_cannot_initiate_commitments_if_table_already_exists() {
+    new_test_ext().execute_with(|| {
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"test".to_owned().to_vec()).unwrap(),
+            name: TableName::try_from(b"table".to_owned().to_vec()).unwrap(),
+        };
+
+        let commitment =
+            TableCommitmentBytes::try_from(&TableCommitment::<DoryCommitment>::default()).unwrap();
+
+        let per_commitment_scheme =
+            PerCommitmentScheme::<OptionType<ConcreteType<TableCommitmentBytes>>> {
+                ipa: None,
+                dory: Some(commitment.clone()),
+            };
+
+        CommitmentsModule::initiate_precomputed_commitments(
+            table_id.clone(),
+            per_commitment_scheme.clone(),
+        )
+        .unwrap();
+
+        assert_noop!(
+            CommitmentsModule::initiate_precomputed_commitments(
+                table_id.clone(),
+                per_commitment_scheme
+            ),
+            KeyExistsError { key: table_id },
+        );
+    });
+}

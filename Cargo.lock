@@ -5478,6 +5478,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-commitments"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "proof-of-sql",
+ "proof-of-sql-commitment-map",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sxt-core",
+]
+
+[[package]]
 name = "pallet-grandpa"
 version = "37.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9644,6 +9661,7 @@ dependencies = [
  "frame-try-runtime",
  "pallet-aura",
  "pallet-balances",
+ "pallet-commitments",
  "pallet-grandpa",
  "pallet-indexing",
  "pallet-permissions",
