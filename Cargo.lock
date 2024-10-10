@@ -5590,12 +5590,14 @@ dependencies = [
 name = "pallet-commitments"
 version = "0.1.0"
 dependencies = [
+ "ark-serialize",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
+ "rand_chacha",
  "scale-info",
  "sp-core",
  "sp-io",
@@ -9723,10 +9725,12 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 name = "sxt-core"
 version = "0.1.0"
 dependencies = [
+ "ark-serialize",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
+ "proof-of-sql",
  "scale-info",
  "serde",
  "snafu",

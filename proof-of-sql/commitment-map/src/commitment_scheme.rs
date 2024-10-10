@@ -10,6 +10,7 @@ use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
 use proof_of_sql::proof_primitive::dory::DoryCommitment;
 #[cfg(feature = "substrate")]
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 
 /// Identifier for proof-of-sql commitment schemes.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -22,7 +23,8 @@ pub enum CommitmentScheme {
 }
 
 /// Flags for selecting a combination of proof-of-sql commitment schemes.
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
 pub struct CommitmentSchemeFlags {
     /// Select [`CommitmentScheme::Ipa`].
     pub ipa: bool,

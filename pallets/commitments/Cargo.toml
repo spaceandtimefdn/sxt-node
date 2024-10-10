@@ -13,6 +13,7 @@ publish = false
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+ark-serialize.workspace = true
 codec = { features = [
 	"derive",
 ], workspace = true }
@@ -22,11 +23,12 @@ scale-info = { features = [
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
+proof-of-sql.workspace = true
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
+rand_chacha.workspace = true
 sxt-core.workspace = true
 
 [dev-dependencies]
-proof-of-sql.workspace = true
 sp-core = { default-features = true, workspace = true }
 sp-io = { default-features = true, workspace = true }
 sp-runtime = { default-features = true, workspace = true }

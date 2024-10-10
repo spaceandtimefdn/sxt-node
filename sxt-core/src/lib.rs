@@ -6,6 +6,9 @@ extern crate alloc;
 use sp_core::ConstU32;
 use sp_runtime::BoundedVec;
 
+/// Types and functionality related to commitments.
+pub mod commitments;
+
 /// Types and functionality related to the permissions system
 pub mod permissions;
 

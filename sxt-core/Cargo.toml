@@ -8,6 +8,7 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+ark-serialize = { workspace = true }
 codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
     "derive",
 ] }
@@ -15,6 +16,7 @@ scale-info = { workspace = true, default-features = false, features = ["derive"]
 frame-benchmarking = { workspace = true, default-features = false, optional = true }
 frame-support = { workspace = true, default-features = false, features = ["experimental"] }
 frame-system = { workspace = true, default-features = false }
+proof-of-sql = { workspace = true }
 snafu = { workspace = true }
 sp-runtime = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false}
