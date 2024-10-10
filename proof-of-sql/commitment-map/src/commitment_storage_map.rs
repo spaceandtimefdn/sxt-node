@@ -3,7 +3,8 @@
 use crate::{
     commitment_map_implementor::CommitmentMapImplementor,
     commitment_scheme::{AnyCommitmentScheme, CommitmentScheme},
-    generic_over_commitment::ConcreteType,
+    generic_over_commitment::{ConcreteType, OptionType},
+    PerCommitmentScheme,
 };
 use codec::{Decode, Encode, MaxEncodedLen};
 use core::marker::PhantomData;
@@ -27,6 +28,10 @@ pub struct TableCommitmentBytes {
     /// Raw postcard-serialized bytes.
     data: BoundedVec<u8, TableCommitmentMaxLength>,
 }
+
+/// Collection of serialized table commitments with at most one per commitment scheme.
+pub type TableCommitmentBytesPerCommitmentScheme =
+    PerCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>>;
 
 /// Errors that can occur when converting a `TableCommitment` to [`TableCommitmentBytes`].
 #[derive(Debug, Snafu)]

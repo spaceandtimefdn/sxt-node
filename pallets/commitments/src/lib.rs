@@ -15,9 +15,8 @@ pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::*;
     use proof_of_sql_commitment_map::{
-        generic_over_commitment::{ConcreteType, OptionType},
         CommitmentMap, CommitmentScheme, CommitmentStorageMapHandler, KeyExistsError,
-        PerCommitmentScheme, TableCommitmentBytes,
+        TableCommitmentBytes, TableCommitmentBytesPerCommitmentScheme,
     };
     use sxt_core::tables::TableIdentifier;
 
@@ -45,7 +44,7 @@ pub mod pallet {
         /// Initiates the provided table with the provided commitments in storage.
         pub fn initiate_precomputed_commitments(
             table: TableIdentifier,
-            commitments: PerCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>>,
+            commitments: TableCommitmentBytesPerCommitmentScheme,
         ) -> Result<(), KeyExistsError<TableIdentifier>> {
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 

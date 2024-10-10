@@ -69,6 +69,7 @@ impl IntoIterator for CommitmentSchemeFlags {
 
 /// Commitment-associated data of any commitment scheme.
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
 pub enum AnyCommitmentScheme<T: GenericOverCommitment> {
     /// Data with [`CommitmentScheme::Ipa`].
     Ipa(T::WithCommitment<RistrettoPoint>),
@@ -153,6 +154,7 @@ impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentSchem
 
 /// Collection of commitment-associated data, with one element per commitment scheme.
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
 pub struct PerCommitmentScheme<T: GenericOverCommitment> {
     /// Element with [`CommitmentScheme::Ipa`].
     pub ipa: T::WithCommitment<RistrettoPoint>,

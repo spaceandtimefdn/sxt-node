@@ -16,9 +16,8 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use proof_of_sql::{base::commitment::TableCommitment, proof_primitive::dory::DoryCommitment};
     use proof_of_sql_commitment_map::{
-        generic_over_commitment::{ConcreteType, OptionType, TableCommitmentType},
-        CommitmentMap, CommitmentScheme, CommitmentStorageMapHandler, PerCommitmentScheme,
-        TableCommitmentBytes,
+        CommitmentMap, CommitmentScheme, CommitmentStorageMapHandler, TableCommitmentBytes,
+        TableCommitmentBytesPerCommitmentScheme,
     };
     use sxt_core::tables::TableIdentifier;
 
@@ -52,7 +51,7 @@ pub mod pallet {
             // Instantiate a handler for accessing the `CommitmentMap` methods.
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 
-            let zero_hashes = PerCommitmentScheme::<OptionType<ConcreteType<TableCommitmentBytes>>> {
+            let zero_hashes = TableCommitmentBytesPerCommitmentScheme {
                 ipa: Some(
                     (&TableCommitment::<RistrettoPoint>::default())
                         .try_into()
