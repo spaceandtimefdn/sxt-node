@@ -1,3 +1,12 @@
+# [0.15.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.14.0...v0.15.0) (2024-10-10)
+
+
+### Features
+
+* upgrade proof-of-sql to 0.28.10 ([68335d0](https://github.com/spaceandtimelabs/sxt-node/commit/68335d0980c2c85ceb2cb044ac2826a76765d8a1))
+
+
+
 # [0.14.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.13.0...v0.14.0) (2024-10-10)
 
 
@@ -41,15 +50,6 @@
 * implement Default for PerCommitmentScheme<OptionType<T>> ([c70df2b](https://github.com/spaceandtimelabs/sxt-node/commit/c70df2beae2e4181398f5da2b3ff1392dbfb7d00))
 * implement FromIterator for PerCommitmentScheme<OptionType<T>> ([a669758](https://github.com/spaceandtimelabs/sxt-node/commit/a669758c6f8a5256ce7639b09421c6329a34b063))
 * promote optional PerCommitmentScheme fields to higher kinded types ([9fc34d9](https://github.com/spaceandtimelabs/sxt-node/commit/9fc34d9d249a344edadc94d695c00d5f5784e21d))
-
-
-
-# [0.10.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.9.0...v0.10.0) (2024-10-08)
-
-
-### Features
-
-* adding subkey command into final docker image for 3rd party validators ([9e12f41](https://github.com/spaceandtimelabs/sxt-node/commit/9e12f410569d5e52ca5364baa0da233fb1aeece8))
 
 
 
