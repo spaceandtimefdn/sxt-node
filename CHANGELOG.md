@@ -1,3 +1,19 @@
+# [0.18.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.17.0...v0.18.0) (2024-10-11)
+
+
+### Features
+
+* add column type conversion utilities ([26c8f26](https://github.com/spaceandtimelabs/sxt-node/commit/26c8f26a725ac194df23017981ae2e677b00a6fb))
+* add empty commitment-sql library crate ([1f0cbe4](https://github.com/spaceandtimelabs/sxt-node/commit/1f0cbe4237c1d1d416616395c63ad448f255ada0))
+* define common metadata prefix and validation ([9a66b25](https://github.com/spaceandtimelabs/sxt-node/commit/9a66b256347d5a93cdad99d5c81e14ecc04b3a72))
+* define row number metadata column ([79265d4](https://github.com/spaceandtimelabs/sxt-node/commit/79265d414869e2c2a8f5d133471f076208b709d3))
+* process DDL to support commitment metadata ([ff6f2f0](https://github.com/spaceandtimelabs/sxt-node/commit/ff6f2f026e92e7f576ed1a2d28deb675cc084514))
+* process DML to support commitment metadata ([cd50045](https://github.com/spaceandtimelabs/sxt-node/commit/cd50045294dacef8b5a73e126511fd3b94ae84ba))
+* validate sqlparser column options ([baca2e5](https://github.com/spaceandtimelabs/sxt-node/commit/baca2e5b24dac369792f0989803e26f8c64982a4))
+* validate table definitions for proof-of-sql ([6e5daf7](https://github.com/spaceandtimelabs/sxt-node/commit/6e5daf79b32128669230c092f3b3841fd1e0d9fd))
+
+
+
 # [0.17.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.16.0...v0.17.0) (2024-10-11)
 
 
@@ -33,17 +49,6 @@
 
 * add TableCommitmentBytesPerCommitmentScheme type alias ([0727aa5](https://github.com/spaceandtimelabs/sxt-node/commit/0727aa5e6487cb8f5ef450fb37471556ae0465aa))
 * derive codec traits for generic over commitment types ([24f8055](https://github.com/spaceandtimelabs/sxt-node/commit/24f805503ed35e08fa99a60b5f19f63a5a2f4b07))
-
-
-
-# [0.13.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.12.0...v0.13.0) (2024-10-10)
-
-
-### Features
-
-* derive Eq for commitment-map KeyExistsError ([a62a19a](https://github.com/spaceandtimelabs/sxt-node/commit/a62a19a320315ef6d2793629b55458c0ec98cbed))
-* implement pallet-commitments storage and limited API ([c345e6f](https://github.com/spaceandtimelabs/sxt-node/commit/c345e6f48e84f89f64a4bbf77a72f7513b36c86b))
-* integrate commitments pallet into runtime ([3e1f9de](https://github.com/spaceandtimelabs/sxt-node/commit/3e1f9dee71ea174d5d1e377c3027db70b996687c))
 
 
 
