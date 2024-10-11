@@ -55,14 +55,14 @@ impl<T: GenericOverCommitment> GenericOverCommitmentFn for SomeFn<T> {
 }
 
 /// Generically accepts a pair of options and returns an option of pairs.
-struct OptionZipFn<T: GenericOverCommitment, U: GenericOverCommitment>(
+pub struct OptionZipFn<T: GenericOverCommitment, U: GenericOverCommitment>(
     PhantomData<T>,
     PhantomData<U>,
 );
 
 impl<T: GenericOverCommitment, U: GenericOverCommitment> OptionZipFn<T, U> {
     /// Construct a new [`OptionZipFn`].
-    fn new() -> Self {
+    pub fn new() -> Self {
         OptionZipFn(PhantomData, PhantomData)
     }
 }

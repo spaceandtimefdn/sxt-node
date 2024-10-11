@@ -19,5 +19,10 @@ pub use validated_create_table::{InvalidCreateTable, ValidatedCreateTable};
 mod create_table;
 pub use create_table::{process_create_table, CreateTableAndCommitmentMetadata};
 
+mod create_table_from_snapshot;
+pub use create_table_from_snapshot::{
+    process_create_table_from_snapshot, ProcessCreateTableFromSnapshotError,
+};
+
 mod insert;
 pub use insert::{process_insert, InsertAndCommitmentMetadata, ProcessInsertError};
