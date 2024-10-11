@@ -16,14 +16,14 @@ members = [
     "proof-of-sql/commitment-map",
     "runtime",
     "sxt-core",
-    "proof-of-sql/on-chain-table",
+    "proof-of-sql/on-chain-table", "proof-of-sql/commitment-sql",
 ]
 resolver = "2"
 
 [workspace.dependencies]
 ahash = { version = "0.8.11", default-features = false }
 arrow = { version = "51.0.0", default-features = false }
-proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
+const_format = { version = "0.2.33", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
 pallet-template = { path = "./pallets/template", default-features = false }
@@ -47,10 +47,12 @@ on-chain-table = { path = "./proof-of-sql/on-chain-table/", default-features = f
 postcard = { version = "1.0.10", default-features = false }
 primitive-types = { version = "0.12.2", default-features = false }
 proof-of-sql = { version = "0.28.10", default-features = false }
+proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
 proof-of-sql-parser = { version = "0.28.10", default-features = false }
 rand = { version = "0.8.5", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 snafu = { version = "0.8.4", default-features = false }
+sqlparser = { version = "0.45.0", default-features = false }
 pallet-transaction-payment = { version = "37.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "40.0.0", default-features = false }
 sc-basic-authorship = { version = "0.44.0", default-features = false }

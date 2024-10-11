@@ -1325,6 +1325,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "commitment-sql"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "const_format",
+ "indexmap 2.5.0",
+ "itertools 0.12.1",
+ "on-chain-table",
+ "primitive-types",
+ "proof-of-sql",
+ "proof-of-sql-commitment-map",
+ "proof-of-sql-parser",
+ "rand",
+ "rand_chacha",
+ "snafu",
+ "sqlparser",
+ "sxt-core",
+]
+
+[[package]]
 name = "common-path"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1376,6 +1396,26 @@ dependencies = [
  "getrandom",
  "once_cell",
  "tiny-keccak",
+]
+
+[[package]]
+name = "const_format"
+version = "0.2.33"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50c655d81ff1114fb0dcdea9225ea9f0cc712a6f8d189378e82bdf62a473a64b"
+dependencies = [
+ "const_format_proc_macros",
+]
+
+[[package]]
+name = "const_format_proc_macros"
+version = "0.2.33"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eff1a44b93f47b1bac19a27932f5c591e43d1ba357ee4f61526c8a25603f0eb1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-xid",
 ]
 
 [[package]]
@@ -9364,6 +9404,15 @@ checksum = "d91ed6c858b01f942cd56b37a94b3e0a1798290327d1236e4d9cf4eaca44d29d"
 dependencies = [
  "base64ct",
  "der",
+]
+
+[[package]]
+name = "sqlparser"
+version = "0.45.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7bbffee862a796d67959a89859d6b1046bb5016d63e23835ad0da182777bbe0"
+dependencies = [
+ "log",
 ]
 
 [[package]]
