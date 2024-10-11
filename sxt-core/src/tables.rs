@@ -121,7 +121,7 @@ pub type SnapshotUrl = BoundedVec<u8, ConstU32<MAX_SNAPSHOT_LEN>>;
 ///
 /// This function does no checking of the lengths of name and namespace and will panic!
 /// Use it only on known good values and never with user submitted data.
-/// This should only be used in the creation of the genesis chain spec, that is a single atomic operation which must run end to end with no failures
+/// This should only be used in the creation of the genesis chain spec, that is a single atomic operation which must run end to end with no failures, which is why we are fine calling unwrap
 #[cfg(feature = "std")]
 pub fn table_identifier(name: &str, namespace: &str) -> TableIdentifier {
     TableIdentifier {
@@ -134,7 +134,7 @@ pub fn table_identifier(name: &str, namespace: &str) -> TableIdentifier {
 ///
 /// This function does no checking of the lengths of the data and will panic!
 /// Use it only on known good values and never with user submitted data.
-/// This should only be used in the creation of the genesis chain spec, that is a single atomic operation which must run end to end with no failures
+/// This should only be used in the creation of the genesis chain spec, that is a single atomic operation which must run end to end with no failures, which is why we are fine calling unwrap
 #[cfg(feature = "std")]
 pub fn create_statement(stmnt: &str) -> CreateStatement {
     CreateStatement::try_from(String::from(stmnt).as_bytes().to_vec()).unwrap()
