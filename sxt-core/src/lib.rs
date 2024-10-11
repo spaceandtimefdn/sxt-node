@@ -13,6 +13,9 @@ pub mod tables;
 /// Types primarily used by the indexing pallet for data submissions and quorum finding
 pub mod indexing;
 
+/// Types consumed by the native code interface
+pub mod native;
+
 /// The maximum length of Identifiers
 const IDENT_LENGTH: u32 = 64;
 

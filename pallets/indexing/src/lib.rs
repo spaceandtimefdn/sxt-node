@@ -10,8 +10,6 @@
 
 extern crate alloc;
 
-pub use pallet::*;
-
 #[cfg(test)]
 mod mock;
 
@@ -22,27 +20,39 @@ pub use weights::*;
 
 pub use sxt_core::indexing::*;
 
+// Do not remove this or the same attribute for the pallet
+// The cargo doc command will fail because of a bug even though the code is working properly
+#[cfg(not(doc))]
+pub use pallet::*;
+
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
+    // Do not remove this attribute or the one for the pallet above, 
+    #![cfg(not(doc))]
+
     use super::*;
-    use crate::Event::*;
     use frame_support::pallet_prelude::*;
-    
+   
     use frame_system::pallet_prelude::*;
+    use native_api::NativeApi;
     use sp_runtime::traits::Hash;
 
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::TableIdentifier;
 
     #[pallet::pallet]
-    pub struct Pallet<T>(_);
+    pub struct Pallet<T, I = ()>(_);
 
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_permissions::Config {
+    pub trait Config<I: 'static = ()>: frame_system::Config + pallet_permissions::Config
+    where
+        I: NativeApi,
+    {
         /// Binding for the runtime event, typically provided by an implementation
         /// in runtime/lib.rs
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self, I>>
+            + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// The weight info to be used with the extrinsics provided by the pallet
         type WeightInfo: WeightInfo;
     }
@@ -52,7 +62,7 @@ pub mod pallet {
     /// Each submission for a given batch id will have an entry here
     #[pallet::storage]
     #[pallet::getter(fn submissions)]
-    pub type Submissions<T: Config> = StorageDoubleMap<
+    pub type Submissions<T: Config<I>, I: 'static = ()> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         BatchId,
@@ -64,12 +74,15 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn final_data)]
-    pub type FinalData<T: Config> =
+    pub type FinalData<T: Config<I>, I: 'static = ()> =
         StorageMap<_, Blake2_128Concat, BatchId, DataQuorum<T::AccountId, T::Hash>>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config> {
+    pub enum Event<T: Config<I>, I: 'static = ()>
+    where
+        I: NativeApi,
+    {
         /// This event is emitted every time data is submitted by an indexer.
         /// It can be used to verify that the data was successfully processed and received.
         DataSubmitted {
@@ -89,7 +102,7 @@ pub mod pallet {
     }
 
     #[pallet::error]
-    pub enum Error<T> {
+    pub enum Error<T, I = ()> {
         /// The signer of the transaction is not authorized to submit data
         UnauthorizedSubmitter,
         /// The data submitted doesn't match the schema for the target table
@@ -104,14 +117,23 @@ pub mod pallet {
         InvalidTable,
         /// This user has already submitted data for this batch id
         AlreadySubmitted,
+
+        /// Error parsing the table to an arrow record batch
+        ParseTableError,
+
+        /// Error deserializing the table as an OnChainTable
+        TableDeserializationError,
     }
 
     #[pallet::call]
-    impl<T: Config> Pallet<T> {
+    impl<T: Config<I>, I: 'static> Pallet<T, I>
+    where
+        I: NativeApi,
+    {
         /// This extrinsic provides a transaction that indexers will use to submit
         /// data they've indexed.
         #[pallet::call_index(0)]
-        #[pallet::weight(<T as Config>::WeightInfo::submit_data())]
+        #[pallet::weight(<T as Config<I>>::WeightInfo::submit_data())]
         pub fn submit_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
@@ -126,28 +148,28 @@ pub mod pallet {
                 origin,
                 &PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitData),
             )
-            .or(Err(Error::<T>::UnauthorizedSubmitter))?;
+            .or(Err(Error::<T, I>::UnauthorizedSubmitter))?;
 
             // Run the basic checks on the submissions
-            validate_submission::<T>(&table, &batch_id, &data)?;
+            validate_submission::<T, I>(&table, &batch_id, &data)?;
 
             // Check if this batch has already been decided on
-            if FinalData::<T>::contains_key(&batch_id) {
-                Err(Error::<T>::LateBatch)?
+            if FinalData::<T, I>::contains_key(&batch_id) {
+                Err(Error::<T, I>::LateBatch)?
             }
 
             let data_hash = T::Hashing::hash(&data);
 
             // We don't need to save the full data. We just need a count associated with each submission
-            let mut match_submissions = Submissions::<T>::get(&batch_id, data_hash);
+            let mut match_submissions = Submissions::<T, I>::get(&batch_id, data_hash);
 
             // Check if this user has already submitted this data
             if match_submissions.contains(&who) {
-                Err(Error::<T>::AlreadySubmitted)?
+                Err(Error::<T, I>::AlreadySubmitted)?
             }
 
             let _ = match_submissions.try_push(who.clone());
-            Submissions::<T>::insert(&batch_id, data_hash, match_submissions.clone());
+            Submissions::<T, I>::insert(&batch_id, data_hash, match_submissions.clone());
 
             let submission = DataSubmission {
                 table: table.clone(),
@@ -156,12 +178,28 @@ pub mod pallet {
             };
 
             // Emit an event noting who submitted what
-            Self::deposit_event(DataSubmitted { who, submission });
+            Self::deposit_event(Event::<T, I>::DataSubmitted { who, submission });
 
             // 3 is a temporary number here until we get Indexer staking/registration integrated
             if match_submissions.len() > 3 {
-                check_quorum_and_finalize::<T>(batch_id, data_hash, data, table, match_submissions);
+                check_quorum_and_finalize::<T, I>(
+                    batch_id,
+                    data_hash,
+                    data.clone(),
+                    table,
+                    match_submissions,
+                );
             }
+
+            // Convert from row_data to a serialized OnChainTable
+            let table_bytes =
+                I::record_batch_to_onchain(sxt_core::native::RowData { row_data: data })
+                    .map_err(|e| Error::<T, I>::ParseTableError)?;
+
+            // Deserialize into a usable OnChainTable
+            let oc_table =
+                postcard::from_bytes::<on_chain_table::OnChainTable>(table_bytes.data.as_ref())
+                    .map_err(|_| Error::<T, I>::TableDeserializationError)?;
 
             // Return a successful Result
             Ok(())
@@ -169,16 +207,18 @@ pub mod pallet {
     }
 
     /// Check if we have a quorum. Finalize the data and emit an event if we do
-    pub fn check_quorum_and_finalize<T: Config>(
+    pub fn check_quorum_and_finalize<T: Config<I>, I>(
         batch_id: BatchId,
         data_hash: T::Hash,
         data: RowData,
         table: TableIdentifier,
         match_submissions: SubmitterList<T::AccountId>,
-    ) {
+    ) where
+        I: NativeApi,
+    {
         // Iterate over the submitters who submitted differing data and collect
         // their account ids
-        let dissenters = Submissions::<T>::iter_prefix(&batch_id)
+        let dissenters = Submissions::<T, I>::iter_prefix(&batch_id)
             .filter(|(hash, _)| hash != &data_hash)
             .flat_map(|(_, submitters)| submitters)
             .take(MAX_SUBMITTERS as usize)
@@ -189,9 +229,9 @@ pub mod pallet {
         // Cleanup other entries from the state and log that we chose this data for this batch_id
         // Use an iterator to find all keys with the given prefix and remove them
         // We are also using this opportunity to identify the dissenting votes
-        Submissions::<T>::iter_prefix(&batch_id).for_each(|(second_key, _)| {
+        Submissions::<T, I>::iter_prefix(&batch_id).for_each(|(second_key, _)| {
             // Remove the entry associated with the first key and each second key
-            Submissions::<T>::remove(&batch_id, second_key);
+            Submissions::<T, I>::remove(&batch_id, second_key);
         });
 
         // Decide on the quorum
@@ -205,25 +245,28 @@ pub mod pallet {
         };
 
         // Save the final data that we decided on
-        FinalData::<T>::insert(&batch_id, quorum.clone());
+        FinalData::<T, I>::insert(&batch_id, quorum.clone());
 
         // Emit an event.
-        Pallet::<T>::deposit_event(QuorumReached { quorum, data });
+        Pallet::<T, I>::deposit_event(Event::<T, I>::QuorumReached { quorum, data });
     }
 
     /// Run some checks to verify that table, batch_id, and data are reasonable, non-empty values\
     /// If the transaction is considered invalid, a relevant error will be returned
-    pub fn validate_submission<T: Config>(
+    pub fn validate_submission<T: Config<I>, I>(
         table: &TableIdentifier,
         batch_id: &BatchId,
         data: &RowData,
-    ) -> DispatchResult {
+    ) -> DispatchResult
+    where
+        I: NativeApi,
+    {
         ensure!(
             !(table.namespace.is_empty() || table.name.is_empty()),
-            Error::<T>::InvalidTable
+            Error::<T, I>::InvalidTable
         );
-        ensure!(!data.is_empty(), Error::<T>::NoData);
-        ensure!(!batch_id.is_empty(), Error::<T>::InvalidBatch);
+        ensure!(!data.is_empty(), Error::<T, I>::NoData);
+        ensure!(!batch_id.is_empty(), Error::<T, I>::InvalidBatch);
         Ok(())
     }
 }

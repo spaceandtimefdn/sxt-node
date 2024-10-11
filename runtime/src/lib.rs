@@ -271,7 +271,7 @@ impl pallet_tables::Config for Runtime {
     type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_indexing::Config for Runtime {
+impl pallet_indexing::Config<native_pallets::native_pallet_indexing::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
 }
@@ -326,7 +326,7 @@ mod runtime {
     pub type Tables = pallet_tables;
 
     #[runtime::pallet_index(10)]
-    pub type Indexing = pallet_indexing;
+    pub type Indexing = native_pallets::native_pallet_indexing;
 
     #[runtime::pallet_index(11)]
     pub type Commitments = pallet_commitments;
