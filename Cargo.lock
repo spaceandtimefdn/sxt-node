@@ -374,6 +374,7 @@ dependencies = [
  "arrow-buffer",
  "arrow-cast",
  "arrow-data",
+ "arrow-ipc",
  "arrow-ord",
  "arrow-row",
  "arrow-schema",
@@ -453,6 +454,20 @@ dependencies = [
  "arrow-schema",
  "half",
  "num",
+]
+
+[[package]]
+name = "arrow-ipc"
+version = "51.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a42ea853130f7e78b9b9d178cb4cd01dee0f78e64d96c2949dc0a915d6d9e19d"
+dependencies = [
+ "arrow-array",
+ "arrow-buffer",
+ "arrow-cast",
+ "arrow-data",
+ "arrow-schema",
+ "flatbuffers",
 ]
 
 [[package]]
@@ -1302,6 +1317,12 @@ name = "colorchoice"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3fd119d74b830634cea2a0f58bbd0d54540518a14397557951e79340abc28c0"
+
+[[package]]
+name = "colorize"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc17e449bc7854c50b943d113a98bc0e01dc6585d2c66eaa09ca645ebd8a7e62"
 
 [[package]]
 name = "combine"
@@ -2270,6 +2291,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2acce4a10f12dc2fb14a218589d4f1f62ef011b2d0cc4b3cb1bba8e94da14649"
 
 [[package]]
+name = "false"
+version = "0.7.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa941a5e5be97044fc95cf0a80480d43794ce25e9c330b61b0bb7b664c756e0c"
+dependencies = [
+ "colorize",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2366,6 +2396,16 @@ name = "fixedbitset"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
+
+[[package]]
+name = "flatbuffers"
+version = "23.5.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4dac53e22462d78c16d64a1cd22371b54cc3fe94aa15e7886a2fa6e5d1ab8640"
+dependencies = [
+ "bitflags 1.3.2",
+ "rustc_version",
+]
 
 [[package]]
 name = "float-cmp"
@@ -5072,6 +5112,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "native"
+version = "0.2.0"
+dependencies = [
+ "arrow",
+ "false",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "on-chain-table",
+ "parity-scale-codec",
+ "postcard",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-runtime-interface",
+ "sxt-core",
+]
+
+[[package]]
+name = "native-api"
+version = "0.1.0"
+dependencies = [
+ "sxt-core",
+]
+
+[[package]]
+name = "native-pallets"
+version = "0.1.0"
+dependencies = [
+ "native",
+ "native-api",
+ "pallet-indexing",
+ "sxt-core",
+]
+
+[[package]]
 name = "netlink-packet-core"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5553,11 +5630,16 @@ dependencies = [
 name = "pallet-indexing"
 version = "0.1.0"
 dependencies = [
+ "arrow",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "native",
+ "native-api",
+ "on-chain-table",
  "pallet-permissions",
  "parity-scale-codec",
+ "postcard",
  "scale-info",
  "sp-core",
  "sp-io",
@@ -5626,8 +5708,10 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "pallet-commitments",
  "pallet-permissions",
  "parity-scale-codec",
+ "proof-of-sql-commitment-map",
  "scale-info",
  "sp-core",
  "sp-io",
@@ -9646,6 +9730,7 @@ dependencies = [
  "scale-info",
  "sp-core",
  "sp-runtime",
+ "sp-runtime-interface",
 ]
 
 [[package]]
@@ -9657,6 +9742,7 @@ dependencies = [
  "frame-system",
  "futures",
  "jsonrpsee",
+ "native",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
@@ -9701,6 +9787,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
+ "native-pallets",
  "pallet-aura",
  "pallet-balances",
  "pallet-commitments",
