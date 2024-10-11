@@ -58,16 +58,24 @@ pub struct CreateTableAndCommitmentMetadata {
     pub meta_tables: Vec<CreateTableBuilder>,
     /// Initial inserts to perform on metadata tables.
     pub meta_table_inserts: Vec<(TableIdentifier, OnChainTable)>,
-    /// Commitments to the empty original table.
-    pub empty_commitments: PerCommitmentScheme<OptionType<TableCommitmentType>>,
 }
 
 /// Process table definition to support commitment metadata.
+///
+/// Returns..
+/// - the processed table definition as [`CreateTableAndCommitmentMetadata`]
+/// - the initial, empty commitments for the table
 pub fn process_create_table(
     table: CreateTableBuilder,
     setups: PerCommitmentScheme<AssociatedPublicSetupType>,
     commitment_schemes: &CommitmentSchemeFlags,
-) -> Result<CreateTableAndCommitmentMetadata, InvalidCreateTable> {
+) -> Result<
+    (
+        CreateTableAndCommitmentMetadata,
+        PerCommitmentScheme<OptionType<TableCommitmentType>>,
+    ),
+    InvalidCreateTable,
+> {
     let validated_create_table = ValidatedCreateTable::validate(&table)?;
 
     let empty_table = validated_create_table.into_empty_table();
@@ -87,12 +95,14 @@ pub fn process_create_table(
 
     let table_with_meta_columns = create_table_with_row_number_column(table);
 
-    Ok(CreateTableAndCommitmentMetadata {
-        table_with_meta_columns,
-        meta_tables: vec![],
-        meta_table_inserts: vec![],
+    Ok((
+        CreateTableAndCommitmentMetadata {
+            table_with_meta_columns,
+            meta_tables: vec![],
+            meta_table_inserts: vec![],
+        },
         empty_commitments,
-    })
+    ))
 }
 
 #[cfg(test)]
@@ -169,15 +179,19 @@ mod tests {
             table_with_meta_columns: expected_table_with_meta_columns,
             meta_tables: vec![],
             meta_table_inserts: vec![],
-            empty_commitments: PerCommitmentScheme {
-                ipa: None,
-                dory: Some(expected_dory_commitment),
-            },
+        };
+
+        let expected_commitments = PerCommitmentScheme {
+            ipa: None,
+            dory: Some(expected_dory_commitment),
         };
 
         assert_eq!(
             process_create_table(create_table, setups, &flags).unwrap(),
-            expected_create_table_and_commitment_metadata
+            (
+                expected_create_table_and_commitment_metadata,
+                expected_commitments
+            )
         );
     }
 
