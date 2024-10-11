@@ -8,7 +8,10 @@ use sqlparser::ast::{DataType, ExactNumberInfo, TimezoneInfo};
 pub enum UnsupportedColumnType {
     /// Time precision should be 0, 3, or 6.
     #[snafu(display("time precision should be 0, 3, or 6, received: {precision}"))]
-    TimestampPrecision { precision: u64 },
+    TimestampPrecision {
+        /// The invalid precision value.
+        precision: u64,
+    },
     /// Timestamp should be defined as timezone-aware.
     #[snafu(display("timestamp should be defined as timezone-aware"))]
     TimestampWithoutTimezone,
@@ -19,13 +22,22 @@ pub enum UnsupportedColumnType {
     #[snafu(display(
         "decimal/numeric precision should be between 1 and 75, received: {precision}"
     ))]
-    DecimalPrecision { precision: u64 },
-    /// Decimal/numeric precision should be between 0 and 127.
+    DecimalPrecision {
+        /// The invalid precision value.
+        precision: u64,
+    },
+    /// Decimal/numeric scale should be between 0 and 127.
     #[snafu(display("decimal/numeric scale should between 0 and 127, received: {scale}"))]
-    DecimalScale { scale: u64 },
+    DecimalScale {
+        /// The invalid scale value.
+        scale: u64,
+    },
     /// Data type not supported.
     #[snafu(display("data type not supported: {data_type}"))]
-    DataType { data_type: DataType },
+    DataType {
+        /// The unsupported data type.
+        data_type: DataType,
+    },
 }
 
 /// Convert sqlparser time type precision to proof-of-sql time unit.

@@ -25,11 +25,8 @@ pub enum InvalidCreateTable {
         /// Source unsupported column type error.
         source: UnsupportedColumnType,
     },
-    /// Table has invalid column identifier
-    #[snafu(
-        display("table has invalid column identifier: {source}"),
-        context(false)
-    )]
+    /// Table has invalid identifier
+    #[snafu(display("table has invalid identifier: {source}"), context(false))]
     Identifier {
         /// Source parse error.
         source: ParseError,

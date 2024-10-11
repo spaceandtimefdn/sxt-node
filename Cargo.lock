@@ -5591,9 +5591,11 @@ name = "pallet-commitments"
 version = "0.1.0"
 dependencies = [
  "ark-serialize",
+ "commitment-sql",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "on-chain-table",
  "parity-scale-codec",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
@@ -5602,6 +5604,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sqlparser",
  "sxt-core",
 ]
 

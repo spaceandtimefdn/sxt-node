@@ -38,10 +38,16 @@ pub type TableCommitmentBytesPerCommitmentScheme =
 pub enum TableCommitmentToBytesError {
     /// `TableCommitment` exceeds maximum column count.
     #[snafu(display("TableCommitment exceeds maximum column count: {num_columns}"))]
-    TooManyColumns { num_columns: usize },
+    TooManyColumns {
+        /// The excessive number of columns
+        num_columns: usize,
+    },
     /// Failed to serialize TableCommitment.
     #[snafu(display("failed to serialize TableCommitment: {error}"))]
-    Postcard { error: postcard::Error },
+    Postcard {
+        /// Source postcard error.
+        error: postcard::Error,
+    },
 }
 
 impl From<postcard::Error> for TableCommitmentToBytesError {

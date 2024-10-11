@@ -6,8 +6,10 @@ extern crate alloc;
 mod map;
 
 mod column_options;
+pub use column_options::InvalidColumnOptions;
 
 mod column_type_conversion;
+pub use column_type_conversion::UnsupportedColumnType;
 
 mod metadata_prefix;
 
