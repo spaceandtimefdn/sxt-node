@@ -1,3 +1,12 @@
+# [0.19.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.18.0...v0.19.0) (2024-10-11)
+
+
+### Features
+
+* create tables with known commits and snapshots ([dc038cc](https://github.com/spaceandtimelabs/sxt-node/commit/dc038cc561cbd6e5de63156cc36b888a1b973ad7))
+
+
+
 # [0.18.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.17.0...v0.18.0) (2024-10-11)
 
 
@@ -39,16 +48,6 @@
 ### Features
 
 * upgrade proof-of-sql to 0.28.10 ([68335d0](https://github.com/spaceandtimelabs/sxt-node/commit/68335d0980c2c85ceb2cb044ac2826a76765d8a1))
-
-
-
-# [0.14.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.13.0...v0.14.0) (2024-10-10)
-
-
-### Features
-
-* add TableCommitmentBytesPerCommitmentScheme type alias ([0727aa5](https://github.com/spaceandtimelabs/sxt-node/commit/0727aa5e6487cb8f5ef450fb37471556ae0465aa))
-* derive codec traits for generic over commitment types ([24f8055](https://github.com/spaceandtimelabs/sxt-node/commit/24f805503ed35e08fa99a60b5f19f63a5a2f4b07))
 
 
 
