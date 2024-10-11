@@ -1,7 +1,7 @@
 use crate::{
     commitment_map_implementor::CommitmentMapImplementor,
     commitment_scheme::{AnyCommitmentScheme, CommitmentScheme},
-    generic_over_commitment::GenericOverCommitment,
+    generic_over_commitment::{GenericOverCommitment, OptionType},
 };
 use curve25519_dalek::RistrettoPoint;
 use proof_of_sql::{base::database::TableRef, proof_primitive::dory::DoryCommitment};
@@ -18,11 +18,26 @@ pub struct MemoryCommitmentMap<V: GenericOverCommitment> {
     dory_map: HashMap<TableRef, V::WithCommitment<DoryCommitment>>,
 }
 
-impl<V: GenericOverCommitment> CommitmentMapImplementor<TableRef, V> for MemoryCommitmentMap<V> {
+impl<V: GenericOverCommitment> CommitmentMapImplementor<TableRef, V> for MemoryCommitmentMap<V>
+where
+    V::WithCommitment<DoryCommitment>: Clone,
+    V::WithCommitment<RistrettoPoint>: Clone,
+{
     fn has_key_and_scheme_impl(&self, key: &TableRef, scheme: &CommitmentScheme) -> bool {
         match scheme {
             CommitmentScheme::Ipa => self.ipa_map.contains_key(key),
             CommitmentScheme::Dory => self.dory_map.contains_key(key),
+        }
+    }
+
+    fn get_commitment_for_any_scheme_impl(
+        &self,
+        key: &TableRef,
+        scheme: &CommitmentScheme,
+    ) -> AnyCommitmentScheme<OptionType<V>> {
+        match scheme {
+            CommitmentScheme::Ipa => AnyCommitmentScheme::Ipa(self.ipa_map.get(key).cloned()),
+            CommitmentScheme::Dory => AnyCommitmentScheme::Dory(self.dory_map.get(key).cloned()),
         }
     }
 
@@ -168,6 +183,44 @@ mod tests {
         assert!(commitment_map.has_key(&refs.dory_ref));
         assert!(commitment_map.has_key(&refs.all_ref));
         assert!(!commitment_map.has_key(&"does_not.exist".parse().unwrap()));
+    }
+
+    #[test]
+    fn we_can_get_table_commitments() {
+        let (commitment_map, refs) = all_combinations_commitment_map();
+
+        let none_commitments = PerCommitmentScheme::default();
+        assert_eq!(
+            commitment_map.get_commitments(&"does_not.exist".parse().unwrap()),
+            none_commitments
+        );
+
+        let ipa_commitments = PerCommitmentScheme {
+            ipa: Some(TestCommitmentMetadata::<RistrettoPoint>::new(1)),
+            dory: None,
+        };
+        assert_eq!(
+            commitment_map.get_commitments(&refs.ipa_ref),
+            ipa_commitments
+        );
+
+        let dory_commitments = PerCommitmentScheme {
+            ipa: None,
+            dory: Some(TestCommitmentMetadata::<DoryCommitment>::new(2)),
+        };
+        assert_eq!(
+            commitment_map.get_commitments(&refs.dory_ref),
+            dory_commitments
+        );
+
+        let all_commitments = PerCommitmentScheme {
+            ipa: Some(TestCommitmentMetadata::<RistrettoPoint>::new(3)),
+            dory: Some(TestCommitmentMetadata::<DoryCommitment>::new(3)),
+        };
+        assert_eq!(
+            commitment_map.get_commitments(&refs.all_ref),
+            all_commitments
+        );
     }
 
     #[test]

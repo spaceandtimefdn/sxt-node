@@ -16,6 +16,13 @@ pub trait CommitmentMapImplementor<K, V: GenericOverCommitment> {
     /// Returns `true` if this map contains this key and scheme.
     fn has_key_and_scheme_impl(&self, key: &K, scheme: &CommitmentScheme) -> bool;
 
+    /// Returns the commitment data for a particular key and any scheme.
+    fn get_commitment_for_any_scheme_impl(
+        &self,
+        key: &K,
+        scheme: &CommitmentScheme,
+    ) -> AnyCommitmentScheme<OptionType<V>>;
+
     /// Set the commitment in this map for a particular key and any scheme.
     fn set_commitment_for_any_scheme_impl(&mut self, key: K, commitment: AnyCommitmentScheme<V>);
 
@@ -43,6 +50,16 @@ impl<M: CommitmentMapImplementor<K, V>, K: Clone + Debug, V: GenericOverCommitme
 
     fn has_key(&self, key: &K) -> bool {
         self.schemes_for_key(key).into_iter().count() > 0
+    }
+
+    fn get_commitments(&self, key: &K) -> PerCommitmentScheme<OptionType<V>> {
+        CommitmentSchemeFlags::all()
+            .into_iter()
+            .flat_map(|scheme| {
+                self.get_commitment_for_any_scheme_impl(key, &scheme)
+                    .transpose_option()
+            })
+            .collect()
     }
 
     fn update_commitments(
