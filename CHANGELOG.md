@@ -1,3 +1,13 @@
+# [0.16.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.15.0...v0.16.0) (2024-10-11)
+
+
+### Features
+
+* add PerCommitmentScheme read method to CommitmentMap ([03d8e51](https://github.com/spaceandtimelabs/sxt-node/commit/03d8e512d414de5f25b6b44312e6b3624d33ee15))
+* add simple read method to CommitmentMapImplementor ([0c2470f](https://github.com/spaceandtimelabs/sxt-node/commit/0c2470ff5899e65f44a283c8027f0c23d91995ca))
+
+
+
 # [0.15.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.14.0...v0.15.0) (2024-10-10)
 
 
@@ -34,22 +44,6 @@
 ### Features
 
 * store unhashed table commitment bytes ([2925419](https://github.com/spaceandtimelabs/sxt-node/commit/2925419b6ee27d2402f81ac9d3c9c0eb3b94a16f))
-
-
-
-# [0.11.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.10.0...v0.11.0) (2024-10-08)
-
-
-### Features
-
-* add commitment scheme mapping API ([ef4a2eb](https://github.com/spaceandtimelabs/sxt-node/commit/ef4a2eb08009580051cb84681459e0fb0c312ba0))
-* add commitment scheme zip and unzip APIs ([5936733](https://github.com/spaceandtimelabs/sxt-node/commit/5936733f2fcf00b9fb66a69868cb6672a0d19c9d))
-* add PerCommitmentScheme::select method ([161d788](https://github.com/spaceandtimelabs/sxt-node/commit/161d78821b48f51c44a6d0aa807e5988847fdfba))
-* allow non-generics in commitment scheme types ([8b4bb27](https://github.com/spaceandtimelabs/sxt-node/commit/8b4bb27d6579386ecddf81a52683a0eb40a53723))
-* allow Results in commitment scheme types ([62cf223](https://github.com/spaceandtimelabs/sxt-node/commit/62cf2236c74a5c7f8ed2dbd330786888d7db573f))
-* implement Default for PerCommitmentScheme<OptionType<T>> ([c70df2b](https://github.com/spaceandtimelabs/sxt-node/commit/c70df2beae2e4181398f5da2b3ff1392dbfb7d00))
-* implement FromIterator for PerCommitmentScheme<OptionType<T>> ([a669758](https://github.com/spaceandtimelabs/sxt-node/commit/a669758c6f8a5256ce7639b09421c6329a34b063))
-* promote optional PerCommitmentScheme fields to higher kinded types ([9fc34d9](https://github.com/spaceandtimelabs/sxt-node/commit/9fc34d9d249a344edadc94d695c00d5f5784e21d))
 
 
 
