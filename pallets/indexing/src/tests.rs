@@ -1,14 +1,18 @@
-use crate::{
-    mock::*, BatchId, RowData,
-};
+use crate::{mock::*, BatchId, RowData};
+use arrow::array::{ArrayRef, Float64Array, Int32Array, RecordBatch};
+use arrow::datatypes::{DataType, Field, Schema};
+use arrow::ipc::writer::StreamWriter;
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::__private::RuntimeDebug;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::TypeInfo;
+use frame_support::traits::dynamic_params::IntoKey;
 use frame_support::{assert_err, assert_ok};
 use frame_system::ensure_signed;
 use sp_core::Hasher;
 use std::convert::Into;
+use std::io::Cursor;
+use std::sync::Arc;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
 
@@ -18,6 +22,45 @@ struct TestSubmission {
     table: TableIdentifier,
     batch_id: BatchId,
     data: RowData,
+}
+
+fn row_data() -> RowData {
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("int_column", DataType::Int32, false),
+    ]));
+
+    let int_data = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5])) as ArrayRef;
+
+    let batch = RecordBatch::try_new(schema.clone(), vec![int_data]).unwrap();
+
+    record_batch_to_row_data(batch, schema)
+}
+
+fn diff_row_data() -> RowData {
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("int_column", DataType::Int32, false),
+    ]));
+
+    let int_data = Arc::new(Int32Array::from(vec![2, 4, 6, 8, 10])) as ArrayRef;
+
+    let batch = RecordBatch::try_new(schema.clone(), vec![int_data]).unwrap();
+
+    record_batch_to_row_data(batch, schema) 
+}
+
+fn record_batch_to_row_data(batch: RecordBatch, schema: Arc<Schema>) -> RowData {
+    let buffer: Vec<u8> = Vec::new();
+    let mut cursor = Cursor::new(buffer);
+
+    let mut writer = StreamWriter::try_new(&mut cursor, &schema).unwrap();
+
+    writer.write(&batch).unwrap();
+    writer.finish().unwrap();
+
+    let data = writer.into_inner().unwrap().clone();
+    let data = data.into_inner().clone();
+    
+    RowData::try_from(data).unwrap()
 }
 
 #[test]
@@ -39,7 +82,7 @@ fn inserting_data_succeeds_when_data_is_good() {
         };
 
         let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
-        let test_data = RowData::try_from(b"some arbitrary row data".to_vec()).unwrap();
+        let test_data = row_data();
 
         assert_ok!(Indexing::submit_data(
             signer.clone(),
@@ -52,10 +95,7 @@ fn inserting_data_succeeds_when_data_is_good() {
 
         // Verify that the submission was stored as expected
         // and the hash was generated from the submitted data
-        assert_eq!(
-            Indexing::submissions(test_batch.clone(), hash).len(),
-            1
-        );
+        assert_eq!(Indexing::submissions(test_batch.clone(), hash).len(), 1);
     })
 }
 
@@ -78,7 +118,7 @@ fn submission_fails_when_data_is_already_submitted() {
         };
 
         let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
-        let test_data = RowData::try_from(b"some arbitrary row data".to_vec()).unwrap();
+        let test_data = row_data();
 
         assert_ok!(Indexing::submit_data(
             signer.clone(),
@@ -91,10 +131,7 @@ fn submission_fails_when_data_is_already_submitted() {
 
         /// Verify that the submission was stored as expected
         /// and the hash was generated from the submitted data
-        assert_eq!(
-            Indexing::submissions(test_batch.clone(), hash).len(),
-            1
-        );
+        assert_eq!(Indexing::submissions(test_batch.clone(), hash).len(), 1);
 
         /// Verify that submitting the same thing again returns the expected error
         assert_err!(
@@ -104,7 +141,7 @@ fn submission_fails_when_data_is_already_submitted() {
                 test_batch.clone(),
                 test_data.clone(),
             ),
-            crate::Error::<Test>::AlreadySubmitted
+            crate::Error::<Test, Api>::AlreadySubmitted
         );
     })
 }
@@ -131,16 +168,13 @@ fn data_submission_fails_if_no_permissions() {
                 test_batch.clone(),
                 test_data.clone(),
             ),
-            crate::Error::<Test>::UnauthorizedSubmitter,
+            crate::Error::<Test, Api>::UnauthorizedSubmitter,
         );
 
         let hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_data);
 
         /// Verify that the submission was not stored
-        assert_eq!(
-            Indexing::submissions(test_batch.clone(), hash).len(),
-            0
-        );
+        assert_eq!(Indexing::submissions(test_batch.clone(), hash).len(), 0);
     })
 }
 
@@ -167,7 +201,7 @@ fn data_is_decided_on_after_required_submissions() {
                 namespace: TableNamespace::try_from(b"test_namespace".to_vec()).unwrap(),
             },
             batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
-            data: RowData::try_from(b"some arbitrary row data".to_vec()).unwrap(),
+            data: row_data(),
         };
         let test_data_hash =
             <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_submission.data);
@@ -214,8 +248,7 @@ fn data_is_decided_on_after_required_submissions() {
         assert_eq!(fd.table, test_submission.table);
 
         /// Verify that the old data was successfully removed for this batch
-        let submitters =
-            Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
+        let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
         assert!(submitters.is_empty());
     })
 }
@@ -254,7 +287,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
                 namespace: TableNamespace::try_from(b"test_namespace".to_vec()).unwrap(),
             },
             batch_id: test_batch_id.clone(),
-            data: RowData::try_from(b"some arbitrary row data".to_vec()).unwrap(),
+            data: row_data(),
         };
         let data_hash =
             <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_submission.data);
@@ -283,10 +316,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
                 namespace: TableNamespace::try_from(b"test_namespace".to_vec()).unwrap(),
             },
             batch_id: test_batch_id,
-            data: RowData::try_from(
-                b"this data is different than what other people sent in".to_vec(),
-            )
-            .unwrap(),
+            data: diff_row_data(),
         };
         assert_ok!(submit_test_data(
             RuntimeOrigin::signed(4),
@@ -341,7 +371,7 @@ fn inserting_data_fails_when_data_is_empty() {
 
         assert_err!(
             Indexing::submit_data(signer, test_identifier, test_batch, test_data,),
-            crate::Error::<Test>::NoData
+            crate::Error::<Test, Api>::NoData
         );
     })
 }
@@ -370,7 +400,7 @@ fn inserting_data_fails_when_table_name_is_empty() {
 
         assert_err!(
             Indexing::submit_data(signer, test_identifier, test_batch, test_data,),
-            crate::Error::<Test>::InvalidTable
+            crate::Error::<Test, Api>::InvalidTable
         );
     })
 }
@@ -400,7 +430,7 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
 
         assert_err!(
             Indexing::submit_data(signer, test_identifier, test_batch, test_data,),
-            crate::Error::<Test>::InvalidTable
+            crate::Error::<Test, Api>::InvalidTable
         );
     })
 }
@@ -429,7 +459,7 @@ fn inserting_data_fails_when_batch_id_is_empty() {
 
         assert_err!(
             Indexing::submit_data(signer, test_identifier, test_batch, test_data,),
-            crate::Error::<Test>::InvalidBatch
+            crate::Error::<Test, Api>::InvalidBatch
         );
     })
 }
@@ -457,7 +487,7 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
                 namespace: TableNamespace::try_from(b"test_namespace".to_vec()).unwrap(),
             },
             batch_id: test_batch_id.clone(),
-            data: RowData::try_from(b"some arbitrary row data".to_vec()).unwrap(),
+            data: row_data(),
         };
         let data_hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(
             &test_submission.data.clone(),
@@ -490,7 +520,7 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
                 test_submission.batch_id.clone(),
                 test_submission.data.clone(),
             ),
-            crate::Error::<Test>::LateBatch
+            crate::Error::<Test, Api>::LateBatch
         );
     })
 }

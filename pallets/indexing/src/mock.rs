@@ -6,11 +6,39 @@ use sp_runtime::BuildStorage;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
+pub mod api_impl {
+    use super::*;
+    use native_api::NativeApi;
+
+    use native::interface;
+    use sp_runtime::BoundedVec;
+    use sxt_core::native::{OnChainTableBytes, RowData};
+    pub struct Api;
+
+    impl NativeApi for Api {
+        fn record_batch_to_onchain(
+            row_data: RowData,
+        ) -> Result<sxt_core::native::OnChainTableBytes, sxt_core::native::NativeError> {
+            interface::record_batch_to_onchain(row_data)
+        }
+    }
+
+    pub type Pallet<T> = pallet_indexing::pallet::Pallet<T, Api>;
+    pub type Event<T> = pallet_indexing::pallet::Event<T, Api>;
+    pub type Error<T> = pallet_indexing::pallet::Error<T, Api>;
+
+    pub use crate::pallet::{
+        __substrate_call_check, __substrate_event_check, tt_default_parts, tt_error_token,
+    };
+}
+
+pub use api_impl::Api;
+
 frame_support::construct_runtime!(
     pub enum Test
     {
         System: frame_system,
-        Indexing: pallet_indexing,
+        Indexing: api_impl,
         Permissions: pallet_permissions,
     }
 );
@@ -21,7 +49,7 @@ impl frame_system::Config for Test {
     type Hash = H256;
 }
 
-impl pallet_indexing::Config for Test {
+impl pallet_indexing::pallet::Config<Api> for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
 }

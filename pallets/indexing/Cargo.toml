@@ -27,11 +27,16 @@ sxt-core.workspace = true
 sp-runtime = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
+native-api = { workspace = true, default-features = false}
+postcard = "1.0"
+on-chain-table = { workspace = true, default-features = false}
 
 [dev-dependencies]
 sp-core.workspace = true
 sp-io.workspace = true
 sp-runtime.workspace = true
+native.workspace = true
+arrow.workspace = true
 
 [features]
 default = ["std"]
@@ -41,6 +46,9 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"scale-info/std",
+	"native/std",
+	"native-api/std",
+	"on-chain-table/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

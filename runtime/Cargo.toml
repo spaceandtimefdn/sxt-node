@@ -52,6 +52,7 @@ pallet-template.workspace = true
 pallet-permissions.workspace = true
 pallet-indexing.workspace = true
 pallet-tables.workspace = true
+native-pallets.workspace = true
 
 [build-dependencies]
 substrate-wasm-builder = { optional = true, workspace = true, default-features = true }
@@ -95,6 +96,12 @@ std = [
 	"sp-version/std",
 
 	"substrate-wasm-builder",
+
+
+	"pallet-indexing/std",
+	"pallet-tables/std",
+	"pallet-permissions/std",
+	"pallet-template/std",
 ]
 
 runtime-benchmarks = [
