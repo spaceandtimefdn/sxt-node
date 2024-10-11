@@ -12,6 +12,7 @@ frame_support::construct_runtime!(
 		System: frame_system,
 		Permissions: pallet_permissions,
 		Tables: pallet_tables,
+		Commitments: pallet_commitments,
 	}
 );
 
@@ -29,6 +30,8 @@ impl pallet_permissions::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }
+
+impl pallet_commitments::Config for Test {}
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {

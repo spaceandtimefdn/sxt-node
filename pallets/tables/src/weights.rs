@@ -36,6 +36,10 @@ use core::marker::PhantomData;
 pub trait WeightInfo {
 	/// TODO: add docs
 	fn update_tables() -> Weight;
+
+
+	/// TODO
+	fn create_tables_with_snapshot_and_commitment() -> Weight;
 }
 
 /// TODO: add docs
@@ -44,11 +48,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn update_tables() -> Weight {
 		Weight::from_parts(0,0)
 	}
+
+	fn create_tables_with_snapshot_and_commitment() -> Weight {
+		Weight::from_parts(0,0)
+	}
 }
 
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn update_tables() -> Weight {
+		Weight::from_parts(0,0)
+	}
+
+	fn create_tables_with_snapshot_and_commitment() -> Weight {
 		Weight::from_parts(0,0)
 	}
 }

@@ -25,6 +25,8 @@ frame-system.workspace = true
 pallet-permissions.workspace = true
 sxt-core.workspace = true
 sp-runtime = {default-features = false, workspace = true}
+pallet-commitments.workspace = true
+proof-of-sql-commitment-map.workspace = true
 
 [dev-dependencies]
 sp-core = { default-features = true, workspace = true }
@@ -39,6 +41,7 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"scale-info/std",
+	"pallet-commitments/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
