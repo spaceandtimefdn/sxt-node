@@ -28,6 +28,7 @@ pub mod pallet {
     use proof_of_sql_commitment_map::{
        PerCommitmentScheme, TableCommitmentBytes,
     };
+    use sp_runtime::Vec;
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -175,6 +176,25 @@ pub mod pallet {
             Snapshots::<T>::insert(ident, snapshot);
 
             Ok(())
+        }
+    }
+
+     #[pallet::genesis_config]
+    #[derive(frame_support::DefaultNoBound)]
+    pub struct GenesisConfig<T: Config> {
+        tables: Vec<(SourceAndMode, TableIdentifier, CreateStatement)>,
+        _marker: PhantomData<T>,
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+        fn build(&self) {
+            for (SourceAndMode{ source, mode}, ident, stmnt) in self.tables.iter() {
+                Identifiers::<T>::insert(source, mode, ident.clone());
+
+                let TableIdentifier { name, namespace } = ident;
+                Schemas::<T>::insert(namespace, name, stmnt)
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 use sc_service::ChainType;
+use sxt_core::tables::SourceAndMode;
 use sxt_runtime::{AccountId, Signature, WASM_BINARY};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
@@ -113,5 +114,10 @@ fn testnet_genesis(
 			// Assign network admin rights.
 			"key": Some(root_key),
 		},
+		"tables": {
+			"tables": sxt_core::parsing::ddls_to_genesis(vec![
+				("snapshots/v0_1/ethereum_core/ddl_ethereum_snapshot_2024_10_11.sql".into(), SourceAndMode { source: sxt_core::tables::Source::Ethereum, mode: sxt_core::tables::IndexerMode::Core}),
+			])
+		}
 	})
 }

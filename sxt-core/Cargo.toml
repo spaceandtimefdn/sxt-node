@@ -18,6 +18,8 @@ frame-system = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false}
 sp-runtime-interface = { version = "28.0.0", default-features = false } 
+sqlparser = { version = "0.51.0", default-features = false, optional = true}
+serde = { version = "1.0", default-features = false, features = ["derive"]}
 
 [features]
 default = ["std"]
@@ -27,6 +29,7 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"scale-info/std",
+	"dep:sqlparser"
 ]
 
 [lints]
