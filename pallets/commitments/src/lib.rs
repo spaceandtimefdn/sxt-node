@@ -18,6 +18,9 @@ mod test_create_table;
 #[cfg(test)]
 mod test_create_table_from_snapshot;
 
+#[cfg(test)]
+mod test_insert;
+
 mod error_conversions;
 
 pub use pallet::*;
@@ -28,9 +31,11 @@ pub mod pallet {
     use super::*;
     use alloc::{str, vec::Vec};
     use commitment_sql::{
-        process_create_table, process_create_table_from_snapshot, CreateTableAndCommitmentMetadata,
+        process_create_table, process_create_table_from_snapshot, process_insert,
+        CreateTableAndCommitmentMetadata, InsertAndCommitmentMetadata,
     };
     use frame_support::pallet_prelude::*;
+    use on_chain_table::OnChainTable;
     use proof_of_sql::proof_primitive::dory::{
         DoryProverPublicSetup, ProverSetup, PublicParameters,
     };
@@ -162,6 +167,14 @@ pub mod pallet {
         ColumnWithoutNotNull,
         /// Column option not supported.
         ColumnWithUnsupportedOption,
+        /// Existing commitments of different schemes don't agree on table range.
+        ExistingCommitmentsRangeMismatch,
+        /// Cannot update table with no existing commitments.
+        NoExistingCommitments,
+        /// Insert data contains values out of bounds of scalar field.
+        InsertDataOutOfBounds,
+        /// Insert data does not match existing commitments.
+        InsertDataDoesntMatchExistingCommitments,
         /// Table identifier already exists in commitment storage.
         TableAlreadyExists,
     }
@@ -263,6 +276,40 @@ pub mod pallet {
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 
             handler.create_commitments(table, commitments)
+        }
+
+        /// Processes the insert and updates commitments for the table in storage.
+        ///
+        /// Returns the original insert with additional commitment metadata columns.
+        pub fn process_insert_and_update_commitments(
+            table: TableIdentifier,
+            insert_data: OnChainTable,
+        ) -> Result<InsertAndCommitmentMetadata, Error<T>> {
+            let public_parameters = Self::public_parameters()?;
+            let prover_setup = ProverSetup::from(&public_parameters);
+            let dory_setup = DoryProverPublicSetup::new(&prover_setup, 8);
+            let setups = PerCommitmentScheme {
+                ipa: (),
+                dory: dory_setup,
+            };
+
+            let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
+
+            let previous_commitments = handler
+                .get_commitments(&table)
+                .try_into()
+                .map_err(|_| Error::DeserializeCommitment)?;
+
+            let (insert_and_commitment_metadata, commitments) =
+                process_insert(&table, insert_data, previous_commitments, setups)?;
+
+            let commitments_bytes = commitments.try_into()?;
+
+            handler
+                .update_commitments(table, commitments_bytes)
+                .expect("process_insert guarantees to update the same commitment schemes that were provided to it");
+
+            Ok(insert_and_commitment_metadata)
         }
     }
 }

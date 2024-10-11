@@ -27,4 +27,6 @@ pub use create_table_from_snapshot::{
 };
 
 mod insert;
-pub use insert::{process_insert, InsertAndCommitmentMetadata, ProcessInsertError};
+pub use insert::{
+    process_insert, AppendOnChainTableError, InsertAndCommitmentMetadata, ProcessInsertError,
+};

@@ -1,7 +1,7 @@
 use crate::pallet::Error;
 use commitment_sql::{
-    InvalidColumnOptions, InvalidCreateTable, ProcessCreateTableFromSnapshotError,
-    UnsupportedColumnType,
+    AppendOnChainTableError, InvalidColumnOptions, InvalidCreateTable,
+    ProcessCreateTableFromSnapshotError, ProcessInsertError, UnsupportedColumnType,
 };
 use core::fmt::Debug;
 use proof_of_sql_commitment_map::{KeyExistsError, TableCommitmentToBytesError};
@@ -67,6 +67,29 @@ impl<T> From<ProcessCreateTableFromSnapshotError> for Error<T> {
             ProcessCreateTableFromSnapshotError::InappropriateSnapshotCommitments { .. } => {
                 Error::InappropriateSnapshotCommitments
             }
+        }
+    }
+}
+
+impl<T> From<AppendOnChainTableError> for Error<T> {
+    fn from(error: AppendOnChainTableError) -> Self {
+        match error {
+            AppendOnChainTableError::OutOfScalarBounds { .. } => Error::InsertDataOutOfBounds,
+            AppendOnChainTableError::ColumnCommitmentsMismatch { .. } => {
+                Error::InsertDataDoesntMatchExistingCommitments
+            }
+        }
+    }
+}
+
+impl<T> From<ProcessInsertError> for Error<T> {
+    fn from(error: ProcessInsertError) -> Self {
+        match error {
+            ProcessInsertError::AppendOnChainTable { source } => source.into(),
+            ProcessInsertError::TableCommitmentRangeMismatch => {
+                Error::ExistingCommitmentsRangeMismatch
+            }
+            ProcessInsertError::NoCommitments => Error::NoExistingCommitments,
         }
     }
 }

@@ -5599,6 +5599,7 @@ dependencies = [
  "parity-scale-codec",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
+ "proof-of-sql-parser",
  "rand_chacha",
  "scale-info",
  "sp-core",
