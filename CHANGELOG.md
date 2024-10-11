@@ -1,3 +1,12 @@
+# [0.17.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.16.0...v0.17.0) (2024-10-11)
+
+
+### Features
+
+* implement native module to decode record batches ([74d4d4b](https://github.com/spaceandtimelabs/sxt-node/commit/74d4d4bfecfdcc052a2868558ff1cba8aa0a5ced))
+
+
+
 # [0.16.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.15.0...v0.16.0) (2024-10-11)
 
 
@@ -35,15 +44,6 @@
 * derive Eq for commitment-map KeyExistsError ([a62a19a](https://github.com/spaceandtimelabs/sxt-node/commit/a62a19a320315ef6d2793629b55458c0ec98cbed))
 * implement pallet-commitments storage and limited API ([c345e6f](https://github.com/spaceandtimelabs/sxt-node/commit/c345e6f48e84f89f64a4bbf77a72f7513b36c86b))
 * integrate commitments pallet into runtime ([3e1f9de](https://github.com/spaceandtimelabs/sxt-node/commit/3e1f9dee71ea174d5d1e377c3027db70b996687c))
-
-
-
-# [0.12.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.11.0...v0.12.0) (2024-10-09)
-
-
-### Features
-
-* store unhashed table commitment bytes ([2925419](https://github.com/spaceandtimelabs/sxt-node/commit/2925419b6ee27d2402f81ac9d3c9c0eb3b94a16f))
 
 
 
