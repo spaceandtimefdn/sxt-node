@@ -1,3 +1,12 @@
+## [0.19.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.19.0...v0.19.1) (2024-10-11)
+
+
+### Bug Fixes
+
+* apply lock-file updates after commitment-sql merge ([c1c2f86](https://github.com/spaceandtimelabs/sxt-node/commit/c1c2f8613e33b96307b516c466b7450d92c7ce24))
+
+
+
 # [0.19.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.18.0...v0.19.0) (2024-10-11)
 
 
@@ -39,15 +48,6 @@
 
 * add PerCommitmentScheme read method to CommitmentMap ([03d8e51](https://github.com/spaceandtimelabs/sxt-node/commit/03d8e512d414de5f25b6b44312e6b3624d33ee15))
 * add simple read method to CommitmentMapImplementor ([0c2470f](https://github.com/spaceandtimelabs/sxt-node/commit/0c2470ff5899e65f44a283c8027f0c23d91995ca))
-
-
-
-# [0.15.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.14.0...v0.15.0) (2024-10-10)
-
-
-### Features
-
-* upgrade proof-of-sql to 0.28.10 ([68335d0](https://github.com/spaceandtimelabs/sxt-node/commit/68335d0980c2c85ceb2cb044ac2826a76765d8a1))
 
 
 
