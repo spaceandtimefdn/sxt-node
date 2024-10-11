@@ -5,8 +5,14 @@ use frame_support::traits::ConstU32;
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 
-const MAX_COLS_PER_TABLE: u32 = 64;
-const MAX_TABLES_PER_SCHEMA: u32 = 1024;
+/// Maxiumum number of columns per table
+pub const MAX_COLS_PER_TABLE: u32 = 64;
+
+/// Maximum number of tables per identifier
+pub const MAX_TABLES_PER_SCHEMA: u32 = 1024;
+
+/// The maximum length of a URL snapshot
+pub const MAX_SNAPSHOT_LEN: u32 = 256;
 
 /// TODO: add docs
 pub type MaxColsPerTable = ConstU32<MAX_COLS_PER_TABLE>;
@@ -106,3 +112,6 @@ pub type CreateStatements = BoundedVec<CreateStatement, ConstU32<MAX_TABLES_PER_
 pub type UpdateTableCmd = (TableIdentifier, CreateStatement);
 /// TODO: add docs
 pub type UpdateTableList = BoundedVec<UpdateTableCmd, ConstU32<MAX_TABLES_PER_SCHEMA>>;
+
+/// A url that points to a known snapshot of a table in storage
+pub type SnapshotUrl = BoundedVec<u8, ConstU32<MAX_SNAPSHOT_LEN>>; 

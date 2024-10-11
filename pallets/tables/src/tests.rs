@@ -1,7 +1,30 @@
-use crate::mock::*;
+use crate::{mock::*, CreateTableList};
 
 use frame_support::assert_ok;
 use sxt_core::tables::{SourceAndMode, UpdateTableList};
+
+use sxt_core::permissions::TablesPalletPermission;
+use pallet_permissions::Pallet;
+use sxt_core::permissions::{PermissionLevel, PermissionList,};
+
+// Give $who permission $p
+macro_rules! set_permission {
+    ($who: expr, $p: expr) => {
+        assert_ok!(
+            Pallet::<Test>::set_permissions(
+                RuntimeOrigin::root(),
+                $who,
+                PermissionList::try_from(vec![PermissionLevel::TablesPallet($p)]).unwrap()
+            ),
+            ()
+        );
+    };
+}
+
+// Create a user from an integer and created a signed origin for it
+fn user(i: u64) -> (u64, RuntimeOrigin) {
+    (i, RuntimeOrigin::signed(i))
+}
 
 #[test]
 fn test_pallet() {
@@ -15,28 +38,13 @@ fn update_tables_should_work_when_permissioned() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
 
-        // The account id of the user in question
-        let user = 1;
+        let (who, signer) = user(1);
 
-        // give the user permission to edit the tables pallet schema
-        let permissions = sxt_core::permissions::TablesPalletPermission::EditSchema;
-        let permissions = sxt_core::permissions::PermissionLevel::TablesPallet(permissions);
-        let permissions =
-            sxt_core::permissions::PermissionList::try_from(vec![permissions]).unwrap();
-        assert_ok!(
-            pallet_permissions::Pallet::<Test>::set_permissions(
-                RuntimeOrigin::root(),
-                user,
-                permissions
-            ),
-            ()
-        );
+        set_permission!(who, TablesPalletPermission::EditSchema);
 
-        let source_and_mode = SourceAndMode::default();
-        let tables = UpdateTableList::default();
 
         assert_ok!(
-            Tables::update_tables(RuntimeOrigin::signed(user), source_and_mode, tables),
+            Tables::update_tables(signer, SourceAndMode::default(), UpdateTableList::default()),
             ()
         );
     })
@@ -53,6 +61,38 @@ fn update_tables_should_work_when_sudo() {
                 SourceAndMode::default(),
                 UpdateTableList::default()
             ),
+            ()
+        );
+    })
+}
+
+#[test]
+fn create_tables_should_work_when_sudo() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        assert_ok!(
+            Tables::create_tables_with_snapshot_and_commitment(
+                RuntimeOrigin::root(),
+                SourceAndMode::default(),
+                CreateTableList::default(),
+            ),
+            ()
+        );
+    })
+}
+
+#[test]
+fn create_tables_should_work_when_permissioned() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let (who, signer) = user(1);
+
+        set_permission!(who, TablesPalletPermission::EditSchema);
+
+        assert_ok!(
+            Tables::create_tables_with_snapshot_and_commitment(signer, SourceAndMode::default(), CreateTableList::default(),),
             ()
         );
     })
