@@ -7,6 +7,7 @@ use proof_of_sql_commitment_map::{
 use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
 
 #[test]
+#[allow(deprecated)]
 fn we_can_initiate_precomputed_commitments() {
     new_test_ext().execute_with(|| {
         let table_id = TableIdentifier {
@@ -41,6 +42,7 @@ fn we_can_initiate_precomputed_commitments() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn we_cannot_initiate_commitments_if_table_already_exists() {
     new_test_ext().execute_with(|| {
         let table_id = TableIdentifier {

@@ -7,13 +7,16 @@ extern crate alloc;
 mod mock;
 
 #[cfg(test)]
-mod tests;
+mod test_initiate_precomputed_commitments;
 
 #[cfg(test)]
 mod test_create_table_generic;
 
 #[cfg(test)]
 mod test_create_table;
+
+#[cfg(test)]
+mod test_create_table_from_snapshot;
 
 mod error_conversions;
 
@@ -24,7 +27,9 @@ pub use pallet::*;
 pub mod pallet {
     use super::*;
     use alloc::{str, vec::Vec};
-    use commitment_sql::{process_create_table, CreateTableAndCommitmentMetadata};
+    use commitment_sql::{
+        process_create_table, process_create_table_from_snapshot, CreateTableAndCommitmentMetadata,
+    };
     use frame_support::pallet_prelude::*;
     use proof_of_sql::proof_primitive::dory::{
         DoryProverPublicSetup, ProverSetup, PublicParameters,
@@ -207,7 +212,50 @@ pub mod pallet {
             Ok(create_table_and_commitment_metadata)
         }
 
+        /// Processes the table definition and stores its snapshot commitments.
+        ///
+        /// Returns the original table definition with additional commitment metadata columns.
+        pub fn process_create_table_from_snapshot_and_initiate_commitments(
+            create_table: CreateTableBuilder,
+            snapshot_commitment_bytes: TableCommitmentBytesPerCommitmentScheme,
+        ) -> Result<CreateTableAndCommitmentMetadata, Error<T>> {
+            let public_parameters = Self::public_parameters()?;
+            let prover_setup = ProverSetup::from(&public_parameters);
+            let dory_setup = DoryProverPublicSetup::new(&prover_setup, 8);
+            let setups = PerCommitmentScheme {
+                ipa: (),
+                dory: dory_setup,
+            };
+
+            let snapshot_commitments = snapshot_commitment_bytes
+                .try_into()
+                .map_err(|_| Error::DeserializeCommitment)?;
+
+            let (create_table_and_commitment_metadata, snapshot_commitments) =
+                process_create_table_from_snapshot(create_table, setups, snapshot_commitments)?;
+
+            let snapshot_commitment_bytes = snapshot_commitments.try_into()?;
+
+            let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
+
+            let table_identifier = TableIdentifier::try_from(
+                &create_table_and_commitment_metadata
+                    .table_with_meta_columns
+                    .name,
+            )
+            .expect(
+                "Create table identifier already validated by process_create_table_from_snapshot",
+            );
+
+            handler.create_commitments(table_identifier, snapshot_commitment_bytes)?;
+
+            Ok(create_table_and_commitment_metadata)
+        }
+
         /// Initiates the provided table with the provided commitments in storage.
+        #[deprecated(
+            note = "for historical load, use process_create_table_from_snapshot_and_initiate_commitments"
+        )]
         pub fn initiate_precomputed_commitments(
             table: TableIdentifier,
             commitments: TableCommitmentBytesPerCommitmentScheme,
