@@ -1,6 +1,8 @@
 //! TODO: add docs
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
 use sp_core::ConstU32;
 use sp_runtime::BoundedVec;
 
