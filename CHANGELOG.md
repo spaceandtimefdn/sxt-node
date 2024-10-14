@@ -1,3 +1,12 @@
+# [0.20.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.19.1...v0.20.0) (2024-10-14)
+
+
+### Features
+
+* create a ddl parser for chainspec genesis ([26f8fe0](https://github.com/spaceandtimelabs/sxt-node/commit/26f8fe094402ed8d89b84b22da07f3b94c7fbbe3))
+
+
+
 ## [0.19.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.19.0...v0.19.1) (2024-10-11)
 
 
@@ -38,16 +47,6 @@
 ### Features
 
 * implement native module to decode record batches ([74d4d4b](https://github.com/spaceandtimelabs/sxt-node/commit/74d4d4bfecfdcc052a2868558ff1cba8aa0a5ced))
-
-
-
-# [0.16.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.15.0...v0.16.0) (2024-10-11)
-
-
-### Features
-
-* add PerCommitmentScheme read method to CommitmentMap ([03d8e51](https://github.com/spaceandtimelabs/sxt-node/commit/03d8e512d414de5f25b6b44312e6b3624d33ee15))
-* add simple read method to CommitmentMapImplementor ([0c2470f](https://github.com/spaceandtimelabs/sxt-node/commit/0c2470ff5899e65f44a283c8027f0c23d91995ca))
 
 
 
