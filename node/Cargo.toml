@@ -80,6 +80,7 @@ frame-benchmarking-cli.workspace = true
 frame-benchmarking-cli.default-features = true
 sxt-runtime.workspace = true
 native.workspace = true
+sxt-core.workspace = true
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true
@@ -90,6 +91,7 @@ default = ["std"]
 std = [
 	"sxt-runtime/std",
 	"native/std",
+	"sxt-core/std",
 ]
 # Dependencies that are only required if runtime benchmarking should be build.
 runtime-benchmarks = [

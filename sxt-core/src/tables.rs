@@ -3,6 +3,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::storage::bounded_vec::BoundedVec;
 use frame_support::traits::ConstU32;
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 use sp_core::RuntimeDebug;
 
 /// Maxiumum number of columns per table
@@ -12,7 +13,7 @@ pub const MAX_COLS_PER_TABLE: u32 = 64;
 pub const MAX_TABLES_PER_SCHEMA: u32 = 1024;
 
 /// The maximum length of a URL snapshot
-pub const MAX_SNAPSHOT_LEN: u32 = 256;
+pub const MAX_SNAPSHOT_LEN: u32 = 2048;
 
 /// TODO: add docs
 pub type MaxColsPerTable = ConstU32<MAX_COLS_PER_TABLE>;
@@ -20,7 +21,7 @@ pub type MaxColsPerTable = ConstU32<MAX_COLS_PER_TABLE>;
 pub type MaxTablesPerSchema = ConstU32<MAX_TABLES_PER_SCHEMA>;
 
 /// List of possible chains that the transaction node supports.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default, Serialize, Deserialize)]
 pub enum Source {
     /// Ethereum mainnet
     #[default]
@@ -40,7 +41,7 @@ pub enum Source {
 }
 
 /// The mode that the indexer supports
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default, Serialize, Deserialize)]
 pub enum IndexerMode {
     #[default]
     /// TODO: add docs
@@ -56,7 +57,7 @@ pub enum IndexerMode {
 }
 
 /// A request for work from an indexer
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default, Serialize, Deserialize)]
 pub struct SourceAndMode {
     /// TODO: add docs
     pub source: Source,
@@ -77,7 +78,7 @@ pub type TableName = ByteString;
 pub type TableNamespace = ByteString;
 
 /// A unique identifier for a work assignment, a key that maps to the 'TableSchema'
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default, Serialize, Deserialize)]
 pub struct TableIdentifier {
     /// TODO: add docs
     pub name: TableName,
@@ -115,3 +116,26 @@ pub type UpdateTableList = BoundedVec<UpdateTableCmd, ConstU32<MAX_TABLES_PER_SC
 
 /// A url that points to a known snapshot of a table in storage
 pub type SnapshotUrl = BoundedVec<u8, ConstU32<MAX_SNAPSHOT_LEN>>; 
+
+/// Create a table identifier from a name and namespace
+///
+/// This function does no checking of the lengths of name and namespace and will panic!
+/// Use it only on known good values and never with user submitted data.
+/// This should only be used in the creation of the genesis chain spec, that is a single atomic operation which must run end to end with no failures, which is why we are fine calling unwrap
+#[cfg(feature = "std")]
+pub fn table_identifier(name: &str, namespace: &str) -> TableIdentifier {
+    TableIdentifier {
+        name: TableName::try_from(String::from(name).as_bytes().to_vec()).unwrap(),
+        namespace: TableNamespace::try_from(String::from(namespace).as_bytes().to_vec()).unwrap(),
+    }
+}
+
+/// Create a CreateStatement from a &str. This can be combined with the include_str! macro to easily bring in tables from DDL file.
+///
+/// This function does no checking of the lengths of the data and will panic!
+/// Use it only on known good values and never with user submitted data.
+/// This should only be used in the creation of the genesis chain spec, that is a single atomic operation which must run end to end with no failures, which is why we are fine calling unwrap
+#[cfg(feature = "std")]
+pub fn create_statement(stmnt: &str) -> CreateStatement {
+    CreateStatement::try_from(String::from(stmnt).as_bytes().to_vec()).unwrap()
+}

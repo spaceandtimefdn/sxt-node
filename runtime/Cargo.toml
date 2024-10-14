@@ -60,6 +60,7 @@ substrate-wasm-builder = { optional = true, workspace = true, default-features =
 [features]
 default = ["std"]
 std = [
+	"pallet-tables/std",
 	"codec/std",
 	"scale-info/std",
 
