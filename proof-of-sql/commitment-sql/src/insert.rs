@@ -55,14 +55,14 @@ impl<T: GenericOverCommitment> GenericOverCommitmentFn for SomeFn<T> {
 }
 
 /// Generically accepts a pair of options and returns an option of pairs.
-struct OptionZipFn<T: GenericOverCommitment, U: GenericOverCommitment>(
+pub struct OptionZipFn<T: GenericOverCommitment, U: GenericOverCommitment>(
     PhantomData<T>,
     PhantomData<U>,
 );
 
 impl<T: GenericOverCommitment, U: GenericOverCommitment> OptionZipFn<T, U> {
     /// Construct a new [`OptionZipFn`].
-    fn new() -> Self {
+    pub fn new() -> Self {
         OptionZipFn(PhantomData, PhantomData)
     }
 }
@@ -162,17 +162,25 @@ pub struct InsertAndCommitmentMetadata {
     pub insert_with_meta_columns: OnChainTable,
     /// Inserts to perform on metadata tables.
     pub meta_table_inserts: Vec<(TableIdentifier, OnChainTable)>,
-    /// The new commitments to the original table.
-    pub commitments: PerCommitmentScheme<OptionType<TableCommitmentType>>,
 }
 
 /// Process insert to support commitment metadata.
+///
+/// Returns..
+/// - the processed insert as [`InsertAndCommitmentMetadata`]
+/// - the updated commitments for the table
 pub fn process_insert(
     _table_identifier: &TableIdentifier,
     insert_data: OnChainTable,
     previous_commitments: PerCommitmentScheme<OptionType<TableCommitmentType>>,
     setups: PerCommitmentScheme<AssociatedPublicSetupType>,
-) -> Result<InsertAndCommitmentMetadata, ProcessInsertError> {
+) -> Result<
+    (
+        InsertAndCommitmentMetadata,
+        PerCommitmentScheme<OptionType<TableCommitmentType>>,
+    ),
+    ProcessInsertError,
+> {
     let (previous_commitments, row_counts): (Vec<_>, Vec<_>) = previous_commitments
         .into_flat_iter()
         .map(|any| {
@@ -203,11 +211,13 @@ pub fn process_insert(
 
     let insert_with_meta_columns = on_chain_table_with_row_number_column(insert_data, row_count);
 
-    Ok(InsertAndCommitmentMetadata {
-        insert_with_meta_columns,
-        meta_table_inserts: vec![],
+    Ok((
+        InsertAndCommitmentMetadata {
+            insert_with_meta_columns,
+            meta_table_inserts: vec![],
+        },
         commitments,
-    })
+    ))
 }
 
 #[cfg(test)]
@@ -318,11 +328,13 @@ mod tests {
 
         assert_eq!(
             process_insert(&table_id, first_insert, empty_commitments, setups.clone()).unwrap(),
-            InsertAndCommitmentMetadata {
-                insert_with_meta_columns: expected_first_insert_with_meta_columns,
-                meta_table_inserts: vec![],
-                commitments: expected_first_commitments.clone(),
-            }
+            (
+                InsertAndCommitmentMetadata {
+                    insert_with_meta_columns: expected_first_insert_with_meta_columns,
+                    meta_table_inserts: vec![],
+                },
+                expected_first_commitments.clone()
+            )
         );
 
         let second_insert = OnChainTable::try_from_iter([
@@ -375,11 +387,13 @@ mod tests {
 
         assert_eq!(
             process_insert(&table_id, second_insert, expected_first_commitments, setups).unwrap(),
-            InsertAndCommitmentMetadata {
-                insert_with_meta_columns: expected_second_insert_with_meta_columns,
-                meta_table_inserts: vec![],
-                commitments: expected_second_commitments,
-            }
+            (
+                InsertAndCommitmentMetadata {
+                    insert_with_meta_columns: expected_second_insert_with_meta_columns,
+                    meta_table_inserts: vec![],
+                },
+                expected_second_commitments
+            )
         );
     }
 
