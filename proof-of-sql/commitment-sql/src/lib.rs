@@ -6,8 +6,10 @@ extern crate alloc;
 mod map;
 
 mod column_options;
+pub use column_options::InvalidColumnOptions;
 
 mod column_type_conversion;
+pub use column_type_conversion::UnsupportedColumnType;
 
 mod metadata_prefix;
 
@@ -25,4 +27,6 @@ pub use create_table_from_snapshot::{
 };
 
 mod insert;
-pub use insert::{process_insert, InsertAndCommitmentMetadata, ProcessInsertError};
+pub use insert::{
+    process_insert, AppendOnChainTableError, InsertAndCommitmentMetadata, ProcessInsertError,
+};

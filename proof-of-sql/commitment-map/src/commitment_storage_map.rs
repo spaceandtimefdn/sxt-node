@@ -3,7 +3,7 @@
 use crate::{
     commitment_map_implementor::CommitmentMapImplementor,
     commitment_scheme::{AnyCommitmentScheme, CommitmentScheme},
-    generic_over_commitment::{ConcreteType, OptionType},
+    generic_over_commitment::{ConcreteType, OptionType, TableCommitmentType},
     PerCommitmentScheme,
 };
 use codec::{Decode, Encode, MaxEncodedLen};
@@ -38,10 +38,16 @@ pub type TableCommitmentBytesPerCommitmentScheme =
 pub enum TableCommitmentToBytesError {
     /// `TableCommitment` exceeds maximum column count.
     #[snafu(display("TableCommitment exceeds maximum column count: {num_columns}"))]
-    TooManyColumns { num_columns: usize },
+    TooManyColumns {
+        /// The excessive number of columns
+        num_columns: usize,
+    },
     /// Failed to serialize TableCommitment.
     #[snafu(display("failed to serialize TableCommitment: {error}"))]
-    Postcard { error: postcard::Error },
+    Postcard {
+        /// Source postcard error.
+        error: postcard::Error,
+    },
 }
 
 impl From<postcard::Error> for TableCommitmentToBytesError {
@@ -67,6 +73,30 @@ impl<C: Commitment + Serialize> TryFrom<&TableCommitment<C>> for TableCommitment
     }
 }
 
+// This conversion cannot be implemented with `GenericOverCommitmentFn` because it imposes
+// additional trait bounds on `WithCommitment<C>` (`C: Serialize`).
+impl TryFrom<PerCommitmentScheme<OptionType<TableCommitmentType>>>
+    for TableCommitmentBytesPerCommitmentScheme
+{
+    type Error = TableCommitmentToBytesError;
+
+    fn try_from(
+        value: PerCommitmentScheme<OptionType<TableCommitmentType>>,
+    ) -> Result<Self, Self::Error> {
+        value
+            .into_flat_iter()
+            .map(|any| match &any {
+                AnyCommitmentScheme::Ipa(commitment) => {
+                    commitment.try_into().map(AnyCommitmentScheme::Ipa)
+                }
+                AnyCommitmentScheme::Dory(commitment) => {
+                    commitment.try_into().map(AnyCommitmentScheme::Dory)
+                }
+            })
+            .collect()
+    }
+}
+
 impl<'de, C: Commitment + Deserialize<'de>> TryFrom<&'de TableCommitmentBytes>
     for TableCommitment<C>
 {
@@ -74,6 +104,28 @@ impl<'de, C: Commitment + Deserialize<'de>> TryFrom<&'de TableCommitmentBytes>
 
     fn try_from(value: &'de TableCommitmentBytes) -> Result<Self, Self::Error> {
         postcard::from_bytes(value.data.as_slice())
+    }
+}
+
+// This conversion cannot be implemented with `GenericOverCommitmentFn` because it imposes
+// additional trait bounds on `WithCommitment<C>` (`C: Deserialize`).
+impl TryFrom<TableCommitmentBytesPerCommitmentScheme>
+    for PerCommitmentScheme<OptionType<TableCommitmentType>>
+{
+    type Error = postcard::Error;
+
+    fn try_from(value: TableCommitmentBytesPerCommitmentScheme) -> Result<Self, Self::Error> {
+        value
+            .into_flat_iter()
+            .map(|any| match &any {
+                AnyCommitmentScheme::Ipa(commitment) => {
+                    commitment.try_into().map(AnyCommitmentScheme::Ipa)
+                }
+                AnyCommitmentScheme::Dory(commitment) => {
+                    commitment.try_into().map(AnyCommitmentScheme::Dory)
+                }
+            })
+            .collect()
     }
 }
 
@@ -190,6 +242,20 @@ mod tests {
         let deserialized = TableCommitment::<DoryCommitment>::try_from(&serialized).unwrap();
 
         assert_eq!(deserialized, commitment);
+
+        let per_commitment_scheme = PerCommitmentScheme::<OptionType<TableCommitmentType>> {
+            ipa: None,
+            dory: Some(commitment),
+        };
+
+        let serialized =
+            TableCommitmentBytesPerCommitmentScheme::try_from(per_commitment_scheme.clone())
+                .unwrap();
+
+        let deserialized =
+            PerCommitmentScheme::<OptionType<TableCommitmentType>>::try_from(serialized).unwrap();
+
+        assert_eq!(deserialized, per_commitment_scheme);
     }
 
     #[test]
@@ -242,6 +308,16 @@ mod tests {
 
         assert!(matches!(
             TableCommitmentBytes::try_from(&commitment),
+            Err(TableCommitmentToBytesError::TooManyColumns { .. })
+        ));
+
+        let per_commitment_scheme = PerCommitmentScheme::<OptionType<TableCommitmentType>> {
+            ipa: None,
+            dory: Some(commitment),
+        };
+
+        assert!(matches!(
+            TableCommitmentBytesPerCommitmentScheme::try_from(per_commitment_scheme),
             Err(TableCommitmentToBytesError::TooManyColumns { .. })
         ));
     }

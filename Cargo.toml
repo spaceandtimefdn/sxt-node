@@ -22,8 +22,10 @@ resolver = "2"
 
 [workspace.dependencies]
 ahash = { version = "0.8.11", default-features = false }
+ark-serialize = { version = "0.4.0", default-features = false }
 arrow = { version = "51.0.0", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
+commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
 pallet-template = { path = "./pallets/template", default-features = false }

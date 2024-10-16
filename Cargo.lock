@@ -1361,7 +1361,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "snafu",
- "sqlparser 0.45.0",
+ "sqlparser",
  "sxt-core",
 ]
 
@@ -5590,16 +5590,22 @@ dependencies = [
 name = "pallet-commitments"
 version = "0.1.0"
 dependencies = [
+ "ark-serialize",
+ "commitment-sql",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "on-chain-table",
  "parity-scale-codec",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
+ "proof-of-sql-parser",
+ "rand_chacha",
  "scale-info",
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sqlparser",
  "sxt-core",
 ]
 
@@ -9500,15 +9506,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sqlparser"
-version = "0.51.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fe11944a61da0da3f592e19a45ebe5ab92dc14a779907ff1f08fbb797bfefc7"
-dependencies = [
- "log",
-]
-
-[[package]]
 name = "ss58-registry"
 version = "1.47.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9732,16 +9729,19 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 name = "sxt-core"
 version = "0.1.0"
 dependencies = [
+ "ark-serialize",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
+ "proof-of-sql",
  "scale-info",
  "serde",
+ "snafu",
  "sp-core",
  "sp-runtime",
  "sp-runtime-interface",
- "sqlparser 0.51.0",
+ "sqlparser",
 ]
 
 [[package]]

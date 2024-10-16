@@ -6,10 +6,16 @@ use sqlparser::ast::ColumnOption;
 pub enum InvalidColumnOptions {
     /// Columns missing required option.
     #[snafu(display("columns missing required option: {option}"))]
-    Required { option: ColumnOption },
+    Required {
+        /// The missing required option.
+        option: ColumnOption,
+    },
     /// Column option unsupported.
     #[snafu(display("column option unsupported: {option}"))]
-    Unsupported { option: ColumnOption },
+    Unsupported {
+        /// The unsupported column option.
+        option: ColumnOption,
+    },
 }
 
 /// All required column options.

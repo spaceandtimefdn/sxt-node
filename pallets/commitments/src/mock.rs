@@ -22,8 +22,13 @@ impl pallet_commitments::Config for Test {}
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    frame_system::GenesisConfig::<Test>::default()
+    let mut storage = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
-        .unwrap()
-        .into()
+        .unwrap();
+
+    pallet_commitments::GenesisConfig::<Test>::default()
+        .assimilate_storage(&mut storage)
+        .unwrap();
+
+    storage.into()
 }

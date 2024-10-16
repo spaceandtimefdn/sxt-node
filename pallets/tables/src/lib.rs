@@ -167,6 +167,7 @@ pub mod pallet {
             commit: PerCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>>, 
             snapshot: SnapshotUrl,
         ) -> DispatchResult {
+            #[allow(deprecated)]
             pallet_commitments::Pallet::<T>::initiate_precomputed_commitments(
                 ident.clone(),
                 commit,
