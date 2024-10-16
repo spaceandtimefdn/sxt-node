@@ -1,3 +1,12 @@
+# [0.21.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.20.0...v0.21.0) (2024-10-16)
+
+
+### Features
+
+* process DDL from snapshot to support commitment metadata ([a8a6cdc](https://github.com/spaceandtimelabs/sxt-node/commit/a8a6cdcc0f429e18f0dd8cae1ad87045f37d418f))
+
+
+
 # [0.20.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.19.1...v0.20.0) (2024-10-14)
 
 
@@ -38,15 +47,6 @@
 * process DML to support commitment metadata ([cd50045](https://github.com/spaceandtimelabs/sxt-node/commit/cd50045294dacef8b5a73e126511fd3b94ae84ba))
 * validate sqlparser column options ([baca2e5](https://github.com/spaceandtimelabs/sxt-node/commit/baca2e5b24dac369792f0989803e26f8c64982a4))
 * validate table definitions for proof-of-sql ([6e5daf7](https://github.com/spaceandtimelabs/sxt-node/commit/6e5daf79b32128669230c092f3b3841fd1e0d9fd))
-
-
-
-# [0.17.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.16.0...v0.17.0) (2024-10-11)
-
-
-### Features
-
-* implement native module to decode record batches ([74d4d4b](https://github.com/spaceandtimelabs/sxt-node/commit/74d4d4bfecfdcc052a2868558ff1cba8aa0a5ced))
 
 
 
