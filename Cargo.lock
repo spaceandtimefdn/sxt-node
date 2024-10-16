@@ -1361,7 +1361,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "snafu",
- "sqlparser 0.45.0",
+ "sqlparser",
  "sxt-core",
 ]
 
@@ -9500,15 +9500,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sqlparser"
-version = "0.51.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fe11944a61da0da3f592e19a45ebe5ab92dc14a779907ff1f08fbb797bfefc7"
-dependencies = [
- "log",
-]
-
-[[package]]
 name = "ss58-registry"
 version = "1.47.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9741,7 +9732,7 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-runtime-interface",
- "sqlparser 0.51.0",
+ "sqlparser",
 ]
 
 [[package]]
