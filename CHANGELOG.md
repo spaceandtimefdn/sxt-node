@@ -1,3 +1,22 @@
+# [0.22.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.21.0...v0.22.0) (2024-10-16)
+
+
+### Bug Fixes
+
+* depend on workspace sqlparser definition in sxt-core ([7136309](https://github.com/spaceandtimelabs/sxt-node/commit/713630920b45c04597cf0d17f6f420d9fc170340))
+
+
+### Features
+
+* add conversions for TableCommitmentBytesPerCommitmentScheme ([9f70091](https://github.com/spaceandtimelabs/sxt-node/commit/9f70091ccd379385231ebc5a5d08f466328af55e))
+* add GenesisConfig to pallet-commitments ([62bdd5d](https://github.com/spaceandtimelabs/sxt-node/commit/62bdd5d66c43c76fdf37e211e78e39973dd59ac1))
+* convert from sqlparser ObjectName to TableIdentifier ([ca52f72](https://github.com/spaceandtimelabs/sxt-node/commit/ca52f724aa10df9c3993ac6dcd0e70bc15d27a22))
+* process DDL and store empty commitments in pallet-commitments ([dd435b0](https://github.com/spaceandtimelabs/sxt-node/commit/dd435b0198adcfcbbd1f3bf900ec9061e0ce83a6))
+* process DDL and store snapshot commitments in pallet-commitments ([4b46f91](https://github.com/spaceandtimelabs/sxt-node/commit/4b46f914785884edb5d74e9aa2dde47c4cd14a02))
+* process DML and update stored commitments in pallet-commitments ([2c12415](https://github.com/spaceandtimelabs/sxt-node/commit/2c124153c9352814f495522875ff9531178d883c))
+
+
+
 # [0.21.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.20.0...v0.21.0) (2024-10-16)
 
 
@@ -31,22 +50,6 @@
 ### Features
 
 * create tables with known commits and snapshots ([dc038cc](https://github.com/spaceandtimelabs/sxt-node/commit/dc038cc561cbd6e5de63156cc36b888a1b973ad7))
-
-
-
-# [0.18.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.17.0...v0.18.0) (2024-10-11)
-
-
-### Features
-
-* add column type conversion utilities ([26c8f26](https://github.com/spaceandtimelabs/sxt-node/commit/26c8f26a725ac194df23017981ae2e677b00a6fb))
-* add empty commitment-sql library crate ([1f0cbe4](https://github.com/spaceandtimelabs/sxt-node/commit/1f0cbe4237c1d1d416616395c63ad448f255ada0))
-* define common metadata prefix and validation ([9a66b25](https://github.com/spaceandtimelabs/sxt-node/commit/9a66b256347d5a93cdad99d5c81e14ecc04b3a72))
-* define row number metadata column ([79265d4](https://github.com/spaceandtimelabs/sxt-node/commit/79265d414869e2c2a8f5d133471f076208b709d3))
-* process DDL to support commitment metadata ([ff6f2f0](https://github.com/spaceandtimelabs/sxt-node/commit/ff6f2f026e92e7f576ed1a2d28deb675cc084514))
-* process DML to support commitment metadata ([cd50045](https://github.com/spaceandtimelabs/sxt-node/commit/cd50045294dacef8b5a73e126511fd3b94ae84ba))
-* validate sqlparser column options ([baca2e5](https://github.com/spaceandtimelabs/sxt-node/commit/baca2e5b24dac369792f0989803e26f8c64982a4))
-* validate table definitions for proof-of-sql ([6e5daf7](https://github.com/spaceandtimelabs/sxt-node/commit/6e5daf79b32128669230c092f3b3841fd1e0d9fd))
 
 
 
