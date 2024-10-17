@@ -1,3 +1,7 @@
+## [0.23.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.23.1...v0.23.2) (2024-10-17)
+
+
+
 ## [0.23.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.23.0...v0.23.1) (2024-10-17)
 
 
@@ -41,15 +45,6 @@
 ### Features
 
 * process DDL from snapshot to support commitment metadata ([a8a6cdc](https://github.com/spaceandtimelabs/sxt-node/commit/a8a6cdcc0f429e18f0dd8cae1ad87045f37d418f))
-
-
-
-# [0.20.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.19.1...v0.20.0) (2024-10-14)
-
-
-### Features
-
-* create a ddl parser for chainspec genesis ([26f8fe0](https://github.com/spaceandtimelabs/sxt-node/commit/26f8fe094402ed8d89b84b22da07f3b94c7fbbe3))
 
 
 
