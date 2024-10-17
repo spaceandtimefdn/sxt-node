@@ -1,3 +1,12 @@
+## [0.23.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.23.0...v0.23.1) (2024-10-17)
+
+
+### Bug Fixes
+
+* Postgres Conversion. ([#55](https://github.com/spaceandtimelabs/sxt-node/issues/55)) ([9d87d44](https://github.com/spaceandtimelabs/sxt-node/commit/9d87d44d912fb4cbb0c5f5a8f10f3e365d3bb406))
+
+
+
 # [0.23.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.22.0...v0.23.0) (2024-10-17)
 
 
@@ -41,15 +50,6 @@
 ### Features
 
 * create a ddl parser for chainspec genesis ([26f8fe0](https://github.com/spaceandtimelabs/sxt-node/commit/26f8fe094402ed8d89b84b22da07f3b94c7fbbe3))
-
-
-
-## [0.19.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.19.0...v0.19.1) (2024-10-11)
-
-
-### Bug Fixes
-
-* apply lock-file updates after commitment-sql merge ([c1c2f86](https://github.com/spaceandtimelabs/sxt-node/commit/c1c2f8613e33b96307b516c466b7450d92c7ce24))
 
 
 
