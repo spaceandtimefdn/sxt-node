@@ -16,6 +16,7 @@ members = [
     "proof-of-sql/commitment-map",
     "runtime",
     "sxt-core",
+    "data-loader",
     "proof-of-sql/on-chain-table", "proof-of-sql/commitment-sql",
 ]
 resolver = "2"

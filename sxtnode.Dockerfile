@@ -50,6 +50,11 @@ ENV HOST="127.0.0.1"
 ENV PORT="50555"
 ENV FLIGHTSQL_USER="admin"
 ENV FLIGHTSQL_PASSWORD="admin"
+ENV AZURE_ENDPOINT="https://opspublicblockssandboxst.blob.core.windows.net"
+ENV AZURE_ACCOUNT_NAME="opspublicblockssandboxst"
+ENV AZURE_CONTAINER_NAME="ops-publicblocks-sandbox-stdl-wus2"
+ENV AZURE_BASE_PATH="/v0/ETHEREUM"
+ENV RUST_LOG="info"
 
 
 # Install Flight-SQL
