@@ -1,3 +1,12 @@
+# [0.24.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.23.2...v0.24.0) (2024-10-17)
+
+
+### Features
+
+* add --check to the cargo fmt CI job ([a9ab76d](https://github.com/spaceandtimelabs/sxt-node/commit/a9ab76dbf9c621f2c34c7c2f64e0723aa9e7b7e5))
+
+
+
 ## [0.23.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.23.1...v0.23.2) (2024-10-17)
 
 
@@ -36,15 +45,6 @@
 * process DDL and store empty commitments in pallet-commitments ([dd435b0](https://github.com/spaceandtimelabs/sxt-node/commit/dd435b0198adcfcbbd1f3bf900ec9061e0ce83a6))
 * process DDL and store snapshot commitments in pallet-commitments ([4b46f91](https://github.com/spaceandtimelabs/sxt-node/commit/4b46f914785884edb5d74e9aa2dde47c4cd14a02))
 * process DML and update stored commitments in pallet-commitments ([2c12415](https://github.com/spaceandtimelabs/sxt-node/commit/2c124153c9352814f495522875ff9531178d883c))
-
-
-
-# [0.21.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.20.0...v0.21.0) (2024-10-16)
-
-
-### Features
-
-* process DDL from snapshot to support commitment metadata ([a8a6cdc](https://github.com/spaceandtimelabs/sxt-node/commit/a8a6cdcc0f429e18f0dd8cae1ad87045f37d418f))
 
 
 
