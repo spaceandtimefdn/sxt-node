@@ -83,7 +83,7 @@ mod tests {
                 "CREATE TABLE animal.population (
             animal VARCHAR NOT NULL,
             population BIGINT NOT NULL,
-            SXTMETA_ROW_NUMBER BIGINT NOT NULL,
+            META_ROW_NUMBER BIGINT NOT NULL,
             PRIMARY KEY (animal))",
             )
             .unwrap()
@@ -111,7 +111,7 @@ mod tests {
         let on_chain_table = OnChainTable::try_from_iter(data.clone()).unwrap();
         let expected_from_0 =
             OnChainTable::try_from_iter(data.clone().into_iter().chain(core::iter::once((
-                "SXTMETA_ROW_NUMBER".parse().unwrap(),
+                "META_ROW_NUMBER".parse().unwrap(),
                 OnChainColumn::BigInt(vec![0, 1, 2]),
             ))))
             .unwrap();
@@ -122,7 +122,7 @@ mod tests {
 
         let expected_from_3 =
             OnChainTable::try_from_iter(data.into_iter().chain(core::iter::once((
-                "SXTMETA_ROW_NUMBER".parse().unwrap(),
+                "META_ROW_NUMBER".parse().unwrap(),
                 OnChainColumn::BigInt(vec![3, 4, 5]),
             ))))
             .unwrap();
@@ -141,7 +141,7 @@ mod tests {
 
         let on_chain_table = OnChainTable::try_from_iter(data.clone()).unwrap();
         let expected = OnChainTable::try_from_iter(data.into_iter().chain(core::iter::once((
-            "SXTMETA_ROW_NUMBER".parse().unwrap(),
+            "META_ROW_NUMBER".parse().unwrap(),
             OnChainColumn::BigInt(vec![]),
         ))))
         .unwrap();

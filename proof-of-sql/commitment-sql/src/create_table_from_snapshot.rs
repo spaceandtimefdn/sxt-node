@@ -199,7 +199,7 @@ mod tests {
                     "CREATE TABLE animal.population (
             animal VARCHAR NOT NULL,
             population BIGINT NOT NULL,
-            SXTMETA_ROW_NUMBER BIGINT NOT NULL,
+            META_ROW_NUMBER BIGINT NOT NULL,
             PRIMARY KEY (animal))",
                 )
                 .unwrap()
