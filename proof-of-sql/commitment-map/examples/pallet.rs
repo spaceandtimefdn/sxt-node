@@ -9,17 +9,23 @@ pub use pallet::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
-    use super::*;
     use core::str;
+
     use curve25519_dalek::RistrettoPoint;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use proof_of_sql::{base::commitment::TableCommitment, proof_primitive::dory::DoryCommitment};
+    use proof_of_sql::base::commitment::TableCommitment;
+    use proof_of_sql::proof_primitive::dory::DoryCommitment;
     use proof_of_sql_commitment_map::{
-        CommitmentMap, CommitmentScheme, CommitmentStorageMapHandler, TableCommitmentBytes,
+        CommitmentMap,
+        CommitmentScheme,
+        CommitmentStorageMapHandler,
+        TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
     };
     use sxt_core::tables::TableIdentifier;
+
+    use super::*;
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);

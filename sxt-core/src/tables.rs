@@ -1,12 +1,15 @@
-use super::ByteString;
 use alloc::vec::Vec;
+
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::{storage::bounded_vec::BoundedVec, traits::ConstU32};
+use frame_support::storage::bounded_vec::BoundedVec;
+use frame_support::traits::ConstU32;
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
 use sp_core::RuntimeDebug;
 use sqlparser::ast::ObjectName;
+
+use super::ByteString;
 
 /// Maxiumum number of columns per table
 pub const MAX_COLS_PER_TABLE: u32 = 64;
@@ -23,7 +26,19 @@ pub type MaxColsPerTable = ConstU32<MAX_COLS_PER_TABLE>;
 pub type MaxTablesPerSchema = ConstU32<MAX_TABLES_PER_SCHEMA>;
 
 /// List of possible chains that the transaction node supports.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default, Serialize, Deserialize)]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Default,
+    Serialize,
+    Deserialize,
+)]
 pub enum Source {
     /// Ethereum mainnet
     #[default]
@@ -43,7 +58,19 @@ pub enum Source {
 }
 
 /// The mode that the indexer supports
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default, Serialize, Deserialize)]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Default,
+    Serialize,
+    Deserialize,
+)]
 pub enum IndexerMode {
     #[default]
     /// TODO: add docs
@@ -59,7 +86,19 @@ pub enum IndexerMode {
 }
 
 /// A request for work from an indexer
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default, Serialize, Deserialize)]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Default,
+    Serialize,
+    Deserialize,
+)]
 pub struct SourceAndMode {
     /// TODO: add docs
     pub source: Source,
@@ -80,7 +119,19 @@ pub type TableName = ByteString;
 pub type TableNamespace = ByteString;
 
 /// A unique identifier for a work assignment, a key that maps to the 'TableSchema'
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default, Serialize, Deserialize)]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Default,
+    Serialize,
+    Deserialize,
+)]
 pub struct TableIdentifier {
     /// TODO: add docs
     pub name: TableName,
@@ -174,12 +225,14 @@ pub fn create_statement(stmnt: &str) -> CreateStatement {
 
 #[cfg(test)]
 mod tests {
+    use alloc::format;
+    use alloc::string::String;
+
+    use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+    use sqlparser::dialect::PostgreSqlDialect;
+    use sqlparser::parser::Parser;
+
     use super::*;
-    use alloc::{format, string::String};
-    use sqlparser::{
-        ast::helpers::stmt_create_table::CreateTableBuilder, dialect::PostgreSqlDialect,
-        parser::Parser,
-    };
 
     #[test]
     fn we_can_convert_object_name_to_table_identifier() {

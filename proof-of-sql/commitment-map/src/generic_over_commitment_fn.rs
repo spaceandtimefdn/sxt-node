@@ -1,5 +1,6 @@
-use crate::generic_over_commitment::GenericOverCommitment;
 use proof_of_sql::base::commitment::Commitment;
+
+use crate::generic_over_commitment::GenericOverCommitment;
 
 /// Trait for writing functions that are generic over commitments.
 ///
@@ -36,11 +37,13 @@ where
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
-    use crate::generic_over_commitment::{CommitmentType, OptionType};
     use core::marker::PhantomData;
+
     use curve25519_dalek::RistrettoPoint;
     use proof_of_sql::proof_primitive::dory::DoryCommitment;
+
+    use super::*;
+    use crate::generic_over_commitment::{CommitmentType, OptionType};
 
     pub struct SomeFn<T: GenericOverCommitment>(PhantomData<T>);
 

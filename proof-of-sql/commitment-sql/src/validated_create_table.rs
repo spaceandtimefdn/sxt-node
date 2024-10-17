@@ -1,17 +1,19 @@
-use crate::{
-    column_options::{validate_column_options, InvalidColumnOptions},
-    column_type_conversion::{
-        sqlparser_data_type_to_proof_of_sql_column_type, UnsupportedColumnType,
-    },
-    map::IndexMap,
-    metadata_prefix::{validate_table_avoids_prefix, ReservedMetadataPrefix},
-};
 use alloc::string::ToString;
+
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::database::{ColumnType, TableRef};
 use proof_of_sql_parser::{Identifier, ParseError};
 use snafu::Snafu;
-use sqlparser::ast::{helpers::stmt_create_table::CreateTableBuilder, ColumnDef, ColumnOptionDef};
+use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+use sqlparser::ast::{ColumnDef, ColumnOptionDef};
+
+use crate::column_options::{validate_column_options, InvalidColumnOptions};
+use crate::column_type_conversion::{
+    sqlparser_data_type_to_proof_of_sql_column_type,
+    UnsupportedColumnType,
+};
+use crate::map::IndexMap;
+use crate::metadata_prefix::{validate_table_avoids_prefix, ReservedMetadataPrefix};
 
 /// Error type for invalid table definitions.
 #[derive(Debug, Snafu)]
@@ -142,9 +144,12 @@ impl<'a> From<ValidatedCreateTable<'a>> for OnChainTable {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use alloc::vec;
-    use sqlparser::{dialect::PostgreSqlDialect, parser::Parser};
+
+    use sqlparser::dialect::PostgreSqlDialect;
+    use sqlparser::parser::Parser;
+
+    use super::*;
 
     #[test]
     fn we_can_validate_table_definition() {

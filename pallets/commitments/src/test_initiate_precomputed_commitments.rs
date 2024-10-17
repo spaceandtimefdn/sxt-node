@@ -1,10 +1,15 @@
-use crate::mock::*;
 use frame_support::assert_noop;
-use proof_of_sql::{base::commitment::TableCommitment, proof_primitive::dory::DoryCommitment};
+use proof_of_sql::base::commitment::TableCommitment;
+use proof_of_sql::proof_primitive::dory::DoryCommitment;
 use proof_of_sql_commitment_map::{
-    CommitmentScheme, KeyExistsError, TableCommitmentBytes, TableCommitmentBytesPerCommitmentScheme,
+    CommitmentScheme,
+    KeyExistsError,
+    TableCommitmentBytes,
+    TableCommitmentBytesPerCommitmentScheme,
 };
 use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
+
+use crate::mock::*;
 
 #[test]
 #[allow(deprecated)]

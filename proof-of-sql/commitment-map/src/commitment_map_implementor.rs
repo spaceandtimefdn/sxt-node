@@ -1,9 +1,15 @@
-use crate::{
-    generic_over_commitment::{GenericOverCommitment, OptionType},
-    AnyCommitmentScheme, CommitmentMap, CommitmentScheme, CommitmentSchemeFlags,
-    CommitmentSchemesMismatchError, KeyExistsError, PerCommitmentScheme,
-};
 use core::fmt::Debug;
+
+use crate::generic_over_commitment::{GenericOverCommitment, OptionType};
+use crate::{
+    AnyCommitmentScheme,
+    CommitmentMap,
+    CommitmentScheme,
+    CommitmentSchemeFlags,
+    CommitmentSchemesMismatchError,
+    KeyExistsError,
+    PerCommitmentScheme,
+};
 
 /// Private abstraction for mappings of keys and commitment schemes to values of type `V`.
 ///

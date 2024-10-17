@@ -15,11 +15,11 @@ pub use weights::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-
     use sxt_core::permissions::{PermissionLevel, PermissionList};
+
+    use super::*;
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -107,16 +107,15 @@ pub mod pallet {
             origin: OriginFor<T>,
             permission: &PermissionLevel,
         ) -> Result<(), DispatchError> {
-            ensure_root(origin.clone())
-                .or_else(|_| {
-                    ensure_signed(origin.clone())
-                        .map_err(|_| Error::<T>::UnsignedTransaction.into())
-                        .and_then(|c| {
-                            Self::has_permissions(&c, permission)
-                                .then_some(())
-                                .ok_or(Error::<T>::InsufficientPermissions.into())
-                        })
-                })
+            ensure_root(origin.clone()).or_else(|_| {
+                ensure_signed(origin.clone())
+                    .map_err(|_| Error::<T>::UnsignedTransaction.into())
+                    .and_then(|c| {
+                        Self::has_permissions(&c, permission)
+                            .then_some(())
+                            .ok_or(Error::<T>::InsufficientPermissions.into())
+                    })
+            })
         }
     }
 }

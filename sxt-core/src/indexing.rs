@@ -1,9 +1,10 @@
-use crate::tables::TableIdentifier;
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::BoundedVec;
 use frame_support::__private::RuntimeDebug;
 use frame_support::pallet_prelude::{ConstU32, TypeInfo};
 use sp_core::U256;
+
+use crate::tables::TableIdentifier;
 
 /// Maximum length of submitted Record Batch Data
 pub const DATA_MAX_LEN: u32 = 2_000_000;

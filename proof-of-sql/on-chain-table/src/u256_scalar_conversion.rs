@@ -28,8 +28,10 @@ pub fn u256_to_scalar<S: Scalar>(value: &U256) -> Result<S, OutOfScalarBounds> {
 
 #[cfg(test)]
 mod tests {
+    use proof_of_sql::base::scalar::Curve25519Scalar;
+    use proof_of_sql::proof_primitive::dory::DoryScalar;
+
     use super::*;
-    use proof_of_sql::{base::scalar::Curve25519Scalar, proof_primitive::dory::DoryScalar};
 
     fn we_can_convert_u256_to_scalar<S: Scalar>() {
         let min_signed = U256::MAX - U256(S::MAX_SIGNED.into()) + 1;

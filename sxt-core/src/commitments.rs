@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Validate};
 use codec::{Decode, Encode, MaxEncodedLen};
 use proof_of_sql::proof_primitive::dory::PublicParameters;

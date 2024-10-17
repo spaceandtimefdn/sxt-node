@@ -23,10 +23,14 @@ pub use create_table::{process_create_table, CreateTableAndCommitmentMetadata};
 
 mod create_table_from_snapshot;
 pub use create_table_from_snapshot::{
-    process_create_table_from_snapshot, ProcessCreateTableFromSnapshotError,
+    process_create_table_from_snapshot,
+    ProcessCreateTableFromSnapshotError,
 };
 
 mod insert;
 pub use insert::{
-    process_insert, AppendOnChainTableError, InsertAndCommitmentMetadata, ProcessInsertError,
+    process_insert,
+    AppendOnChainTableError,
+    InsertAndCommitmentMetadata,
+    ProcessInsertError,
 };

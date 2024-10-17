@@ -1,10 +1,16 @@
-use crate::pallet::Error;
-use commitment_sql::{
-    AppendOnChainTableError, InvalidColumnOptions, InvalidCreateTable,
-    ProcessCreateTableFromSnapshotError, ProcessInsertError, UnsupportedColumnType,
-};
 use core::fmt::Debug;
+
+use commitment_sql::{
+    AppendOnChainTableError,
+    InvalidColumnOptions,
+    InvalidCreateTable,
+    ProcessCreateTableFromSnapshotError,
+    ProcessInsertError,
+    UnsupportedColumnType,
+};
 use proof_of_sql_commitment_map::{KeyExistsError, TableCommitmentToBytesError};
+
+use crate::pallet::Error;
 
 impl<T> From<TableCommitmentToBytesError> for Error<T> {
     fn from(error: TableCommitmentToBytesError) -> Self {

@@ -8,25 +8,40 @@
 //! Float64, Utf8 (strings), Timestamps, and Decimal types. Each type is converted to a corresponding
 //! PostgreSQL-compatible type.
 
-use crate::{data_loader::META_ROW_NUMBER_COLUMN_NAME, err, status};
-use arrow::{
-    array::{
-        Array, BinaryArray, BooleanArray, Date32Array, Decimal128Array, FixedSizeBinaryArray,
-        Float32Array, Float64Array, Int16Array, Int32Array, Int64Array, StringArray,
-        Time64MicrosecondArray, TimestampMicrosecondArray, TimestampMillisecondArray, UInt32Array,
-    },
-    datatypes::{DataType, TimeUnit},
-    record_batch::RecordBatch,
+use std::collections::HashMap;
+use std::error::Error;
+use std::str::FromStr;
+
+use arrow::array::{
+    Array,
+    BinaryArray,
+    BooleanArray,
+    Date32Array,
+    Decimal128Array,
+    FixedSizeBinaryArray,
+    Float32Array,
+    Float64Array,
+    Int16Array,
+    Int32Array,
+    Int64Array,
+    StringArray,
+    Time64MicrosecondArray,
+    TimestampMicrosecondArray,
+    TimestampMillisecondArray,
+    UInt32Array,
 };
+use arrow::datatypes::{DataType, TimeUnit};
+use arrow::record_batch::RecordBatch;
 use arrow_array::TimestampNanosecondArray;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use pg_bigdecimal::{BigDecimal, PgNumeric};
 use rust_decimal::Decimal;
-use std::{collections::HashMap, error::Error, str::FromStr};
-use tokio_postgres::types::{
-    private::BytesMut, to_sql_checked, IsNull, ToSql, Type as PostgresType,
-};
+use tokio_postgres::types::private::BytesMut;
+use tokio_postgres::types::{to_sql_checked, IsNull, ToSql, Type as PostgresType};
 use tonic::Status;
+
+use crate::data_loader::META_ROW_NUMBER_COLUMN_NAME;
+use crate::{err, status};
 
 /// `PgColumn` represents the metadata for a PostgreSQL column including its name,
 /// data type, and optional numeric precision/scale for decimal types.
@@ -476,9 +491,11 @@ pub fn get_pg_values(
 #[cfg(test)]
 mod test {
 
-    use pg_bigdecimal::{BigDecimal, PgNumeric};
     use std::str::FromStr;
-    use tokio_postgres::types::{private::BytesMut, ToSql, Type as PostgresType};
+
+    use pg_bigdecimal::{BigDecimal, PgNumeric};
+    use tokio_postgres::types::private::BytesMut;
+    use tokio_postgres::types::{ToSql, Type as PostgresType};
 
     #[tokio::test]
     async fn test_get_pg_values() {

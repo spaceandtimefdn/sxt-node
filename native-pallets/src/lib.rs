@@ -20,16 +20,19 @@ pub mod native_pallet_indexing {
     /// Do not change below this comment.
     /// Wrap the pallet type to use the api object
     pub type Pallet<T> = pallet_indexing::Pallet<T, Api>;
-    
+
     /// Wrap event type to use the Api object
     pub type Event<T> = pallet_indexing::Event<T, Api>;
-    
+
     /// Wrap the error type to use the Api object
     pub type Error<T> = pallet_indexing::Error<T, Api>;
 
     /// Rexport hidden attributes
     pub use pallet_indexing::{
-        __substrate_call_check, __substrate_event_check, tt_default_parts, tt_default_parts_v2,
+        __substrate_call_check,
+        __substrate_event_check,
+        tt_default_parts,
+        tt_default_parts_v2,
         tt_error_token,
     };
 }

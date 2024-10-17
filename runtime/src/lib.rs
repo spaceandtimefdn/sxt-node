@@ -5,53 +5,56 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 extern crate alloc;
-use alloc::{vec, vec::Vec};
+use alloc::vec;
+use alloc::vec::Vec;
+
+use frame_support::genesis_builder_helper::{build_state, get_preset};
+use frame_support::traits::VariantCountOf;
+pub use frame_support::traits::{
+    ConstBool,
+    ConstU128,
+    ConstU32,
+    ConstU64,
+    ConstU8,
+    KeyOwnerProofSystem,
+    Randomness,
+    StorageInfo,
+};
+pub use frame_support::weights::constants::{
+    BlockExecutionWeight,
+    ExtrinsicBaseWeight,
+    RocksDbWeight,
+    WEIGHT_REF_TIME_PER_SECOND,
+};
+pub use frame_support::weights::{IdentityFee, Weight};
+pub use frame_support::{construct_runtime, derive_impl, parameter_types, StorageValue};
+pub use frame_system::Call as SystemCall;
+pub use pallet_balances::Call as BalancesCall;
 use pallet_grandpa::AuthorityId as GrandpaId;
+/// Import the template pallet.
+pub use pallet_template;
+pub use pallet_timestamp::Call as TimestampCall;
+use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_core::crypto::KeyTypeId;
+use sp_core::OpaqueMetadata;
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, One, Verify};
+use sp_runtime::transaction_validity::{TransactionSource, TransactionValidity};
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
 use sp_runtime::{
-    create_runtime_str, generic, impl_opaque_keys,
-    traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, One, Verify},
-    transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, MultiSignature,
+    create_runtime_str,
+    generic,
+    impl_opaque_keys,
+    ApplyExtrinsicResult,
+    MultiSignature,
 };
+pub use sp_runtime::{Perbill, Permill};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-
-pub use frame_support::{
-    construct_runtime, derive_impl, parameter_types,
-    traits::{
-        ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, Randomness,
-        StorageInfo,
-    },
-    weights::{
-        constants::{
-            BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND,
-        },
-        IdentityFee, Weight,
-    },
-    StorageValue,
-};
-use frame_support::{
-    genesis_builder_helper::{build_state, get_preset},
-    traits::VariantCountOf,
-};
-pub use frame_system::Call as SystemCall;
-pub use pallet_balances::Call as BalancesCall;
-pub use pallet_timestamp::Call as TimestampCall;
-use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill};
-
-pub use pallet_indexing;
-pub use pallet_permissions;
-pub use pallet_tables;
-pub use pallet_commitments;
-/// Import the template pallet.
-pub use pallet_template;
+pub use {pallet_commitments, pallet_indexing, pallet_permissions, pallet_tables};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -77,9 +80,9 @@ pub type Hash = sp_core::H256;
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
 /// to even the core data structures.
 pub mod opaque {
-    use super::*;
-
     pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
+
+    use super::*;
 
     /// Opaque block header type.
     pub type Header = generic::Header<BlockNumber, BlakeTwo256>;

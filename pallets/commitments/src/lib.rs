@@ -28,25 +28,40 @@ pub use pallet::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
-    use alloc::{str, vec::Vec};
+    use alloc::str;
+    use alloc::vec::Vec;
+
     use commitment_sql::{
-        process_create_table, process_create_table_from_snapshot, process_insert,
-        CreateTableAndCommitmentMetadata, InsertAndCommitmentMetadata,
+        process_create_table,
+        process_create_table_from_snapshot,
+        process_insert,
+        CreateTableAndCommitmentMetadata,
+        InsertAndCommitmentMetadata,
     };
     use frame_support::pallet_prelude::*;
     use on_chain_table::OnChainTable;
     use proof_of_sql::proof_primitive::dory::{
-        DoryProverPublicSetup, ProverSetup, PublicParameters,
+        DoryProverPublicSetup,
+        ProverSetup,
+        PublicParameters,
     };
     use proof_of_sql_commitment_map::{
-        CommitmentMap, CommitmentScheme, CommitmentSchemeFlags, CommitmentStorageMapHandler,
-        KeyExistsError, PerCommitmentScheme, TableCommitmentBytes,
+        CommitmentMap,
+        CommitmentScheme,
+        CommitmentSchemeFlags,
+        CommitmentStorageMapHandler,
+        KeyExistsError,
+        PerCommitmentScheme,
+        TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
     };
-    use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
+    use rand_chacha::rand_core::SeedableRng;
+    use rand_chacha::ChaCha20Rng;
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
-    use sxt_core::{commitments::PublicParametersBytes, tables::TableIdentifier};
+    use sxt_core::commitments::PublicParametersBytes;
+    use sxt_core::tables::TableIdentifier;
+
+    use super::*;
 
     /// Commitment pallet, providing methods for pallet calls
     #[pallet::pallet]

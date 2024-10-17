@@ -1,9 +1,9 @@
-use crate::{
-    generic_over_commitment::{GenericOverCommitment, OptionType},
-    CommitmentScheme, CommitmentSchemeFlags, PerCommitmentScheme,
-};
 use core::fmt::Debug;
+
 use snafu::Snafu;
+
+use crate::generic_over_commitment::{GenericOverCommitment, OptionType};
+use crate::{CommitmentScheme, CommitmentSchemeFlags, PerCommitmentScheme};
 
 /// Cannot create key that already exists.
 #[derive(Debug, Snafu, PartialEq, Eq)]

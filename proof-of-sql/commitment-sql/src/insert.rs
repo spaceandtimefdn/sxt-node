@@ -1,20 +1,29 @@
-use crate::row_number_column::on_chain_table_with_row_number_column;
-use alloc::{vec, vec::Vec};
+use alloc::vec;
+use alloc::vec::Vec;
 use core::marker::PhantomData;
+
 use itertools::Itertools;
 use on_chain_table::{OnChainTable, OutOfScalarBounds};
 use proof_of_sql::base::commitment::{
-    AppendColumnCommitmentsError, AppendTableCommitmentError, ColumnCommitmentsMismatch, Commitment,
+    AppendColumnCommitmentsError,
+    AppendTableCommitmentError,
+    ColumnCommitmentsMismatch,
+    Commitment,
 };
-use proof_of_sql_commitment_map::{
-    generic_over_commitment::{
-        AssociatedPublicSetupType, ConcreteType, GenericOverCommitment, OptionType, PairType,
-        ResultOkType, TableCommitmentType,
-    },
-    GenericOverCommitmentFn, PerCommitmentScheme,
+use proof_of_sql_commitment_map::generic_over_commitment::{
+    AssociatedPublicSetupType,
+    ConcreteType,
+    GenericOverCommitment,
+    OptionType,
+    PairType,
+    ResultOkType,
+    TableCommitmentType,
 };
+use proof_of_sql_commitment_map::{GenericOverCommitmentFn, PerCommitmentScheme};
 use snafu::Snafu;
 use sxt_core::tables::TableIdentifier;
+
+use crate::row_number_column::on_chain_table_with_row_number_column;
 
 /// Generically accepts a table commitment and returns the end of its row range.
 struct GetTableCommitmentRangeEndFn;
@@ -222,18 +231,24 @@ pub fn process_insert(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use alloc::string::String;
+
     use on_chain_table::OnChainColumn;
     use primitive_types::U256;
-    use proof_of_sql::{
-        base::{commitment::TableCommitment, database::ColumnType, math::decimal::Precision},
-        proof_primitive::dory::{
-            DoryCommitment, DoryProverPublicSetup, DoryScalar, ProverSetup, PublicParameters,
-        },
+    use proof_of_sql::base::commitment::TableCommitment;
+    use proof_of_sql::base::database::ColumnType;
+    use proof_of_sql::base::math::decimal::Precision;
+    use proof_of_sql::proof_primitive::dory::{
+        DoryCommitment,
+        DoryProverPublicSetup,
+        DoryScalar,
+        ProverSetup,
+        PublicParameters,
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;
+
+    use super::*;
 
     #[test]
     fn we_can_process_inserts() {

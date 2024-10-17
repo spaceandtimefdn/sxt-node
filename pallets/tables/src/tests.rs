@@ -1,11 +1,10 @@
-use crate::{mock::*, CreateTableList};
-
 use frame_support::assert_ok;
+use pallet_permissions::Pallet;
+use sxt_core::permissions::{PermissionLevel, PermissionList, TablesPalletPermission};
 use sxt_core::tables::{SourceAndMode, UpdateTableList};
 
-use sxt_core::permissions::TablesPalletPermission;
-use pallet_permissions::Pallet;
-use sxt_core::permissions::{PermissionLevel, PermissionList,};
+use crate::mock::*;
+use crate::CreateTableList;
 
 // Give $who permission $p
 macro_rules! set_permission {
@@ -41,7 +40,6 @@ fn update_tables_should_work_when_permissioned() {
         let (who, signer) = user(1);
 
         set_permission!(who, TablesPalletPermission::EditSchema);
-
 
         assert_ok!(
             Tables::update_tables(signer, SourceAndMode::default(), UpdateTableList::default()),
@@ -92,7 +90,11 @@ fn create_tables_should_work_when_permissioned() {
         set_permission!(who, TablesPalletPermission::EditSchema);
 
         assert_ok!(
-            Tables::create_tables_with_snapshot_and_commitment(signer, SourceAndMode::default(), CreateTableList::default(),),
+            Tables::create_tables_with_snapshot_and_commitment(
+                signer,
+                SourceAndMode::default(),
+                CreateTableList::default(),
+            ),
             ()
         );
     })

@@ -1,19 +1,28 @@
-use crate::{
-    i256_conversion::{arrow_i256_to_u256, u256_to_arrow_i256},
-    OnChainColumn,
+use alloc::string::ToString;
+use alloc::sync::Arc;
+
+use arrow::array::{
+    ArrayRef,
+    BooleanArray,
+    Decimal128Array,
+    Decimal256Array,
+    Int16Array,
+    Int32Array,
+    Int64Array,
+    Int8Array,
+    StringArray,
+    TimestampMicrosecondArray,
+    TimestampMillisecondArray,
+    TimestampNanosecondArray,
+    TimestampSecondArray,
 };
-use alloc::{string::ToString, sync::Arc};
-use arrow::{
-    array::{
-        ArrayRef, BooleanArray, Decimal128Array, Decimal256Array, Int16Array, Int32Array,
-        Int64Array, Int8Array, StringArray, TimestampMicrosecondArray, TimestampMillisecondArray,
-        TimestampNanosecondArray, TimestampSecondArray,
-    },
-    datatypes::{DataType, TimeUnit},
-};
+use arrow::datatypes::{DataType, TimeUnit};
 use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql_parser::posql_time::{PoSQLTimeUnit, PoSQLTimeZone, PoSQLTimestampError};
 use snafu::Snafu;
+
+use crate::i256_conversion::{arrow_i256_to_u256, u256_to_arrow_i256};
+use crate::OnChainColumn;
 
 /// Errors that can occur when converting from an arrow `ArrayRef` to [`OnChainColumn`].
 #[derive(Debug, Snafu)]
@@ -222,9 +231,11 @@ impl From<OnChainColumn> for ArrayRef {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use arrow::{array::Float32Array, datatypes::i256};
+    use arrow::array::Float32Array;
+    use arrow::datatypes::i256;
     use primitive_types::U256;
+
+    use super::*;
 
     #[test]
     fn we_can_convert_simple_arrow_arrays_to_on_chain_column() {

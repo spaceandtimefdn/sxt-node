@@ -1,9 +1,3 @@
-use crate::{
-    generic_over_commitment::{
-        ConcreteType, GenericOverCommitment, OptionType, PairType, ResultOkType,
-    },
-    GenericOverCommitmentFn,
-};
 use curve25519_dalek::RistrettoPoint;
 #[cfg(feature = "substrate")]
 use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
@@ -11,6 +5,15 @@ use proof_of_sql::proof_primitive::dory::DoryCommitment;
 #[cfg(feature = "substrate")]
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
+
+use crate::generic_over_commitment::{
+    ConcreteType,
+    GenericOverCommitment,
+    OptionType,
+    PairType,
+    ResultOkType,
+};
+use crate::GenericOverCommitmentFn;
 
 /// Identifier for proof-of-sql commitment schemes.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -278,16 +281,15 @@ impl<G: GenericOverCommitment> FromIterator<AnyCommitmentScheme<G>>
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+    use alloc::vec::Vec;
+
+    use proof_of_sql::base::scalar::{Curve25519Scalar, Scalar};
+    use proof_of_sql::proof_primitive::dory::DoryScalar;
+
     use super::*;
-    use crate::{
-        generic_over_commitment::{AssociatedScalarType, CommitmentType},
-        generic_over_commitment_fn::tests::SomeFn,
-    };
-    use alloc::{vec, vec::Vec};
-    use proof_of_sql::{
-        base::scalar::{Curve25519Scalar, Scalar},
-        proof_primitive::dory::DoryScalar,
-    };
+    use crate::generic_over_commitment::{AssociatedScalarType, CommitmentType};
+    use crate::generic_over_commitment_fn::tests::SomeFn;
 
     #[test]
     fn we_can_iterate_over_commitment_schemes_in_commitment_scheme_flags() {

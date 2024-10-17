@@ -2265,7 +2265,7 @@ dependencies = [
  "rust_decimal",
  "serde",
  "serde_json",
- "thiserror",
+ "snafu",
  "tokio",
  "tokio-postgres",
  "tokio-stream",

@@ -1,21 +1,31 @@
-use crate::{
-    checkpoint::{Checkpoint, CheckpointStatus},
-    data_loader::{
-        create_client_session, extract_schema_and_table, extract_year_and_month,
-        get_table_columns_and_types, process_data_files, process_list, META_ROW_NUMBER_COLUMN_NAME,
-        PRIMARY_KEY_QUERY,
-    },
-    to_pg::{get_pg_values, PgColumn, PgValue},
-};
+use std::collections::HashMap;
+use std::error::Error;
+use std::time::SystemTime;
+
 use arrow::datatypes::SchemaRef;
 use arrow_array::RecordBatch;
 use deadpool_postgres::Object;
-use futures::{future::join_all, TryStreamExt};
+use futures::future::join_all;
+use futures::TryStreamExt;
 use log::{debug, info};
-use object_store::{azure::MicrosoftAzure, path::Path, ObjectStore};
+use object_store::azure::MicrosoftAzure;
+use object_store::path::Path;
+use object_store::ObjectStore;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReader;
-use std::{collections::HashMap, error::Error, time::SystemTime};
 use tokio_postgres::types::ToSql;
+
+use crate::checkpoint::{Checkpoint, CheckpointStatus};
+use crate::data_loader::{
+    create_client_session,
+    extract_schema_and_table,
+    extract_year_and_month,
+    get_table_columns_and_types,
+    process_data_files,
+    process_list,
+    META_ROW_NUMBER_COLUMN_NAME,
+    PRIMARY_KEY_QUERY,
+};
+use crate::to_pg::{get_pg_values, PgColumn, PgValue};
 
 type Store = MicrosoftAzure;
 type ColumnMap = HashMap<String, PgColumn>;

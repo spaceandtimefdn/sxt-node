@@ -1,5 +1,6 @@
 use snafu::Snafu;
-use sqlparser::ast::{helpers::stmt_create_table::CreateTableBuilder, Ident};
+use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+use sqlparser::ast::Ident;
 
 /// Prefix reserved for columns/tables that are for internal sxt-node usage.
 pub const METADATA_PREFIX: &str = "SXTMETA";
@@ -35,8 +36,10 @@ pub fn validate_table_avoids_prefix(
 
 #[cfg(test)]
 mod tests {
+    use sqlparser::dialect::PostgreSqlDialect;
+    use sqlparser::parser::Parser;
+
     use super::*;
-    use sqlparser::{dialect::PostgreSqlDialect, parser::Parser};
 
     #[test]
     fn we_can_validate_tables_that_avoid_prefix() {

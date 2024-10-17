@@ -1,21 +1,27 @@
-use crate::{
-    mock::*,
-    test_create_table_generic::{self, CreateTableApiTestParams},
-    Error,
-};
 use commitment_sql::{process_create_table, CreateTableAndCommitmentMetadata};
 use frame_support::assert_noop;
 use on_chain_table::{OnChainColumn, OnChainTable};
-use proof_of_sql::{
-    base::commitment::TableCommitment,
-    proof_primitive::dory::{DoryCommitment, DoryProverPublicSetup, DoryScalar, ProverSetup},
+use proof_of_sql::base::commitment::TableCommitment;
+use proof_of_sql::proof_primitive::dory::{
+    DoryCommitment,
+    DoryProverPublicSetup,
+    DoryScalar,
+    ProverSetup,
 };
 use proof_of_sql_commitment_map::{
-    CommitmentScheme, CommitmentSchemeFlags, PerCommitmentScheme, TableCommitmentBytes,
+    CommitmentScheme,
+    CommitmentSchemeFlags,
+    PerCommitmentScheme,
+    TableCommitmentBytes,
     TableCommitmentBytesPerCommitmentScheme,
 };
-use sqlparser::{dialect::PostgreSqlDialect, parser::Parser};
+use sqlparser::dialect::PostgreSqlDialect;
+use sqlparser::parser::Parser;
 use sxt_core::tables::TableIdentifier;
+
+use crate::mock::*;
+use crate::test_create_table_generic::{self, CreateTableApiTestParams};
+use crate::Error;
 
 struct ProcessCreateTableFromSnapshotTestParams {
     sql_statement: String,

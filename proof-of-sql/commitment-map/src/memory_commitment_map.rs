@@ -1,11 +1,12 @@
-use crate::{
-    commitment_map_implementor::CommitmentMapImplementor,
-    commitment_scheme::{AnyCommitmentScheme, CommitmentScheme},
-    generic_over_commitment::{GenericOverCommitment, OptionType},
-};
-use curve25519_dalek::RistrettoPoint;
-use proof_of_sql::{base::database::TableRef, proof_primitive::dory::DoryCommitment};
 use std::collections::HashMap;
+
+use curve25519_dalek::RistrettoPoint;
+use proof_of_sql::base::database::TableRef;
+use proof_of_sql::proof_primitive::dory::DoryCommitment;
+
+use crate::commitment_map_implementor::CommitmentMapImplementor;
+use crate::commitment_scheme::{AnyCommitmentScheme, CommitmentScheme};
+use crate::generic_over_commitment::{GenericOverCommitment, OptionType};
 
 /// Accurate implementor of [`CommitmentMap`] that stores commitments in-memory.
 ///
@@ -70,13 +71,18 @@ where
 
 #[cfg(test)]
 mod tests {
+    use core::marker::PhantomData;
+
+    use proof_of_sql::base::commitment::Commitment;
+
     use super::*;
     use crate::{
-        CommitmentMap, CommitmentSchemeFlags, CommitmentSchemesMismatchError, KeyExistsError,
+        CommitmentMap,
+        CommitmentSchemeFlags,
+        CommitmentSchemesMismatchError,
+        KeyExistsError,
         PerCommitmentScheme,
     };
-    use core::marker::PhantomData;
-    use proof_of_sql::base::commitment::Commitment;
 
     /// An example of a GenericOverCommitment value for testing.
     ///

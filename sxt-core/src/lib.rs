@@ -24,7 +24,7 @@ pub mod native;
 /// A module for parsing DDLs into table create statements
 /// Used in building the genesis chain spec
 /// Enabled with the 'std' feature
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 pub mod parsing;
 
 /// The maximum length of Identifiers
