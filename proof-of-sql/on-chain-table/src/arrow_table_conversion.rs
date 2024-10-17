@@ -1,8 +1,11 @@
-use crate::{map::IndexSet, ArrowToOnChainColumnError, OnChainColumn, OnChainTable};
 use alloc::vec::Vec;
+
 use arrow::array::RecordBatch;
 use proof_of_sql_parser::ParseError;
 use snafu::Snafu;
+
+use crate::map::IndexSet;
+use crate::{ArrowToOnChainColumnError, OnChainColumn, OnChainTable};
 
 /// Errors that can occur when converting a `RecordBatch` to an [`OnChainTable`].
 #[derive(Debug, Snafu)]
@@ -74,9 +77,12 @@ impl From<OnChainTable> for RecordBatch {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use alloc::{sync::Arc, vec};
+    use alloc::sync::Arc;
+    use alloc::vec;
+
     use arrow::array::{ArrayRef, Float32Array, Int64Array, StringArray};
+
+    use super::*;
 
     #[test]
     fn we_can_convert_table_to_and_from_record_batch() {

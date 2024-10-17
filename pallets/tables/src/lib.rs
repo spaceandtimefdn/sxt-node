@@ -15,30 +15,34 @@ pub use weights::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
-    use frame_support::{
-        pallet_prelude::{StorageDoubleMap, *},
-        Blake2_128Concat,
-    };
+    use frame_support::pallet_prelude::{StorageDoubleMap, *};
+    use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
-    use sxt_core::{
-        permissions::*,
-        tables::{
-            CreateStatement, IndexerMode, Source, SourceAndMode, TableIdentifier, TableName,
-            TableNamespace, UpdateTableList,
-        },
-    };
     use proof_of_sql_commitment_map::generic_over_commitment::{ConcreteType, OptionType};
-    use proof_of_sql_commitment_map::{
-       PerCommitmentScheme, TableCommitmentBytes,
-    };
+    use proof_of_sql_commitment_map::{PerCommitmentScheme, TableCommitmentBytes};
     use sp_runtime::Vec;
+    use sxt_core::permissions::*;
+    use sxt_core::tables::{
+        CreateStatement,
+        IndexerMode,
+        SnapshotUrl,
+        Source,
+        SourceAndMode,
+        TableIdentifier,
+        TableName,
+        TableNamespace,
+        UpdateTableList,
+    };
+
+    use super::*;
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_permissions::Config + pallet_commitments::Config {
+    pub trait Config:
+        frame_system::Config + pallet_permissions::Config + pallet_commitments::Config
+    {
         /// TODO: add docs
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// TODO: add docs
@@ -93,13 +97,12 @@ pub mod pallet {
     pub type CreateTableList =
         BoundedVec<CreateTableCmd, ConstU32<{ sxt_core::tables::MAX_TABLES_PER_SCHEMA }>>;
 
-
     #[pallet::error]
     pub enum Error<T> {
         /// There was an error deserializing the Arrow schema
         ArrowDeserializationError,
 
-           /// Existing commit for this table identifier
+        /// Existing commit for this table identifier
         IdentifierAlreadyExists,
     }
 
@@ -154,7 +157,6 @@ pub mod pallet {
         }
     }
 
-
     impl<T: Config> Pallet<T> {
         /// Uodate the schema and commitment for a table and source and mode combo
         pub fn insert_schema(sm: SourceAndMode, ident: TableIdentifier, stmnt: CreateStatement) {
@@ -168,7 +170,7 @@ pub mod pallet {
         /// Insert the initial commit for this table identifier, return an error if the key already exists
         pub fn insert_initial_commitment(
             ident: TableIdentifier,
-            commit: PerCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>>, 
+            commit: PerCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>>,
             snapshot: SnapshotUrl,
         ) -> DispatchResult {
             #[allow(deprecated)]
@@ -184,7 +186,7 @@ pub mod pallet {
         }
     }
 
-     #[pallet::genesis_config]
+    #[pallet::genesis_config]
     #[derive(frame_support::DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
         tables: Vec<(SourceAndMode, TableIdentifier, CreateStatement)>,
@@ -194,7 +196,7 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            for (SourceAndMode{ source, mode}, ident, stmnt) in self.tables.iter() {
+            for (SourceAndMode { source, mode }, ident, stmnt) in self.tables.iter() {
                 Identifiers::<T>::insert(source, mode, ident.clone());
 
                 let TableIdentifier { name, namespace } = ident;

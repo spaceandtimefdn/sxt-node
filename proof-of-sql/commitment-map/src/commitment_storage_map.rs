@@ -1,20 +1,21 @@
 //! Contains implementation of `CommitmentMap` for substrate's `StorageMap`.
 
-use crate::{
-    commitment_map_implementor::CommitmentMapImplementor,
-    commitment_scheme::{AnyCommitmentScheme, CommitmentScheme},
-    generic_over_commitment::{ConcreteType, OptionType, TableCommitmentType},
-    PerCommitmentScheme,
-};
-use codec::{Decode, Encode, MaxEncodedLen};
 use core::marker::PhantomData;
-use frame_support::{storage::StorageDoubleMap, BoundedVec};
+
+use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::storage::StorageDoubleMap;
+use frame_support::BoundedVec;
 use proof_of_sql::base::commitment::{Commitment, TableCommitment};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
 use sp_core::{ConstU32, TypedGet};
 use sxt_core::tables::{MaxColsPerTable, TableIdentifier};
+
+use crate::commitment_map_implementor::CommitmentMapImplementor;
+use crate::commitment_scheme::{AnyCommitmentScheme, CommitmentScheme};
+use crate::generic_over_commitment::{ConcreteType, OptionType, TableCommitmentType};
+use crate::PerCommitmentScheme;
 
 /// Maximum byte length of a TableCommitment with 64 columns, as a constant.
 const TABLE_COMMITMENT_MAX_LENGTH: u32 = 45_328;
@@ -203,14 +204,21 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use alloc::{format, string::String, vec};
+    use alloc::string::String;
+    use alloc::{format, vec};
+
     use on_chain_table::{OnChainColumn, OnChainTable};
     use proof_of_sql::proof_primitive::dory::{
-        DoryCommitment, DoryProverPublicSetup, DoryScalar, ProverSetup, PublicParameters,
+        DoryCommitment,
+        DoryProverPublicSetup,
+        DoryScalar,
+        ProverSetup,
+        PublicParameters,
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;
+
+    use super::*;
 
     #[test]
     fn we_can_deserialize_and_reserialize_dory_table_commitment_to_bytes() {

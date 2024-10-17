@@ -1,5 +1,6 @@
-use deadpool_postgres::Object;
 use std::fmt::Display;
+
+use deadpool_postgres::Object;
 use tonic::Status;
 
 /// Represents the status of a checkpoint in a processing workflow.

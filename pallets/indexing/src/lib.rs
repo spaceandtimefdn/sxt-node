@@ -16,30 +16,27 @@ mod mock;
 #[cfg(test)]
 mod tests;
 pub mod weights;
-pub use weights::*;
-
-pub use sxt_core::indexing::*;
-
 // Do not remove this or the same attribute for the pallet
 // The cargo doc command will fail because of a bug even though the code is working properly
 #[cfg(not(doc))]
 pub use pallet::*;
+pub use sxt_core::indexing::*;
+pub use weights::*;
 
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    // Do not remove this attribute or the one for the pallet above, 
+    // Do not remove this attribute or the one for the pallet above,
     #![cfg(not(doc))]
 
-    use super::*;
     use frame_support::pallet_prelude::*;
-   
     use frame_system::pallet_prelude::*;
     use native_api::NativeApi;
     use sp_runtime::traits::Hash;
-
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::TableIdentifier;
+
+    use super::*;
 
     #[pallet::pallet]
     pub struct Pallet<T, I = ()>(_);

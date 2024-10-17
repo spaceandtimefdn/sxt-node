@@ -61,9 +61,11 @@ pub fn validate_column_options<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use alloc::string::ToString;
+
     use sqlparser::ast::{Expr, GeneratedAs, Value};
+
+    use super::*;
 
     #[test]
     fn we_can_validate_column_options() {

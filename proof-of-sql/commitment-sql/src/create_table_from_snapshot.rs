@@ -1,15 +1,17 @@
-use crate::{
-    insert::OptionZipFn, process_create_table, CreateTableAndCommitmentMetadata, InvalidCreateTable,
-};
 use proof_of_sql::base::commitment::TableCommitmentArithmeticError;
-use proof_of_sql_commitment_map::{
-    generic_over_commitment::{
-        AssociatedPublicSetupType, OptionType, PairType, ResultOkType, TableCommitmentType,
-    },
-    GenericOverCommitmentFn, PerCommitmentScheme,
+use proof_of_sql_commitment_map::generic_over_commitment::{
+    AssociatedPublicSetupType,
+    OptionType,
+    PairType,
+    ResultOkType,
+    TableCommitmentType,
 };
+use proof_of_sql_commitment_map::{GenericOverCommitmentFn, PerCommitmentScheme};
 use snafu::Snafu;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+
+use crate::insert::OptionZipFn;
+use crate::{process_create_table, CreateTableAndCommitmentMetadata, InvalidCreateTable};
 
 /// Generically accepts a pair of `TableCommitment`s and tries to add them.
 struct TryAddTableCommitmentsFn;
@@ -82,21 +84,24 @@ pub fn process_create_table_from_snapshot(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use alloc::{
-        string::{String, ToString},
-        vec,
-    };
+    use alloc::string::{String, ToString};
+    use alloc::vec;
+
     use on_chain_table::{OnChainColumn, OnChainTable};
-    use proof_of_sql::{
-        base::commitment::TableCommitment,
-        proof_primitive::dory::{
-            DoryCommitment, DoryProverPublicSetup, DoryScalar, ProverSetup, PublicParameters,
-        },
+    use proof_of_sql::base::commitment::TableCommitment;
+    use proof_of_sql::proof_primitive::dory::{
+        DoryCommitment,
+        DoryProverPublicSetup,
+        DoryScalar,
+        ProverSetup,
+        PublicParameters,
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;
-    use sqlparser::{dialect::PostgreSqlDialect, parser::Parser};
+    use sqlparser::dialect::PostgreSqlDialect;
+    use sqlparser::parser::Parser;
+
+    use super::*;
 
     struct ProcessCreateTableFromSnapshotTestParams {
         sql_text: String,

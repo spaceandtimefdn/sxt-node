@@ -1,9 +1,8 @@
-use crate::{
-    mock::{new_test_ext, Test},
-    Error,
-};
 use commitment_sql::CreateTableAndCommitmentMetadata;
 use frame_support::assert_noop;
+
+use crate::mock::{new_test_ext, Test};
+use crate::Error;
 
 /// Abstraction for TestParams types associated with "create table" APIs.
 ///

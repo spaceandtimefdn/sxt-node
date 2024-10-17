@@ -1,20 +1,26 @@
-use crate::{
-    row_number_column::create_table_with_row_number_column,
-    validated_create_table::{InvalidCreateTable, ValidatedCreateTable},
-};
-use alloc::{vec, vec::Vec};
+use alloc::vec;
+use alloc::vec::Vec;
 use core::marker::PhantomData;
+
 use on_chain_table::{OnChainTable, OutOfScalarBounds};
 use proof_of_sql::base::commitment::{Commitment, TableCommitment};
+use proof_of_sql_commitment_map::generic_over_commitment::{
+    AssociatedPublicSetupType,
+    GenericOverCommitment,
+    OptionType,
+    ResultOkType,
+    TableCommitmentType,
+};
 use proof_of_sql_commitment_map::{
-    generic_over_commitment::{
-        AssociatedPublicSetupType, GenericOverCommitment, OptionType, ResultOkType,
-        TableCommitmentType,
-    },
-    CommitmentSchemeFlags, GenericOverCommitmentFn, PerCommitmentScheme,
+    CommitmentSchemeFlags,
+    GenericOverCommitmentFn,
+    PerCommitmentScheme,
 };
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sxt_core::tables::TableIdentifier;
+
+use crate::row_number_column::create_table_with_row_number_column;
+use crate::validated_create_table::{InvalidCreateTable, ValidatedCreateTable};
 
 /// Generically accepts a commitment setup and returns the table commitment to the captured
 /// `OnChainTable` and offset.
@@ -107,14 +113,20 @@ pub fn process_create_table(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use on_chain_table::OnChainColumn;
     use proof_of_sql::proof_primitive::dory::{
-        DoryCommitment, DoryProverPublicSetup, DoryScalar, ProverSetup, PublicParameters,
+        DoryCommitment,
+        DoryProverPublicSetup,
+        DoryScalar,
+        ProverSetup,
+        PublicParameters,
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;
-    use sqlparser::{dialect::PostgreSqlDialect, parser::Parser};
+    use sqlparser::dialect::PostgreSqlDialect;
+    use sqlparser::parser::Parser;
+
+    use super::*;
 
     #[test]
     fn we_can_process_create_table() {

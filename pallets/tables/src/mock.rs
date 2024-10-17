@@ -1,18 +1,19 @@
-use crate as pallet_tables;
 use frame_support::derive_impl;
 use sp_runtime::BuildStorage;
+
+use crate as pallet_tables;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-	pub enum Test
-	{
-		System: frame_system,
-		Permissions: pallet_permissions,
-		Tables: pallet_tables,
-		Commitments: pallet_commitments,
-	}
+    pub enum Test
+    {
+        System: frame_system,
+        Permissions: pallet_permissions,
+        Tables: pallet_tables,
+        Commitments: pallet_commitments,
+    }
 );
 
 #[derive_impl(frame_system::config_preludes::TestDefaultConfig)]

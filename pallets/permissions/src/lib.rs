@@ -15,10 +15,11 @@ pub use weights::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use sxt_core::permissions::{PermissionLevel, PermissionList};
+
+    use super::*;
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);

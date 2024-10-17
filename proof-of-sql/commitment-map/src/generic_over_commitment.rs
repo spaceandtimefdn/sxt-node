@@ -3,10 +3,14 @@
 //! Contains [`GenericOverCommitment`] and its implementors.
 
 use core::marker::PhantomData;
+
 #[cfg(feature = "substrate")]
 use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
 use proof_of_sql::base::commitment::{
-    ColumnCommitments, Commitment, QueryCommitments, TableCommitment,
+    ColumnCommitments,
+    Commitment,
+    QueryCommitments,
+    TableCommitment,
 };
 #[cfg(feature = "substrate")]
 use scale_info::TypeInfo;

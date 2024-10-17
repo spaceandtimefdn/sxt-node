@@ -1,9 +1,13 @@
-use crate::{column::OnChainColumn, map::IndexMap, OutOfScalarBounds};
 use indexmap::map::{IntoIter, Iter};
-use proof_of_sql::base::{commitment::CommittableColumn, scalar::Scalar};
+use proof_of_sql::base::commitment::CommittableColumn;
+use proof_of_sql::base::scalar::Scalar;
 use proof_of_sql_parser::Identifier;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
+
+use crate::column::OnChainColumn;
+use crate::map::IndexMap;
+use crate::OutOfScalarBounds;
 
 /// Table data type for all data types supported by sxt-node.
 ///
@@ -105,15 +109,15 @@ impl<'a> IntoIterator for &'a OnChainTable {
 
 #[cfg(test)]
 mod tests {
+    use alloc::string::String;
+    use alloc::vec;
+    use alloc::vec::Vec;
+
+    use proof_of_sql::base::database::{OwnedColumn, OwnedTable};
+    use proof_of_sql::base::scalar::Curve25519Scalar;
+    use proof_of_sql::proof_primitive::dory::DoryScalar;
+
     use super::*;
-    use alloc::{string::String, vec, vec::Vec};
-    use proof_of_sql::{
-        base::{
-            database::{OwnedColumn, OwnedTable},
-            scalar::Curve25519Scalar,
-        },
-        proof_primitive::dory::DoryScalar,
-    };
 
     #[test]
     fn we_can_convert_table_to_and_from_iter() {

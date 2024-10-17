@@ -1,9 +1,9 @@
-use crate::indexing;
-
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 use sp_runtime_interface::pass_by::PassByCodec;
+
+use crate::indexing;
 
 /// Wrapper arround sxt_core::indexing::RowData, needed to pass the WASM boundary easily
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, PassByCodec)]

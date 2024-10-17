@@ -1,13 +1,9 @@
 use sc_service::ChainType;
-<<<<<<< HEAD
-use sxt_core::tables::SourceAndMode;
-use sxt_runtime::{AccountId, Signature, WASM_BINARY};
-=======
->>>>>>> ddeef72 (style: run `cargo fmt --all`)
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
+use sxt_core::tables::SourceAndMode;
 use sxt_runtime::{AccountId, Signature, WASM_BINARY};
 
 // The URL for the telemetry server.
@@ -106,29 +102,6 @@ fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     _enable_println: bool,
 ) -> serde_json::Value {
-<<<<<<< HEAD
-	serde_json::json!({
-		"balances": {
-			// Configure endowed accounts with initial balance of 1 << 60.
-			"balances": endowed_accounts.iter().cloned().map(|k| (k, 1u64 << 60)).collect::<Vec<_>>(),
-		},
-		"aura": {
-			"authorities": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
-		},
-		"grandpa": {
-			"authorities": initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect::<Vec<_>>(),
-		},
-		"sudo": {
-			// Assign network admin rights.
-			"key": Some(root_key),
-		},
-		"tables": {
-			"tables": sxt_core::parsing::ddls_to_genesis(vec![
-				("snapshots/v0_1/ethereum_core/ddl_ethereum_snapshot_2024_10_11.sql".into(), SourceAndMode { source: sxt_core::tables::Source::Ethereum, mode: sxt_core::tables::IndexerMode::Core}),
-			])
-		}
-	})
-=======
     serde_json::json!({
         "balances": {
             // Configure endowed accounts with initial balance of 1 << 60.
@@ -144,6 +117,10 @@ fn testnet_genesis(
             // Assign network admin rights.
             "key": Some(root_key),
         },
+        "tables": {
+            "tables": sxt_core::parsing::ddls_to_genesis(vec![
+                ("snapshots/v0_1/ethereum_core/ddl_ethereum_snapshot_2024_10_11.sql".into(), SourceAndMode { source: sxt_core::tables::Source::Ethereum, mode: sxt_core::tables::IndexerMode::Core}),
+            ])
+        }
     })
->>>>>>> ddeef72 (style: run `cargo fmt --all`)
 }

@@ -1,11 +1,12 @@
-use crate::metadata_prefix::METADATA_PREFIX;
-use alloc::{vec, vec::Vec};
+use alloc::vec;
+use alloc::vec::Vec;
+
 use const_format::formatcp;
 use on_chain_table::{OnChainColumn, OnChainTable};
-use sqlparser::ast::{
-    helpers::stmt_create_table::CreateTableBuilder, ColumnDef, ColumnOption, ColumnOptionDef,
-    DataType, Ident,
-};
+use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+use sqlparser::ast::{ColumnDef, ColumnOption, ColumnOptionDef, DataType, Ident};
+
+use crate::metadata_prefix::METADATA_PREFIX;
 
 /// Suffix used for the row number column name.
 const ROW_NUMBER_COLUMN_NAME_SUFFIX: &str = "ROW_NUMBER";
@@ -55,9 +56,12 @@ pub fn on_chain_table_with_row_number_column(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use alloc::string::String;
-    use sqlparser::{dialect::PostgreSqlDialect, parser::Parser};
+
+    use sqlparser::dialect::PostgreSqlDialect;
+    use sqlparser::parser::Parser;
+
+    use super::*;
 
     #[test]
     fn we_can_transform_create_table_with_row_number_column() {

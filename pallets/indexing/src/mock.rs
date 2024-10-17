@@ -1,18 +1,19 @@
-use crate as pallet_indexing;
 use frame_support::derive_impl;
 use frame_support::traits::OriginTrait;
 use sp_core::H256;
 use sp_runtime::BuildStorage;
 
+use crate as pallet_indexing;
+
 type Block = frame_system::mocking::MockBlock<Test>;
 
 pub mod api_impl {
-    use super::*;
-    use native_api::NativeApi;
-
     use native::interface;
+    use native_api::NativeApi;
     use sp_runtime::BoundedVec;
     use sxt_core::native::{OnChainTableBytes, RowData};
+
+    use super::*;
     pub struct Api;
 
     impl NativeApi for Api {
@@ -28,7 +29,10 @@ pub mod api_impl {
     pub type Error<T> = pallet_indexing::pallet::Error<T, Api>;
 
     pub use crate::pallet::{
-        __substrate_call_check, __substrate_event_check, tt_default_parts, tt_error_token,
+        __substrate_call_check,
+        __substrate_event_check,
+        tt_default_parts,
+        tt_error_token,
     };
 }
 

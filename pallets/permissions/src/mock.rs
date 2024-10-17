@@ -1,6 +1,7 @@
-use crate as pallet_permissions;
 use frame_support::derive_impl;
 use sp_runtime::BuildStorage;
+
+use crate as pallet_permissions;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 

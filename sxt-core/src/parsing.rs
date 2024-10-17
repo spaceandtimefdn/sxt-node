@@ -1,10 +1,17 @@
+use std::fs::read_to_string;
+use std::path::Path;
+
+use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+use sqlparser::dialect::GenericDialect;
+use sqlparser::parser::Parser;
+
 use crate::tables::{
-    create_statement, table_identifier, CreateStatement, SourceAndMode, TableIdentifier,
+    create_statement,
+    table_identifier,
+    CreateStatement,
+    SourceAndMode,
+    TableIdentifier,
 };
-use sqlparser::{
-    ast::helpers::stmt_create_table::CreateTableBuilder, dialect::GenericDialect, parser::Parser,
-};
-use std::{fs::read_to_string, path::Path};
 
 /// Read a ddl file from a path and parse it into create table statements, any error will cause a panic
 pub fn ddl_to_tables(

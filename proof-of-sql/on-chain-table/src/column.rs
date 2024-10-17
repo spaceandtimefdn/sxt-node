@@ -1,11 +1,17 @@
-use crate::{u256_scalar_conversion::u256_to_scalar, OutOfScalarBounds};
-use alloc::{string::String, vec, vec::Vec};
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use primitive_types::U256;
-use proof_of_sql::base::{
-    commitment::CommittableColumn, database::ColumnType, math::decimal::Precision, scalar::Scalar,
-};
+use proof_of_sql::base::commitment::CommittableColumn;
+use proof_of_sql::base::database::ColumnType;
+use proof_of_sql::base::math::decimal::Precision;
+use proof_of_sql::base::scalar::Scalar;
 use proof_of_sql_parser::posql_time::{PoSQLTimeUnit, PoSQLTimeZone};
 use serde::{Deserialize, Serialize};
+
+use crate::u256_scalar_conversion::u256_to_scalar;
+use crate::OutOfScalarBounds;
 
 /// Column data type for all types supported by sxt-node.
 ///
@@ -120,12 +126,13 @@ impl OnChainColumn {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use alloc::vec;
-    use proof_of_sql::{
-        base::{database::OwnedColumn, scalar::Curve25519Scalar},
-        proof_primitive::dory::DoryScalar,
-    };
+
+    use proof_of_sql::base::database::OwnedColumn;
+    use proof_of_sql::base::scalar::Curve25519Scalar;
+    use proof_of_sql::proof_primitive::dory::DoryScalar;
+
+    use super::*;
 
     #[test]
     fn we_can_get_column_length() {

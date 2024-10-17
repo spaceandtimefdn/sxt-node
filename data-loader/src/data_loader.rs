@@ -1,19 +1,20 @@
-use crate::{
-    azure_data_loader::{estimate_load_time, load_data_from_azure},
-    to_pg::PgColumn,
-};
+use std::collections::HashMap;
+use std::env;
+use std::error::Error;
+use std::time::Duration;
+
 use deadpool_postgres::{Manager, ManagerConfig, Object, Pool, RecyclingMethod};
 use lazy_static::lazy_static;
 use log::debug;
-use object_store::{
-    azure::{MicrosoftAzure, MicrosoftAzureBuilder},
-    path::Path,
-    ClientOptions, ListResult, ObjectMeta,
-};
+use object_store::azure::{MicrosoftAzure, MicrosoftAzureBuilder};
+use object_store::path::Path;
+use object_store::{ClientOptions, ListResult, ObjectMeta};
 use regex::Regex;
-use std::{collections::HashMap, env, error::Error, time::Duration};
 use tokio::time::sleep;
 use tokio_postgres::NoTls;
+
+use crate::azure_data_loader::{estimate_load_time, load_data_from_azure};
+use crate::to_pg::PgColumn;
 
 lazy_static! {
     /// Regular expression to capture the year from the object store file path.

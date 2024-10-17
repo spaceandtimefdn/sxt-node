@@ -1,26 +1,27 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use std::sync::Arc;
+use std::time::Duration;
+
 use futures::FutureExt;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
-use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
+use sc_service::error::Error as ServiceError;
+use sc_service::{Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
-use std::{sync::Arc, time::Duration};
-use sxt_runtime::{self, opaque::Block, RuntimeApi};
+use sxt_runtime::opaque::Block;
+use sxt_runtime::{self, RuntimeApi};
 
 pub(crate) type FullClient = sc_service::TFullClient<
-<<<<<<< HEAD
-	Block,
-	RuntimeApi,
-	sc_executor::WasmExecutor<(sp_io::SubstrateHostFunctions, native::interface::HostFunctions)>,
-=======
     Block,
     RuntimeApi,
-    sc_executor::WasmExecutor<sp_io::SubstrateHostFunctions>,
->>>>>>> ddeef72 (style: run `cargo fmt --all`)
+    sc_executor::WasmExecutor<(
+        sp_io::SubstrateHostFunctions,
+        native::interface::HostFunctions,
+    )>,
 >;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
@@ -54,14 +55,17 @@ pub fn new_partial(config: &Configuration) -> Result<Service, ServiceError> {
         })
         .transpose()?;
 
-	let executor = sc_service::new_wasm_executor::<(sp_io::SubstrateHostFunctions, native::interface::HostFunctions)>(config);
-	let (client, backend, keystore_container, task_manager) =
-		sc_service::new_full_parts::<Block, RuntimeApi, _>(
-			config,
-			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
-			executor,
-		)?;
-	let client = Arc::new(client);
+    let executor = sc_service::new_wasm_executor::<(
+        sp_io::SubstrateHostFunctions,
+        native::interface::HostFunctions,
+    )>(config);
+    let (client, backend, keystore_container, task_manager) =
+        sc_service::new_full_parts::<Block, RuntimeApi, _>(
+            config,
+            telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+            executor,
+        )?;
+    let client = Arc::new(client);
 
     let telemetry = telemetry.map(|(worker, telemetry)| {
         task_manager
@@ -346,12 +350,6 @@ pub fn new_full<
         );
     }
 
-<<<<<<< HEAD
-	network_starter.start_network();
-	Ok(task_manager)
-}
-=======
     network_starter.start_network();
     Ok(task_manager)
 }
->>>>>>> ddeef72 (style: run `cargo fmt --all`)

@@ -1,4 +1,5 @@
-use proof_of_sql::base::{database::ColumnType, math::decimal::Precision};
+use proof_of_sql::base::database::ColumnType;
+use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql_parser::posql_time::{PoSQLTimeUnit, PoSQLTimeZone};
 use snafu::Snafu;
 use sqlparser::ast::{DataType, ExactNumberInfo, TimezoneInfo};
@@ -166,8 +167,9 @@ pub fn sqlparser_data_type_to_proof_of_sql_column_type(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use itertools::Itertools;
+
+    use super::*;
 
     #[test]
     fn we_can_convert_simple_postgres_types_to_proof_of_sql() {

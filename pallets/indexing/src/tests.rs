@@ -1,4 +1,7 @@
-use crate::{mock::*, BatchId, RowData};
+use std::convert::Into;
+use std::io::Cursor;
+use std::sync::Arc;
+
 use arrow::array::{ArrayRef, Float64Array, Int32Array, RecordBatch};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::ipc::writer::StreamWriter;
@@ -10,11 +13,11 @@ use frame_support::traits::dynamic_params::IntoKey;
 use frame_support::{assert_err, assert_ok};
 use frame_system::ensure_signed;
 use sp_core::Hasher;
-use std::convert::Into;
-use std::io::Cursor;
-use std::sync::Arc;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
+
+use crate::mock::*;
+use crate::{BatchId, RowData};
 
 /// Used as a convenience wrapper for data we need to submit
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -25,9 +28,11 @@ struct TestSubmission {
 }
 
 fn row_data() -> RowData {
-    let schema = Arc::new(Schema::new(vec![
-        Field::new("int_column", DataType::Int32, false),
-    ]));
+    let schema = Arc::new(Schema::new(vec![Field::new(
+        "int_column",
+        DataType::Int32,
+        false,
+    )]));
 
     let int_data = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5])) as ArrayRef;
 
@@ -37,15 +42,17 @@ fn row_data() -> RowData {
 }
 
 fn diff_row_data() -> RowData {
-    let schema = Arc::new(Schema::new(vec![
-        Field::new("int_column", DataType::Int32, false),
-    ]));
+    let schema = Arc::new(Schema::new(vec![Field::new(
+        "int_column",
+        DataType::Int32,
+        false,
+    )]));
 
     let int_data = Arc::new(Int32Array::from(vec![2, 4, 6, 8, 10])) as ArrayRef;
 
     let batch = RecordBatch::try_new(schema.clone(), vec![int_data]).unwrap();
 
-    record_batch_to_row_data(batch, schema) 
+    record_batch_to_row_data(batch, schema)
 }
 
 fn record_batch_to_row_data(batch: RecordBatch, schema: Arc<Schema>) -> RowData {
@@ -59,7 +66,7 @@ fn record_batch_to_row_data(batch: RecordBatch, schema: Arc<Schema>) -> RowData 
 
     let data = writer.into_inner().unwrap().clone();
     let data = data.into_inner().clone();
-    
+
     RowData::try_from(data).unwrap()
 }
 
