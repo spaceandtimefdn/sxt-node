@@ -42,7 +42,7 @@ pub fn on_chain_table_with_row_number_column(
     row_number_offset: usize,
 ) -> OnChainTable {
     let row_number_column = OnChainColumn::BigInt(Vec::from_iter(
-        row_number_offset as i64..row_number_offset as i64 + table.num_rows() as i64,
+        row_number_offset as i64 + 1..row_number_offset as i64 + table.num_rows() as i64 + 1,
     ));
 
     OnChainTable::try_from_iter(table.into_iter().chain(core::iter::once((
@@ -112,7 +112,7 @@ mod tests {
         let expected_from_0 =
             OnChainTable::try_from_iter(data.clone().into_iter().chain(core::iter::once((
                 "META_ROW_NUMBER".parse().unwrap(),
-                OnChainColumn::BigInt(vec![0, 1, 2]),
+                OnChainColumn::BigInt(vec![1, 2, 3]),
             ))))
             .unwrap();
         assert_eq!(
@@ -123,7 +123,7 @@ mod tests {
         let expected_from_3 =
             OnChainTable::try_from_iter(data.into_iter().chain(core::iter::once((
                 "META_ROW_NUMBER".parse().unwrap(),
-                OnChainColumn::BigInt(vec![3, 4, 5]),
+                OnChainColumn::BigInt(vec![4, 5, 6]),
             ))))
             .unwrap();
         assert_eq!(
