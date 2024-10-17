@@ -1,3 +1,12 @@
+# [0.23.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.22.0...v0.23.0) (2024-10-17)
+
+
+### Features
+
+* Bootstrap data loader ([#42](https://github.com/spaceandtimelabs/sxt-node/issues/42)) ([1171ab7](https://github.com/spaceandtimelabs/sxt-node/commit/1171ab71e253013ac83131ae752ee562f58a1b41))
+
+
+
 # [0.22.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.21.0...v0.22.0) (2024-10-16)
 
 
@@ -41,15 +50,6 @@
 ### Bug Fixes
 
 * apply lock-file updates after commitment-sql merge ([c1c2f86](https://github.com/spaceandtimelabs/sxt-node/commit/c1c2f8613e33b96307b516c466b7450d92c7ce24))
-
-
-
-# [0.19.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.18.0...v0.19.0) (2024-10-11)
-
-
-### Features
-
-* create tables with known commits and snapshots ([dc038cc](https://github.com/spaceandtimelabs/sxt-node/commit/dc038cc561cbd6e5de63156cc36b888a1b973ad7))
 
 
 
