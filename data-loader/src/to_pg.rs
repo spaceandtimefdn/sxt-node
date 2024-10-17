@@ -163,7 +163,14 @@ impl ToSql for PgValue {
         )
     }
 
-    to_sql_checked!();
+    /// Performs a conversion check before writing the `PgValue` into the provided buffer.
+    fn to_sql_checked(
+        &self,
+        ty: &PostgresType,
+        out: &mut BytesMut,
+    ) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
+        self.to_sql(ty, out)
+    }
 }
 
 /// Converts an Arrow `RecordBatch` into PostgreSQL-compatible values for insertion.

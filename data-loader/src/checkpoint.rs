@@ -212,7 +212,7 @@ impl Checkpoint {
     ) -> Result<(), Status> {
         let query = "
         UPDATE SXTMETA.checkpoints
-        SET status = $1, total_time_taken = $2, error_message = $3
+        SET status = $1, total_time_taken = $2, error = $3
         WHERE schema_name = $4
         AND table_name = $5
         AND year = $6
