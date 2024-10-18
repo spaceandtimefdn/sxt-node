@@ -29,6 +29,7 @@ pub mod pallet {
     // Do not remove this attribute or the one for the pallet above,
     #![cfg(not(doc))]
 
+    use commitment_sql::InsertAndCommitmentMetadata;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use native_api::NativeApi;
@@ -42,7 +43,8 @@ pub mod pallet {
     pub struct Pallet<T, I = ()>(_);
 
     #[pallet::config]
-    pub trait Config<I: 'static = ()>: frame_system::Config + pallet_permissions::Config
+    pub trait Config<I: 'static = ()>:
+        frame_system::Config + pallet_permissions::Config + pallet_commitments::Config
     where
         I: NativeApi,
     {
@@ -120,6 +122,9 @@ pub mod pallet {
 
         /// Error deserializing the table as an OnChainTable
         TableDeserializationError,
+
+        /// Error deserializing the table as an OnChainTable
+        TableSerializationError,
     }
 
     #[pallet::call]
@@ -188,29 +193,21 @@ pub mod pallet {
                 );
             }
 
-            // Convert from row_data to a serialized OnChainTable
-            let table_bytes =
-                I::record_batch_to_onchain(sxt_core::native::RowData { row_data: data })
-                    .map_err(|e| Error::<T, I>::ParseTableError)?;
-
-            // Deserialize into a usable OnChainTable
-            let oc_table =
-                postcard::from_bytes::<on_chain_table::OnChainTable>(table_bytes.data.as_ref())
-                    .map_err(|_| Error::<T, I>::TableDeserializationError)?;
-
             // Return a successful Result
             Ok(())
         }
     }
 
-    /// Check if we have a quorum. Finalize the data and emit an event if we do
+    /// Check if we have a quorum.
+    /// Finalize the data, update commitments, and emit an event if we do.
     pub fn check_quorum_and_finalize<T: Config<I>, I>(
         batch_id: BatchId,
         data_hash: T::Hash,
         data: RowData,
         table: TableIdentifier,
         match_submissions: SubmitterList<T::AccountId>,
-    ) where
+    ) -> DispatchResult
+    where
         I: NativeApi,
     {
         // Iterate over the submitters who submitted differing data and collect
@@ -233,7 +230,7 @@ pub mod pallet {
 
         // Decide on the quorum
         let quorum = DataQuorum {
-            table,
+            table: table.clone(),
             batch_id: batch_id.clone(),
             data_hash,
             block_number: <frame_system::Pallet<T>>::block_number().into(),
@@ -244,8 +241,35 @@ pub mod pallet {
         // Save the final data that we decided on
         FinalData::<T, I>::insert(&batch_id, quorum.clone());
 
+        // Convert from row_data to a serialized OnChainTable
+        let table_bytes = I::record_batch_to_onchain(sxt_core::native::RowData { row_data: data })
+            .map_err(|e| Error::<T, I>::ParseTableError)?;
+
+        // Deserialize into a usable OnChainTable
+        let oc_table =
+            postcard::from_bytes::<on_chain_table::OnChainTable>(table_bytes.data.as_ref())
+                .map_err(|_| Error::<T, I>::TableDeserializationError)?;
+
+        let InsertAndCommitmentMetadata {
+            insert_with_meta_columns,
+            ..
+        } = pallet_commitments::Pallet::<T>::process_insert_and_update_commitments(
+            table.clone(),
+            oc_table,
+        )?;
+
+        let on_chain_table_bytes = postcard::to_allocvec(&insert_with_meta_columns)
+            .map_err(|_| Error::<T, I>::TableSerializationError)?
+            .try_into()
+            .map_err(|_| Error::<T, I>::TableSerializationError)?;
+
         // Emit an event.
-        Pallet::<T, I>::deposit_event(Event::<T, I>::QuorumReached { quorum, data });
+        Pallet::<T, I>::deposit_event(Event::<T, I>::QuorumReached {
+            quorum,
+            data: on_chain_table_bytes,
+        });
+
+        Ok(())
     }
 
     /// Run some checks to verify that table, batch_id, and data are reasonable, non-empty values\

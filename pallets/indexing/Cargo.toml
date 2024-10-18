@@ -16,12 +16,14 @@ targets = ["x86_64-unknown-linux-gnu"]
 codec = { features = [
 	"derive",
 ], workspace = true }
+commitment-sql.workspace = true
 scale-info = { features = [
 	"derive",
 ], workspace = true }
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
+pallet-commitments.workspace = true
 pallet-permissions.workspace = true
 sxt-core.workspace = true
 sp-runtime = { workspace = true, default-features = false }

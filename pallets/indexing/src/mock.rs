@@ -44,6 +44,7 @@ frame_support::construct_runtime!(
         System: frame_system,
         Indexing: api_impl,
         Permissions: pallet_permissions,
+        Commitments: pallet_commitments,
     }
 );
 
@@ -63,9 +64,16 @@ impl pallet_permissions::Config for Test {
     type WeightInfo = ();
 }
 
+impl pallet_commitments::Config for Test {}
+
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    frame_system::GenesisConfig::<Test>::default()
+    let mut storage = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
-        .unwrap()
-        .into()
+        .unwrap();
+
+    pallet_commitments::GenesisConfig::<Test>::default()
+        .assimilate_storage(&mut storage)
+        .unwrap();
+
+    storage.into()
 }

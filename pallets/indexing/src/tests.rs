@@ -14,7 +14,13 @@ use frame_support::{assert_err, assert_ok};
 use frame_system::ensure_signed;
 use sp_core::Hasher;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
-use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
+use sxt_core::tables::{
+    create_statement_to_sqlparser,
+    CreateStatement,
+    TableIdentifier,
+    TableName,
+    TableNamespace,
+};
 
 use crate::mock::*;
 use crate::{BatchId, RowData};
@@ -202,6 +208,15 @@ fn data_is_decided_on_after_required_submissions() {
             )
         }
 
+        let create_statement = CreateStatement::try_from(
+            b"CREATE TABLE test_namespace.test_table (int_column INT NOT NULL)".to_vec(),
+        )
+        .unwrap();
+
+        let create_table = create_statement_to_sqlparser(create_statement).unwrap();
+
+        Commitments::process_create_table_and_initiate_commitments(create_table).unwrap();
+
         let test_submission = TestSubmission {
             table: TableIdentifier {
                 name: TableName::try_from(b"test_table".to_vec()).unwrap(),
@@ -286,6 +301,15 @@ fn correct_data_is_decided_on_after_required_submissions() {
                 submission.data.clone(),
             )
         }
+
+        let create_statement = CreateStatement::try_from(
+            b"CREATE TABLE test_namespace.test_table (int_column INT NOT NULL)".to_vec(),
+        )
+        .unwrap();
+
+        let create_table = create_statement_to_sqlparser(create_statement).unwrap();
+
+        Commitments::process_create_table_and_initiate_commitments(create_table).unwrap();
 
         let test_batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
         let test_submission = TestSubmission {
@@ -487,6 +511,15 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
         }
 
         // Create some test data
+        let create_statement = CreateStatement::try_from(
+            b"CREATE TABLE test_namespace.test_table (int_column INT NOT NULL)".to_vec(),
+        )
+        .unwrap();
+
+        let create_table = create_statement_to_sqlparser(create_statement).unwrap();
+
+        Commitments::process_create_table_and_initiate_commitments(create_table).unwrap();
+
         let test_batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
         let test_submission = TestSubmission {
             table: TableIdentifier {
