@@ -138,11 +138,10 @@ impl Checkpoint {
             .map_err(|e| Status::internal(format!("Failed to create checkpoint table: {}", e)))?;
 
         let query = "
-            delete from sxt.checkpoints where status != 'completed'";
-        client
-            .execute(query, &[])
-            .await
-            .map_err(|e| Status::internal(format!("Failed to create sxt schema: {}", e)))?;
+            delete from SXTMETA.checkpoints where status != 'completed'";
+        client.execute(query, &[]).await.map_err(|e| {
+            Status::internal(format!("Failed to delete from SXTMETA.checkpoints: {}", e))
+        })?;
 
         Ok(())
     }
