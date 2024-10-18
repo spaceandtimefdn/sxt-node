@@ -69,7 +69,7 @@ pub fn we_cannot_process_invalid_create_table<TestParams: CreateTableApiTestPara
         test_params.set_sql_statement(
             "CREATE TABLE animal.population (
             animal VARCHAR NOT NULL,
-            sxtmeta_population BIGINT NOT NULL,
+            meta_population BIGINT NOT NULL,
             PRIMARY KEY (animal))
             "
             .to_string(),

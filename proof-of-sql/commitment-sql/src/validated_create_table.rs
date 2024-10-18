@@ -266,7 +266,7 @@ mod tests {
         let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
             .try_with_sql(
                 "CREATE TABLE animal.population (
-            sxtmetanimal VARCHAR NOT NULL,
+            metanimal VARCHAR NOT NULL,
             population BIGINT NOT NULL,
             PRIMARY KEY (animal))",
             )
