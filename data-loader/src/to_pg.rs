@@ -37,7 +37,7 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use pg_bigdecimal::{BigDecimal, PgNumeric};
 use rust_decimal::Decimal;
 use tokio_postgres::types::private::BytesMut;
-use tokio_postgres::types::{to_sql_checked, IsNull, ToSql, Type as PostgresType};
+use tokio_postgres::types::{IsNull, ToSql, Type as PostgresType};
 use tonic::Status;
 
 use crate::data_loader::META_ROW_NUMBER_COLUMN_NAME;

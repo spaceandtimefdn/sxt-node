@@ -217,6 +217,7 @@ pub fn new_full<
         );
     }
 
+    let is_dev_mode = config.dev_key_seed.is_some();
     let role = config.role.clone();
     let force_authoring = config.force_authoring;
     let backoff_authoring_blocks: Option<()> = None;
@@ -317,7 +318,7 @@ pub fn new_full<
             name: Some(name),
             observer_enabled: false,
             keystore,
-            local_role: role,
+            local_role: role.clone(),
             telemetry: telemetry.as_ref().map(|x| x.handle()),
             protocol_name: grandpa_protocol_name,
         };
@@ -351,5 +352,17 @@ pub fn new_full<
     }
 
     network_starter.start_network();
+
+    // Only run the flightsql client if the node is a validator and we're running on something
+    // other than the dev spec. The dev spec is used for CI tests so it must be able to run without
+    // FlightSQL. This saves a significant amount of storage on nodes that only need
+    // rpc functionality
+    if role.is_authority() && !is_dev_mode {
+        sxt_core::sql::spawn_flightsql_tasks(
+            "flightsql-task",
+            &task_manager.spawn_essential_handle(),
+        );
+    }
+
     Ok(task_manager)
 }

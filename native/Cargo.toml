@@ -9,9 +9,8 @@ homepage.workspace = true
 
 [dependencies]
 codec = { workspace = true }
-false = "0.7.34"
 log = "0.4.11"
-sp-runtime-interface = { version = "28.0.0", default-features = false } 
+sp-runtime-interface = { version = "28.0.0", default-features = false }
 sp-runtime = { workspace = true, default-features = false}
 frame-support = { workspace = true, default-features = false}
 on-chain-table = { workspace = true, default-features = false, features = ["arrow"], optional=true}
@@ -19,7 +18,12 @@ scale-info = { workspace = true, default-features = false, features = ["derive"]
 frame-benchmarking = { workspace = true, default-features = false, optional = true }
 frame-system = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false}
+tonic = { workspace = true, optional = true }
 arrow = { workspace = true, optional = true, features = ["ipc"]}
+arrow-flight = { workspace = true, optional = true, features = ["flight-sql-experimental"] }
+proof-of-sql-parser = { workspace = true, default-features = false}
+futures = { features = ["thread-pool"], workspace = true, optional = true }
+
 postcard = "1.0"
 sxt-core.workspace = true
 
@@ -29,9 +33,12 @@ std = [
     "codec/std",
     "sp-runtime-interface/std",
     "dep:arrow", # <------- put std dependencies here
+    "dep:on-chain-table",
+    "dep:arrow-flight",
+    "dep:tonic",
+    "dep:futures",
     "sp-runtime/std",
     "frame-support/std",
     "frame-system/std",
     "sp-core/std",
-    "dep:on-chain-table"
 ]

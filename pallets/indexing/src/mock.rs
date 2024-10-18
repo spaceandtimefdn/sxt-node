@@ -10,8 +10,7 @@ type Block = frame_system::mocking::MockBlock<Test>;
 pub mod api_impl {
     use native::interface;
     use native_api::NativeApi;
-    use sp_runtime::BoundedVec;
-    use sxt_core::native::{OnChainTableBytes, RowData};
+    use sxt_core::native::RowData;
 
     use super::*;
     pub struct Api;

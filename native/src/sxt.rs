@@ -39,7 +39,7 @@ mod tests {
     use std::io::Cursor;
     use std::sync::Arc;
 
-    use arrow::array::{ArrayRef, Float64Array, Int32Array, RecordBatch};
+    use arrow::array::{ArrayRef, Int32Array, RecordBatch};
     use arrow::datatypes::{DataType, Field, Schema};
     use arrow::ipc::writer::StreamWriter;
 

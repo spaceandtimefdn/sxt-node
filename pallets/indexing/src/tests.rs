@@ -2,14 +2,13 @@ use std::convert::Into;
 use std::io::Cursor;
 use std::sync::Arc;
 
-use arrow::array::{ArrayRef, Float64Array, Int32Array, RecordBatch};
+use arrow::array::{ArrayRef, Int32Array, RecordBatch};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::ipc::writer::StreamWriter;
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::__private::RuntimeDebug;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::TypeInfo;
-use frame_support::traits::dynamic_params::IntoKey;
 use frame_support::{assert_err, assert_ok};
 use frame_system::ensure_signed;
 use sp_core::Hasher;

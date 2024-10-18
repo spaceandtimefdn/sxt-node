@@ -17,16 +17,21 @@ members = [
     "runtime",
     "sxt-core",
     "data-loader",
-    "proof-of-sql/on-chain-table", "proof-of-sql/commitment-sql",
+    "proof-of-sql/on-chain-table",
+    "proof-of-sql/commitment-sql",
+    "native",
+    "native-api",
+    "native-pallets",
 ]
 resolver = "2"
 
 [workspace.dependencies]
 ahash = { version = "0.8.11", default-features = false }
 ark-serialize = { version = "0.4.0", default-features = false }
-arrow = { version = "51.0.0", default-features = false }
+arrow = { version = "53.0.0", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
 commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
+arrow-flight = { version = "53.0.0", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
 pallet-template = { path = "./pallets/template", default-features = false }
@@ -58,6 +63,7 @@ snafu = { version = "0.8.4", default-features = false }
 sqlparser = { version = "0.45.0", default-features = false }
 pallet-transaction-payment = { version = "37.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "40.0.0", default-features = false }
+tonic = { version = "0.12.3", default-features = false }
 sc-basic-authorship = { version = "0.44.0", default-features = false }
 sc-cli = { version = "0.46.0", default-features = false }
 sc-client-api = { version = "37.0.0", default-features = false }
@@ -86,6 +92,7 @@ sp-keyring = { version = "39.0.0", default-features = false }
 sp-runtime = { version = "39.0.0", default-features = false }
 sp-timestamp = { version = "34.0.0", default-features = false }
 sp-std = { version = "14.0.0", default-features = false }
+subxt = { version = "0.37.0", default-features = false }
 substrate-frame-rpc-system = { version = "38.0.0", default-features = false }
 substrate-build-script-utils = { version = "11.0.0", default-features = false }
 codec = { version = "3.6.12", default-features = false, package = "parity-scale-codec" }

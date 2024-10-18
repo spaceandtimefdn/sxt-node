@@ -95,8 +95,8 @@ pub mod pallet {
         QuorumReached {
             /// The quorum object representing the metadata about the decision
             quorum: DataQuorum<T::AccountId, T::Hash>,
-            /// The finalized raw data in RecordBatch IPC format
-            data: RowData,
+            /// The finalized raw data in postcard serialized OnChainTable bytes
+            data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
         },
     }
 
@@ -116,13 +116,10 @@ pub mod pallet {
         InvalidTable,
         /// This user has already submitted data for this batch id
         AlreadySubmitted,
-
         /// Error parsing the table to an arrow record batch
         ParseTableError,
-
         /// Error deserializing the table as an OnChainTable
         TableDeserializationError,
-
         /// Error deserializing the table as an OnChainTable
         TableSerializationError,
     }
@@ -184,13 +181,14 @@ pub mod pallet {
 
             // 3 is a temporary number here until we get Indexer staking/registration integrated
             if match_submissions.len() > 3 {
+                // Finalize the data submissions and emit an event
                 check_quorum_and_finalize::<T, I>(
                     batch_id,
                     data_hash,
                     data.clone(),
                     table,
                     match_submissions,
-                );
+                )?;
             }
 
             // Return a successful Result

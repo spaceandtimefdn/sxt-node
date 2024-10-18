@@ -7,7 +7,7 @@ use sp_core::U256;
 use crate::tables::TableIdentifier;
 
 /// Maximum length of submitted Record Batch Data
-pub const DATA_MAX_LEN: u32 = 2_000_000;
+pub const DATA_MAX_LEN: u32 = 8_000_000;
 /// Used to represent submitted data in it's serialized RecordBatch IPC format
 pub type RowData = BoundedVec<u8, ConstU32<DATA_MAX_LEN>>;
 

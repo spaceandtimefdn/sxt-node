@@ -6,6 +6,6 @@ mod sxt;
 
 /// Expose the interface generated from the macro
 pub use sxt::interface;
-#[cfg(feature = "std")]
 /// These host functions are used at the service level in the node, they allow the connection between our native code and the wasm executor
+#[cfg(feature = "std")]
 pub use sxt::interface::HostFunctions;

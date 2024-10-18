@@ -5,7 +5,7 @@ use sp_runtime_interface::pass_by::PassByCodec;
 
 use crate::indexing;
 
-/// Wrapper arround sxt_core::indexing::RowData, needed to pass the WASM boundary easily
+/// Wrapper around sxt_core::indexing::RowData, needed to pass the WASM boundary easily
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, PassByCodec)]
 pub struct RowData {
     /// An arrow record batch represented as bytes in IPC format
@@ -18,7 +18,6 @@ pub struct OnChainTableBytes {
     /// A serialized OnChainTable represented as bytes
     pub data: indexing::RowData,
 }
-
 /// Errors that can occur in the native code interface
 #[derive(Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum NativeError {
