@@ -58,7 +58,12 @@ pub mod pallet {
         SchemaUpdated(SourceAndMode, UpdateTableList),
 
         /// Tables have been created with known commitments
-        TablesCreatedWithCommitments(SourceAndMode, CreateTableList),
+        TablesCreatedWithCommitments {
+            /// The source and mode for the included tables (i.e. Ethereum Core)
+            source_and_mode: SourceAndMode,
+            /// A list of tables and their DDL Statements
+            table_list: CreateTableList,
+        },
     }
 
     /// A double map connecting an identifier (name, namespace) and a (source, mode) to a Schema, allowing us to interate over all tables in a namespace
@@ -170,10 +175,10 @@ pub mod pallet {
                 .try_into()
                 .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
 
-            Self::deposit_event(Event::<T>::TablesCreatedWithCommitments(
+            Self::deposit_event(Event::<T>::TablesCreatedWithCommitments {
                 source_and_mode,
-                tables,
-            ));
+                table_list: tables,
+            });
 
             Ok(())
         }

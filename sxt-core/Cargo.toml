@@ -27,6 +27,7 @@ tonic = { workspace = true, optional = true }
 arrow = { workspace = true, optional = true, features = ["ipc"]}
 arrow-flight = { workspace = true, optional = true, features = ["flight-sql-experimental"] }
 subxt = { workspace = true, optional = true, features = ["native", "unstable-reconnecting-rpc-client"] }
+data-loader = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
@@ -41,7 +42,8 @@ std = [
 	"dep:arrow-flight",
 	"dep:subxt",
 	"dep:on-chain-table",
-	"dep:postcard"
+	"dep:postcard",
+	"dep:data-loader"
 ]
 
 [lints]

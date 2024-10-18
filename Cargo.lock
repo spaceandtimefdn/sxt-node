@@ -2329,6 +2329,7 @@ dependencies = [
 name = "data-loader"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "arrow",
  "arrow-array",
  "bytes",
@@ -11608,6 +11609,7 @@ version = "0.1.0"
 dependencies = [
  "arrow",
  "arrow-flight",
+ "data-loader",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

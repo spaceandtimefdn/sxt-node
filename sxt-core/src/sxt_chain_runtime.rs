@@ -1878,9 +1878,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                182u8, 124u8, 138u8, 17u8, 42u8, 216u8, 198u8, 187u8, 248u8, 180u8, 223u8, 56u8,
-                85u8, 181u8, 82u8, 154u8, 34u8, 192u8, 10u8, 50u8, 74u8, 17u8, 205u8, 67u8, 114u8,
-                112u8, 35u8, 141u8, 64u8, 88u8, 152u8, 199u8,
+                90u8, 199u8, 3u8, 226u8, 245u8, 150u8, 159u8, 26u8, 118u8, 64u8, 79u8, 93u8, 137u8,
+                126u8, 178u8, 156u8, 31u8, 146u8, 177u8, 0u8, 6u8, 53u8, 240u8, 76u8, 111u8, 129u8,
+                50u8, 119u8, 5u8, 101u8, 247u8, 201u8,
             ]
     }
     pub mod system {
@@ -3019,10 +3019,9 @@ pub mod api {
                         "Events",
                         (),
                         [
-                            183u8, 209u8, 107u8, 114u8, 59u8, 49u8, 222u8, 55u8, 79u8, 251u8,
-                            151u8, 59u8, 186u8, 209u8, 186u8, 91u8, 169u8, 23u8, 154u8, 162u8,
-                            165u8, 102u8, 223u8, 158u8, 97u8, 63u8, 175u8, 0u8, 17u8, 186u8, 165u8,
-                            24u8,
+                            199u8, 107u8, 192u8, 31u8, 238u8, 190u8, 50u8, 4u8, 114u8, 55u8, 136u8,
+                            75u8, 120u8, 237u8, 11u8, 35u8, 183u8, 119u8, 225u8, 105u8, 37u8, 50u8,
+                            109u8, 158u8, 31u8, 147u8, 150u8, 172u8, 23u8, 156u8, 193u8, 167u8,
                         ],
                     )
                 }
@@ -6904,14 +6903,14 @@ pub mod api {
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
             #[doc = "Tables have been created with known commitments"]
-            pub struct TablesCreatedWithCommitments(
-                pub tables_created_with_commitments::Field0,
-                pub tables_created_with_commitments::Field1,
-            );
+            pub struct TablesCreatedWithCommitments {
+                pub source_and_mode: tables_created_with_commitments::SourceAndMode,
+                pub table_list: tables_created_with_commitments::TableList,
+            }
             pub mod tables_created_with_commitments {
                 use super::runtime_types;
-                pub type Field0 = runtime_types::sxt_core::tables::SourceAndMode;
-                pub type Field1 = runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < (runtime_types :: sxt_core :: tables :: TableIdentifier , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > , runtime_types :: proof_of_sql_commitment_map :: commitment_scheme :: PerCommitmentScheme < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: OptionType < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: ConcreteType < runtime_types :: proof_of_sql_commitment_map :: commitment_storage_map :: TableCommitmentBytes > > > , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > ,) > ;
+                pub type SourceAndMode = runtime_types::sxt_core::tables::SourceAndMode;
+                pub type TableList = runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < (runtime_types :: sxt_core :: tables :: TableIdentifier , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > , runtime_types :: proof_of_sql_commitment_map :: commitment_scheme :: PerCommitmentScheme < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: OptionType < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: ConcreteType < runtime_types :: proof_of_sql_commitment_map :: commitment_storage_map :: TableCommitmentBytes > > > , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > ,) > ;
             }
             impl ::subxt::ext::subxt_core::events::StaticEvent for TablesCreatedWithCommitments {
                 const PALLET: &'static str = "Tables";
@@ -7498,6 +7497,10 @@ pub mod api {
                     use super::runtime_types;
                     pub type DefaultCommitmentSchemes = runtime_types :: proof_of_sql_commitment_map :: commitment_scheme :: CommitmentSchemeFlags ;
                 }
+                pub mod dory_sigma {
+                    use super::runtime_types;
+                    pub type DorySigma = ::core::primitive::u8;
+                }
             }
             pub struct StorageApi;
             impl StorageApi {
@@ -7624,6 +7627,27 @@ pub mod api {
                             20u8, 77u8, 203u8, 254u8, 27u8, 52u8, 134u8, 198u8, 49u8, 40u8, 88u8,
                             241u8, 18u8, 71u8, 80u8, 114u8, 120u8, 255u8, 239u8, 78u8, 8u8, 134u8,
                             112u8, 171u8, 14u8, 86u8, 114u8, 89u8, 92u8, 133u8, 248u8, 66u8,
+                        ],
+                    )
+                }
+                #[doc = " Sigma value to use for the dory setup."]
+                pub fn dory_sigma(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::dory_sigma::DorySigma,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Commitments",
+                        "DorySigma",
+                        (),
+                        [
+                            158u8, 114u8, 73u8, 211u8, 87u8, 204u8, 116u8, 149u8, 79u8, 57u8, 66u8,
+                            57u8, 43u8, 152u8, 165u8, 2u8, 189u8, 7u8, 170u8, 95u8, 142u8, 174u8,
+                            66u8, 147u8, 148u8, 92u8, 88u8, 98u8, 67u8, 76u8, 77u8, 200u8,
                         ],
                     )
                 }
@@ -9156,8 +9180,8 @@ pub mod api {
                     #[doc = "Error deserializing the table as an OnChainTable"]
                     TableDeserializationError,
                     #[codec(index = 9)]
-                    #[doc = "We were unable to insert the data into the table"]
-                    InsertDataError,
+                    #[doc = "Error deserializing the table as an OnChainTable"]
+                    TableSerializationError,
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -9461,6 +9485,9 @@ pub mod api {
                     #[codec(index = 1)]
                     #[doc = "Existing commit for this table identifier"]
                     IdentifierAlreadyExists,
+                    #[codec(index = 2)]
+                    #[doc = "Failed to parse Create Statement DDL"]
+                    CreateStatementParseError,
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -9478,7 +9505,7 @@ pub mod api {
                 )]
                 #[doc = "The `Event` enum of this pallet"]
                 pub enum Event {
-                    # [codec (index = 0)] # [doc = "The schema for a table has been updated"] SchemaUpdated (runtime_types :: sxt_core :: tables :: SourceAndMode , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < (runtime_types :: sxt_core :: tables :: TableIdentifier , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > ,) > ,) , # [codec (index = 1)] # [doc = "Tables have been created with known commitments"] TablesCreatedWithCommitments (runtime_types :: sxt_core :: tables :: SourceAndMode , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < (runtime_types :: sxt_core :: tables :: TableIdentifier , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > , runtime_types :: proof_of_sql_commitment_map :: commitment_scheme :: PerCommitmentScheme < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: OptionType < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: ConcreteType < runtime_types :: proof_of_sql_commitment_map :: commitment_storage_map :: TableCommitmentBytes > > > , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > ,) > ,) , }
+                    # [codec (index = 0)] # [doc = "The schema for a table has been updated"] SchemaUpdated (runtime_types :: sxt_core :: tables :: SourceAndMode , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < (runtime_types :: sxt_core :: tables :: TableIdentifier , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > ,) > ,) , # [codec (index = 1)] # [doc = "Tables have been created with known commitments"] TablesCreatedWithCommitments { source_and_mode : runtime_types :: sxt_core :: tables :: SourceAndMode , table_list : runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < (runtime_types :: sxt_core :: tables :: TableIdentifier , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > , runtime_types :: proof_of_sql_commitment_map :: commitment_scheme :: PerCommitmentScheme < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: OptionType < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: ConcreteType < runtime_types :: proof_of_sql_commitment_map :: commitment_storage_map :: TableCommitmentBytes > > > , runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > ,) > , } , }
             }
         }
         pub mod pallet_template {

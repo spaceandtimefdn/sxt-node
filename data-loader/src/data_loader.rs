@@ -89,8 +89,8 @@ const COLUMN_TYPE_QUERY: &str = "
 /// - `base_path`: A string slice that represents the base path in the object store.
 ///
 /// # Returns
-/// An `Ok(())` result on success, or an error wrapped in `Box<dyn Error>` on failure.
-pub async fn estimate_time(base_path: &str) -> Result<(), Box<dyn Error>> {
+/// An `Ok(())` result on success, or an error wrapped in `anyhow::Error` on failure.
+pub async fn estimate_time(base_path: &str) -> Result<(), anyhow::Error> {
     let store = get_object_store()?; // Get the object store client
     estimate_load_time(&store, base_path.into()).await?;
     Ok(())
@@ -104,12 +104,12 @@ pub async fn estimate_time(base_path: &str) -> Result<(), Box<dyn Error>> {
 /// - `delay`: Duration to wait between retry attempts.
 ///
 /// # Returns
-/// Returns `Ok(())` on success or an error wrapped in `Box<dyn Error>` if all retries fail.
+/// Returns `Ok(())` on success or an error wrapped in `anyhow::Error` if all retries fail.
 pub async fn run_data_loader(
     base_path: &str,
     max_retries: u32,
     delay: Duration,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), anyhow::Error> {
     let mut attempts = 0;
 
     while attempts < max_retries {
@@ -159,13 +159,13 @@ pub fn create_pool(db_url: &str) -> Pool {
 ///
 /// # Returns
 /// An `Object` representing the active database connection or an error on failure.
-pub async fn create_client_session() -> Result<Object, Box<dyn Error>> {
-    let db_url = env::var("DATABASE_URL").map_err(|_| "Missing database url")?;
+pub async fn create_client_session() -> Result<Object, anyhow::Error> {
+    let db_url = env::var("DATABASE_URL").map_err(|_| anyhow::anyhow!("Missing database url"))?;
     let pool = create_pool(&db_url);
     let client = pool
         .get()
         .await
-        .map_err(|e| format!("Failed to get connection: {}", e))?;
+        .map_err(|e| anyhow::anyhow!(format!("Failed to get connection: {}", e)))?;
 
     Ok(client)
 }
@@ -187,8 +187,8 @@ fn get_azure_config() -> Result<(String, String, String), String> {
 /// Initialize and configure the Microsoft Azure object store client using credentials and settings.
 ///
 /// # Returns
-/// An `Ok(MicrosoftAzure)` object on success or an error wrapped in `Box<dyn Error>` on failure.
-fn get_object_store() -> Result<MicrosoftAzure, Box<dyn Error>> {
+/// An `Ok(MicrosoftAzure)` object on success or an error wrapped in `anyhow::Error` on failure.
+fn get_object_store() -> Result<MicrosoftAzure, anyhow::Error> {
     let client_options = ClientOptions::new().with_timeout(Duration::from_secs(1000));
 
     // Load configuration from environment variables with default values
@@ -205,7 +205,7 @@ fn get_object_store() -> Result<MicrosoftAzure, Box<dyn Error>> {
     Ok(store)
 }
 
-fn get_process_only_head() -> Result<bool, Box<dyn Error>> {
+fn get_process_only_head() -> Result<bool, anyhow::Error> {
     // Read the environment variable
     let process_only_head = env::var("PROCESS_ONLY_HEAD").unwrap_or_else(|_| "false".to_string());
 
@@ -213,7 +213,9 @@ fn get_process_only_head() -> Result<bool, Box<dyn Error>> {
     match process_only_head.to_lowercase().as_str() {
         "true" => Ok(true),
         "false" => Ok(false),
-        _ => Err("Invalid value for PROCESS_ONLY_HEAD, expected 'true' or 'false'".into()),
+        _ => Err(anyhow::anyhow!(
+            "Invalid value for PROCESS_ONLY_HEAD, expected 'true' or 'false'"
+        )),
     }
 }
 
@@ -269,7 +271,7 @@ pub fn process_data_files(file_list: Vec<ObjectMeta>) -> Vec<ObjectMeta> {
 ///
 /// # Returns
 /// A `schema and table names extracted`
-pub fn extract_schema_and_table(path: &Path) -> Result<(String, String), Box<dyn Error>> {
+pub fn extract_schema_and_table(path: &Path) -> Result<(String, String), anyhow::Error> {
     // Extract the file name from the path, handling potential absence of a file name
     if let Some(file_name) = path.filename() {
         // Check if the file name starts with "SQL_" and split it into schema and table
@@ -279,7 +281,7 @@ pub fn extract_schema_and_table(path: &Path) -> Result<(String, String), Box<dyn
     }
 
     // Return an error if the schema and table names cannot be extracted
-    Err("Could not extract schema and table names".into())
+    Err(anyhow::anyhow!("Could not extract schema and table names"))
 }
 
 /// Fetches the column metadata for a specific table in a PostgreSQL database.
@@ -297,7 +299,7 @@ pub fn extract_schema_and_table(path: &Path) -> Result<(String, String), Box<dyn
 /// - `table_name`: The name of the table whose column metadata is to be fetched.
 ///
 /// # Returns
-/// - `Result<HashMap<String, PgColumn>, Box<dyn Error>>`:
+/// - `Result<HashMap<String, PgColumn>, anyhow::Error>`:
 ///   - On success, returns a `HashMap` where the key is the column name (as a `String`)
 ///     and the value is a `PgColumn` struct with information about the column.
 ///   - On failure, returns a boxed error.
@@ -312,7 +314,7 @@ pub async fn get_table_columns_and_types(
     client: &Object,
     schema_name: &str,
     table_name: &str,
-) -> Result<HashMap<String, PgColumn>, Box<dyn Error>> {
+) -> Result<HashMap<String, PgColumn>, anyhow::Error> {
     let rows = client
         .query(
             COLUMN_TYPE_QUERY,

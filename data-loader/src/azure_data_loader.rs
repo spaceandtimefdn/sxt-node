@@ -59,7 +59,7 @@ struct TableLoadEstimator<'a> {
 }
 
 impl<'a> TableLoadEstimator<'a> {
-    async fn estimate_size(&self, prefix: &Path) -> Result<usize, Box<dyn Error>> {
+    async fn estimate_size(&self, prefix: &Path) -> Result<usize, anyhow::Error> {
         // List all years (or directories) under the prefix
         let list_result = self.store.list_with_delimiter(Some(prefix)).await?;
 
@@ -77,7 +77,7 @@ impl<'a> TableLoadEstimator<'a> {
                 .collect();
 
             // Await all month processing futures and handle errors
-            let results: Result<Vec<usize>, Box<dyn Error>> =
+            let results: Result<Vec<usize>, anyhow::Error> =
                 join_all(month_futures).await.into_iter().collect();
 
             match results {
@@ -95,7 +95,7 @@ impl<'a> TableLoadEstimator<'a> {
         Ok(total_size)
     }
 
-    async fn download_single_file(&self, prefix: &Path) -> Result<(u128, usize), Box<dyn Error>> {
+    async fn download_single_file(&self, prefix: &Path) -> Result<(u128, usize), anyhow::Error> {
         let all_years = self.store.list_with_delimiter(Some(prefix)).await?;
         let years: Vec<Path> = all_years.common_prefixes.into_iter().take(1).collect();
         let all_months = self
@@ -118,7 +118,7 @@ impl<'a> TableLoadEstimator<'a> {
         Ok((time_taken, file_contents.len()))
     }
 
-    async fn part_size(&self, prefix: &Path) -> Result<usize, Box<dyn Error>> {
+    async fn part_size(&self, prefix: &Path) -> Result<usize, anyhow::Error> {
         let part_size = self
             .store
             .list(Some(prefix))
@@ -136,7 +136,7 @@ impl<'a> TableLoader<'a> {
     // Constructor to create a new DataLoader instance
 
     // Method to process each year directory
-    async fn load(&self, prefix: &Path) -> Result<(), Box<dyn Error>> {
+    async fn load(&self, prefix: &Path) -> Result<(), anyhow::Error> {
         // List all years (or directories) under the prefix
         let list_result = self.store.list_with_delimiter(Some(prefix)).await?;
 
@@ -160,7 +160,7 @@ impl<'a> TableLoader<'a> {
         Ok(())
     }
 
-    async fn create_index(&self) -> Result<(), Box<dyn Error>> {
+    async fn create_index(&self) -> Result<(), anyhow::Error> {
         let client = create_client_session().await?;
         let index_name = format!("{}_{}_HASH", self.schema_name, self.table_name);
         let column_name = META_ROW_NUMBER_COLUMN_NAME;
@@ -174,10 +174,11 @@ impl<'a> TableLoader<'a> {
     }
 
     // Method to process each partition (month) and insert records into Postgres
-    async fn process_partition(&self, prefix: &Path) -> Result<(), Box<dyn Error>> {
+    async fn process_partition(&self, prefix: &Path) -> Result<(), anyhow::Error> {
         info!("processing partition: {}", prefix);
-        let (year, month) =
-            extract_year_and_month(prefix.as_ref()).ok_or("Failed to extract year and month")?;
+        let (year, month) = extract_year_and_month(prefix.as_ref())
+            .ok_or("Failed to extract year and month")
+            .map_err(|e| anyhow::anyhow!(e))?;
         let client = create_client_session().await?;
         if Checkpoint::is_completed(&client, self.schema_name, self.table_name, year, month).await?
         {
@@ -230,7 +231,7 @@ impl<'a> TableLoader<'a> {
         &self,
         prefix: &Path,
         client: &Object,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(), anyhow::Error> {
         let all_data_files = self
             .store
             .list(Some(prefix))
@@ -260,7 +261,7 @@ impl<'a> TableLoader<'a> {
         &self,
         batch: &'b mut RecordBatch,
         column_name: &str,
-    ) -> Result<&'b mut RecordBatch, Box<dyn Error>> {
+    ) -> Result<&'b mut RecordBatch, anyhow::Error> {
         let schema = batch.schema();
 
         let batch = match schema.index_of(&column_name.to_uppercase()) {
@@ -278,7 +279,7 @@ impl<'a> TableLoader<'a> {
         &self,
         batch: &mut RecordBatch,
         client: &Object,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(), anyhow::Error> {
         self.insert_record_batch_to_postgres(
             client,
             format!("{}.{}", &self.schema_name, &self.table_name).as_str(),
@@ -295,7 +296,7 @@ impl<'a> TableLoader<'a> {
         qualified_table_name: &str,
         batch: &RecordBatch,
         column_map: &HashMap<String, PgColumn>,
-    ) -> Result<i64, Box<dyn Error>> {
+    ) -> Result<i64, anyhow::Error> {
         let schema = batch.schema();
         // Collect PostgreSQL values
         let mut pg_values: Vec<PgValue> = Vec::new();
@@ -329,7 +330,7 @@ impl<'a> TableLoader<'a> {
     }
 
     /// Retrieves primary key columns for a given table dynamically from the Postgres system catalogs.
-    async fn get_primary_keys(&self, client: &Object) -> Result<Vec<String>, Box<dyn Error>> {
+    async fn get_primary_keys(&self, client: &Object) -> Result<Vec<String>, anyhow::Error> {
         let rows = client
             .query(
                 PRIMARY_KEY_QUERY,
@@ -354,7 +355,7 @@ impl<'a> TableLoader<'a> {
         qualified_table_name: &str,
         schema: &SchemaRef,
         num_rows: usize,
-    ) -> Result<String, Box<dyn Error>> {
+    ) -> Result<String, anyhow::Error> {
         let column_list = schema
             .fields()
             .iter()
@@ -408,9 +409,9 @@ impl<'a> TableLoader<'a> {
 /// # Errors
 ///
 /// This function will return an error if the estimation process fails,
-/// encapsulated in a `Box<dyn Error>`.
+/// encapsulated in a `anyhow::Error`.
 ///
-pub async fn estimate_load_time(store: &Store, base_path: String) -> Result<(), Box<dyn Error>> {
+pub async fn estimate_load_time(store: &Store, base_path: String) -> Result<(), anyhow::Error> {
     // Initialize the DataLoader struct
     let loader = DataLoader::new(store);
     // Load data from the base path
@@ -432,9 +433,9 @@ pub async fn estimate_load_time(store: &Store, base_path: String) -> Result<(), 
 ///
 /// This function will return an error if any part of the loading process fails,
 /// including database connection issues or data loading failures,
-/// encapsulated in a `Box<dyn Error>`.
+/// encapsulated in a `anyhow::Error`.
 
-pub async fn load_data_from_azure(store: &Store, base_path: String) -> Result<(), Box<dyn Error>> {
+pub async fn load_data_from_azure(store: &Store, base_path: String) -> Result<(), anyhow::Error> {
     let client = create_client_session().await?; // Establish DB connection
     println!("db and store connected");
     Checkpoint::init_checkpoint(&client).await?;
@@ -457,7 +458,7 @@ impl<'a> DataLoader<'a> {
     }
 
     // Method to load data from the base path
-    async fn load_data(&self, base_path: String) -> Result<(), Box<dyn Error>> {
+    async fn load_data(&self, base_path: String) -> Result<(), anyhow::Error> {
         let path = Path::from(base_path.clone());
 
         // List all tables (or directories) under the base path
@@ -483,7 +484,7 @@ impl<'a> DataLoader<'a> {
         Ok(())
     }
 
-    async fn estimate(&self, base_path: String) -> Result<(), Box<dyn Error>> {
+    async fn estimate(&self, base_path: String) -> Result<(), anyhow::Error> {
         let path = Path::from(base_path.clone());
 
         // List all tables (or directories) under the base path
@@ -530,18 +531,27 @@ impl<'a> DataLoader<'a> {
         Ok(())
     }
 
-    async fn process_table(&self, table: &Path) -> Result<(), Box<dyn Error>> {
+    async fn process_table(&self, table: &Path) -> Result<(), anyhow::Error> {
         info!("Processing table {}", table);
 
         // Extract schema and table name
-        let (schema_name, table_name) = extract_schema_and_table(table)
-            .map_err(|e| format!("Failed to extract schema and table for {}: {}", table, e))?;
+        let (schema_name, table_name) = extract_schema_and_table(table).map_err(|e| {
+            anyhow::anyhow!(format!(
+                "Failed to extract schema and table for {}: {}",
+                table, e
+            ))
+        })?;
 
         let client = create_client_session().await?;
         // Fetch column mappings from the database
         let column_maps = get_table_columns_and_types(&client, &schema_name, &table_name)
             .await
-            .map_err(|e| format!("Failed to get column mappings for {}: {}", table_name, e))?;
+            .map_err(|e| {
+                anyhow::anyhow!(format!(
+                    "Failed to get column mappings for {}: {}",
+                    table_name, e
+                ))
+            })?;
 
         let table_loader = TableLoader {
             store: self.store,
@@ -564,7 +574,7 @@ impl<'a> DataLoader<'a> {
         Ok(())
     }
 
-    async fn sample(&self, table: &Path) -> Result<(u128, usize), Box<dyn Error>> {
+    async fn sample(&self, table: &Path) -> Result<(u128, usize), anyhow::Error> {
         info!("Sampling table {}", table);
 
         let table_estimator = TableLoadEstimator { store: self.store };
@@ -576,7 +586,7 @@ impl<'a> DataLoader<'a> {
         Ok(result)
     }
 
-    async fn estimate_table(&self, table: &Path) -> Result<usize, Box<dyn Error>> {
+    async fn estimate_table(&self, table: &Path) -> Result<usize, anyhow::Error> {
         info!("Estimating table {}", table);
         let table_estimator = TableLoadEstimator { store: self.store };
 
