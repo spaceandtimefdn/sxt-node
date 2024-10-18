@@ -1,3 +1,12 @@
+# [0.27.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.26.0...v0.27.0) (2024-10-18)
+
+
+### Features
+
+* configure dory sigma with genesis config ([0e04521](https://github.com/spaceandtimelabs/sxt-node/commit/0e04521a6b75fe54a96cd507076db32dcb6ea650))
+
+
+
 # [0.26.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.25.1...v0.26.0) (2024-10-18)
 
 
@@ -39,10 +48,6 @@
 
 * 1-index proof order column ([f7a3fea](https://github.com/spaceandtimelabs/sxt-node/commit/f7a3fea1471cc8edf6c49cad813d11447f36c658))
 * reserve metadata prefix META instead of SXTMETA ([25dcbab](https://github.com/spaceandtimelabs/sxt-node/commit/25dcbab90d076641814e58487547800eedc2fa73))
-
-
-
-## [0.24.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.24.0...v0.24.1) (2024-10-17)
 
 
 
