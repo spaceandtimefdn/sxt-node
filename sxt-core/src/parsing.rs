@@ -2,7 +2,7 @@ use std::fs::read_to_string;
 use std::path::Path;
 
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
-use sqlparser::dialect::GenericDialect;
+use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
 use crate::tables::{
@@ -20,7 +20,7 @@ pub fn ddl_to_tables(
 ) -> Vec<(SourceAndMode, TableIdentifier, CreateStatement)> {
     let ddl = read_to_string(p).unwrap();
 
-    let mut parser = Parser::new(&GenericDialect {})
+    let mut parser = Parser::new(&PostgreSqlDialect {})
         .try_with_sql(ddl.as_str())
         .unwrap();
     let statements = parser.parse_statements().unwrap();
