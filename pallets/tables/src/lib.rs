@@ -15,14 +15,16 @@ pub use weights::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
+    use commitment_sql::CreateTableAndCommitmentMetadata;
     use frame_support::pallet_prelude::{StorageDoubleMap, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
-    use proof_of_sql_commitment_map::generic_over_commitment::{ConcreteType, OptionType};
-    use proof_of_sql_commitment_map::{PerCommitmentScheme, TableCommitmentBytes};
+    use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
     use sp_runtime::Vec;
     use sxt_core::permissions::*;
     use sxt_core::tables::{
+        create_statement_to_sqlparser,
+        sqlparser_to_create_statement,
         CreateStatement,
         IndexerMode,
         SnapshotUrl,
@@ -89,7 +91,7 @@ pub mod pallet {
     pub type CreateTableCmd = (
         TableIdentifier,
         CreateStatement,
-        PerCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>>,
+        TableCommitmentBytesPerCommitmentScheme,
         SnapshotUrl,
     );
 
@@ -104,6 +106,9 @@ pub mod pallet {
 
         /// Existing commit for this table identifier
         IdentifierAlreadyExists,
+
+        /// Failed to parse Create Statement DDL
+        CreateStatementParseError,
     }
 
     #[pallet::call]
@@ -143,10 +148,27 @@ pub mod pallet {
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
             )?;
 
-            for (identifier, statement, commit, snapshot) in tables.clone() {
-                Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement);
-                Self::insert_initial_commitment(identifier, commit, snapshot)?;
-            }
+            let tables = tables
+                .into_iter()
+                .map(|(identifier, statement, commit, snapshot)| {
+                    Self::insert_schema(
+                        source_and_mode.clone(),
+                        identifier.clone(),
+                        statement.clone(),
+                    );
+
+                    let statement_with_metadata = Self::insert_initial_commitment(
+                        identifier.clone(),
+                        statement,
+                        commit.clone(),
+                        snapshot.clone(),
+                    )?;
+
+                    Ok((identifier, statement_with_metadata, commit, snapshot))
+                })
+                .collect::<Result<Vec<_>, DispatchError>>()?
+                .try_into()
+                .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
 
             Self::deposit_event(Event::<T>::TablesCreatedWithCommitments(
                 source_and_mode,
@@ -167,22 +189,27 @@ pub mod pallet {
             Schemas::<T>::insert(namespace, name, stmnt.clone());
         }
 
-        /// Insert the initial commit for this table identifier, return an error if the key already exists
+        /// Insert the initial commit for this table using the commitments-sql pallet.
         pub fn insert_initial_commitment(
             ident: TableIdentifier,
-            commit: PerCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>>,
+            statement: CreateStatement,
+            commit: TableCommitmentBytesPerCommitmentScheme,
             snapshot: SnapshotUrl,
-        ) -> DispatchResult {
-            #[allow(deprecated)]
-            pallet_commitments::Pallet::<T>::initiate_precomputed_commitments(
-                ident.clone(),
+        ) -> Result<CreateStatement, DispatchError> {
+            let create_table = create_statement_to_sqlparser(statement)
+                .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+            let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } = pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
+                create_table,
                 commit,
-            )
-            .map_err(|_| Error::<T>::IdentifierAlreadyExists)?;
+            )?;
+
+            let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
+                .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
             Snapshots::<T>::insert(ident, snapshot);
 
-            Ok(())
+            Ok(statement_with_metadata)
         }
     }
 

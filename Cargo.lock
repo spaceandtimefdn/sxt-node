@@ -6378,12 +6378,14 @@ name = "pallet-indexing"
 version = "0.1.0"
 dependencies = [
  "arrow 51.0.0",
+ "commitment-sql",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "native",
  "native-api",
  "on-chain-table",
+ "pallet-commitments",
  "pallet-permissions",
  "parity-scale-codec",
  "postcard",
@@ -6452,6 +6454,7 @@ dependencies = [
 name = "pallet-tables"
 version = "0.1.0"
 dependencies = [
+ "commitment-sql",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
