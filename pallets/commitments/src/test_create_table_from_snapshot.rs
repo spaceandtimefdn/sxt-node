@@ -2,16 +2,10 @@ use commitment_sql::{process_create_table, CreateTableAndCommitmentMetadata};
 use frame_support::assert_noop;
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::commitment::TableCommitment;
-use proof_of_sql::proof_primitive::dory::{
-    DoryCommitment,
-    DoryProverPublicSetup,
-    DoryScalar,
-    ProverSetup,
-};
+use proof_of_sql::proof_primitive::dory::{DoryCommitment, DoryScalar, ProverSetup};
 use proof_of_sql_commitment_map::{
     CommitmentScheme,
     CommitmentSchemeFlags,
-    PerCommitmentScheme,
     TableCommitmentBytes,
     TableCommitmentBytesPerCommitmentScheme,
 };
@@ -67,14 +61,14 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
     fn execute(self) -> Result<CreateTableAndCommitmentMetadata, Error<Test>> {
         let public_parameters = CommitmentsModule::public_parameters().unwrap();
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_setup = DoryProverPublicSetup::new(&prover_setup, 8);
+        let setups = CommitmentsModule::public_setups(&prover_setup);
 
         let commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
             self.snapshot_data
                 .iter_committable::<DoryScalar>()
                 .map(Result::unwrap),
             0,
-            &dory_setup,
+            &setups.dory,
         )
         .unwrap();
 
@@ -105,7 +99,7 @@ fn we_can_process_create_table_from_snapshot() {
     new_test_ext().execute_with(|| {
         let public_parameters = CommitmentsModule::public_parameters().unwrap();
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_setup = DoryProverPublicSetup::new(&prover_setup, 8);
+        let setups = CommitmentsModule::public_setups(&prover_setup);
 
         let test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
@@ -115,7 +109,7 @@ fn we_can_process_create_table_from_snapshot() {
                 .iter_committable::<DoryScalar>()
                 .map(Result::unwrap),
             0,
-            &dory_setup,
+            &setups.dory,
         )
         .unwrap();
 
@@ -135,10 +129,6 @@ fn we_can_process_create_table_from_snapshot() {
             .try_into()
             .unwrap();
 
-        let setups = PerCommitmentScheme {
-            ipa: (),
-            dory: dory_setup,
-        };
         let flags = CommitmentSchemeFlags {
             ipa: false,
             dory: true,

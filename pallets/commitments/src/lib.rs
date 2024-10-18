@@ -45,6 +45,7 @@ pub mod pallet {
         ProverSetup,
         PublicParameters,
     };
+    use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
     use proof_of_sql_commitment_map::{
         CommitmentMap,
         CommitmentScheme,
@@ -91,11 +92,16 @@ pub mod pallet {
     #[pallet::storage]
     pub type DefaultCommitmentSchemes<T: Config> = StorageValue<_, CommitmentSchemeFlags>;
 
+    /// Sigma value to use for the dory setup.
+    #[pallet::storage]
+    pub type DorySigma<T: Config> = StorageValue<_, u8>;
+
     /// Genesis configuration struct for the commitments pallet.
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
         public_parameters_bytes: Vec<u8>,
         default_commitment_schemes: CommitmentSchemeFlags,
+        dory_sigma: u8,
         _marker: PhantomData<T>,
     }
 
@@ -109,7 +115,7 @@ pub mod pallet {
                 .try_into()
                 .expect("collection is guaranteed to contain 32 elements");
             let mut rng = ChaCha20Rng::from_seed(seed);
-            let public_parameters = PublicParameters::rand(8, &mut rng);
+            let public_parameters = PublicParameters::rand(4, &mut rng);
 
             let public_parameters_bytes = PublicParametersBytes::try_from(public_parameters)
                 .expect("default public parameters should serialize successfully")
@@ -124,6 +130,7 @@ pub mod pallet {
             GenesisConfig {
                 public_parameters_bytes,
                 default_commitment_schemes,
+                dory_sigma: 3,
                 _marker: PhantomData,
             }
         }
@@ -141,6 +148,8 @@ pub mod pallet {
             });
 
             DefaultCommitmentSchemes::<T>::put(self.default_commitment_schemes);
+
+            DorySigma::<T>::put(self.dory_sigma);
         }
     }
 
@@ -204,6 +213,18 @@ pub mod pallet {
                 .map_err(|_| Error::DeserializePublicParameters)
         }
 
+        /// Obtain public setups per commitment scheme, using config from storage as needed.
+        pub(crate) fn public_setups<'s>(
+            prover_setup: &'s ProverSetup<'s>,
+        ) -> PerCommitmentScheme<AssociatedPublicSetupType<'s>> {
+            let dory = DoryProverPublicSetup::new(
+                prover_setup,
+                DorySigma::<T>::get().expect("dory sigma will exist due to genesis config")
+                    as usize,
+            );
+            PerCommitmentScheme { ipa: (), dory }
+        }
+
         /// Processes the table definition and initiates commitments for it in storage.
         ///
         /// Returns the original table definition with additional commitment metadata columns.
@@ -212,11 +233,7 @@ pub mod pallet {
         ) -> Result<CreateTableAndCommitmentMetadata, Error<T>> {
             let public_parameters = Self::public_parameters()?;
             let prover_setup = ProverSetup::from(&public_parameters);
-            let dory_setup = DoryProverPublicSetup::new(&prover_setup, 8);
-            let setups = PerCommitmentScheme {
-                ipa: (),
-                dory: dory_setup,
-            };
+            let setups = Self::public_setups(&prover_setup);
 
             let schemes = DefaultCommitmentSchemes::<T>::get()
                 .expect("default commitment schemes will exist due to genesis config");
@@ -249,11 +266,7 @@ pub mod pallet {
         ) -> Result<CreateTableAndCommitmentMetadata, Error<T>> {
             let public_parameters = Self::public_parameters()?;
             let prover_setup = ProverSetup::from(&public_parameters);
-            let dory_setup = DoryProverPublicSetup::new(&prover_setup, 8);
-            let setups = PerCommitmentScheme {
-                ipa: (),
-                dory: dory_setup,
-            };
+            let setups = Self::public_setups(&prover_setup);
 
             let snapshot_commitments = snapshot_commitment_bytes
                 .try_into()
@@ -302,11 +315,7 @@ pub mod pallet {
         ) -> Result<InsertAndCommitmentMetadata, Error<T>> {
             let public_parameters = Self::public_parameters()?;
             let prover_setup = ProverSetup::from(&public_parameters);
-            let dory_setup = DoryProverPublicSetup::new(&prover_setup, 8);
-            let setups = PerCommitmentScheme {
-                ipa: (),
-                dory: dory_setup,
-            };
+            let setups = Self::public_setups(&prover_setup);
 
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 
