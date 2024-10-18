@@ -1,3 +1,13 @@
+## [0.24.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.24.1...v0.24.2) (2024-10-18)
+
+
+### Bug Fixes
+
+* 1-index proof order column ([f7a3fea](https://github.com/spaceandtimelabs/sxt-node/commit/f7a3fea1471cc8edf6c49cad813d11447f36c658))
+* reserve metadata prefix META instead of SXTMETA ([25dcbab](https://github.com/spaceandtimelabs/sxt-node/commit/25dcbab90d076641814e58487547800eedc2fa73))
+
+
+
 ## [0.24.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.24.0...v0.24.1) (2024-10-17)
 
 
@@ -21,15 +31,6 @@
 ### Bug Fixes
 
 * Postgres Conversion. ([#55](https://github.com/spaceandtimelabs/sxt-node/issues/55)) ([9d87d44](https://github.com/spaceandtimelabs/sxt-node/commit/9d87d44d912fb4cbb0c5f5a8f10f3e365d3bb406))
-
-
-
-# [0.23.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.22.0...v0.23.0) (2024-10-17)
-
-
-### Features
-
-* Bootstrap data loader ([#42](https://github.com/spaceandtimelabs/sxt-node/issues/42)) ([1171ab7](https://github.com/spaceandtimelabs/sxt-node/commit/1171ab71e253013ac83131ae752ee562f58a1b41))
 
 
 
