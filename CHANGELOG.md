@@ -1,3 +1,12 @@
+## [0.25.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.25.0...v0.25.1) (2024-10-18)
+
+
+### Bug Fixes
+
+* Fixed checkpoint table schema name ([eb30218](https://github.com/spaceandtimelabs/sxt-node/commit/eb30218455bb92da53c194e9d5df61eaa8fcdf6c))
+
+
+
 # [0.25.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.24.2...v0.25.0) (2024-10-18)
 
 
@@ -34,10 +43,6 @@
 ### Features
 
 * add --check to the cargo fmt CI job ([a9ab76d](https://github.com/spaceandtimelabs/sxt-node/commit/a9ab76dbf9c621f2c34c7c2f64e0723aa9e7b7e5))
-
-
-
-## [0.23.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.23.1...v0.23.2) (2024-10-17)
 
 
 
