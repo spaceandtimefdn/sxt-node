@@ -1,18 +1,8 @@
 use commitment_sql::{process_create_table, CreateTableAndCommitmentMetadata};
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::commitment::TableCommitment;
-use proof_of_sql::proof_primitive::dory::{
-    DoryCommitment,
-    DoryProverPublicSetup,
-    DoryScalar,
-    ProverSetup,
-};
-use proof_of_sql_commitment_map::{
-    CommitmentScheme,
-    CommitmentSchemeFlags,
-    PerCommitmentScheme,
-    TableCommitmentBytes,
-};
+use proof_of_sql::proof_primitive::dory::{DoryCommitment, DoryScalar, ProverSetup};
+use proof_of_sql_commitment_map::{CommitmentScheme, CommitmentSchemeFlags, TableCommitmentBytes};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 use sxt_core::tables::TableIdentifier;
@@ -59,7 +49,7 @@ fn we_can_process_create_table() {
     new_test_ext().execute_with(|| {
         let public_parameters = CommitmentsModule::public_parameters().unwrap();
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_setup = DoryProverPublicSetup::new(&prover_setup, 8);
+        let setups = CommitmentsModule::public_setups(&prover_setup);
 
         let test_params = ProcessCreateTableTestParams::new_valid();
 
@@ -74,7 +64,7 @@ fn we_can_process_create_table() {
                 .iter_committable::<DoryScalar>()
                 .map(Result::unwrap),
             0,
-            &dory_setup,
+            &setups.dory,
         )
         .unwrap();
 
@@ -94,10 +84,6 @@ fn we_can_process_create_table() {
             .try_into()
             .unwrap();
 
-        let setups = PerCommitmentScheme {
-            ipa: (),
-            dory: dory_setup,
-        };
         let flags = CommitmentSchemeFlags {
             ipa: false,
             dory: true,
