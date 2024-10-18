@@ -1,4 +1,6 @@
+use alloc::string::ToString;
 use alloc::vec::Vec;
+use core::str::{from_utf8, Utf8Error};
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::storage::bounded_vec::BoundedVec;
@@ -7,7 +9,10 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
 use sp_core::RuntimeDebug;
+use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::ast::ObjectName;
+use sqlparser::dialect::PostgreSqlDialect;
+use sqlparser::parser::Parser;
 
 use super::ByteString;
 
@@ -223,12 +228,60 @@ pub fn create_statement(stmnt: &str) -> CreateStatement {
     CreateStatement::try_from(String::from(stmnt).as_bytes().to_vec()).unwrap()
 }
 
+/// Errors that can occur when converting to/from a create statement.
+#[derive(Snafu, Debug)]
+pub enum CreateStatementParseError {
+    /// String representation of table definition exceeds maximum size.
+    #[snafu(display("String representation of table definition exceeds maximum size."))]
+    StatementTooLarge,
+    /// Create statement does not store valid utf8.
+    #[snafu(
+        display("Create statement does not store valid utf8: {source}"),
+        context(false)
+    )]
+    Utf8 {
+        /// The source utf8 error.
+        source: Utf8Error,
+    },
+    /// String representation of table definition exceeds maximum size.
+    #[snafu(display("Encountered sqlparser error: {error}"))]
+    Sqlparser {
+        /// The source parser error.
+        error: sqlparser::parser::ParserError,
+    },
+}
+
+impl From<sqlparser::parser::ParserError> for CreateStatementParseError {
+    fn from(error: sqlparser::parser::ParserError) -> Self {
+        CreateStatementParseError::Sqlparser { error }
+    }
+}
+
+/// Convert a sqlparser `CreateTableBuilder` to a [`CreateStatement`].
+pub fn sqlparser_to_create_statement(
+    create_table: CreateTableBuilder,
+) -> Result<CreateStatement, CreateStatementParseError> {
+    CreateStatement::try_from(create_table.build().to_string().as_bytes().to_vec())
+        .map_err(|_| CreateStatementParseError::StatementTooLarge)
+}
+
+/// Convert a [`CreateStatement`] to a sqlparser `CreateTableBuilder`.
+pub fn create_statement_to_sqlparser(
+    create_statement: CreateStatement,
+) -> Result<CreateTableBuilder, CreateStatementParseError> {
+    Ok(Parser::new(&PostgreSqlDialect {})
+        .try_with_sql(from_utf8(&create_statement)?)?
+        .parse_statement()?
+        .try_into()?)
+}
+
 #[cfg(test)]
 mod tests {
     use alloc::format;
     use alloc::string::String;
 
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+    use sqlparser::ast::{ColumnDef, DataType, Ident};
     use sqlparser::dialect::PostgreSqlDialect;
     use sqlparser::parser::Parser;
 
@@ -297,5 +350,60 @@ mod tests {
             TableIdentifier::try_from(&create_table.name),
             Err(ObjectNameToTableIdentifierError::IdentifierExceedsMaxLength)
         );
+    }
+
+    #[test]
+    fn we_can_convert_to_and_from_create_statement() {
+        let expected_create_statement =
+            create_statement("CREATE TABLE test.table (int_col BIGINT)");
+
+        let create_table =
+            create_statement_to_sqlparser(expected_create_statement.clone()).unwrap();
+
+        let create_statement = sqlparser_to_create_statement(create_table).unwrap();
+
+        assert_eq!(create_statement, expected_create_statement);
+    }
+
+    #[test]
+    fn we_cannot_convert_to_too_large_create_statement() {
+        let create_statement = create_statement("CREATE TABLE test.table ()");
+
+        let mut create_table = create_statement_to_sqlparser(create_statement.clone()).unwrap();
+
+        create_table.columns = vec![
+            ColumnDef {
+                name: Ident::new("col"),
+                data_type: DataType::BigInt(None),
+                collation: None,
+                options: vec![],
+            };
+            1000
+        ];
+
+        assert!(matches!(
+            sqlparser_to_create_statement(create_table),
+            Err(CreateStatementParseError::StatementTooLarge)
+        ));
+    }
+
+    #[test]
+    fn we_cannot_convert_from_create_statement_with_invalid_utf8() {
+        let create_statement = CreateStatement::try_from(vec![0xc3]).unwrap();
+
+        assert!(matches!(
+            create_statement_to_sqlparser(create_statement.clone()),
+            Err(CreateStatementParseError::Utf8 { .. })
+        ));
+    }
+
+    #[test]
+    fn we_cannot_convert_from_create_statement_with_invalid_statement() {
+        let create_statement = create_statement("CREATE TABLE 12345 ()");
+
+        assert!(matches!(
+            create_statement_to_sqlparser(create_statement.clone()),
+            Err(CreateStatementParseError::Sqlparser { .. })
+        ));
     }
 }
