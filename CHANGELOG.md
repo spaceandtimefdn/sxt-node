@@ -1,3 +1,19 @@
+# [0.25.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.24.2...v0.25.0) (2024-10-18)
+
+
+### Bug Fixes
+
+* use PostgreSql dialect for create statement parsing ([a9889f6](https://github.com/spaceandtimelabs/sxt-node/commit/a9889f6f9879c138ce62e675e2b3c665426a1b88))
+
+
+### Features
+
+* add conversions between CreateStatement and CreateTableBuilder ([fab4f98](https://github.com/spaceandtimelabs/sxt-node/commit/fab4f98a2950b4fc0524acd713950204bb4af0e4))
+* process create table from snapshot in tables pallet ([b54e262](https://github.com/spaceandtimelabs/sxt-node/commit/b54e262d6b05b52c4c17185462fc99a0f633d9ce))
+* update commitments after reaching quorum on indexed data ([34bdbc4](https://github.com/spaceandtimelabs/sxt-node/commit/34bdbc4c5bddf8d6c74c578d3f66b1ff29e81ebf))
+
+
+
 ## [0.24.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.24.1...v0.24.2) (2024-10-18)
 
 
@@ -22,15 +38,6 @@
 
 
 ## [0.23.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.23.1...v0.23.2) (2024-10-17)
-
-
-
-## [0.23.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.23.0...v0.23.1) (2024-10-17)
-
-
-### Bug Fixes
-
-* Postgres Conversion. ([#55](https://github.com/spaceandtimelabs/sxt-node/issues/55)) ([9d87d44](https://github.com/spaceandtimelabs/sxt-node/commit/9d87d44d912fb4cbb0c5f5a8f10f3e365d3bb406))
 
 
 
