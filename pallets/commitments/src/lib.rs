@@ -115,7 +115,7 @@ pub mod pallet {
                 .try_into()
                 .expect("collection is guaranteed to contain 32 elements");
             let mut rng = ChaCha20Rng::from_seed(seed);
-            let public_parameters = PublicParameters::rand(8, &mut rng);
+            let public_parameters = PublicParameters::rand(4, &mut rng);
 
             let public_parameters_bytes = PublicParametersBytes::try_from(public_parameters)
                 .expect("default public parameters should serialize successfully")
@@ -130,7 +130,7 @@ pub mod pallet {
             GenesisConfig {
                 public_parameters_bytes,
                 default_commitment_schemes,
-                dory_sigma: 8,
+                dory_sigma: 3,
                 _marker: PhantomData,
             }
         }
