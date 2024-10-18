@@ -8,7 +8,7 @@ jobs:
   release:
     name: Run Release Manager
 
-    runs-on: ubuntu-latest
+    runs-on: large-4-core-16gb-22-04
 
     steps:
       - name: Load Secrets
