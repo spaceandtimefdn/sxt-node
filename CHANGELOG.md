@@ -1,3 +1,12 @@
+# [0.26.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.25.1...v0.26.0) (2024-10-18)
+
+
+### Features
+
+* FlightSQL Integration via dedicated task ([#51](https://github.com/spaceandtimelabs/sxt-node/issues/51)) ([505810b](https://github.com/spaceandtimelabs/sxt-node/commit/505810bd6976dea4d0ff5c761833a880ff5e42c4))
+
+
+
 ## [0.25.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.25.0...v0.25.1) (2024-10-18)
 
 
@@ -34,15 +43,6 @@
 
 
 ## [0.24.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.24.0...v0.24.1) (2024-10-17)
-
-
-
-# [0.24.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.23.2...v0.24.0) (2024-10-17)
-
-
-### Features
-
-* add --check to the cargo fmt CI job ([a9ab76d](https://github.com/spaceandtimelabs/sxt-node/commit/a9ab76dbf9c621f2c34c7c2f64e0723aa9e7b7e5))
 
 
 
