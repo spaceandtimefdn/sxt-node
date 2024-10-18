@@ -4773,6 +4773,9 @@ name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
+dependencies = [
+ "spin 0.9.8",
+]
 
 [[package]]
 name = "lazycell"
@@ -6563,12 +6566,12 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "lazy_static",
  "on-chain-table",
  "parity-scale-codec",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
  "proof-of-sql-parser",
- "rand_chacha",
  "scale-info",
  "sp-core",
  "sp-io",
@@ -11603,7 +11606,6 @@ dependencies = [
 name = "sxt-core"
 version = "0.1.0"
 dependencies = [
- "ark-serialize",
  "arrow",
  "arrow-flight",
  "frame-benchmarking",
@@ -11612,7 +11614,6 @@ dependencies = [
  "on-chain-table",
  "parity-scale-codec",
  "postcard",
- "proof-of-sql",
  "scale-info",
  "serde",
  "snafu",

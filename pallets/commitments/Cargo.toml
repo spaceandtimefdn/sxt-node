@@ -24,11 +24,11 @@ scale-info = { features = [
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
+lazy_static.workspace = true
 on-chain-table.workspace = true
 proof-of-sql.workspace = true
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
 proof-of-sql-parser.workspace = true
-rand_chacha.workspace = true
 sqlparser.workspace = true
 sxt-core.workspace = true
 

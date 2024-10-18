@@ -21,6 +21,8 @@ mod test_create_table_from_snapshot;
 #[cfg(test)]
 mod test_insert;
 
+mod public_setups;
+
 mod error_conversions;
 
 pub use pallet::*;
@@ -29,7 +31,6 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
     use alloc::str;
-    use alloc::vec::Vec;
 
     use commitment_sql::{
         process_create_table,
@@ -40,26 +41,17 @@ pub mod pallet {
     };
     use frame_support::pallet_prelude::*;
     use on_chain_table::OnChainTable;
-    use proof_of_sql::proof_primitive::dory::{
-        DoryProverPublicSetup,
-        ProverSetup,
-        PublicParameters,
-    };
-    use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
     use proof_of_sql_commitment_map::{
         CommitmentMap,
         CommitmentScheme,
         CommitmentSchemeFlags,
         CommitmentStorageMapHandler,
         KeyExistsError,
-        PerCommitmentScheme,
         TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
     };
-    use rand_chacha::rand_core::SeedableRng;
-    use rand_chacha::ChaCha20Rng;
+    use public_setups::PUBLIC_SETUPS;
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
-    use sxt_core::commitments::PublicParametersBytes;
     use sxt_core::tables::TableIdentifier;
 
     use super::*;
@@ -84,53 +76,26 @@ pub mod pallet {
         TableCommitmentBytes,
     >;
 
-    /// Proof of sql public parameters storage.
-    #[pallet::storage]
-    pub type StoredPublicParameters<T: Config> = StorageValue<_, PublicParametersBytes>;
-
     /// Default schemes used when committing to new tables.
     #[pallet::storage]
     pub type DefaultCommitmentSchemes<T: Config> = StorageValue<_, CommitmentSchemeFlags>;
 
-    /// Sigma value to use for the dory setup.
-    #[pallet::storage]
-    pub type DorySigma<T: Config> = StorageValue<_, u8>;
-
     /// Genesis configuration struct for the commitments pallet.
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        public_parameters_bytes: Vec<u8>,
         default_commitment_schemes: CommitmentSchemeFlags,
-        dory_sigma: u8,
         _marker: PhantomData<T>,
     }
 
     impl<T: Config> Default for GenesisConfig<T> {
         fn default() -> Self {
-            let seed = "SpaceAndTime"
-                .bytes()
-                .chain(core::iter::repeat(0u8))
-                .take(32)
-                .collect::<Vec<_>>()
-                .try_into()
-                .expect("collection is guaranteed to contain 32 elements");
-            let mut rng = ChaCha20Rng::from_seed(seed);
-            let public_parameters = PublicParameters::rand(4, &mut rng);
-
-            let public_parameters_bytes = PublicParametersBytes::try_from(public_parameters)
-                .expect("default public parameters should serialize successfully")
-                .data
-                .into();
-
             let default_commitment_schemes = CommitmentSchemeFlags {
                 ipa: false,
                 dory: true,
             };
 
             GenesisConfig {
-                public_parameters_bytes,
                 default_commitment_schemes,
-                dory_sigma: 3,
                 _marker: PhantomData,
             }
         }
@@ -139,17 +104,7 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            StoredPublicParameters::<T>::put(PublicParametersBytes {
-                data: self
-                    .public_parameters_bytes
-                    .clone()
-                    .try_into()
-                    .expect("genesis public parameters should be configured correctly"),
-            });
-
             DefaultCommitmentSchemes::<T>::put(self.default_commitment_schemes);
-
-            DorySigma::<T>::put(self.dory_sigma);
         }
     }
 
@@ -157,8 +112,6 @@ pub mod pallet {
     #[pallet::error]
     #[derive(PartialEq, Eq)]
     pub enum Error<T> {
-        /// Failed to deserialize proof-of-sql public parameters from storage.
-        DeserializePublicParameters,
         /// Proof-of-sql commitment has too many columns.
         CommitmentWithTooManyColumns,
         /// Failed to serialize proof-of-sql commitment.
@@ -204,42 +157,17 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        /// Retrieve and deserialize proof-of-sql PublicParameters from storage.
-        pub(crate) fn public_parameters() -> Result<PublicParameters, Error<T>> {
-            let public_parameters_bytes = StoredPublicParameters::<T>::get()
-                .expect("public parameters will exist due to genesis config");
-
-            PublicParameters::try_from(public_parameters_bytes)
-                .map_err(|_| Error::DeserializePublicParameters)
-        }
-
-        /// Obtain public setups per commitment scheme, using config from storage as needed.
-        pub(crate) fn public_setups<'s>(
-            prover_setup: &'s ProverSetup<'s>,
-        ) -> PerCommitmentScheme<AssociatedPublicSetupType<'s>> {
-            let dory = DoryProverPublicSetup::new(
-                prover_setup,
-                DorySigma::<T>::get().expect("dory sigma will exist due to genesis config")
-                    as usize,
-            );
-            PerCommitmentScheme { ipa: (), dory }
-        }
-
         /// Processes the table definition and initiates commitments for it in storage.
         ///
         /// Returns the original table definition with additional commitment metadata columns.
         pub fn process_create_table_and_initiate_commitments(
             create_table: CreateTableBuilder,
         ) -> Result<CreateTableAndCommitmentMetadata, Error<T>> {
-            let public_parameters = Self::public_parameters()?;
-            let prover_setup = ProverSetup::from(&public_parameters);
-            let setups = Self::public_setups(&prover_setup);
-
             let schemes = DefaultCommitmentSchemes::<T>::get()
                 .expect("default commitment schemes will exist due to genesis config");
 
             let (create_table_and_commitment_metadata, empty_commitments) =
-                process_create_table(create_table, setups, &schemes)?;
+                process_create_table(create_table, *PUBLIC_SETUPS, &schemes)?;
 
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 
@@ -264,16 +192,16 @@ pub mod pallet {
             create_table: CreateTableBuilder,
             snapshot_commitment_bytes: TableCommitmentBytesPerCommitmentScheme,
         ) -> Result<CreateTableAndCommitmentMetadata, Error<T>> {
-            let public_parameters = Self::public_parameters()?;
-            let prover_setup = ProverSetup::from(&public_parameters);
-            let setups = Self::public_setups(&prover_setup);
-
             let snapshot_commitments = snapshot_commitment_bytes
                 .try_into()
                 .map_err(|_| Error::DeserializeCommitment)?;
 
             let (create_table_and_commitment_metadata, snapshot_commitments) =
-                process_create_table_from_snapshot(create_table, setups, snapshot_commitments)?;
+                process_create_table_from_snapshot(
+                    create_table,
+                    *PUBLIC_SETUPS,
+                    snapshot_commitments,
+                )?;
 
             let snapshot_commitment_bytes = snapshot_commitments.try_into()?;
 
@@ -313,10 +241,6 @@ pub mod pallet {
             table: TableIdentifier,
             insert_data: OnChainTable,
         ) -> Result<InsertAndCommitmentMetadata, Error<T>> {
-            let public_parameters = Self::public_parameters()?;
-            let prover_setup = ProverSetup::from(&public_parameters);
-            let setups = Self::public_setups(&prover_setup);
-
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 
             let previous_commitments = handler
@@ -325,7 +249,7 @@ pub mod pallet {
                 .map_err(|_| Error::DeserializeCommitment)?;
 
             let (insert_and_commitment_metadata, commitments) =
-                process_insert(&table, insert_data, previous_commitments, setups)?;
+                process_insert(&table, insert_data, previous_commitments, *PUBLIC_SETUPS)?;
 
             let commitments_bytes = commitments.try_into()?;
 

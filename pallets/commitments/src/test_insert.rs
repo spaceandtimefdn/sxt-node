@@ -3,12 +3,13 @@ use frame_support::assert_noop;
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql::base::math::decimal::Precision;
-use proof_of_sql::proof_primitive::dory::{DoryCommitment, DoryScalar, ProverSetup};
+use proof_of_sql::proof_primitive::dory::{DoryCommitment, DoryScalar};
 use proof_of_sql_commitment_map::{CommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
 use sp_core::U256;
 use sxt_core::tables::TableIdentifier;
 
 use crate::mock::{new_test_ext, CommitmentsModule, Test};
+use crate::public_setups::PUBLIC_SETUPS;
 use crate::test_create_table::ProcessCreateTableTestParams;
 use crate::test_create_table_generic::CreateTableApiTestParams;
 use crate::Error;
@@ -57,10 +58,6 @@ impl ProcessInsertTestParams {
 #[test]
 fn we_can_process_insert() {
     new_test_ext().execute_with(|| {
-        let public_parameters = CommitmentsModule::public_parameters().unwrap();
-        let prover_setup = ProverSetup::from(&public_parameters);
-        let setups = CommitmentsModule::public_setups(&prover_setup);
-
         ProcessCreateTableTestParams::new_valid().execute().unwrap();
 
         let empty_table = OnChainTable::try_from_iter([
@@ -74,7 +71,7 @@ fn we_can_process_insert() {
                 .iter_committable::<DoryScalar>()
                 .map(Result::unwrap),
             0,
-            &setups.dory,
+            &PUBLIC_SETUPS.dory,
         )
         .unwrap();
 
@@ -89,7 +86,7 @@ fn we_can_process_insert() {
             &test_params.table_id,
             test_params.insert_data.clone(),
             empty_commitments,
-            setups,
+            *PUBLIC_SETUPS,
         )
         .unwrap();
         let expected_commitment_bytes =
