@@ -1,3 +1,12 @@
+# [0.28.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.27.0...v0.28.0) (2024-10-18)
+
+
+### Features
+
+* change release workflow to use large runners instead of default ([c86f0dd](https://github.com/spaceandtimelabs/sxt-node/commit/c86f0dddfbd3483ae5f9204b5faa6589df806acb))
+
+
+
 # [0.27.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.26.0...v0.27.0) (2024-10-18)
 
 
@@ -38,16 +47,6 @@
 * add conversions between CreateStatement and CreateTableBuilder ([fab4f98](https://github.com/spaceandtimelabs/sxt-node/commit/fab4f98a2950b4fc0524acd713950204bb4af0e4))
 * process create table from snapshot in tables pallet ([b54e262](https://github.com/spaceandtimelabs/sxt-node/commit/b54e262d6b05b52c4c17185462fc99a0f633d9ce))
 * update commitments after reaching quorum on indexed data ([34bdbc4](https://github.com/spaceandtimelabs/sxt-node/commit/34bdbc4c5bddf8d6c74c578d3f66b1ff29e81ebf))
-
-
-
-## [0.24.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.24.1...v0.24.2) (2024-10-18)
-
-
-### Bug Fixes
-
-* 1-index proof order column ([f7a3fea](https://github.com/spaceandtimelabs/sxt-node/commit/f7a3fea1471cc8edf6c49cad813d11447f36c658))
-* reserve metadata prefix META instead of SXTMETA ([25dcbab](https://github.com/spaceandtimelabs/sxt-node/commit/25dcbab90d076641814e58487547800eedc2fa73))
 
 
 
