@@ -136,11 +136,28 @@ pub mod pallet {
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
             )?;
 
-            for (identifier, statement) in tables.clone() {
-                Self::insert_schema(source_and_mode.clone(), identifier, statement);
-            }
+            let tables_with_meta_columns = tables.into_iter().map(|(identifier, statement)| {
+                    Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone());
 
-            Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode, tables));
+                    let create_table = create_statement_to_sqlparser(statement)
+                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+                    let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(
+                        create_table,
+                    )?;
+
+                    let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
+                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                    Ok((identifier, statement_with_metadata))
+                })
+                .collect::<Result<Vec<_>, DispatchError>>()?
+                .try_into()
+                .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
+
+            Self::deposit_event(Event::<T>::SchemaUpdated(
+                source_and_mode,
+                tables_with_meta_columns,
+            ));
 
             Ok(())
         }
