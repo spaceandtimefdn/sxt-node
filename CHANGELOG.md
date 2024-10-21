@@ -1,3 +1,12 @@
+# [0.30.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.29.0...v0.30.0) (2024-10-21)
+
+
+### Features
+
+* Added create_table_with_snapshot to flightsql task ([184f67d](https://github.com/spaceandtimelabs/sxt-node/commit/184f67ddbe5017bce71d303161a29e45366a1f33))
+
+
+
 # [0.29.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.28.0...v0.29.0) (2024-10-21)
 
 
@@ -32,15 +41,6 @@
 ### Features
 
 * FlightSQL Integration via dedicated task ([#51](https://github.com/spaceandtimelabs/sxt-node/issues/51)) ([505810b](https://github.com/spaceandtimelabs/sxt-node/commit/505810bd6976dea4d0ff5c761833a880ff5e42c4))
-
-
-
-## [0.25.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.25.0...v0.25.1) (2024-10-18)
-
-
-### Bug Fixes
-
-* Fixed checkpoint table schema name ([eb30218](https://github.com/spaceandtimelabs/sxt-node/commit/eb30218455bb92da53c194e9d5df61eaa8fcdf6c))
 
 
 
