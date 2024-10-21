@@ -59,10 +59,16 @@ pub fn spawn_flightsql_tasks(name: &'static str, spawner: &impl SpawnEssentialNa
 async fn run() {
     let flightsql_host = env::var("HOST").unwrap_or("127.0.0.1".into());
     let flightsql_port = env::var("PORT").unwrap_or("50555".into());
+    let flightsql_user = env::var("FLIGHTSQL_USER").unwrap_or("admin".into());
+    let flightsql_pass = env::var("FLIGHTSQL_PASSWORD").unwrap_or("admin".into());
 
     let mut client = create_flightsql_client(&flightsql_host, &flightsql_port).await.unwrap_or_else(|_|
         panic!("Unable to connect to flightSQL at {flightsql_host}:{flightsql_port}! FlightSQL is required for all validators!")
     );
+
+    authenticate_client(&mut client, &flightsql_user, &flightsql_pass)
+        .await
+        .unwrap();
 
     let api = create_subxt_client().await.unwrap();
 
@@ -130,32 +136,10 @@ async fn run() {
 
             match result {
                 Ok(_) => {}
-                Err(e) => match e {
-                    SQLError::DBServiceError(msg) => {
-                        log::error!("ERROR DBServiceError {msg}")
-                    }
-                    SQLError::FlightSQLServiceError(msg) => {
-                        log::error!("ERROR FlightSQLServiceError {msg}")
-                    }
-                    SQLError::BadTableIdentifier(msg) => {
-                        log::error!("ERROR BadTableIdentifier {msg}")
-                    }
-                    SQLError::BadSQLStatement(msg) => {
-                        log::error!("ERROR BadSQLStatement {msg}")
-                    }
-                    SQLError::SQLExecutionError(msg) => {
-                        log::error!("ERROR SQLExecutionError {msg}")
-                    }
-                    SQLError::InsertExecutionError(msg) => {
-                        log::error!("ERROR InsertExecutionError {msg}")
-                    }
-                    SQLError::BadRecordBatch(msg) => {
-                        log::error!("ERROR BadRecordBatch {msg}")
-                    }
-                    (_) => {
-                        log::error!("Error in FlightSQL task")
-                    }
-                },
+                Err(e) => {
+                    log::error!("Error in FlightSQL task");
+                    panic!("{:?}", e)
+                }
             }
         }
     }
@@ -169,6 +153,17 @@ async fn create_flightsql_client(
     let endpoint = Channel::from_shared(format!("http://{host}:{port}"))?;
     let channel = endpoint.connect().await?;
     Ok(FlightSqlServiceClient::new(channel))
+}
+
+/// Authenticate with the flightsql server using the provided username and password
+async fn authenticate_client(
+    client: &mut FlightSqlServiceClient<Channel>,
+    user: &str,
+    pass: &str,
+) -> Result<(), anyhow::Error> {
+    client.clear_token();
+    let _ = client.handshake(user, pass).await?;
+    Ok(())
 }
 
 /// Create a subxt client to listen for blocks and events
