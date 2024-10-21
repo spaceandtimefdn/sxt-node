@@ -1,3 +1,13 @@
+# [0.29.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.28.0...v0.29.0) (2024-10-21)
+
+
+### Features
+
+* derive Copy for PerCommitmentScheme ([298a048](https://github.com/spaceandtimelabs/sxt-node/commit/298a048c062ab0ef6234b30ef854cf1294aeb211))
+* statically use proof-of-sql setups from file instead of storage ([34e0ab8](https://github.com/spaceandtimelabs/sxt-node/commit/34e0ab8fbf0cfa9b20d1f9ab1b5183541d3a7e65))
+
+
+
 # [0.28.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.27.0...v0.28.0) (2024-10-18)
 
 
@@ -31,22 +41,6 @@
 ### Bug Fixes
 
 * Fixed checkpoint table schema name ([eb30218](https://github.com/spaceandtimelabs/sxt-node/commit/eb30218455bb92da53c194e9d5df61eaa8fcdf6c))
-
-
-
-# [0.25.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.24.2...v0.25.0) (2024-10-18)
-
-
-### Bug Fixes
-
-* use PostgreSql dialect for create statement parsing ([a9889f6](https://github.com/spaceandtimelabs/sxt-node/commit/a9889f6f9879c138ce62e675e2b3c665426a1b88))
-
-
-### Features
-
-* add conversions between CreateStatement and CreateTableBuilder ([fab4f98](https://github.com/spaceandtimelabs/sxt-node/commit/fab4f98a2950b4fc0524acd713950204bb4af0e4))
-* process create table from snapshot in tables pallet ([b54e262](https://github.com/spaceandtimelabs/sxt-node/commit/b54e262d6b05b52c4c17185462fc99a0f633d9ce))
-* update commitments after reaching quorum on indexed data ([34bdbc4](https://github.com/spaceandtimelabs/sxt-node/commit/34bdbc4c5bddf8d6c74c578d3f66b1ff29e81ebf))
 
 
 
