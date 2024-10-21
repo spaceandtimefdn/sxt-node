@@ -158,7 +158,7 @@ impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentSchem
 }
 
 /// Collection of commitment-associated data, with one element per commitment scheme.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
 pub struct PerCommitmentScheme<T: GenericOverCommitment> {
     /// Element with [`CommitmentScheme::Ipa`].
@@ -466,7 +466,7 @@ mod tests {
         };
         let no_iterator = vec![];
         assert_eq!(
-            no_commitments.clone().into_flat_iter().collect::<Vec<_>>(),
+            no_commitments.into_flat_iter().collect::<Vec<_>>(),
             no_iterator.clone()
         );
         assert_eq!(PerCommitmentScheme::from_iter(no_iterator), no_commitments);
@@ -479,7 +479,7 @@ mod tests {
             Default::default(),
         )];
         assert_eq!(
-            ipa_commitments.clone().into_flat_iter().collect::<Vec<_>>(),
+            ipa_commitments.into_flat_iter().collect::<Vec<_>>(),
             ipa_iterator.clone(),
         );
         assert_eq!(
@@ -495,10 +495,7 @@ mod tests {
             Default::default(),
         )];
         assert_eq!(
-            dory_commitments
-                .clone()
-                .into_flat_iter()
-                .collect::<Vec<_>>(),
+            dory_commitments.into_flat_iter().collect::<Vec<_>>(),
             dory_iterator.clone(),
         );
         assert_eq!(
@@ -515,7 +512,7 @@ mod tests {
             AnyCommitmentScheme::<CommitmentType>::Dory(Default::default()),
         ];
         assert_eq!(
-            all_commitments.clone().into_flat_iter().collect::<Vec<_>>(),
+            all_commitments.into_flat_iter().collect::<Vec<_>>(),
             all_iterator.clone()
         );
         assert_eq!(
@@ -567,7 +564,7 @@ mod tests {
 
         let no_flags = CommitmentSchemeFlags::default();
         assert_eq!(
-            per_commitment_scheme.clone().select(&no_flags),
+            per_commitment_scheme.select(&no_flags),
             PerCommitmentScheme::<OptionType<CommitmentType>>::default()
         );
 
@@ -576,7 +573,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            per_commitment_scheme.clone().select(&ipa_flags),
+            per_commitment_scheme.select(&ipa_flags),
             PerCommitmentScheme::<OptionType<CommitmentType>> {
                 ipa: Some(Default::default()),
                 dory: None,
@@ -588,7 +585,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            per_commitment_scheme.clone().select(&dory_flags),
+            per_commitment_scheme.select(&dory_flags),
             PerCommitmentScheme::<OptionType<CommitmentType>> {
                 ipa: None,
                 dory: Some(Default::default()),
@@ -597,7 +594,7 @@ mod tests {
 
         let all_flags = CommitmentSchemeFlags::all();
         assert_eq!(
-            per_commitment_scheme.clone().select(&all_flags),
+            per_commitment_scheme.select(&all_flags),
             PerCommitmentScheme::<OptionType<CommitmentType>> {
                 ipa: Some(Default::default()),
                 dory: Some(Default::default()),
@@ -623,10 +620,7 @@ mod tests {
                 dory: (Default::default(), DoryScalar::ONE),
             };
 
-        assert_eq!(
-            commitments.clone().zip(scalars.clone()),
-            commitments_with_scalars
-        );
+        assert_eq!(commitments.zip(scalars), commitments_with_scalars);
         assert_eq!(commitments_with_scalars.unzip(), (commitments, scalars));
     }
 

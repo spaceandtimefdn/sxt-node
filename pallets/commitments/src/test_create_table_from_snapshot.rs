@@ -2,7 +2,7 @@ use commitment_sql::{process_create_table, CreateTableAndCommitmentMetadata};
 use frame_support::assert_noop;
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::commitment::TableCommitment;
-use proof_of_sql::proof_primitive::dory::{DoryCommitment, DoryScalar, ProverSetup};
+use proof_of_sql::proof_primitive::dory::{DoryCommitment, DoryScalar};
 use proof_of_sql_commitment_map::{
     CommitmentScheme,
     CommitmentSchemeFlags,
@@ -14,6 +14,7 @@ use sqlparser::parser::Parser;
 use sxt_core::tables::TableIdentifier;
 
 use crate::mock::*;
+use crate::public_setups::PUBLIC_SETUPS;
 use crate::test_create_table_generic::{self, CreateTableApiTestParams};
 use crate::Error;
 
@@ -59,16 +60,12 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
     }
 
     fn execute(self) -> Result<CreateTableAndCommitmentMetadata, Error<Test>> {
-        let public_parameters = CommitmentsModule::public_parameters().unwrap();
-        let prover_setup = ProverSetup::from(&public_parameters);
-        let setups = CommitmentsModule::public_setups(&prover_setup);
-
         let commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
             self.snapshot_data
                 .iter_committable::<DoryScalar>()
                 .map(Result::unwrap),
             0,
-            &setups.dory,
+            &PUBLIC_SETUPS.dory,
         )
         .unwrap();
 
@@ -97,10 +94,6 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
 #[test]
 fn we_can_process_create_table_from_snapshot() {
     new_test_ext().execute_with(|| {
-        let public_parameters = CommitmentsModule::public_parameters().unwrap();
-        let prover_setup = ProverSetup::from(&public_parameters);
-        let setups = CommitmentsModule::public_setups(&prover_setup);
-
         let test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
         let expected_commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
@@ -109,7 +102,7 @@ fn we_can_process_create_table_from_snapshot() {
                 .iter_committable::<DoryScalar>()
                 .map(Result::unwrap),
             0,
-            &setups.dory,
+            &PUBLIC_SETUPS.dory,
         )
         .unwrap();
 
@@ -134,7 +127,7 @@ fn we_can_process_create_table_from_snapshot() {
             dory: true,
         };
         let (expected_create_table_and_commitment_metadata, _) =
-            process_create_table(expected_create_table, setups, &flags).unwrap();
+            process_create_table(expected_create_table, *PUBLIC_SETUPS, &flags).unwrap();
 
         let create_table_and_commitment_metadata = test_params.execute().unwrap();
 

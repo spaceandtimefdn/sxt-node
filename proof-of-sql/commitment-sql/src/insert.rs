@@ -342,7 +342,7 @@ mod tests {
         };
 
         assert_eq!(
-            process_insert(&table_id, first_insert, empty_commitments, setups.clone()).unwrap(),
+            process_insert(&table_id, first_insert, empty_commitments, setups).unwrap(),
             (
                 InsertAndCommitmentMetadata {
                     insert_with_meta_columns: expected_first_insert_with_meta_columns,
