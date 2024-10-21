@@ -1,9 +1,24 @@
-use sc_service::ChainType;
+use std::fs::read_to_string;
+
+use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
+use sc_service::{ChainType, Properties};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use sxt_core::tables::SourceAndMode;
+use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+use sqlparser::dialect::PostgreSqlDialect;
+use sqlparser::parser::Parser;
+use sxt_core::tables::{
+    create_statement,
+    table_identifier,
+    CreateStatement,
+    IndexerMode,
+    SnapshotUrl,
+    Source,
+    SourceAndMode,
+    TableIdentifier,
+};
 use sxt_runtime::{AccountId, Signature, WASM_BINARY};
 
 // The URL for the telemetry server.
@@ -42,6 +57,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
     .with_name("Development")
     .with_id("dev")
     .with_chain_type(ChainType::Development)
+    .with_properties(token_properties())
     .with_genesis_config_patch(testnet_genesis(
         // Initial PoA authorities
         vec![authority_keys_from_seed("Alice")],
@@ -64,9 +80,10 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
         None,
     )
-    .with_name("Local Testnet")
-    .with_id("local_testnet")
+    .with_name("Sxt Testnet")
+    .with_id("sxt-testnet")
     .with_chain_type(ChainType::Local)
+    .with_properties(token_properties())
     .with_genesis_config_patch(testnet_genesis(
         // Initial PoA authorities
         vec![
@@ -95,6 +112,17 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
     .build())
 }
 
+/// Returns the token properties as a ha
+fn token_properties() -> Properties {
+    let mut map = serde_json::Map::new();
+
+    map.insert(
+        "tokenSymbol".into(),
+        serde_json::Value::String("USD-C".into()),
+    );
+
+    map
+}
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
     initial_authorities: Vec<(AuraId, GrandpaId)>,
@@ -118,9 +146,179 @@ fn testnet_genesis(
             "key": Some(root_key),
         },
         "tables": {
-            "tables": sxt_core::parsing::ddls_to_genesis(vec![
-                ("snapshots/v0_1/ethereum_core/ddl_ethereum_snapshot_2024_10_11.sql".into(), SourceAndMode { source: sxt_core::tables::Source::Ethereum, mode: sxt_core::tables::IndexerMode::Core}),
-            ])
-        }
+            "tables":
+                pair_commits(
+                    ddls_to_genesis(vec![(
+                        "snapshots/v0_1/ethereum_core/test_ddl.sql".into(),
+                        ethereum_core(),
+                        "snapshots/v0_1/ethereum_core/test.url".into(),
+                    )]),
+                    vec!["snapshots/v0_1/ethereum_core/test.commits".into()],
+            ),
+        },
+
     })
+}
+
+/// Ethereum Core source and mode
+pub fn ethereum_core() -> SourceAndMode {
+    SourceAndMode {
+        source: Source::Ethereum,
+        mode: IndexerMode::Core,
+    }
+}
+
+/// Create table list
+pub type CreateTableList = Vec<(
+    SourceAndMode,
+    TableIdentifier,
+    CreateStatement,
+    TableCommitmentBytesPerCommitmentScheme,
+    SnapshotUrl,
+)>;
+
+/// List of ddsl
+pub type DdlList = Vec<(SourceAndMode, TableIdentifier, CreateStatement, SnapshotUrl)>;
+
+/// List of commitments
+pub type CommitmentList = Vec<(TableIdentifier, TableCommitmentBytesPerCommitmentScheme)>;
+
+/// Pair a ddl list with a list of commits based on table identifier to form a create table list
+pub fn pair_commits(input: DdlList, paths: Vec<String>) -> CreateTableList {
+    let mut output: CreateTableList = Vec::new();
+    let mut commits: CommitmentList = Vec::new();
+
+    for p in paths.iter() {
+        let json_str =
+            std::fs::read_to_string(p).unwrap_or_else(|_| panic!("Could not read path {}", p));
+        let commits_for_file: CommitmentList =
+            serde_json::from_str(&json_str).expect("could not parse commitments");
+
+        commits.extend(commits_for_file);
+    }
+
+    if commits.len() != input.len() {
+        panic!(
+            "Found {} tables but only {} commits",
+            input.len(),
+            commits.len()
+        );
+    }
+
+    for (source, ident, stmnt, snapshot) in input.into_iter() {
+        for i in 0..commits.len() {
+            let commit = commits.get(i).expect("could not get commit");
+
+            if ident == commit.0 {
+                output.push((source, ident, stmnt, commit.1.clone(), snapshot));
+                commits.remove(i);
+                break;
+            }
+        }
+    }
+
+    if !commits.is_empty() {
+        panic!("not all commits were utilized")
+    }
+
+    output
+}
+
+/// Read a ddl file from a path and parse it into create table statements, any error will cause a panic
+pub fn ddl_to_tables(
+    p: String,
+    sm: SourceAndMode,
+    snapshot: String,
+) -> Vec<(SourceAndMode, TableIdentifier, CreateStatement, SnapshotUrl)> {
+    let ddl = read_to_string(p).unwrap();
+
+    let snapshot_url = read_to_string(snapshot).unwrap();
+    let snapshot_url = SnapshotUrl::try_from(snapshot_url.as_bytes().to_vec()).unwrap();
+
+    let mut parser = Parser::new(&PostgreSqlDialect {})
+        .try_with_sql(ddl.as_str())
+        .unwrap();
+    let statements = parser.parse_statements().unwrap();
+
+    #[allow(clippy::unnecessary_filter_map)]
+    statements
+        .into_iter()
+        .filter_map(|x| match CreateTableBuilder::try_from(x.clone()) {
+            Ok(c) => {
+                let name = c.name.to_string();
+                let pieces: Vec<&str> = name.split(".").collect();
+                let namespace = pieces.first().unwrap();
+                let name = pieces.get(1).unwrap();
+                let s = c.build().to_string();
+                let sm = sm.clone();
+
+                Some((
+                    sm,
+                    table_identifier(name, namespace),
+                    create_statement(&s),
+                    snapshot_url.clone(),
+                ))
+            }
+            Err(_) => panic!("Error parsing table {}", x),
+        })
+        .collect()
+}
+
+/// A path to DDL files represented by a string
+pub type DdlPath = String;
+
+/// A path to a url file containing the snapshot
+pub type SnapshotPath = String;
+
+/// Convert a vector of ddl paths and source and modes into a vector of tables for genesis configuration
+pub fn ddls_to_genesis(
+    input: Vec<(DdlPath, SourceAndMode, SnapshotPath)>,
+) -> Vec<(SourceAndMode, TableIdentifier, CreateStatement, SnapshotUrl)> {
+    input
+        .iter()
+        .flat_map(|(path, sm, snapshot)| ddl_to_tables(path.clone(), sm.clone(), snapshot.clone()))
+        .collect()
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    #[test]
+    fn pair_commits_works() {
+        let input = ddls_to_genesis(vec![(
+            "testing/test_ddl.sql".into(),
+            ethereum_core(),
+            "testing/test.url".into(),
+        )]);
+
+        let paths = vec!["testing/test.commits".into()];
+
+        pair_commits(input, paths);
+    }
+
+    #[test]
+    fn parse_tables_from_ddl_works() {
+        ddl_to_tables(
+            "testing/ddl.sql".into(),
+            SourceAndMode::default(),
+            "testing/test.url".into(),
+        );
+    }
+
+    #[test]
+    fn ddls_to_genesis_works() {
+        ddls_to_genesis(vec![
+            (
+                "testing/ddl.sql".into(),
+                SourceAndMode::default(),
+                "testing/test.url".into(),
+            ),
+            (
+                "testing/ddl2.sql".into(),
+                SourceAndMode::default(),
+                "testing/test.url".into(),
+            ),
+        ]);
+    }
 }

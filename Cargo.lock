@@ -1742,6 +1742,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "commit-grouper"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "frame-support",
+ "glob",
+ "parity-scale-codec",
+ "postcard",
+ "proof-of-sql-commitment-map",
+ "scale-info",
+ "serde",
+ "serde_json",
+ "snafu",
+ "sxt-core",
+]
+
+[[package]]
 name = "commitment-sql"
 version = "0.1.0"
 dependencies = [
@@ -10075,9 +10092,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.125"
+version = "1.0.129"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83c8e735a073ccf5be70aa8066aa984eaf2fa000db6c8d0100ae605b366d31ed"
+checksum = "6dbcf9b78a125ee667ae19388837dd12294b858d101fdd393cb9d5501ef09eb2"
 dependencies = [
  "itoa",
  "memchr",
@@ -11613,6 +11630,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "glob",
  "on-chain-table",
  "parity-scale-codec",
  "postcard",
@@ -11639,6 +11657,7 @@ dependencies = [
  "native",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
+ "proof-of-sql-commitment-map",
  "sc-basic-authorship",
  "sc-cli",
  "sc-client-api",
@@ -11665,6 +11684,7 @@ dependencies = [
  "sp-keyring",
  "sp-runtime",
  "sp-timestamp",
+ "sqlparser",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "sxt-core",

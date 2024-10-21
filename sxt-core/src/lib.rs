@@ -19,12 +19,6 @@ pub mod indexing;
 /// Types consumed by the native code interface
 pub mod native;
 
-/// A module for parsing DDLs into table create statements
-/// Used in building the genesis chain spec
-/// Enabled with the 'std' feature
-#[cfg(feature = "std")]
-pub mod parsing;
-
 /// Functionality relating to interacting with FlightSQL
 #[cfg(feature = "std")]
 pub mod sql;

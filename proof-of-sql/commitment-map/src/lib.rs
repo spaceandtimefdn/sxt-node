@@ -34,5 +34,6 @@ pub use commitment_storage_map::{
     CommitmentStorageMapHandler,
     TableCommitmentBytes,
     TableCommitmentBytesPerCommitmentScheme,
+    TableCommitmentMaxLength,
     TableCommitmentToBytesError,
 };

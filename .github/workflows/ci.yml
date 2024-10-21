@@ -26,7 +26,7 @@ jobs:
         uses: ./.github/actions/macos-dependencies
 
       - name: Build the template
-        run: cargo build --locked
+        run: cargo build
         timeout-minutes: 90
 
       - name: Run fmt
@@ -66,11 +66,11 @@ jobs:
         run: cargo build --package sxt-node --release
         timeout-minutes: 90
 
-      - name: Make sure the node is producing blocks
+      - name: Make sure the node is on and past the genesis change
         run: |
-          ./target/release/sxt-node --dev 2>&1 | tee out.txt &
+          ./target/release/sxt-node --chain chainspecs/raw/testnet-spec.json 2>&1 | tee out.txt &
           until curl -s '127.0.0.1:9944'; do sleep 5; done
-          until cat out.txt | grep -s "Imported #2"; do sleep 5; done
+          until cat out.txt | grep -s "💤 Idle (0 peers)"; do sleep 5; done
         shell: bash
         timeout-minutes: 5
 

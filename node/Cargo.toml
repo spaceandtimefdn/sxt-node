@@ -81,6 +81,9 @@ frame-benchmarking-cli.default-features = true
 sxt-runtime.workspace = true
 native.workspace = true
 sxt-core.workspace = true
+proof-of-sql-commitment-map = { workspace = true, features = [ "substrate",
+]}
+sqlparser = { workspace = true, default-features = false }
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true

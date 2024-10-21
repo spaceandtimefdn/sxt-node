@@ -158,7 +158,7 @@ impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentSchem
 }
 
 /// Collection of commitment-associated data, with one element per commitment scheme.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Copy)]
 #[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
 pub struct PerCommitmentScheme<T: GenericOverCommitment> {
     /// Element with [`CommitmentScheme::Ipa`].
