@@ -1,3 +1,12 @@
+## [0.31.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.31.0...v0.31.1) (2024-10-21)
+
+
+### Bug Fixes
+
+* Added credentials for FlightSQL Client and panic on any errors in ([87f5bde](https://github.com/spaceandtimelabs/sxt-node/commit/87f5bdecd925cadd78270c0ed06f691fa895722b))
+
+
+
 # [0.31.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.30.0...v0.31.0) (2024-10-21)
 
 
@@ -32,15 +41,6 @@
 ### Features
 
 * change release workflow to use large runners instead of default ([c86f0dd](https://github.com/spaceandtimelabs/sxt-node/commit/c86f0dddfbd3483ae5f9204b5faa6589df806acb))
-
-
-
-# [0.27.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.26.0...v0.27.0) (2024-10-18)
-
-
-### Features
-
-* configure dory sigma with genesis config ([0e04521](https://github.com/spaceandtimelabs/sxt-node/commit/0e04521a6b75fe54a96cd507076db32dcb6ea650))
 
 
 
