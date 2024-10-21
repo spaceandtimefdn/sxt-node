@@ -21,6 +21,7 @@ use {
     crate::sxt_chain_runtime::api::indexing::events::QuorumReached,
     crate::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec,
     crate::sxt_chain_runtime::api::tables::events::SchemaUpdated,
+    crate::sxt_chain_runtime::api::tables::events::TablesCreatedWithCommitments,
 };
 
 /// Errors relating to the sql interactions with FlightSQL
@@ -89,12 +90,15 @@ async fn run() {
 
         for event in events {
             let result;
+            // Check for a quorum being reached on submitted data
             if let Some(e) = event.as_event::<QuorumReached>().unwrap() {
                 let data = e.data;
                 let inner = client.inner_mut();
                 let id = identifier_to_sql(e.quorum.table.namespace.0, e.quorum.table.name.0)
                     .expect("Corrupt table identifier!");
                 result = insert_data(inner, data.0, id).await;
+
+                // Check for Schemas being updated (i.e. Table Creation)
             } else if let Some(e) = event.as_event::<SchemaUpdated>().unwrap() {
                 let raw_list: Vec<BoundedVec<u8>> =
                     e.1 .0.into_iter().map(|(_, statement)| statement).collect();
@@ -107,6 +111,19 @@ async fn run() {
                     .collect();
 
                 result = create_tables(&mut client, list).await;
+            //Check for tables being created with commitments from a snapshot
+            } else if let Some(e) = event.as_event::<TablesCreatedWithCommitments>().unwrap() {
+                // TODO eventually parallelize this by wrapping the client in an Arc Mutex or similar
+                for (id, sql, c, base_path) in e.table_list.0 {
+                    let sql = from_utf8(sql.0.as_slice())
+                        .expect("Genesis tables must have valid sql statements");
+                    let base_path = from_utf8(base_path.0.as_slice())
+                        .expect("Genesis table must have valid snapshot paths");
+                    create_table_with_snapshot(&mut client, sql.to_string(), base_path)
+                        .await
+                        .expect("Loading historical data for genesis tables must succeed");
+                }
+                result = Ok(())
             } else {
                 continue;
             }
@@ -134,6 +151,9 @@ async fn run() {
                     }
                     SQLError::BadRecordBatch(msg) => {
                         log::error!("ERROR BadRecordBatch {msg}")
+                    }
+                    (_) => {
+                        log::error!("Error in FlightSQL task")
                     }
                 },
             }
@@ -196,6 +216,33 @@ pub async fn create_tables(
             .map_err(|e| SQLError::SQLExecutionError(e.to_string()))?;
     }
     Ok(())
+}
+
+/// Create a new table and load existing historical data from a snapshot URL
+pub async fn create_table_with_snapshot(
+    client: &mut FlightSqlServiceClient<Channel>,
+    sql: String,
+    snapshot_url: &str,
+) -> Result<(), SQLError> {
+    // First create the new table with FlightSQL
+    client
+        .execute(sql, None)
+        .await
+        .map_err(|e| SQLError::SQLExecutionError(e.to_string()))?;
+
+    // Start the historical data load into the table
+    #[allow(clippy::identity_op)]
+    let one_hour_in_seconds = 60 * 60 * 1;
+    match data_loader::data_loader::run_data_loader(
+        snapshot_url,
+        5,
+        Duration::from_secs(one_hour_in_seconds),
+    )
+    .await
+    {
+        Ok(_) => Ok(()),
+        Err(e) => Err(SQLError::DBServiceError(e.to_string())),
+    }
 }
 
 /// Insert some data into FlightSQL via the RecordBatch API. Data is expected to tbe a

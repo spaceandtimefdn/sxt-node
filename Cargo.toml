@@ -31,6 +31,7 @@ ark-serialize = { version = "0.4.0", default-features = false }
 arrow = { version = "53.0.0", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
 commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
+data-loader = { path = "./data-loader", default-features = false}
 arrow-flight = { version = "53.0.0", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
