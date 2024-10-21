@@ -21,13 +21,15 @@ use crate::PerCommitmentScheme;
 const TABLE_COMMITMENT_MAX_LENGTH: u32 = 45_328;
 
 /// Maximum byte length of a TableCommitment with 64 columns, as a type alias.
-type TableCommitmentMaxLength = ConstU32<TABLE_COMMITMENT_MAX_LENGTH>;
+pub type TableCommitmentMaxLength = ConstU32<TABLE_COMMITMENT_MAX_LENGTH>;
 
 /// Postcard-serialized TableCommitment stored in substrate [`CommitmentMap`] implementation.
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo, Serialize, Deserialize,
+)]
 pub struct TableCommitmentBytes {
     /// Raw postcard-serialized bytes.
-    data: BoundedVec<u8, TableCommitmentMaxLength>,
+    pub data: BoundedVec<u8, TableCommitmentMaxLength>,
 }
 
 /// Collection of serialized table commitments with at most one per commitment scheme.

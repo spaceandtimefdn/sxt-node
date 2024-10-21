@@ -28,6 +28,7 @@ arrow = { workspace = true, optional = true, features = ["ipc"]}
 arrow-flight = { workspace = true, optional = true, features = ["flight-sql-experimental"] }
 subxt = { workspace = true, optional = true, features = ["native", "unstable-reconnecting-rpc-client"] }
 data-loader = { workspace = true, optional = true }
+glob = "0.3.1"
 
 [features]
 default = ["std"]

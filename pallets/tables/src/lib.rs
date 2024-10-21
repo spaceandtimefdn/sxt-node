@@ -19,7 +19,12 @@ pub mod pallet {
     use frame_support::pallet_prelude::{StorageDoubleMap, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
-    use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
+    use proof_of_sql_commitment_map::generic_over_commitment::{ConcreteType, OptionType};
+    use proof_of_sql_commitment_map::{
+        PerCommitmentScheme,
+        TableCommitmentBytes,
+        TableCommitmentBytesPerCommitmentScheme,
+    };
     use sp_runtime::Vec;
     use sxt_core::permissions::*;
     use sxt_core::tables::{
@@ -221,18 +226,28 @@ pub mod pallet {
     #[pallet::genesis_config]
     #[derive(frame_support::DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
-        tables: Vec<(SourceAndMode, TableIdentifier, CreateStatement)>,
+        tables: Vec<(
+            SourceAndMode,
+            TableIdentifier,
+            CreateStatement,
+            TableCommitmentBytesPerCommitmentScheme,
+            SnapshotUrl,
+        )>,
         _marker: PhantomData<T>,
     }
 
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            for (SourceAndMode { source, mode }, ident, stmnt) in self.tables.iter() {
-                Identifiers::<T>::insert(source, mode, ident.clone());
-
-                let TableIdentifier { name, namespace } = ident;
-                Schemas::<T>::insert(namespace, name, stmnt)
+            for (sm, ident, stmnt, commit, snapshot) in self.tables.iter() {
+                pallet::Pallet::<T>::insert_schema(sm.clone(), ident.clone(), stmnt.clone());
+                pallet::Pallet::<T>::insert_initial_commitment(
+                    ident.clone(),
+                    stmnt.clone(),
+                    commit.clone(),
+                    snapshot.clone(),
+                )
+                .unwrap();
             }
         }
     }
