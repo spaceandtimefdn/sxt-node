@@ -1,3 +1,12 @@
+# [0.31.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.30.0...v0.31.0) (2024-10-21)
+
+
+### Features
+
+* commit grouper + testnet chainspec ([cdedaf6](https://github.com/spaceandtimelabs/sxt-node/commit/cdedaf6cdb552beb160b5f8b532bc2583e0ed887))
+
+
+
 # [0.30.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.29.0...v0.30.0) (2024-10-21)
 
 
@@ -32,15 +41,6 @@
 ### Features
 
 * configure dory sigma with genesis config ([0e04521](https://github.com/spaceandtimelabs/sxt-node/commit/0e04521a6b75fe54a96cd507076db32dcb6ea650))
-
-
-
-# [0.26.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.25.1...v0.26.0) (2024-10-18)
-
-
-### Features
-
-* FlightSQL Integration via dedicated task ([#51](https://github.com/spaceandtimelabs/sxt-node/issues/51)) ([505810b](https://github.com/spaceandtimelabs/sxt-node/commit/505810bd6976dea4d0ff5c761833a880ff5e42c4))
 
 
 
