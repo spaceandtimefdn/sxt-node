@@ -15,3 +15,12 @@ pub use parse_decimals::{
     column_parse_decimals_unchecked,
     ParseDecimalsError,
 };
+
+mod record_batch_map;
+pub use record_batch_map::{
+    record_batch_map,
+    record_batch_map_with_target_types,
+    record_batch_try_map_with_target_types,
+    MapOrTargetTypeError,
+    TargetTypeNotFound,
+};
