@@ -22,7 +22,7 @@ members = [
     "native",
     "native-api",
     "native-pallets",
-    "utils/commit-grouper",
+    "utils/commit-grouper", "data-compliance-please-deprecate-me",
 ]
 resolver = "2"
 
