@@ -8,3 +8,10 @@ pub use nulls::{column_def_not_null, column_default_nulls};
 
 mod decimal_precision;
 pub use decimal_precision::{column_clamp_precision, column_def_clamp_precision};
+
+mod parse_decimals;
+pub use parse_decimals::{
+    column_parse_decimals_fallible,
+    column_parse_decimals_unchecked,
+    ParseDecimalsError,
+};

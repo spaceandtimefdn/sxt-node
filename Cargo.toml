@@ -30,6 +30,7 @@ resolver = "2"
 ahash = { version = "0.8.11", default-features = false }
 ark-serialize = { version = "0.4.0", default-features = false }
 arrow = { version = "53.0.0", default-features = false }
+bigdecimal = { version = "0.4.5", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
 commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
 data-loader = { path = "./data-loader", default-features = false}

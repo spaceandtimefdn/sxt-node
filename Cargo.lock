@@ -2321,6 +2321,7 @@ name = "data-compliance-please-deprecate-me"
 version = "0.1.0"
 dependencies = [
  "arrow",
+ "bigdecimal 0.4.5",
  "indexmap 2.5.0",
  "snafu",
  "sqlparser",

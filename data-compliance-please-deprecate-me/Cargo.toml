@@ -9,6 +9,7 @@ edition.workspace = true
 
 [dependencies]
 arrow.workspace = true
+bigdecimal.workspace = true
 sqlparser.workspace = true
 indexmap = { workspace = true, features = ["std"] }
 snafu.workspace = true
