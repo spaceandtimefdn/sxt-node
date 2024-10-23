@@ -1,3 +1,18 @@
+# [0.34.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.33.0...v0.34.0) (2024-10-23)
+
+
+### Bug Fixes
+
+* force proof-of-sql and postgres compliance on insert data ([58e64f9](https://github.com/spaceandtimelabs/sxt-node/commit/58e64f9c4c02a692cf5e608f88045d3245cf77cf))
+* force proof-of-sql compliance on table definitions ([fe54fbc](https://github.com/spaceandtimelabs/sxt-node/commit/fe54fbce38e6eaf60cd440ee186475f92fe615f8))
+
+
+### Features
+
+* make non-arrow data-compliance functions no_std compatible ([2adf5c3](https://github.com/spaceandtimelabs/sxt-node/commit/2adf5c3afa7471ad3f74b03c4b8aab145339dad1))
+
+
+
 # [0.33.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.32.0...v0.33.0) (2024-10-23)
 
 
@@ -36,15 +51,6 @@
 ### Features
 
 * commit grouper + testnet chainspec ([cdedaf6](https://github.com/spaceandtimelabs/sxt-node/commit/cdedaf6cdb552beb160b5f8b532bc2583e0ed887))
-
-
-
-# [0.30.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.29.0...v0.30.0) (2024-10-21)
-
-
-### Features
-
-* Added create_table_with_snapshot to flightsql task ([184f67d](https://github.com/spaceandtimelabs/sxt-node/commit/184f67ddbe5017bce71d303161a29e45366a1f33))
 
 
 
