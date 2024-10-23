@@ -83,10 +83,8 @@ pub fn sqlparser_data_type_to_proof_of_sql_column_type(
         DataType::Bool | DataType::Boolean => Ok(ColumnType::Boolean),
         DataType::TinyInt(_) => Ok(ColumnType::TinyInt),
         DataType::Int2(_) | DataType::SmallInt(_) => Ok(ColumnType::SmallInt),
-        DataType::Int(_) | DataType::Int4(_) | DataType::Int64 | DataType::Integer(_) => {
-            Ok(ColumnType::Int)
-        }
-        DataType::BigInt(_) | DataType::Int8(_) => Ok(ColumnType::BigInt),
+        DataType::Int(_) | DataType::Int4(_) | DataType::Integer(_) => Ok(ColumnType::Int),
+        DataType::BigInt(_) | DataType::Int8(_) | DataType::Int64 => Ok(ColumnType::BigInt),
         DataType::Character(_)
         | DataType::Char(_)
         | DataType::CharacterVarying(_)
