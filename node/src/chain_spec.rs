@@ -149,14 +149,13 @@ fn testnet_genesis(
             "tables":
                 pair_commits(
                     ddls_to_genesis(vec![(
-                        "snapshots/v0_1/ethereum_core/test_ddl.sql".into(),
+                        "snapshots/v2/ethereum_core/ddl_ethereum_snapshot_v2.sql".into(),
                         ethereum_core(),
-                        "snapshots/v0_1/ethereum_core/test.url".into(),
+                        "snapshots/v2/ethereum_core/url_snapshot_v2.url".into(),
                     )]),
-                    vec!["snapshots/v0_1/ethereum_core/test.commits".into()],
+                    vec!["snapshots/v2/ethereum_core/commitments_snapshot_v2.commits".into()],
             ),
         },
-
     })
 }
 
