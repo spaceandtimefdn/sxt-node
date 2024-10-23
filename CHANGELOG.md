@@ -1,3 +1,12 @@
+# [0.33.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.32.0...v0.33.0) (2024-10-23)
+
+
+### Features
+
+* upgrade proof-of-sql to version 0.33 ([e0cd63e](https://github.com/spaceandtimelabs/sxt-node/commit/e0cd63e7d0bd778a3f93288534e15622e8b37e70))
+
+
+
 # [0.32.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.31.1...v0.32.0) (2024-10-23)
 
 
@@ -36,16 +45,6 @@
 ### Features
 
 * Added create_table_with_snapshot to flightsql task ([184f67d](https://github.com/spaceandtimelabs/sxt-node/commit/184f67ddbe5017bce71d303161a29e45366a1f33))
-
-
-
-# [0.29.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.28.0...v0.29.0) (2024-10-21)
-
-
-### Features
-
-* derive Copy for PerCommitmentScheme ([298a048](https://github.com/spaceandtimelabs/sxt-node/commit/298a048c062ab0ef6234b30ef854cf1294aeb211))
-* statically use proof-of-sql setups from file instead of storage ([34e0ab8](https://github.com/spaceandtimelabs/sxt-node/commit/34e0ab8fbf0cfa9b20d1f9ab1b5183541d3a7e65))
 
 
 
