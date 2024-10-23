@@ -136,23 +136,6 @@ pub fn we_cannot_process_create_table_with_unsupported_column<
             Error::<Test>::TimestampColumnWithInvalidPrecision,
         );
 
-        // no timezone
-        let mut test_params = TestParams::new_valid();
-        test_params.set_sql_statement(
-            "CREATE TABLE animal.population (
-            animal VARCHAR NOT NULL,
-            population BIGINT NOT NULL,
-            time TIMESTAMP NOT NULL,
-            PRIMARY KEY (animal))
-            "
-            .to_string(),
-        );
-
-        assert_noop!(
-            test_params.execute(),
-            Error::<Test>::TimestampColumnWithoutTimezone,
-        );
-
         // invalid decimal scale
         let mut test_params = TestParams::new_valid();
         test_params.set_sql_statement(

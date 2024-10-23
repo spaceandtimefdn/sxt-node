@@ -2,7 +2,7 @@ use proof_of_sql::base::database::ColumnType;
 use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql_parser::posql_time::{PoSQLTimeUnit, PoSQLTimeZone};
 use snafu::Snafu;
-use sqlparser::ast::{DataType, ExactNumberInfo, TimezoneInfo};
+use sqlparser::ast::{DataType, ExactNumberInfo};
 
 /// Error that occurs when encountering unsupported sqlparser `DataType`s.
 #[derive(Debug, Snafu)]
@@ -13,9 +13,6 @@ pub enum UnsupportedColumnType {
         /// The invalid precision value.
         precision: u64,
     },
-    /// Timestamp should be defined as timezone-aware.
-    #[snafu(display("timestamp should be defined as timezone-aware"))]
-    TimestampWithoutTimezone,
     /// Decimal/numeric should have constrained precision and scale.
     #[snafu(display("decimal/numeric should have constrained precision and scale"))]
     UnconstrainedDecimal,
@@ -113,14 +110,7 @@ pub fn sqlparser_data_type_to_proof_of_sql_column_type(
         }
         DataType::Datetime(precision) => sqlparser_precision_to_proof_of_sql_time_unit(precision)
             .map(|unit| ColumnType::TimestampTZ(unit, PoSQLTimeZone::Utc)),
-        DataType::Timestamp(precision, timezone_info) => {
-            if matches!(
-                timezone_info,
-                TimezoneInfo::None | TimezoneInfo::WithoutTimeZone
-            ) {
-                Err(UnsupportedColumnType::TimestampWithoutTimezone)?
-            }
-
+        DataType::Timestamp(precision, _) => {
             let unit = sqlparser_precision_to_proof_of_sql_time_unit(precision)?;
 
             Ok(ColumnType::TimestampTZ(unit, PoSQLTimeZone::Utc))
@@ -168,6 +158,7 @@ pub fn sqlparser_data_type_to_proof_of_sql_column_type(
 #[cfg(test)]
 mod tests {
     use itertools::Itertools;
+    use sqlparser::ast::TimezoneInfo;
 
     use super::*;
 
@@ -262,6 +253,18 @@ mod tests {
             sqlparser_data_type_to_proof_of_sql_column_type(&default_timestamp).unwrap(),
             ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::Utc)
         );
+
+        let none_timezone_timestamp = DataType::Timestamp(None, TimezoneInfo::None);
+        assert_eq!(
+            sqlparser_data_type_to_proof_of_sql_column_type(&none_timezone_timestamp).unwrap(),
+            ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::Utc)
+        );
+
+        let no_timezone_timestamp = DataType::Timestamp(None, TimezoneInfo::WithoutTimeZone);
+        assert_eq!(
+            sqlparser_data_type_to_proof_of_sql_column_type(&no_timezone_timestamp).unwrap(),
+            ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::Utc)
+        );
     }
 
     #[test]
@@ -276,22 +279,6 @@ mod tests {
         assert!(matches!(
             sqlparser_data_type_to_proof_of_sql_column_type(&nanosecond_timestamp),
             Err(UnsupportedColumnType::TimestampPrecision { .. })
-        ));
-    }
-
-    #[test]
-    fn we_cannot_convert_sqlparser_timestamps_without_timezone() {
-        let timestamp = DataType::Timestamp(None, TimezoneInfo::None);
-        assert!(matches!(
-            sqlparser_data_type_to_proof_of_sql_column_type(&timestamp),
-            Err(UnsupportedColumnType::TimestampWithoutTimezone)
-        ));
-
-        let timestamp_without_timezone =
-            DataType::Timestamp(Some(0), TimezoneInfo::WithoutTimeZone);
-        assert!(matches!(
-            sqlparser_data_type_to_proof_of_sql_column_type(&timestamp_without_timezone),
-            Err(UnsupportedColumnType::TimestampWithoutTimezone)
         ));
     }
 
