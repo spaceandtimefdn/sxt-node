@@ -1,3 +1,14 @@
+## [0.34.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.34.0...v0.34.1) (2024-10-23)
+
+
+### Bug Fixes
+
+* allow timestamps without timezone in DDL ([592223c](https://github.com/spaceandtimelabs/sxt-node/commit/592223cef74552674179a820e7b1a86c08f3b0d4))
+* map Int64 columns to proof-of-sql BigInt ([309a85c](https://github.com/spaceandtimelabs/sxt-node/commit/309a85cd7ce853ef77b3f353693d54d3028e13a9))
+* preserve record batch timezone existence in on-chain-table ([90122de](https://github.com/spaceandtimelabs/sxt-node/commit/90122de511e40d3251027d77fe09f8e9a4821285))
+
+
+
 # [0.34.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.33.0...v0.34.0) (2024-10-23)
 
 
@@ -42,15 +53,6 @@
 ### Bug Fixes
 
 * Added credentials for FlightSQL Client and panic on any errors in ([87f5bde](https://github.com/spaceandtimelabs/sxt-node/commit/87f5bdecd925cadd78270c0ed06f691fa895722b))
-
-
-
-# [0.31.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.30.0...v0.31.0) (2024-10-21)
-
-
-### Features
-
-* commit grouper + testnet chainspec ([cdedaf6](https://github.com/spaceandtimelabs/sxt-node/commit/cdedaf6cdb552beb160b5f8b532bc2583e0ed887))
 
 
 
