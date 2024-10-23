@@ -256,16 +256,22 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            for (sm, ident, stmnt, commit, snapshot) in self.tables.iter() {
+            let tables_with_meta: Vec<_> = self.tables.iter().map(|(sm, ident, stmnt, commit, snapshot)|{
                 pallet::Pallet::<T>::insert_schema(sm.clone(), ident.clone(), stmnt.clone());
-                pallet::Pallet::<T>::insert_initial_commitment(
+                let statement = pallet::Pallet::<T>::insert_initial_commitment(
                     ident.clone(),
                     stmnt.clone(),
                     commit.clone(),
                     snapshot.clone(),
-                )
-                .unwrap();
-            }
+                ).unwrap();
+                (ident.clone(), statement, commit.clone(), snapshot.clone())
+            }).collect();
+
+            let tables = CreateTableList::try_from(tables_with_meta).expect("Genesis table creation can not fail");
+            pallet::Pallet::<T>::deposit_event(Event::<T>::TablesCreatedWithCommitments { source_and_mode: SourceAndMode {
+                source: Source::Ethereum,
+                mode: IndexerMode::Core,
+            }, table_list: tables });
         }
     }
 }
