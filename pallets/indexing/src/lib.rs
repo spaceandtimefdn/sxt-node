@@ -127,6 +127,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config<I>, I: 'static> Pallet<T, I>
     where
+        T: pallet_tables::Config,
         I: NativeApi,
     {
         /// This extrinsic provides a transaction that indexers will use to submit
@@ -206,6 +207,7 @@ pub mod pallet {
         match_submissions: SubmitterList<T::AccountId>,
     ) -> DispatchResult
     where
+        T: pallet_tables::Config,
         I: NativeApi,
     {
         // Iterate over the submitters who submitted differing data and collect
@@ -278,6 +280,7 @@ pub mod pallet {
         data: &RowData,
     ) -> DispatchResult
     where
+        T: pallet_tables::Config,
         I: NativeApi,
     {
         ensure!(
@@ -286,6 +289,8 @@ pub mod pallet {
         );
         ensure!(!data.is_empty(), Error::<T, I>::NoData);
         ensure!(!batch_id.is_empty(), Error::<T, I>::InvalidBatch);
+        // Make sure the schema exists for this table
+        ensure!(pallet_tables::Schemas::<T>::contains_key(&table.namespace, &table.name), Error::<T, I>::InvalidTable);
         Ok(())
     }
 }

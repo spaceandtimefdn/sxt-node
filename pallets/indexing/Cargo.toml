@@ -25,6 +25,7 @@ frame-support.workspace = true
 frame-system.workspace = true
 pallet-commitments.workspace = true
 pallet-permissions.workspace = true
+pallet-tables.workspace = true
 sxt-core.workspace = true
 sp-runtime = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
