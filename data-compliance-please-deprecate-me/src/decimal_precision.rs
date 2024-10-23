@@ -1,6 +1,9 @@
-use std::sync::Arc;
+#[cfg(feature = "std")]
+use alloc::sync::Arc;
 
+#[cfg(feature = "std")]
 use arrow::array::{ArrayRef, Decimal256Array};
+#[cfg(feature = "std")]
 use arrow::datatypes::DataType as ArrowDataType;
 use sqlparser::ast::{ColumnDef, DataType as SqlparserDataType, ExactNumberInfo};
 
@@ -48,6 +51,7 @@ pub fn column_def_clamp_precision(column: ColumnDef) -> ColumnDef {
 
 /// Returns the provided column with precision clamped to the proof of sql maximum if the column
 /// is Decimal256.
+#[cfg(feature = "std")]
 pub fn column_clamp_precision(column: ArrayRef) -> ArrayRef {
     match column.data_type() {
         ArrowDataType::Decimal256(precision, scale) if precision > &MAX_PRECISION => Arc::new(
@@ -65,7 +69,8 @@ pub fn column_clamp_precision(column: ArrayRef) -> ArrayRef {
 
 #[cfg(test)]
 mod tests {
-    use arrow::datatypes::i256;
+    use alloc::vec;
+
     use sqlparser::ast::Ident;
 
     use super::*;
@@ -122,6 +127,13 @@ mod tests {
         assert_eq!(&column_def_clamp_precision(nullable_column), &expected);
         assert_eq!(&column_def_clamp_precision(expected.clone()), &expected);
     }
+}
+
+#[cfg(all(test, feature = "std"))]
+mod std_tests {
+    use arrow::datatypes::i256;
+
+    use super::*;
 
     #[test]
     fn we_can_clamp_decimal_columns() {
