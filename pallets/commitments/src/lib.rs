@@ -130,8 +130,6 @@ pub mod pallet {
         CreateTableWithReservedMetadataPrefix,
         /// Timestamp column precision should be 0, 3, or 6.
         TimestampColumnWithInvalidPrecision,
-        /// Timestamp columns should be timestamp-aware.
-        TimestampColumnWithoutTimezone,
         /// Decimal/numeric columns should have constrained precision and scale.
         DecimalColumnWithoutPrecision,
         /// Decimal/numeric columns should have precision between 1 and 75.

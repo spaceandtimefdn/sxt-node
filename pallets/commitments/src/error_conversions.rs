@@ -38,9 +38,6 @@ impl<T> From<UnsupportedColumnType> for Error<T> {
             UnsupportedColumnType::TimestampPrecision { .. } => {
                 Error::TimestampColumnWithInvalidPrecision
             }
-            UnsupportedColumnType::TimestampWithoutTimezone => {
-                Error::TimestampColumnWithoutTimezone
-            }
             UnsupportedColumnType::UnconstrainedDecimal => Error::DecimalColumnWithoutPrecision,
             UnsupportedColumnType::DecimalPrecision { .. } => {
                 Error::DecimalColumnWithInvalidPrecision

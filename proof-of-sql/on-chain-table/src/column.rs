@@ -45,7 +45,7 @@ pub enum OnChainColumn {
     /// - scale the value by `10^-scale` (`scale` being the inner `i8` value)
     Decimal75(Precision, i8, Vec<U256>),
     /// Column of timestamps, all sharing a time unit/zone.
-    TimestampTZ(PoSQLTimeUnit, PoSQLTimeZone, Vec<i64>),
+    TimestampTZ(PoSQLTimeUnit, Option<PoSQLTimeZone>, Vec<i64>),
 }
 
 impl OnChainColumn {
@@ -86,7 +86,7 @@ impl OnChainColumn {
                 OnChainColumn::Decimal75(precision, scale, vec![])
             }
             ColumnType::TimestampTZ(time_unit, time_zone) => {
-                OnChainColumn::TimestampTZ(time_unit, time_zone, vec![])
+                OnChainColumn::TimestampTZ(time_unit, Some(time_zone), vec![])
             }
             ColumnType::Scalar => unimplemented!(),
         }
@@ -118,7 +118,11 @@ impl OnChainColumn {
                     .collect::<Result<_, _>>()?,
             )),
             OnChainColumn::TimestampTZ(time_unit, timezone, ints) => {
-                Ok(CommittableColumn::TimestampTZ(*time_unit, *timezone, ints))
+                Ok(CommittableColumn::TimestampTZ(
+                    *time_unit,
+                    timezone.unwrap_or(PoSQLTimeZone::Utc),
+                    ints,
+                ))
             }
         }
     }
@@ -170,7 +174,7 @@ mod tests {
 
         let column = OnChainColumn::TimestampTZ(
             PoSQLTimeUnit::Second,
-            PoSQLTimeZone::Utc,
+            Some(PoSQLTimeZone::Utc),
             vec![1, 2, 3, 4, 5, 6],
         );
         assert_eq!(column.len(), 6);
@@ -315,8 +319,11 @@ mod tests {
         );
 
         let data = vec![-10, 0, 20];
-        let on_chain_timestamp_column =
-            OnChainColumn::TimestampTZ(PoSQLTimeUnit::Nanosecond, PoSQLTimeZone::Utc, data.clone());
+        let on_chain_timestamp_column = OnChainColumn::TimestampTZ(
+            PoSQLTimeUnit::Nanosecond,
+            Some(PoSQLTimeZone::Utc),
+            data.clone(),
+        );
         let owned_timestamp_column =
             OwnedColumn::<S>::TimestampTZ(PoSQLTimeUnit::Nanosecond, PoSQLTimeZone::Utc, data);
         assert_eq!(
