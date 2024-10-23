@@ -15,7 +15,7 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use proof_of_sql::base::commitment::TableCommitment;
-    use proof_of_sql::proof_primitive::dory::DoryCommitment;
+    use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
     use proof_of_sql_commitment_map::{
         CommitmentMap,
         CommitmentScheme,
@@ -64,7 +64,7 @@ pub mod pallet {
                         .unwrap(),
                 ),
                 dory: Some(
-                    (&TableCommitment::<DoryCommitment>::default())
+                    (&TableCommitment::<DynamicDoryCommitment>::default())
                         .try_into()
                         .unwrap(),
                 ),

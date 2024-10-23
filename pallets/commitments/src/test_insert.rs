@@ -3,7 +3,7 @@ use frame_support::assert_noop;
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql::base::math::decimal::Precision;
-use proof_of_sql::proof_primitive::dory::{DoryCommitment, DoryScalar};
+use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
 use proof_of_sql_commitment_map::{CommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
 use sp_core::U256;
 use sxt_core::tables::TableIdentifier;
@@ -66,14 +66,15 @@ fn we_can_process_insert() {
         ])
         .unwrap();
 
-        let empty_commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
-            empty_table
-                .iter_committable::<DoryScalar>()
-                .map(Result::unwrap),
-            0,
-            &PUBLIC_SETUPS.dory,
-        )
-        .unwrap();
+        let empty_commitment =
+            TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
+                empty_table
+                    .iter_committable::<DoryScalar>()
+                    .map(Result::unwrap),
+                0,
+                &PUBLIC_SETUPS.dory,
+            )
+            .unwrap();
 
         let empty_commitments = PerCommitmentScheme {
             dory: Some(empty_commitment),

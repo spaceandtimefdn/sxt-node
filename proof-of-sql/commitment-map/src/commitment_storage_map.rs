@@ -211,9 +211,8 @@ mod tests {
 
     use on_chain_table::{OnChainColumn, OnChainTable};
     use proof_of_sql::proof_primitive::dory::{
-        DoryCommitment,
-        DoryProverPublicSetup,
         DoryScalar,
+        DynamicDoryCommitment,
         ProverSetup,
         PublicParameters,
     };
@@ -226,7 +225,6 @@ mod tests {
     fn we_can_deserialize_and_reserialize_dory_table_commitment_to_bytes() {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
         let table = OnChainTable::try_from_iter([
             (
@@ -240,16 +238,16 @@ mod tests {
         ])
         .unwrap();
 
-        let commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
+        let commitment = TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
             table.iter_committable::<DoryScalar>().map(Result::unwrap),
             0,
-            &dory_prover_setup,
+            &&prover_setup,
         )
         .unwrap();
 
         let serialized = TableCommitmentBytes::try_from(&commitment).unwrap();
 
-        let deserialized = TableCommitment::<DoryCommitment>::try_from(&serialized).unwrap();
+        let deserialized = TableCommitment::<DynamicDoryCommitment>::try_from(&serialized).unwrap();
 
         assert_eq!(deserialized, commitment);
 
@@ -272,7 +270,6 @@ mod tests {
     fn table_commitment_max_length_is_a_reasonable_estimate() {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
         let column_names = (0..MaxColsPerTable::get())
             .map(|col_num| format!("col_{col_num:060}").parse().unwrap());
@@ -283,10 +280,10 @@ mod tests {
 
         let table = OnChainTable::try_from_iter(column_names.zip(columns)).unwrap();
 
-        let commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
+        let commitment = TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
             table.iter_committable::<DoryScalar>().map(Result::unwrap),
             0,
-            &dory_prover_setup,
+            &&prover_setup,
         )
         .unwrap();
 
@@ -300,7 +297,6 @@ mod tests {
     fn we_cannot_create_bytes_from_table_commitment_with_too_many_columns() {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
         let column_names = (0..MaxColsPerTable::get() + 1)
             .map(|col_num| format!("col_{col_num:060}").parse().unwrap());
@@ -309,10 +305,10 @@ mod tests {
 
         let table = OnChainTable::try_from_iter(column_names.zip(columns)).unwrap();
 
-        let commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
+        let commitment = TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
             table.iter_committable::<DoryScalar>().map(Result::unwrap),
             0,
-            &dory_prover_setup,
+            &&prover_setup,
         )
         .unwrap();
 

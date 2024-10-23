@@ -40,7 +40,7 @@ pub mod tests {
     use core::marker::PhantomData;
 
     use curve25519_dalek::RistrettoPoint;
-    use proof_of_sql::proof_primitive::dory::DoryCommitment;
+    use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
 
     use super::*;
     use crate::generic_over_commitment::{CommitmentType, OptionType};
@@ -75,7 +75,7 @@ pub mod tests {
         );
 
         assert_eq!(
-            some_fn.call::<DoryCommitment>(Default::default()),
+            some_fn.call::<DynamicDoryCommitment>(Default::default()),
             Some(Default::default())
         );
     }

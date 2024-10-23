@@ -1,7 +1,7 @@
 use curve25519_dalek::RistrettoPoint;
 #[cfg(feature = "substrate")]
 use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
-use proof_of_sql::proof_primitive::dory::DoryCommitment;
+use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
 #[cfg(feature = "substrate")]
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
@@ -79,7 +79,7 @@ pub enum AnyCommitmentScheme<T: GenericOverCommitment> {
     /// Data with [`CommitmentScheme::Ipa`].
     Ipa(T::WithCommitment<RistrettoPoint>),
     /// Data with [`CommitmentScheme::Dory`].
-    Dory(T::WithCommitment<DoryCommitment>),
+    Dory(T::WithCommitment<DynamicDoryCommitment>),
 }
 
 impl<T: GenericOverCommitment> AnyCommitmentScheme<T> {
@@ -164,7 +164,7 @@ pub struct PerCommitmentScheme<T: GenericOverCommitment> {
     /// Element with [`CommitmentScheme::Ipa`].
     pub ipa: T::WithCommitment<RistrettoPoint>,
     /// Element with [`CommitmentScheme::Dory`].
-    pub dory: T::WithCommitment<DoryCommitment>,
+    pub dory: T::WithCommitment<DynamicDoryCommitment>,
 }
 
 impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
