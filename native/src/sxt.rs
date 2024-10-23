@@ -1,6 +1,13 @@
 //! The native code implementation
 #[cfg(feature = "std")]
 use arrow::ipc::reader::StreamReader;
+#[cfg(feature = "std")]
+use data_compliance_please_deprecate_me::{
+    column_clamp_precision,
+    column_default_nulls,
+    column_remove_null_bytes,
+    record_batch_map,
+};
 use postcard::to_allocvec;
 use sp_runtime::BoundedVec;
 use sp_runtime_interface::runtime_interface;
@@ -21,14 +28,18 @@ pub trait Interface {
             .ok_or(NativeError::EmptyRecordBatchError)?
             .map_err(|_| NativeError::BatchReadError)?;
 
-        let on_chain_table = on_chain_table::OnChainTable::try_from(batch.clone())
+        let compliant_batch = record_batch_map(batch, |column| {
+            column_clamp_precision(column_default_nulls(column_remove_null_bytes(column)))
+        });
+
+        let on_chain_table = on_chain_table::OnChainTable::try_from(compliant_batch)
             .map_err(|_| NativeError::OnChainTableConversionError)?;
 
         let table_bytes =
-            to_allocvec(&on_chain_table).map_err(|e| NativeError::SerializationError)?;
+            to_allocvec(&on_chain_table).map_err(|_| NativeError::SerializationError)?;
 
         let table_bytes: BoundedVec<u8, _> =
-            BoundedVec::try_from(table_bytes).map_err(|e| NativeError::BoundedVecError)?;
+            BoundedVec::try_from(table_bytes).map_err(|_| NativeError::BoundedVecError)?;
 
         Ok(OnChainTableBytes { data: table_bytes })
     }

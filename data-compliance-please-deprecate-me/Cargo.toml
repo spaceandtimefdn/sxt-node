@@ -8,11 +8,14 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-arrow.workspace = true
-bigdecimal.workspace = true
+arrow = { workspace = true, optional = true }
+bigdecimal = { workspace = true, optional = true }
 sqlparser.workspace = true
-indexmap = { workspace = true, features = ["std"] }
-snafu.workspace = true
+indexmap = { workspace = true, optional = true, features = ["std"] }
+snafu = { workspace = true, optional = true }
+
+[features]
+std = ["dep:indexmap", "dep:snafu", "dep:bigdecimal", "dep:arrow"]
 
 [lints]
 workspace = true

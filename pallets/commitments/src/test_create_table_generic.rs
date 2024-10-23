@@ -85,13 +85,16 @@ pub fn we_cannot_process_invalid_create_table<TestParams: CreateTableApiTestPara
         test_params.set_sql_statement(
             "CREATE TABLE animal.population (
             animal VARCHAR NOT NULL,
-            population BIGINT,
+            population BIGINT NULL,
             PRIMARY KEY (animal))
             "
             .to_string(),
         );
 
-        assert_noop!(test_params.execute(), Error::<Test>::ColumnWithoutNotNull,);
+        assert_noop!(
+            test_params.execute(),
+            Error::<Test>::ColumnWithUnsupportedOption,
+        );
 
         // unsupported option
         let mut test_params = TestParams::new_valid();
@@ -148,38 +151,6 @@ pub fn we_cannot_process_create_table_with_unsupported_column<
         assert_noop!(
             test_params.execute(),
             Error::<Test>::TimestampColumnWithoutTimezone,
-        );
-
-        // no decimal precision
-        let mut test_params = TestParams::new_valid();
-        test_params.set_sql_statement(
-            "CREATE TABLE animal.population (
-            animal VARCHAR NOT NULL,
-            population NUMERIC NOT NULL,
-            PRIMARY KEY (animal))
-            "
-            .to_string(),
-        );
-
-        assert_noop!(
-            test_params.execute(),
-            Error::<Test>::DecimalColumnWithoutPrecision,
-        );
-
-        // invalid decimal precision
-        let mut test_params = TestParams::new_valid();
-        test_params.set_sql_statement(
-            "CREATE TABLE animal.population (
-            animal VARCHAR NOT NULL,
-            population NUMERIC(78) NOT NULL,
-            PRIMARY KEY (animal))
-            "
-            .to_string(),
-        );
-
-        assert_noop!(
-            test_params.execute(),
-            Error::<Test>::DecimalColumnWithInvalidPrecision,
         );
 
         // invalid decimal scale

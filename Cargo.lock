@@ -1764,6 +1764,7 @@ version = "0.1.0"
 dependencies = [
  "ahash 0.8.11",
  "const_format",
+ "data-compliance-please-deprecate-me",
  "indexmap 2.5.0",
  "itertools 0.12.1",
  "on-chain-table",
@@ -6064,6 +6065,7 @@ version = "0.2.0"
 dependencies = [
  "arrow",
  "arrow-flight",
+ "data-compliance-please-deprecate-me",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

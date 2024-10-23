@@ -1,5 +1,7 @@
-use std::sync::Arc;
+#[cfg(feature = "std")]
+use alloc::sync::Arc;
 
+#[cfg(feature = "std")]
 use arrow::array::{
     ArrayRef,
     ArrowPrimitiveType,
@@ -17,6 +19,7 @@ use arrow::array::{
     TimestampNanosecondArray,
     TimestampSecondArray,
 };
+#[cfg(feature = "std")]
 use arrow::datatypes::{DataType, TimeUnit};
 use sqlparser::ast::{ColumnDef, ColumnOption, ColumnOptionDef};
 
@@ -37,6 +40,7 @@ pub fn column_def_not_null(mut column: ColumnDef) -> ColumnDef {
 }
 
 /// Returns the provided primitive column with nulls replaced by defaults.
+#[cfg(feature = "std")]
 fn default_nulls_primitive<T: ArrowPrimitiveType>(array: &PrimitiveArray<T>) -> PrimitiveArray<T> {
     PrimitiveArray::from_iter_values(
         array
@@ -46,6 +50,7 @@ fn default_nulls_primitive<T: ArrowPrimitiveType>(array: &PrimitiveArray<T>) -> 
 }
 
 /// Returns the provided column with nulls replaced by defaults if null count > 0.
+#[cfg(feature = "std")]
 pub fn column_default_nulls(column: ArrayRef) -> ArrayRef {
     if column.null_count() > 0 {
         let column_type = column.data_type();
@@ -137,22 +142,9 @@ pub fn column_default_nulls(column: ArrayRef) -> ArrayRef {
 
 #[cfg(test)]
 mod tests {
-    use arrow::buffer::NullBuffer;
-    use arrow::datatypes::{
-        ArrowNativeType,
-        ArrowNativeTypeOp,
-        Decimal128Type,
-        Decimal256Type,
-        DecimalType,
-        Int16Type,
-        Int32Type,
-        Int64Type,
-        Int8Type,
-        TimestampMicrosecondType,
-        TimestampMillisecondType,
-        TimestampNanosecondType,
-        TimestampSecondType,
-    };
+    use alloc::string::ToString;
+    use alloc::vec;
+
     use sqlparser::ast::Ident;
 
     use super::*;
@@ -188,6 +180,28 @@ mod tests {
         assert_eq!(&column_def_not_null(nullable_column), &expected);
         assert_eq!(&column_def_not_null(expected.clone()), &expected);
     }
+}
+
+#[cfg(all(test, feature = "std"))]
+mod std_tests {
+    use arrow::buffer::NullBuffer;
+    use arrow::datatypes::{
+        ArrowNativeType,
+        ArrowNativeTypeOp,
+        Decimal128Type,
+        Decimal256Type,
+        DecimalType,
+        Int16Type,
+        Int32Type,
+        Int64Type,
+        Int8Type,
+        TimestampMicrosecondType,
+        TimestampMillisecondType,
+        TimestampNanosecondType,
+        TimestampSecondType,
+    };
+
+    use super::*;
 
     fn we_can_default_nulls_in_primitive_column<T: ArrowPrimitiveType>() {
         let column: ArrayRef = Arc::new(PrimitiveArray::<T>::from_iter_values_with_nulls(
