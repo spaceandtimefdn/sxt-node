@@ -6,7 +6,7 @@ use proof_of_sql_commitment_map::PerCommitmentScheme;
 /// Ark-serialized bytes of proof-of-sql public parameters, generated with...
 /// - max_nu of 16
 /// - ChaCha20Rng with seed "SpaceAndTime"
-const PUBLIC_PARAMETERS_BYTES: &[u8; 18874856] = include_bytes!("../public-parameters");
+const PUBLIC_PARAMETERS_BYTES: &[u8; 4719080] = include_bytes!("../public_parameters");
 
 /// Value used by dory prover setup to determine the commitment column width.
 const DORY_SIGMA: usize = 12;
