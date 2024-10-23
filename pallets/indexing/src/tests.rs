@@ -79,7 +79,12 @@ fn record_batch_to_row_data(batch: RecordBatch, schema: Arc<Schema>) -> RowData 
 fn inserting_data_succeeds_when_data_is_good() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"test_namespace".to_owned().to_vec()).unwrap(),
+            name: TableName::try_from(b"test_table".to_owned().to_vec()).unwrap(),
+        };
+        let test_create = CreateStatement::try_from(b"Some Statement".to_owned().to_vec()).unwrap();
+        pallet_tables::Schemas::<Test>::insert(table_id.namespace, table_id.name, test_create);
         let signer = RuntimeOrigin::signed(1);
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
@@ -115,7 +120,12 @@ fn inserting_data_succeeds_when_data_is_good() {
 fn submission_fails_when_data_is_already_submitted() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"test_namespace".to_owned().to_vec()).unwrap(),
+            name: TableName::try_from(b"test_table".to_owned().to_vec()).unwrap(),
+        };
+        let test_create = CreateStatement::try_from(b"Some Statement".to_owned().to_vec()).unwrap();
+        pallet_tables::Schemas::<Test>::insert(table_id.namespace, table_id.name, test_create);
         let signer = RuntimeOrigin::signed(1);
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
@@ -196,7 +206,12 @@ fn data_submission_fails_if_no_permissions() {
 fn data_is_decided_on_after_required_submissions() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"test_namespace".to_owned().to_vec()).unwrap(),
+            name: TableName::try_from(b"test_table".to_owned().to_vec()).unwrap(),
+        };
+        let test_create = CreateStatement::try_from(b"Some Statement".to_owned().to_vec()).unwrap();
+        pallet_tables::Schemas::<Test>::insert(table_id.namespace, table_id.name, test_create);
         /// Helper function to streamline data submission
         fn submit_test_data(signer: RuntimeOrigin, submission: TestSubmission) -> DispatchResult {
             Indexing::submit_data(
@@ -280,6 +295,13 @@ fn data_is_decided_on_after_required_submissions() {
 fn correct_data_is_decided_on_after_required_submissions() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"test_namespace".to_owned().to_vec()).unwrap(),
+            name: TableName::try_from(b"test_table".to_owned().to_vec()).unwrap(),
+        };
+        let test_create = CreateStatement::try_from(b"Some Statement".to_owned().to_vec()).unwrap();
+        pallet_tables::Schemas::<Test>::insert(table_id.namespace, table_id.name, test_create);
 
         /// Add permissions for the test accounts
         for id in 1..6 {
@@ -498,6 +520,13 @@ fn inserting_data_fails_when_batch_id_is_empty() {
 fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"test_namespace".to_owned().to_vec()).unwrap(),
+            name: TableName::try_from(b"test_table".to_owned().to_vec()).unwrap(),
+        };
+        let test_create = CreateStatement::try_from(b"Some Statement".to_owned().to_vec()).unwrap();
+        pallet_tables::Schemas::<Test>::insert(table_id.namespace, table_id.name, test_create);
 
         // Add permissions for the test accounts
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(

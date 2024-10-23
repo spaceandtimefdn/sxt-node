@@ -44,6 +44,7 @@ frame_support::construct_runtime!(
         Indexing: api_impl,
         Permissions: pallet_permissions,
         Commitments: pallet_commitments,
+        Tables: pallet_tables,
     }
 );
 
@@ -54,6 +55,11 @@ impl frame_system::Config for Test {
 }
 
 impl pallet_indexing::pallet::Config<Api> for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+}
+
+impl pallet_tables::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
 }
