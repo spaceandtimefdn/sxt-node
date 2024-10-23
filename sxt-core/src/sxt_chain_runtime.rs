@@ -1878,9 +1878,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                90u8, 199u8, 3u8, 226u8, 245u8, 150u8, 159u8, 26u8, 118u8, 64u8, 79u8, 93u8, 137u8,
-                126u8, 178u8, 156u8, 31u8, 146u8, 177u8, 0u8, 6u8, 53u8, 240u8, 76u8, 111u8, 129u8,
-                50u8, 119u8, 5u8, 101u8, 247u8, 201u8,
+                91u8, 153u8, 80u8, 144u8, 242u8, 85u8, 118u8, 98u8, 12u8, 126u8, 1u8, 248u8, 35u8,
+                71u8, 177u8, 41u8, 196u8, 182u8, 180u8, 232u8, 39u8, 251u8, 221u8, 179u8, 18u8,
+                197u8, 127u8, 136u8, 226u8, 175u8, 127u8, 112u8,
             ]
     }
     pub mod system {
@@ -7488,18 +7488,9 @@ pub mod api {
                     pub type Param0 = runtime_types::sxt_core::tables::TableIdentifier;
                     pub type Param1 = runtime_types :: proof_of_sql_commitment_map :: commitment_scheme :: CommitmentScheme ;
                 }
-                pub mod stored_public_parameters {
-                    use super::runtime_types;
-                    pub type StoredPublicParameters =
-                        runtime_types::sxt_core::commitments::PublicParametersBytes;
-                }
                 pub mod default_commitment_schemes {
                     use super::runtime_types;
                     pub type DefaultCommitmentSchemes = runtime_types :: proof_of_sql_commitment_map :: commitment_scheme :: CommitmentSchemeFlags ;
-                }
-                pub mod dory_sigma {
-                    use super::runtime_types;
-                    pub type DorySigma = ::core::primitive::u8;
                 }
             }
             pub struct StorageApi;
@@ -7588,27 +7579,6 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " Proof of sql public parameters storage."]
-                pub fn stored_public_parameters(
-                    &self,
-                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
-                    (),
-                    types::stored_public_parameters::StoredPublicParameters,
-                    ::subxt::ext::subxt_core::utils::Yes,
-                    (),
-                    (),
-                > {
-                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
-                        "Commitments",
-                        "StoredPublicParameters",
-                        (),
-                        [
-                            96u8, 104u8, 7u8, 248u8, 218u8, 40u8, 235u8, 187u8, 41u8, 106u8, 153u8,
-                            170u8, 55u8, 33u8, 192u8, 189u8, 220u8, 205u8, 167u8, 35u8, 5u8, 223u8,
-                            88u8, 61u8, 253u8, 39u8, 18u8, 193u8, 59u8, 190u8, 236u8, 174u8,
-                        ],
-                    )
-                }
                 #[doc = " Default schemes used when committing to new tables."]
                 pub fn default_commitment_schemes(
                     &self,
@@ -7627,27 +7597,6 @@ pub mod api {
                             20u8, 77u8, 203u8, 254u8, 27u8, 52u8, 134u8, 198u8, 49u8, 40u8, 88u8,
                             241u8, 18u8, 71u8, 80u8, 114u8, 120u8, 255u8, 239u8, 78u8, 8u8, 134u8,
                             112u8, 171u8, 14u8, 86u8, 114u8, 89u8, 92u8, 133u8, 248u8, 66u8,
-                        ],
-                    )
-                }
-                #[doc = " Sigma value to use for the dory setup."]
-                pub fn dory_sigma(
-                    &self,
-                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
-                    (),
-                    types::dory_sigma::DorySigma,
-                    ::subxt::ext::subxt_core::utils::Yes,
-                    (),
-                    (),
-                > {
-                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
-                        "Commitments",
-                        "DorySigma",
-                        (),
-                        [
-                            158u8, 114u8, 73u8, 211u8, 87u8, 204u8, 116u8, 149u8, 79u8, 57u8, 66u8,
-                            57u8, 43u8, 152u8, 165u8, 2u8, 189u8, 7u8, 170u8, 95u8, 142u8, 174u8,
-                            66u8, 147u8, 148u8, 92u8, 88u8, 98u8, 67u8, 76u8, 77u8, 200u8,
                         ],
                     )
                 }
@@ -8851,69 +8800,66 @@ pub mod api {
                 #[doc = "The errors that can occur within this pallet."]
                 pub enum Error {
                     #[codec(index = 0)]
-                    #[doc = "Failed to deserialize proof-of-sql public parameters from storage."]
-                    DeserializePublicParameters,
-                    #[codec(index = 1)]
                     #[doc = "Proof-of-sql commitment has too many columns."]
                     CommitmentWithTooManyColumns,
-                    #[codec(index = 2)]
+                    #[codec(index = 1)]
                     #[doc = "Failed to serialize proof-of-sql commitment."]
                     SerializeCommitment,
-                    #[codec(index = 3)]
+                    #[codec(index = 2)]
                     #[doc = "Failed to deserialize proof-of-sql commitment."]
                     DeserializeCommitment,
-                    #[codec(index = 4)]
+                    #[codec(index = 3)]
                     #[doc = "Snapshot commitments don't match table definition."]
                     InappropriateSnapshotCommitments,
-                    #[codec(index = 5)]
+                    #[codec(index = 4)]
                     #[doc = "Table must have at least one column."]
                     CreateTableWithNoColumns,
-                    #[codec(index = 6)]
+                    #[codec(index = 5)]
                     #[doc = "Table has invalid identifier."]
                     CreateTableWithInvalidIdentifier,
-                    #[codec(index = 7)]
+                    #[codec(index = 6)]
                     #[doc = "Table has duplicate identifiers."]
                     CreateTableWithDuplicateIdentifiers,
-                    #[codec(index = 8)]
+                    #[codec(index = 7)]
                     #[doc = "Table uses reserved metadata prefix."]
                     CreateTableWithReservedMetadataPrefix,
-                    #[codec(index = 9)]
+                    #[codec(index = 8)]
                     #[doc = "Timestamp column precision should be 0, 3, or 6."]
                     TimestampColumnWithInvalidPrecision,
-                    #[codec(index = 10)]
+                    #[codec(index = 9)]
                     #[doc = "Timestamp columns should be timestamp-aware."]
                     TimestampColumnWithoutTimezone,
-                    #[codec(index = 11)]
+                    #[codec(index = 10)]
                     #[doc = "Decimal/numeric columns should have constrained precision and scale."]
                     DecimalColumnWithoutPrecision,
-                    #[codec(index = 12)]
+                    #[codec(index = 11)]
                     #[doc = "Decimal/numeric columns should have precision between 1 and 75."]
                     DecimalColumnWithInvalidPrecision,
-                    #[codec(index = 13)]
+                    #[codec(index = 12)]
                     #[doc = "Decimal/numeric columns should have scale between 0 and 127."]
                     DecimalColumnWithInvalidScale,
-                    #[codec(index = 14)]
+                    #[codec(index = 13)]
                     #[doc = "Column type not supported."]
                     ColumnWithUnsupportedDataType,
-                    #[codec(index = 15)]
+                    #[codec(index = 14)]
                     #[doc = "Column should be NOT NULL."]
                     ColumnWithoutNotNull,
-                    #[codec(index = 16)]
+                    #[codec(index = 15)]
                     #[doc = "Column option not supported."]
                     ColumnWithUnsupportedOption,
-                    #[codec(index = 17)]
+                    #[codec(index = 16)]
                     #[doc = "Existing commitments of different schemes don't agree on table range."]
                     ExistingCommitmentsRangeMismatch,
-                    #[codec(index = 18)]
+                    #[codec(index = 17)]
                     #[doc = "Cannot update table with no existing commitments."]
                     NoExistingCommitments,
-                    #[codec(index = 19)]
+                    #[codec(index = 18)]
                     #[doc = "Insert data contains values out of bounds of scalar field."]
                     InsertDataOutOfBounds,
-                    #[codec(index = 20)]
+                    #[codec(index = 19)]
                     #[doc = "Insert data does not match existing commitments."]
                     InsertDataDoesntMatchExistingCommitments,
-                    #[codec(index = 21)]
+                    #[codec(index = 20)]
                     #[doc = "Table identifier already exists in commitment storage."]
                     TableAlreadyExists,
                 }
@@ -11155,28 +11101,6 @@ pub mod api {
         }
         pub mod sxt_core {
             use super::runtime_types;
-            pub mod commitments {
-                use super::runtime_types;
-                #[derive(
-                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
-                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
-                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                    Debug,
-                )]
-                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
-                #[decode_as_type(
-                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
-                )]
-                #[encode_as_type(
-                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
-                )]
-                pub struct PublicParametersBytes {
-                    pub data: runtime_types::bounded_collections::bounded_vec::BoundedVec<
-                        ::core::primitive::u8,
-                    >,
-                }
-            }
             pub mod indexing {
                 use super::runtime_types;
                 #[derive(
