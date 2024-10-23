@@ -6,11 +6,13 @@ use arrow::record_batch::RecordBatch;
 use arrow_flight::encode::FlightDataEncoderBuilder;
 use arrow_flight::flight_service_client::FlightServiceClient;
 use arrow_flight::sql::client::FlightSqlServiceClient;
+use arrow_flight::sql::CommandStatementIngest;
 use arrow_flight::FlightDescriptor;
 use frame_support::__private::log;
 use on_chain_table::OnChainTable;
 use sp_core::traits::SpawnEssentialNamed;
 use sp_runtime_interface::sp_wasm_interface::anyhow;
+use sp_runtime_interface::sp_wasm_interface::anyhow::Error;
 use subxt::backend::rpc::reconnecting_rpc_client::Client;
 use subxt::ext::futures;
 use subxt::ext::futures::StreamExt;
@@ -20,6 +22,7 @@ use tonic::transport::Channel;
 use {
     crate::sxt_chain_runtime::api::indexing::events::QuorumReached,
     crate::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec,
+    crate::sxt_chain_runtime::api::system::events::ExtrinsicSuccess,
     crate::sxt_chain_runtime::api::tables::events::SchemaUpdated,
     crate::sxt_chain_runtime::api::tables::events::TablesCreatedWithCommitments,
 };
@@ -78,10 +81,12 @@ async fn run() {
         .await
         .expect("Unable to subscribe to block finalization");
 
+    log::info!("FlightSQL: Task is running!");
     // Essential tasks can't exit or the node stops
     while let Some(block) = block_stream.next().await {
+        let block = block.unwrap();
+        log::info!("FlightSQL: Processing Block {:?}", block.number());
         let events = block
-            .unwrap()
             .events()
             .await
             .expect("Failed to get events for finalized block")
@@ -98,14 +103,15 @@ async fn run() {
             let result;
             // Check for a quorum being reached on submitted data
             if let Some(e) = event.as_event::<QuorumReached>().unwrap() {
+                log::info!("FlightSQL: Processing Data Insert");
                 let data = e.data;
-                let inner = client.inner_mut();
                 let id = identifier_to_sql(e.quorum.table.namespace.0, e.quorum.table.name.0)
                     .expect("Corrupt table identifier!");
-                result = insert_data(inner, data.0, id).await;
+                result = insert_data(&mut client, data.0, id).await;
 
-                // Check for Schemas being updated (i.e. Table Creation)
+            // Check for Schemas being updated (i.e. Table Creation)
             } else if let Some(e) = event.as_event::<SchemaUpdated>().unwrap() {
+                log::info!("FlightSQL: Processing Table Creation");
                 let raw_list: Vec<BoundedVec<u8>> =
                     e.1 .0.into_iter().map(|(_, statement)| statement).collect();
                 let list: Vec<String> = raw_list
@@ -120,14 +126,23 @@ async fn run() {
             //Check for tables being created with commitments from a snapshot
             } else if let Some(e) = event.as_event::<TablesCreatedWithCommitments>().unwrap() {
                 // TODO eventually parallelize this by wrapping the client in an Arc Mutex or similar
+                log::info!("FlightSQL: Processing Table Creation With Snapshot");
                 for (id, sql, c, base_path) in e.table_list.0 {
                     let sql = from_utf8(sql.0.as_slice())
                         .expect("Genesis tables must have valid sql statements");
                     let base_path = from_utf8(base_path.0.as_slice())
                         .expect("Genesis table must have valid snapshot paths");
-                    create_table_with_snapshot(&mut client, sql.to_string(), base_path)
-                        .await
-                        .expect("Loading historical data for genesis tables must succeed");
+                    let namespace = from_utf8(id.namespace.0.as_slice())
+                        .expect("Genesis tables must have valid namespace")
+                        .to_uppercase();
+                    create_table_with_snapshot(
+                        &mut client,
+                        sql.to_string(),
+                        namespace.as_str(),
+                        base_path,
+                    )
+                    .await
+                    .expect("Loading historical data for genesis tables must succeed");
                 }
                 result = Ok(())
             } else {
@@ -137,8 +152,7 @@ async fn run() {
             match result {
                 Ok(_) => {}
                 Err(e) => {
-                    log::error!("Error in FlightSQL task");
-                    panic!("{:?}", e)
+                    log::error!("FlightSQL: Error {:?}", e);
                 }
             }
         }
@@ -161,7 +175,7 @@ async fn authenticate_client(
     user: &str,
     pass: &str,
 ) -> Result<(), anyhow::Error> {
-    client.clear_token();
+    client.set_header("SUBSCRIPTION_ID", "subscription-id");
     let _ = client.handshake(user, pass).await?;
     Ok(())
 }
@@ -206,7 +220,7 @@ pub async fn create_tables(
 ) -> Result<(), SQLError> {
     for sql in statement_list {
         client
-            .execute(sql, None)
+            .execute_update(sql, None)
             .await
             .map_err(|e| SQLError::SQLExecutionError(e.to_string()))?;
     }
@@ -218,10 +232,16 @@ pub async fn create_table_with_snapshot(
     client: &mut FlightSqlServiceClient<Channel>,
     sql: String,
     snapshot_url: &str,
+    namespace: &str,
 ) -> Result<(), SQLError> {
+    client
+        .execute_update(format!("CREATE SCHEMA IF NOT EXISTS {namespace};"), None)
+        .await
+        .map_err(|e| SQLError::SQLExecutionError(e.to_string()))?;
+
     // First create the new table with FlightSQL
     client
-        .execute(sql, None)
+        .execute_update(sql, None)
         .await
         .map_err(|e| SQLError::SQLExecutionError(e.to_string()))?;
 
@@ -243,41 +263,31 @@ pub async fn create_table_with_snapshot(
 /// Insert some data into FlightSQL via the RecordBatch API. Data is expected to tbe a
 /// postcard serialized OnChainTable, identifier should be of the form "NAMESPACE.NAME"
 pub async fn insert_data(
-    client: &mut FlightServiceClient<Channel>,
+    client: &mut FlightSqlServiceClient<Channel>,
     data: Vec<u8>,
     identifier: String,
 ) -> Result<(), SQLError> {
-    let descriptor = FlightDescriptor::new_path(vec![identifier]);
-
     let batch = record_batch_from_data(data)?;
 
-    // Create an input stream of RecordBatch
-    let input_stream = futures::stream::iter(vec![batch].into_iter().map(Ok));
+    let batches = vec![batch];
 
-    // Encode the input stream with the table identifier via a FlightData Descriptor
-    let flight_data_stream = FlightDataEncoderBuilder::new()
-        .with_flight_descriptor(Some(descriptor))
-        .build(input_stream);
+    // Create the CommandStatementIngest object to be used in the ingestion process
+    let cmd = CommandStatementIngest {
+        table_definition_options: None,
+        table: identifier.clone(),
+        schema: None,
+        catalog: None,
+        temporary: false,
+        transaction_id: None,
+        options: Default::default(),
+    };
 
-    let flight_data_stream = flight_data_stream.map(|result| match result {
-        Ok(flight_data) => flight_data,
-        Err(e) => {
-            // Handle the error appropriately
-            // You can log the error and return an empty FlightData, or you can stop the stream
-            // For this example, we'll return an error via panic (not recommended for production)
-            panic!("Error encoding FlightData: {:?}", e);
-        }
-    });
-
-    // Wrap the data stream in a new request object
-    let request = tonic::Request::new(flight_data_stream);
-
-    // Submit the request and await the result
-    let response = client
-        .do_put(request)
+    // Execute the ingestion and assert that the number of rows ingested is correct
+    let actual_rows = client
+        .execute_ingest(cmd, futures::stream::iter(batches.clone()).map(Ok))
         .await
-        .map_err(|e| SQLError::InsertExecutionError(e.message().to_string()));
+        .map_err(|e| SQLError::InsertExecutionError(e.to_string()))?;
 
-    println!("Client: Server responded with {:?}", response);
+    log::info!("FlightSQL: Inserted {:?} rows to {identifier}", actual_rows);
     Ok(())
 }

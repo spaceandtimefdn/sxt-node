@@ -127,6 +127,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config<I>, I: 'static> Pallet<T, I>
     where
+        T: pallet_tables::Config,
         I: NativeApi,
     {
         /// This extrinsic provides a transaction that indexers will use to submit
@@ -198,7 +199,7 @@ pub mod pallet {
 
     /// Check if we have a quorum.
     /// Finalize the data, update commitments, and emit an event if we do.
-    pub fn check_quorum_and_finalize<T: Config<I>, I>(
+    pub fn check_quorum_and_finalize<T, I>(
         batch_id: BatchId,
         data_hash: T::Hash,
         data: RowData,
@@ -206,6 +207,8 @@ pub mod pallet {
         match_submissions: SubmitterList<T::AccountId>,
     ) -> DispatchResult
     where
+        T: Config<I>,
+        T: pallet_tables::Config,
         I: NativeApi,
     {
         // Iterate over the submitters who submitted differing data and collect
@@ -272,12 +275,14 @@ pub mod pallet {
 
     /// Run some checks to verify that table, batch_id, and data are reasonable, non-empty values\
     /// If the transaction is considered invalid, a relevant error will be returned
-    pub fn validate_submission<T: Config<I>, I>(
+    pub fn validate_submission<T, I>(
         table: &TableIdentifier,
         batch_id: &BatchId,
         data: &RowData,
     ) -> DispatchResult
     where
+        T: Config<I>,
+        T: pallet_tables::Config,
         I: NativeApi,
     {
         ensure!(
@@ -286,6 +291,11 @@ pub mod pallet {
         );
         ensure!(!data.is_empty(), Error::<T, I>::NoData);
         ensure!(!batch_id.is_empty(), Error::<T, I>::InvalidBatch);
+        // Make sure the schema exists for this table
+        ensure!(
+            pallet_tables::Schemas::<T>::contains_key(&table.namespace, &table.name),
+            Error::<T, I>::InvalidTable
+        );
         Ok(())
     }
 }
