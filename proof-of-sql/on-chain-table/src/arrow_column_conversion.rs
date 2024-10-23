@@ -177,7 +177,10 @@ impl TryFrom<&ArrayRef> for OnChainColumn {
 
                 Ok(Self::TimestampTZ(
                     time_unit,
-                    PoSQLTimeZone::try_from(timezone)?,
+                    timezone
+                        .clone()
+                        .map(|tz| PoSQLTimeZone::try_from(&Some(tz)))
+                        .transpose()?,
                     timestamps,
                 ))
             }
@@ -212,17 +215,21 @@ impl From<OnChainColumn> for ArrayRef {
             }
             OnChainColumn::VarChar(col) => Arc::new(StringArray::from(col)),
             OnChainColumn::TimestampTZ(time_unit, timezone, col) => match time_unit {
-                PoSQLTimeUnit::Second => {
-                    Arc::new(TimestampSecondArray::from(col).with_timezone(timezone.to_string()))
-                }
+                PoSQLTimeUnit::Second => Arc::new(
+                    TimestampSecondArray::from(col)
+                        .with_timezone_opt(timezone.map(|tz| tz.to_string())),
+                ),
                 PoSQLTimeUnit::Millisecond => Arc::new(
-                    TimestampMillisecondArray::from(col).with_timezone(timezone.to_string()),
+                    TimestampMillisecondArray::from(col)
+                        .with_timezone_opt(timezone.map(|tz| tz.to_string())),
                 ),
                 PoSQLTimeUnit::Microsecond => Arc::new(
-                    TimestampMicrosecondArray::from(col).with_timezone(timezone.to_string()),
+                    TimestampMicrosecondArray::from(col)
+                        .with_timezone_opt(timezone.map(|tz| tz.to_string())),
                 ),
                 PoSQLTimeUnit::Nanosecond => Arc::new(
-                    TimestampNanosecondArray::from(col).with_timezone(timezone.to_string()),
+                    TimestampNanosecondArray::from(col)
+                        .with_timezone_opt(timezone.map(|tz| tz.to_string())),
                 ),
             },
         }
@@ -335,7 +342,7 @@ mod tests {
         let array: ArrayRef = Arc::new(TimestampSecondArray::from(data.clone()));
         assert_eq!(
             OnChainColumn::try_from(&array).unwrap(),
-            OnChainColumn::TimestampTZ(PoSQLTimeUnit::Second, PoSQLTimeZone::Utc, data)
+            OnChainColumn::TimestampTZ(PoSQLTimeUnit::Second, None, data)
         );
 
         let data = vec![0, -1, -2];
@@ -343,7 +350,7 @@ mod tests {
             Arc::new(TimestampMillisecondArray::from(data.clone()).with_timezone("+00:00"));
         assert_eq!(
             OnChainColumn::try_from(&array).unwrap(),
-            OnChainColumn::TimestampTZ(PoSQLTimeUnit::Millisecond, PoSQLTimeZone::Utc, data)
+            OnChainColumn::TimestampTZ(PoSQLTimeUnit::Millisecond, Some(PoSQLTimeZone::Utc), data)
         );
 
         let data = vec![4, 5, 6];
@@ -353,7 +360,7 @@ mod tests {
             OnChainColumn::try_from(&array).unwrap(),
             OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Microsecond,
-                PoSQLTimeZone::FixedOffset(3600),
+                Some(PoSQLTimeZone::FixedOffset(3600)),
                 data
             )
         );
@@ -365,7 +372,7 @@ mod tests {
             OnChainColumn::try_from(&array).unwrap(),
             OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Nanosecond,
-                PoSQLTimeZone::FixedOffset(-3600),
+                Some(PoSQLTimeZone::FixedOffset(-3600)),
                 data
             )
         );
@@ -491,7 +498,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Second,
-                PoSQLTimeZone::Utc,
+                Some(PoSQLTimeZone::Utc),
                 data
             )) == expected
         );
@@ -502,7 +509,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Millisecond,
-                PoSQLTimeZone::Utc,
+                Some(PoSQLTimeZone::Utc),
                 data
             )) == expected
         );
@@ -513,7 +520,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Microsecond,
-                PoSQLTimeZone::FixedOffset(3600),
+                Some(PoSQLTimeZone::FixedOffset(3600)),
                 data
             )) == expected,
         );
@@ -524,7 +531,17 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Nanosecond,
-                PoSQLTimeZone::FixedOffset(-3600),
+                Some(PoSQLTimeZone::FixedOffset(-3600)),
+                data
+            )) == expected,
+        );
+
+        let data = vec![-3, -4, -5];
+        let expected: ArrayRef = Arc::new(TimestampNanosecondArray::from(data.clone()));
+        assert!(
+            ArrayRef::from(OnChainColumn::TimestampTZ(
+                PoSQLTimeUnit::Nanosecond,
+                None,
                 data
             )) == expected,
         );
