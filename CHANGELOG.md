@@ -1,3 +1,12 @@
+# [0.35.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.34.1...v0.35.0) (2024-10-23)
+
+
+### Features
+
+* process creation of empty tables in tables pallet ([5365ef1](https://github.com/spaceandtimelabs/sxt-node/commit/5365ef1c4c0b07c1f03ee7e9fd640388df3bc858))
+
+
+
 ## [0.34.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.34.0...v0.34.1) (2024-10-23)
 
 
@@ -44,15 +53,6 @@
 * parse some utf8 columns to decimal ([31ac14d](https://github.com/spaceandtimelabs/sxt-node/commit/31ac14dc473a7c3d661a61fc68746f47e0a34b6f))
 * remove null bytes from string columns ([c8e5720](https://github.com/spaceandtimelabs/sxt-node/commit/c8e5720f1528f5bb876f24261bf57e8064693b41))
 * replace nulls with defaults ([333b3cd](https://github.com/spaceandtimelabs/sxt-node/commit/333b3cd89efac78ee70e58f34735774a3304bb57))
-
-
-
-## [0.31.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.31.0...v0.31.1) (2024-10-21)
-
-
-### Bug Fixes
-
-* Added credentials for FlightSQL Client and panic on any errors in ([87f5bde](https://github.com/spaceandtimelabs/sxt-node/commit/87f5bdecd925cadd78270c0ed06f691fa895722b))
 
 
 
