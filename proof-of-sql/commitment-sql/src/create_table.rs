@@ -2,6 +2,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
+use data_compliance_please_deprecate_me::{column_def_clamp_precision, column_def_not_null};
 use on_chain_table::{OnChainTable, OutOfScalarBounds};
 use proof_of_sql::base::commitment::{Commitment, TableCommitment};
 use proof_of_sql_commitment_map::generic_over_commitment::{
@@ -72,7 +73,7 @@ pub struct CreateTableAndCommitmentMetadata {
 /// - the processed table definition as [`CreateTableAndCommitmentMetadata`]
 /// - the initial, empty commitments for the table
 pub fn process_create_table(
-    table: CreateTableBuilder,
+    mut table: CreateTableBuilder,
     setups: PerCommitmentScheme<AssociatedPublicSetupType>,
     commitment_schemes: &CommitmentSchemeFlags,
 ) -> Result<
@@ -82,6 +83,13 @@ pub fn process_create_table(
     ),
     InvalidCreateTable,
 > {
+    // make table def compliant
+    table.columns = table
+        .columns
+        .into_iter()
+        .map(|column_def| column_def_not_null(column_def_clamp_precision(column_def)))
+        .collect();
+
     let validated_create_table = ValidatedCreateTable::validate(&table)?;
 
     let empty_table = validated_create_table.into_empty_table();

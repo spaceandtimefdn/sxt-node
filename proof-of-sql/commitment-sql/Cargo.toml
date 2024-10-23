@@ -10,6 +10,7 @@ edition.workspace = true
 [dependencies]
 const_format.workspace = true
 ahash.workspace = true
+data-compliance-please-deprecate-me.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
 on-chain-table.workspace = true

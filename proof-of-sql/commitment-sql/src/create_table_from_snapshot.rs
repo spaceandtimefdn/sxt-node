@@ -248,7 +248,7 @@ mod tests {
 
         test_params.sql_text = "CREATE TABLE animal.population (
             animal VARCHAR NOT NULL,
-            population BIGINT,
+            population BIGINT NULL,
             PRIMARY KEY (animal))"
             .to_string();
 
