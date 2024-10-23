@@ -1,3 +1,12 @@
+## [0.35.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.35.0...v0.35.1) (2024-10-23)
+
+
+### Bug Fixes
+
+* use proof-of-sql 0.33 generated public parameters ([048e61c](https://github.com/spaceandtimelabs/sxt-node/commit/048e61c7198107efabb4068e4461210b258baa0d))
+
+
+
 # [0.35.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.34.1...v0.35.0) (2024-10-23)
 
 
@@ -39,20 +48,6 @@
 ### Features
 
 * upgrade proof-of-sql to version 0.33 ([e0cd63e](https://github.com/spaceandtimelabs/sxt-node/commit/e0cd63e7d0bd778a3f93288534e15622e8b37e70))
-
-
-
-# [0.32.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.31.1...v0.32.0) (2024-10-23)
-
-
-### Features
-
-* add empty data-compliance-please-deprecate-me crate ([a6d3962](https://github.com/spaceandtimelabs/sxt-node/commit/a6d3962cd89dd3333861bb682d2b28c3928b61e0))
-* add record batch mapping utilities ([f2c45dc](https://github.com/spaceandtimelabs/sxt-node/commit/f2c45dcbe85ebbf05e708d9fda148a543c9e2e7f))
-* clamp decimal precision to proof-of-sql maximum ([cbffb7b](https://github.com/spaceandtimelabs/sxt-node/commit/cbffb7bc0ab16442bac0e443b52ac5caca276f23))
-* parse some utf8 columns to decimal ([31ac14d](https://github.com/spaceandtimelabs/sxt-node/commit/31ac14dc473a7c3d661a61fc68746f47e0a34b6f))
-* remove null bytes from string columns ([c8e5720](https://github.com/spaceandtimelabs/sxt-node/commit/c8e5720f1528f5bb876f24261bf57e8064693b41))
-* replace nulls with defaults ([333b3cd](https://github.com/spaceandtimelabs/sxt-node/commit/333b3cd89efac78ee70e58f34735774a3304bb57))
 
 
 
