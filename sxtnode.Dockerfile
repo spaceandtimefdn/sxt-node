@@ -58,7 +58,7 @@ ENV RUST_LOG="info"
 
 
 # Install Flight-SQL
-ARG FLIGHTSQL_PG_SERVICE="https://spaceandtime.jfrog.io/artifactory/dw-generic-local/flightsql-pg/0.1-a18920a/x86/flightsql-pg"
+ARG FLIGHTSQL_PG_SERVICE="https://spaceandtime.jfrog.io/artifactory/dw-generic-local/flightsql-pg/0.1-69ba8a6/x86/flightsql-pg"
 RUN --mount=type=secret,id=ARTIFACTORY_LOGIN  \
     curl --user $(cat /run/secrets/ARTIFACTORY_LOGIN) $FLIGHTSQL_PG_SERVICE --output /usr/local/bin/flightsql-pg &&  \
     chmod +x /usr/local/bin/flightsql-pg
