@@ -4,7 +4,8 @@ use std::sync::Arc;
 use arrow::array::{ArrayRef, Decimal256Array, GenericStringArray, OffsetSizeTrait};
 use arrow::datatypes::{i256, DataType as ArrowDataType};
 use arrow::error::ArrowError;
-use bigdecimal::{BigDecimal, ParseBigDecimalError, Signed};
+use bigdecimal::{BigDecimal, Num, ParseBigDecimalError, Signed};
+use num_bigint::BigInt;
 use snafu::Snafu;
 use sqlparser::ast::{DataType as SqlparserDataType, ExactNumberInfo};
 
@@ -83,6 +84,52 @@ fn string_array_to_i256<O: OffsetSizeTrait>(
         .collect::<Result<Vec<_>, ParseBigDecimalError>>()
 }
 
+fn truncate_string_array<O: OffsetSizeTrait>(
+    column: ArrayRef,
+    scale: i8,
+) -> Result<ArrayRef, ParseBigDecimalError> {
+    let truncated_strings = column
+        .as_any()
+        .downcast_ref::<GenericStringArray<O>>()
+        .unwrap()
+        .iter()
+        .map(|maybe_string| {
+            maybe_string
+                .map(|string| -> Result<String, ParseBigDecimalError> {
+                    let (bigint, _) = BigDecimal::from_str(string)?
+                        .normalized()
+                        .with_scale(scale as i64)
+                        .into_bigint_and_exponent();
+                    let string_representation = bigint.to_str_radix(10);
+                    let truncated_string_representation: String = if bigint.is_negative() {
+                        let actual_precision = string_representation.len() - 1;
+                        let num_skipped_chars =
+                            (actual_precision as i8 - MAX_PRECISION as i8 + 1i8).max(1) as usize;
+                        std::iter::once('-')
+                            .chain(string_representation.chars().skip(num_skipped_chars))
+                            .collect()
+                    } else {
+                        let actual_precision = string_representation.len();
+                        let num_skipped_chars =
+                            (actual_precision as i8 - MAX_PRECISION as i8).max(0) as usize;
+                        string_representation
+                            .chars()
+                            .skip(num_skipped_chars)
+                            .collect()
+                    };
+                    // Now cast the truncated string back to a BigDecimal to ensure it is valid
+                    let truncated_bigint =
+                        BigInt::from_str_radix(&truncated_string_representation, 10)
+                            .expect("truncated string representation should still be valid");
+                    let truncated_bigdecimal = BigDecimal::new(truncated_bigint, scale.into());
+                    Ok(truncated_bigdecimal.to_string())
+                })
+                .transpose()
+        })
+        .collect::<Result<Vec<_>, ParseBigDecimalError>>()?;
+    Ok(Arc::new(GenericStringArray::<O>::from(truncated_strings)))
+}
+
 /// Returns the provided column with strings parsed to decimals if the column type is string and
 /// the target type is decimal.
 ///
@@ -139,6 +186,51 @@ pub fn column_parse_decimals_unchecked(
     target_type: &SqlparserDataType,
 ) -> ArrayRef {
     column_parse_decimals_fallible(column, target_type)
+        .expect("string column unable to parse to decimals")
+}
+
+/// Parse bigdecimal columns from a string column, truncating the most significant digits if the
+/// precision is too high, and returning an error if the string cannot be parsed. After that cast
+/// the bigdecimals back to strings.
+pub fn column_truncate_decimals_fallible(
+    column: ArrayRef,
+    target_type: &SqlparserDataType,
+) -> Result<ArrayRef, ParseDecimalsError> {
+    match (column.data_type(), target_type) {
+        (
+            ArrowDataType::Utf8 | ArrowDataType::LargeUtf8,
+            SqlparserDataType::Numeric(number_info)
+            | SqlparserDataType::Decimal(number_info)
+            | SqlparserDataType::BigNumeric(number_info)
+            | SqlparserDataType::BigDecimal(number_info)
+            | SqlparserDataType::Dec(number_info),
+        ) => {
+            let (_precision, scale) = match number_info {
+                ExactNumberInfo::None => (MAX_PRECISION, 0),
+                ExactNumberInfo::Precision(p) => ((*p as u8).min(MAX_PRECISION), 0),
+                ExactNumberInfo::PrecisionAndScale(p, s) => {
+                    ((*p as u8).min(MAX_PRECISION), *s as i8)
+                }
+            };
+
+            match column.data_type() {
+                ArrowDataType::Utf8 => Ok(truncate_string_array::<i32>(column, scale)?),
+                ArrowDataType::LargeUtf8 => Ok(truncate_string_array::<i64>(column, scale)?),
+                _ => unreachable!(),
+            }
+        }
+        _ => Ok(column),
+    }
+}
+
+/// Parse bigdecimal columns from a string column, truncating the most significant digits if the
+/// precision is too high, and returning an error if the string cannot be parsed. After that cast
+/// the bigdecimals back to strings.
+pub fn column_truncate_decimals_unchecked(
+    column: ArrayRef,
+    target_type: &SqlparserDataType,
+) -> ArrayRef {
+    column_truncate_decimals_fallible(column, target_type)
         .expect("string column unable to parse to decimals")
 }
 
@@ -234,7 +326,7 @@ mod tests {
     }
 
     #[test]
-    fn we_can_parse_and_truncate_out_of_bounds_decimals() {
+    fn we_can_parse_out_of_bounds_decimals_and_truncate_them() {
         let excessive_precision = "1234567890".repeat(8);
         let negative_excessive_precision = format!("-{}", &excessive_precision);
         let column: ArrayRef = Arc::new(StringArray::from_iter_values([
@@ -270,6 +362,71 @@ mod tests {
 
         assert_eq!(
             &column_parse_decimals_unchecked(column, &data_type),
+            &expected
+        );
+    }
+
+    #[test]
+    fn we_cannot_parse_and_truncate_nondecimals_and_convert_them_back_to_strings() {
+        let column: ArrayRef = Arc::new(LargeStringArray::from_iter_values([
+            "0",
+            "not a decimal",
+            "200",
+        ]));
+
+        let data_type = SqlparserDataType::Decimal(ExactNumberInfo::PrecisionAndScale(75, 0));
+        assert!(matches!(
+            column_truncate_decimals_fallible(column, &data_type),
+            Err(ParseDecimalsError::BigDecimal { .. })
+        ))
+    }
+
+    #[test]
+    fn we_can_parse_decimals_and_convert_them_back_to_strings() {
+        let column: ArrayRef = Arc::new(LargeStringArray::from_iter_values([
+            "0.000",
+            "-10.5000000000",
+            "2.00000e-4",
+        ]));
+        let data_type = SqlparserDataType::Decimal(ExactNumberInfo::PrecisionAndScale(10, 3));
+        let expected: ArrayRef = Arc::new(LargeStringArray::from_iter_values([
+            "0.000", "-10.500", "0.000",
+        ]));
+        assert_eq!(
+            &column_truncate_decimals_unchecked(column, &data_type),
+            &expected
+        );
+    }
+
+    #[test]
+    fn we_can_parse_out_of_bounds_decimals_truncate_them_and_convert_them_back_to_strings() {
+        let excessive_precision = "1234567890".repeat(8);
+        let negative_excessive_precision = format!("-{}", &excessive_precision);
+        let column: ArrayRef = Arc::new(StringArray::from_iter_values([
+            &excessive_precision,
+            &negative_excessive_precision,
+        ]));
+
+        let data_type = SqlparserDataType::Numeric(ExactNumberInfo::PrecisionAndScale(75, 0));
+        // Truncate the most significant digits
+        let expected_string = format!("{}{}", "67890", "1234567890".repeat(7));
+        let negative_expected_string = format!("-{}", &expected_string);
+        let expected: ArrayRef = Arc::new(StringArray::from_iter_values([
+            &expected_string,
+            &negative_expected_string,
+        ]));
+
+        assert_eq!(
+            &column_truncate_decimals_unchecked(column, &data_type),
+            &expected
+        );
+
+        // Scientific notation
+        let column: ArrayRef = Arc::new(LargeStringArray::from_iter_values(["1e100", "-1e100"]));
+        let expected: ArrayRef = Arc::new(LargeStringArray::from_iter_values(["0", "0"]));
+
+        assert_eq!(
+            &column_truncate_decimals_unchecked(column, &data_type),
             &expected
         );
     }

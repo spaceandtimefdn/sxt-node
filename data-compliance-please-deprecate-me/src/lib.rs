@@ -24,6 +24,8 @@ mod parse_decimals;
 pub use parse_decimals::{
     column_parse_decimals_fallible,
     column_parse_decimals_unchecked,
+    column_truncate_decimals_fallible,
+    column_truncate_decimals_unchecked,
     ParseDecimalsError,
 };
 
