@@ -1,3 +1,12 @@
+## [0.37.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.37.1...v0.37.2) (2024-10-24)
+
+
+### Bug Fixes
+
+* truncate in data-compliance decimal parsing ([b877cca](https://github.com/spaceandtimelabs/sxt-node/commit/b877cca34f7f2f0ead2e84acb4dd4e92465884fa))
+
+
+
 ## [0.37.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.37.0...v0.37.1) (2024-10-24)
 
 
@@ -29,15 +38,6 @@
 
 * Update snapshot and genesis to v2 ([ea739c3](https://github.com/spaceandtimelabs/sxt-node/commit/ea739c35a67d9f53ba18ec30f81bcb7ffd0bf9dd))
 * Update subxt generated code for testnet runtime ([7c68796](https://github.com/spaceandtimelabs/sxt-node/commit/7c68796ed11c8367096f74c3b576483025d2f3b9))
-
-
-
-## [0.35.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.35.0...v0.35.1) (2024-10-23)
-
-
-### Bug Fixes
-
-* use proof-of-sql 0.33 generated public parameters ([048e61c](https://github.com/spaceandtimelabs/sxt-node/commit/048e61c7198107efabb4068e4461210b258baa0d))
 
 
 
