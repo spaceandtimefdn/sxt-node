@@ -138,8 +138,8 @@ async fn run() {
                     create_table_with_snapshot(
                         &mut client,
                         sql.to_string(),
-                        namespace.as_str(),
                         base_path,
+                        &namespace,
                     )
                     .await
                     .expect("Loading historical data for genesis tables must succeed");
