@@ -1,5 +1,4 @@
 use frame_support::derive_impl;
-use frame_support::traits::OriginTrait;
 use sp_core::H256;
 use sp_runtime::BuildStorage;
 
@@ -10,7 +9,7 @@ type Block = frame_system::mocking::MockBlock<Test>;
 pub mod api_impl {
     use native::interface;
     use native_api::NativeApi;
-    use sxt_core::native::RowData;
+    use sxt_core::native::{CreateStatementPassBy, RowData};
 
     use super::*;
     pub struct Api;
@@ -18,8 +17,9 @@ pub mod api_impl {
     impl NativeApi for Api {
         fn record_batch_to_onchain(
             row_data: RowData,
+            create_statement: CreateStatementPassBy,
         ) -> Result<sxt_core::native::OnChainTableBytes, sxt_core::native::NativeError> {
-            interface::record_batch_to_onchain(row_data)
+            interface::record_batch_to_onchain(row_data, create_statement)
         }
     }
 

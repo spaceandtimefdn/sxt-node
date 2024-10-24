@@ -243,8 +243,14 @@ pub mod pallet {
         FinalData::<T, I>::insert(&batch_id, quorum.clone());
 
         // Convert from row_data to a serialized OnChainTable
-        let table_bytes = I::record_batch_to_onchain(sxt_core::native::RowData { row_data: data })
-            .map_err(|e| Error::<T, I>::ParseTableError)?;
+        let create_statement = pallet_tables::Schemas::<T>::get(&table.namespace, &table.name)
+            .expect("we've already validated that schema exists");
+
+        let table_bytes = I::record_batch_to_onchain(
+            sxt_core::native::RowData { row_data: data },
+            sxt_core::native::CreateStatementPassBy { create_statement },
+        )
+        .map_err(|_| Error::<T, I>::ParseTableError)?;
 
         // Deserialize into a usable OnChainTable
         let oc_table =
