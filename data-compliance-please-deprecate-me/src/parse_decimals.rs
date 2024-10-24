@@ -1,12 +1,10 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use arrow::array::{ArrayRef, StringArray};
-use arrow::compute::{cast_with_options, CastOptions};
-use arrow::datatypes::DataType as ArrowDataType;
+use arrow::array::{ArrayRef, Decimal256Array, GenericStringArray, OffsetSizeTrait};
+use arrow::datatypes::{i256, DataType as ArrowDataType};
 use arrow::error::ArrowError;
-use arrow::util::display::FormatOptions;
-use bigdecimal::{BigDecimal, ParseBigDecimalError};
+use bigdecimal::{BigDecimal, ParseBigDecimalError, Signed};
 use snafu::Snafu;
 use sqlparser::ast::{DataType as SqlparserDataType, ExactNumberInfo};
 
@@ -42,6 +40,49 @@ impl From<ArrowError> for ParseDecimalsError {
     }
 }
 
+/// Casting a [`StringArray`] or [`LargeStringArray`] to a vector of [`Option<i256>`]s.
+fn string_array_to_i256<O: OffsetSizeTrait>(
+    column: ArrayRef,
+    scale: i8,
+) -> Result<Vec<Option<i256>>, ParseBigDecimalError> {
+    column
+        .as_any()
+        .downcast_ref::<GenericStringArray<O>>()
+        .unwrap()
+        .iter()
+        .map(|maybe_string| {
+            maybe_string
+                .map(|string| -> Result<i256, ParseBigDecimalError> {
+                    let (bigint, _) = BigDecimal::from_str(string)?
+                        .normalized()
+                        .with_scale(scale as i64)
+                        .into_bigint_and_exponent();
+                    let string_representation = bigint.to_str_radix(10);
+                    let truncated_string_representation: String = if bigint.is_negative() {
+                        let actual_precision = string_representation.len() - 1;
+                        let num_skipped_chars =
+                            (actual_precision as i8 - MAX_PRECISION as i8 + 1i8).max(1) as usize;
+                        std::iter::once('-')
+                            .chain(string_representation.chars().skip(num_skipped_chars))
+                            .collect()
+                    } else {
+                        let actual_precision = string_representation.len();
+                        let num_skipped_chars =
+                            (actual_precision as i8 - MAX_PRECISION as i8).max(0) as usize;
+                        string_representation
+                            .chars()
+                            .skip(num_skipped_chars)
+                            .collect()
+                    };
+                    Ok(i256::from_string(&truncated_string_representation).expect(
+                        "previous string representation minus one digit should still be valid",
+                    ))
+                })
+                .transpose()
+        })
+        .collect::<Result<Vec<_>, ParseBigDecimalError>>()
+}
+
 /// Returns the provided column with strings parsed to decimals if the column type is string and
 /// the target type is decimal.
 ///
@@ -52,7 +93,7 @@ pub fn column_parse_decimals_fallible(
 ) -> Result<ArrayRef, ParseDecimalsError> {
     match (column.data_type(), target_type) {
         (
-            ArrowDataType::Utf8,
+            ArrowDataType::Utf8 | ArrowDataType::LargeUtf8,
             SqlparserDataType::Numeric(number_info)
             | SqlparserDataType::Decimal(number_info)
             | SqlparserDataType::BigNumeric(number_info)
@@ -67,45 +108,23 @@ pub fn column_parse_decimals_fallible(
                 }
             };
 
-            // bigdecimal can parse scientific notation
-            //
-            // Parsing w/ both bigdecimal then casting w/ arrow is a bit redundant.
-            // However, we've had issues trying to convert from bigdecimals to arrow i256 before.
-            let column: ArrayRef = Arc::new(StringArray::from_iter(
-                column
-                    .as_any()
-                    .downcast_ref::<StringArray>()
-                    .unwrap()
-                    .iter()
-                    .map(|maybe_string| {
-                        maybe_string
-                            .map(|string| {
-                                BigDecimal::from_str(string).map(|decimal| decimal.to_string())
-                            })
-                            .transpose()
-                    })
-                    .collect::<Result<Vec<_>, ParseBigDecimalError>>()?,
-            ));
-
-            // Casting to p+1 avoids an arrow error that was only recently fixed (not released)
-            // https://github.com/apache/arrow-rs/issues/5876
-            let column = cast_with_options(
-                &column,
-                &ArrowDataType::Decimal256(precision + 1, scale + 1),
-                &CastOptions {
-                    safe: false,
-                    format_options: FormatOptions::new(),
-                },
-            )?;
-
-            Ok(cast_with_options(
-                &column,
-                &ArrowDataType::Decimal256(precision, scale),
-                &CastOptions {
-                    safe: false,
-                    format_options: FormatOptions::new(),
-                },
-            )?)
+            match column.data_type() {
+                ArrowDataType::Utf8 => {
+                    let column: ArrayRef = Arc::new(
+                        Decimal256Array::from_iter(string_array_to_i256::<i32>(column, scale)?)
+                            .with_precision_and_scale(precision, scale)?,
+                    );
+                    Ok(column)
+                }
+                ArrowDataType::LargeUtf8 => {
+                    let column: ArrayRef = Arc::new(
+                        Decimal256Array::from_iter(string_array_to_i256::<i64>(column, scale)?)
+                            .with_precision_and_scale(precision, scale)?,
+                    );
+                    Ok(column)
+                }
+                _ => unreachable!(),
+            }
         }
         _ => Ok(column),
     }
@@ -127,17 +146,17 @@ pub fn column_parse_decimals_unchecked(
 mod tests {
     use std::sync::Arc;
 
-    use arrow::array::{Decimal256Array, StringArray};
+    use arrow::array::{Decimal256Array, LargeStringArray, StringArray};
     use arrow::datatypes::i256;
 
     use super::*;
 
     #[test]
-    fn we_can_parse_decimals() {
+    fn we_can_parse_decimals_without_truncation() {
         let max_number = "9".repeat(75);
         let mut min_number = max_number.clone();
         min_number.insert(0, '-');
-        let column: ArrayRef = Arc::new(StringArray::from_iter_values([
+        let column: ArrayRef = Arc::new(LargeStringArray::from_iter_values([
             "0",
             &max_number,
             &min_number,
@@ -160,10 +179,8 @@ mod tests {
             &expected
         );
 
-        let column: ArrayRef = Arc::new(StringArray::from_iter_values(["0", "-10.5", "2e4"]));
-
+        let column: ArrayRef = Arc::new(LargeStringArray::from_iter_values(["0", "-10.5", "2e4"]));
         let data_type = SqlparserDataType::Decimal(ExactNumberInfo::PrecisionAndScale(10, 2));
-
         let expected: ArrayRef = Arc::new(
             Decimal256Array::from_iter_values([
                 i256::from_i128(0),
@@ -178,12 +195,36 @@ mod tests {
             &column_parse_decimals_unchecked(column, &data_type),
             &expected
         );
+
+        // Trailing zeros && rounding
+        let column: ArrayRef = Arc::new(StringArray::from_iter_values([
+            "0.000",
+            "-10.5000000000",
+            "2.00000e-4",
+        ]));
+        let data_type = SqlparserDataType::Decimal(ExactNumberInfo::PrecisionAndScale(10, 3));
+        let expected: ArrayRef = Arc::new(
+            Decimal256Array::from_iter_values([
+                i256::from_i128(0),
+                i256::from_i128(-10500),
+                i256::from_i128(0),
+            ])
+            .with_precision_and_scale(10, 3)
+            .unwrap(),
+        );
+        assert_eq!(
+            &column_parse_decimals_unchecked(column, &data_type),
+            &expected
+        );
     }
 
     #[test]
     fn we_cannot_parse_nondecimals() {
-        let column: ArrayRef =
-            Arc::new(StringArray::from_iter_values(["0", "not a decimal", "200"]));
+        let column: ArrayRef = Arc::new(LargeStringArray::from_iter_values([
+            "0",
+            "not a decimal",
+            "200",
+        ]));
 
         let data_type = SqlparserDataType::Decimal(ExactNumberInfo::PrecisionAndScale(75, 0));
         assert!(matches!(
@@ -193,14 +234,43 @@ mod tests {
     }
 
     #[test]
-    fn we_cannot_parse_out_of_bounds_decimals() {
-        let excessive_precision = "9".repeat(76);
-        let column: ArrayRef = Arc::new(StringArray::from_iter_values([&excessive_precision]));
+    fn we_can_parse_and_truncate_out_of_bounds_decimals() {
+        let excessive_precision = "1234567890".repeat(8);
+        let negative_excessive_precision = format!("-{}", &excessive_precision);
+        let column: ArrayRef = Arc::new(StringArray::from_iter_values([
+            &excessive_precision,
+            &negative_excessive_precision,
+        ]));
 
         let data_type = SqlparserDataType::Numeric(ExactNumberInfo::PrecisionAndScale(75, 0));
-        assert!(matches!(
-            column_parse_decimals_fallible(column, &data_type),
-            Err(ParseDecimalsError::Cast { .. })
-        ));
+        // Truncate the most significant digits
+        let expected_string = format!("{}{}", "67890", "1234567890".repeat(7));
+        let negative_expected_string = format!("-{}", &expected_string);
+        let expected: ArrayRef = Arc::new(
+            Decimal256Array::from_iter_values([
+                i256::from_str(&expected_string).unwrap(),
+                i256::from_str(&negative_expected_string).unwrap(),
+            ])
+            .with_precision_and_scale(75, 0)
+            .unwrap(),
+        );
+
+        assert_eq!(
+            &column_parse_decimals_unchecked(column, &data_type),
+            &expected
+        );
+
+        // Scientific notation
+        let column: ArrayRef = Arc::new(LargeStringArray::from_iter_values(["1e100", "-1e100"]));
+        let expected: ArrayRef = Arc::new(
+            Decimal256Array::from_iter_values([i256::from_i128(0), i256::from_i128(0)])
+                .with_precision_and_scale(75, 0)
+                .unwrap(),
+        );
+
+        assert_eq!(
+            &column_parse_decimals_unchecked(column, &data_type),
+            &expected
+        );
     }
 }
