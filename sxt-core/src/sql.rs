@@ -135,14 +135,9 @@ async fn run() {
                     let namespace = from_utf8(id.namespace.0.as_slice())
                         .expect("Genesis tables must have valid namespace")
                         .to_uppercase();
-                    create_table_with_snapshot(
-                        &mut client,
-                        sql.to_string(),
-                        base_path,
-                        &namespace,
-                    )
-                    .await
-                    .expect("Loading historical data for genesis tables must succeed");
+                    create_table_with_snapshot(&mut client, sql.to_string(), base_path, &namespace)
+                        .await
+                        .expect("Loading historical data for genesis tables must succeed");
                 }
                 result = Ok(())
             } else {
