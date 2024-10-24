@@ -4,7 +4,7 @@ use alloc::sync::Arc;
 #[cfg(feature = "std")]
 use arrow::array::{ArrayRef, Decimal256Array};
 #[cfg(feature = "std")]
-use arrow::datatypes::DataType as ArrowDataType;
+use arrow::datatypes::{i256, DataType as ArrowDataType};
 use sqlparser::ast::{ColumnDef, DataType as SqlparserDataType, ExactNumberInfo};
 
 /// Maximum decimal precision supported by proof of sql.
@@ -54,15 +54,31 @@ pub fn column_def_clamp_precision(column: ColumnDef) -> ColumnDef {
 #[cfg(feature = "std")]
 pub fn column_clamp_precision(column: ArrayRef) -> ArrayRef {
     match column.data_type() {
-        ArrowDataType::Decimal256(precision, scale) if precision > &MAX_PRECISION => Arc::new(
-            column
-                .as_any()
-                .downcast_ref::<Decimal256Array>()
-                .unwrap()
-                .clone()
-                .with_precision_and_scale(MAX_PRECISION, *scale)
-                .expect("this error is exceedingly unlikely, only occurs if the scale of the source column is 76"),
-        ),
+        ArrowDataType::Decimal256(precision, scale) if precision > &MAX_PRECISION => {
+            Arc::new(Decimal256Array::from_iter(
+                column
+                    .as_any()
+                    .downcast_ref::<Decimal256Array>()
+                    .unwrap()
+                    .iter()
+                    .map(|maybe_int| {
+                        maybe_int.map(|int| {
+                            let string_representation = int.to_string();
+
+                            let truncated_string_representation: String = if int.is_negative() {
+                                let actual_precision = string_representation.len() - 1;
+                                std::iter::once('-').chain(string_representation.chars().skip(1).skip((actual_precision as i8 - MAX_PRECISION as i8).max(0) as usize)).collect()
+                            } else {
+                                let actual_precision = string_representation.len();
+                                string_representation.chars().skip((actual_precision as i8 - MAX_PRECISION as i8).max(0) as usize).collect()
+                            };
+
+                            i256::from_string(&truncated_string_representation).expect("previous string representation minus one digit should still be valid")
+                        })
+                    }),
+            ).with_precision_and_scale(MAX_PRECISION, *scale)
+                .expect("this error is exceedingly unlikely, only occurs if the scale of the source column is 76"))
+        }
         _ => column,
     }
 }
@@ -148,6 +164,55 @@ mod std_tests {
             Decimal256Array::from_iter_values([0, 100, -10000].map(i256::from))
                 .with_precision_and_scale(75, 5)
                 .unwrap(),
+        );
+
+        assert_eq!(&result, &expected);
+    }
+
+    #[test]
+    fn we_can_truncate_decimal_columns() {
+        let positive: String = std::iter::repeat("123456790")
+            .flat_map(str::chars)
+            .take(76)
+            .collect();
+        let mut negative = positive.clone();
+        negative.insert(0, '-');
+        let max = "57896044618658097711785492504343953926634992332820282019728792003956564819967";
+        let min = "-57896044618658097711785492504343953926634992332820282019728792003956564819968";
+        let column: ArrayRef = Arc::new(
+            Decimal256Array::from_iter_values([
+                i256::from(0),
+                negative.parse().unwrap(),
+                positive.parse().unwrap(),
+                max.parse().unwrap(),
+                min.parse().unwrap(),
+            ])
+            .with_precision_and_scale(76, 0)
+            .unwrap(),
+        );
+
+        let result = column_clamp_precision(column);
+        let expected_positive: String = std::iter::repeat("123456790")
+            .flat_map(str::chars)
+            .skip(1)
+            .take(75)
+            .collect();
+        let mut expected_negative = expected_positive.clone();
+        expected_negative.insert(0, '-');
+        let expected_max =
+            "896044618658097711785492504343953926634992332820282019728792003956564819967";
+        let expected_min =
+            "-896044618658097711785492504343953926634992332820282019728792003956564819968";
+        let expected: ArrayRef = Arc::new(
+            Decimal256Array::from_iter_values([
+                i256::from(0),
+                expected_negative.parse().unwrap(),
+                expected_positive.parse().unwrap(),
+                expected_max.parse().unwrap(),
+                expected_min.parse().unwrap(),
+            ])
+            .with_precision_and_scale(75, 0)
+            .unwrap(),
         );
 
         assert_eq!(&result, &expected);
