@@ -1,3 +1,12 @@
+# [0.37.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.36.1...v0.37.0) (2024-10-24)
+
+
+### Features
+
+* fix slight sql problem ([ab47202](https://github.com/spaceandtimelabs/sxt-node/commit/ab47202be0b4722b243dd0afd0817cbd19c59386))
+
+
+
 ## [0.36.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.36.0...v0.36.1) (2024-10-24)
 
 
@@ -34,17 +43,6 @@
 ### Features
 
 * process creation of empty tables in tables pallet ([5365ef1](https://github.com/spaceandtimelabs/sxt-node/commit/5365ef1c4c0b07c1f03ee7e9fd640388df3bc858))
-
-
-
-## [0.34.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.34.0...v0.34.1) (2024-10-23)
-
-
-### Bug Fixes
-
-* allow timestamps without timezone in DDL ([592223c](https://github.com/spaceandtimelabs/sxt-node/commit/592223cef74552674179a820e7b1a86c08f3b0d4))
-* map Int64 columns to proof-of-sql BigInt ([309a85c](https://github.com/spaceandtimelabs/sxt-node/commit/309a85cd7ce853ef77b3f353693d54d3028e13a9))
-* preserve record batch timezone existence in on-chain-table ([90122de](https://github.com/spaceandtimelabs/sxt-node/commit/90122de511e40d3251027d77fe09f8e9a4821285))
 
 
 
