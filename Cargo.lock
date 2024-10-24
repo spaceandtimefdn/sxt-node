@@ -2324,6 +2324,7 @@ dependencies = [
  "arrow",
  "bigdecimal 0.4.5",
  "indexmap 2.5.0",
+ "num-bigint",
  "snafu",
  "sqlparser",
 ]
