@@ -37,3 +37,8 @@ pub use record_batch_map::{
     MapOrTargetTypeError,
     TargetTypeNotFound,
 };
+
+#[cfg(feature = "std")]
+mod ddl_to_target_types;
+#[cfg(feature = "std")]
+pub use ddl_to_target_types::{all_target_types_for_sql, target_types_for_table};
