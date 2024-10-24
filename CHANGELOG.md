@@ -1,3 +1,12 @@
+# [0.39.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.38.0...v0.39.0) (2024-10-24)
+
+
+### Features
+
+* add `column_truncate_decimals` to `data-compliance` ([7d19e5d](https://github.com/spaceandtimelabs/sxt-node/commit/7d19e5dfce5b5e7c1e83f445a0dd726454dbb02b))
+
+
+
 # [0.38.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.37.3...v0.38.0) (2024-10-24)
 
 
@@ -26,15 +35,6 @@
 
 
 ## [0.37.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.37.0...v0.37.1) (2024-10-24)
-
-
-
-# [0.37.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.36.1...v0.37.0) (2024-10-24)
-
-
-### Features
-
-* fix slight sql problem ([ab47202](https://github.com/spaceandtimelabs/sxt-node/commit/ab47202be0b4722b243dd0afd0817cbd19c59386))
 
 
 
