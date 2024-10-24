@@ -1,3 +1,7 @@
+## [0.37.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.37.0...v0.37.1) (2024-10-24)
+
+
+
 # [0.37.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.36.1...v0.37.0) (2024-10-24)
 
 
@@ -34,15 +38,6 @@
 ### Bug Fixes
 
 * use proof-of-sql 0.33 generated public parameters ([048e61c](https://github.com/spaceandtimelabs/sxt-node/commit/048e61c7198107efabb4068e4461210b258baa0d))
-
-
-
-# [0.35.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.34.1...v0.35.0) (2024-10-23)
-
-
-### Features
-
-* process creation of empty tables in tables pallet ([5365ef1](https://github.com/spaceandtimelabs/sxt-node/commit/5365ef1c4c0b07c1f03ee7e9fd640388df3bc858))
 
 
 
