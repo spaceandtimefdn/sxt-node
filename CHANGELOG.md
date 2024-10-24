@@ -1,3 +1,7 @@
+## [0.36.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.36.0...v0.36.1) (2024-10-24)
+
+
+
 # [0.36.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.35.1...v0.36.0) (2024-10-23)
 
 
@@ -41,21 +45,6 @@
 * allow timestamps without timezone in DDL ([592223c](https://github.com/spaceandtimelabs/sxt-node/commit/592223cef74552674179a820e7b1a86c08f3b0d4))
 * map Int64 columns to proof-of-sql BigInt ([309a85c](https://github.com/spaceandtimelabs/sxt-node/commit/309a85cd7ce853ef77b3f353693d54d3028e13a9))
 * preserve record batch timezone existence in on-chain-table ([90122de](https://github.com/spaceandtimelabs/sxt-node/commit/90122de511e40d3251027d77fe09f8e9a4821285))
-
-
-
-# [0.34.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.33.0...v0.34.0) (2024-10-23)
-
-
-### Bug Fixes
-
-* force proof-of-sql and postgres compliance on insert data ([58e64f9](https://github.com/spaceandtimelabs/sxt-node/commit/58e64f9c4c02a692cf5e608f88045d3245cf77cf))
-* force proof-of-sql compliance on table definitions ([fe54fbc](https://github.com/spaceandtimelabs/sxt-node/commit/fe54fbce38e6eaf60cd440ee186475f92fe615f8))
-
-
-### Features
-
-* make non-arrow data-compliance functions no_std compatible ([2adf5c3](https://github.com/spaceandtimelabs/sxt-node/commit/2adf5c3afa7471ad3f74b03c4b8aab145339dad1))
 
 
 
