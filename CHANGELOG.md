@@ -1,3 +1,12 @@
+# [0.38.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.37.3...v0.38.0) (2024-10-24)
+
+
+### Features
+
+* add utility for extracting target types from ddl ([563c0eb](https://github.com/spaceandtimelabs/sxt-node/commit/563c0eb7029f96bb52cf6e71f1df3af841887ea0))
+
+
+
 ## [0.37.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.37.2...v0.37.3) (2024-10-24)
 
 
@@ -26,10 +35,6 @@
 ### Features
 
 * fix slight sql problem ([ab47202](https://github.com/spaceandtimelabs/sxt-node/commit/ab47202be0b4722b243dd0afd0817cbd19c59386))
-
-
-
-## [0.36.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.36.0...v0.36.1) (2024-10-24)
 
 
 
