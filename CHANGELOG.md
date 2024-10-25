@@ -1,3 +1,12 @@
+# [0.41.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.40.0...v0.41.0) (2024-10-25)
+
+
+### Features
+
+* apply data compliance with target types to realtime data ([2a4f5d1](https://github.com/spaceandtimelabs/sxt-node/commit/2a4f5d197c2424ea49f7724cbae568384619483b))
+
+
+
 # [0.40.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.39.0...v0.40.0) (2024-10-25)
 
 
@@ -37,15 +46,6 @@
 ### Bug Fixes
 
 * truncate decimal columns in column_clamp_precision ([fb99b40](https://github.com/spaceandtimelabs/sxt-node/commit/fb99b4039982f3447e10fce542ed3936e106cc0a))
-
-
-
-## [0.37.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.37.1...v0.37.2) (2024-10-24)
-
-
-### Bug Fixes
-
-* truncate in data-compliance decimal parsing ([b877cca](https://github.com/spaceandtimelabs/sxt-node/commit/b877cca34f7f2f0ead2e84acb4dd4e92465884fa))
 
 
 
