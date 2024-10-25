@@ -117,7 +117,12 @@ impl CommitmentParser {
                 .map(|pathbuf| {
                     let SingleCommit { ident, commit } =
                         CommitmentParser::single_commit_from_path_buf(pathbuf.clone())
-                            .unwrap_or_else(|e| panic!("failed to parse commit for {:?} with error {:?}", pathbuf, e));
+                            .unwrap_or_else(|e| {
+                                panic!(
+                                    "failed to parse commit for {:?} with error {:?}",
+                                    pathbuf, e
+                                )
+                            });
                     (ident, commit)
                 })
                 .collect();
