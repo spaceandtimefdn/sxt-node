@@ -1,3 +1,18 @@
+# [0.40.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.39.0...v0.40.0) (2024-10-25)
+
+
+### Bug Fixes
+
+* Ensure Data Loader only loads tables we want ([03f6983](https://github.com/spaceandtimelabs/sxt-node/commit/03f698313ca2f53d4fc161be3c96089a353e1779))
+
+
+### Features
+
+* Handle Genesis Tables via storage client in FlightSQL Task ([c0bbd50](https://github.com/spaceandtimelabs/sxt-node/commit/c0bbd50b2a80a1f29128256c81e28574adc1ba3d))
+* Instead of using subxt for listening to the network, use the ([c3e47a2](https://github.com/spaceandtimelabs/sxt-node/commit/c3e47a269a778384b626419678c03cd4d9d44d56))
+
+
+
 # [0.39.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.38.0...v0.39.0) (2024-10-24)
 
 
@@ -31,10 +46,6 @@
 ### Bug Fixes
 
 * truncate in data-compliance decimal parsing ([b877cca](https://github.com/spaceandtimelabs/sxt-node/commit/b877cca34f7f2f0ead2e84acb4dd4e92465884fa))
-
-
-
-## [0.37.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.37.0...v0.37.1) (2024-10-24)
 
 
 
