@@ -126,6 +126,9 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// Change this to adjust the block time.
 pub const MILLISECS_PER_BLOCK: u64 = 6000;
 
+// Set the Block Length to a maximum of 15 Mebibytes
+pub const MAX_BLOCK_SIZE: u32 = 15 * 1024 * 1024;
+
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
 pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
@@ -149,14 +152,14 @@ const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 2400;
     pub const Version: RuntimeVersion = VERSION;
-    /// We allow for 2 seconds of compute with a 6 second average block time.
+    /// We allow for 3 seconds of compute with a 6 second average block time.
     pub BlockWeights: frame_system::limits::BlockWeights =
         frame_system::limits::BlockWeights::with_sensible_defaults(
-            Weight::from_parts(2u64 * WEIGHT_REF_TIME_PER_SECOND, u64::MAX),
+            Weight::from_parts(3u64 * WEIGHT_REF_TIME_PER_SECOND, u64::MAX),
             NORMAL_DISPATCH_RATIO,
         );
     pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
-        ::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+        ::max_with_normal_ratio(MAX_BLOCK_SIZE, NORMAL_DISPATCH_RATIO);
     pub const SS58Prefix: u8 = 42;
 }
 
