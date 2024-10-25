@@ -4,7 +4,7 @@
 /// Native wrapper around the indexing pallet, this type should be used in the construct_runtime! macro rather than the basic pallet
 pub mod native_pallet_indexing {
     use native_api::NativeApi;
-    use sxt_core::native::{NativeError, OnChainTableBytes};
+    use sxt_core::native::{CreateStatementPassBy, NativeError, OnChainTableBytes};
 
     /// What we will implement our API on
     pub struct Api;
@@ -12,8 +12,9 @@ pub mod native_pallet_indexing {
     impl NativeApi for Api {
         fn record_batch_to_onchain(
             row_data: sxt_core::native::RowData,
+            create_statement: CreateStatementPassBy,
         ) -> Result<OnChainTableBytes, NativeError> {
-            native::interface::record_batch_to_onchain(row_data)
+            native::interface::record_batch_to_onchain(row_data, create_statement)
         }
     }
 

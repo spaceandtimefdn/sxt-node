@@ -4,6 +4,14 @@ use sp_core::RuntimeDebug;
 use sp_runtime_interface::pass_by::PassByCodec;
 
 use crate::indexing;
+use crate::tables::CreateStatement;
+
+/// Wrapper around [`CreateStatement`], needed to pass to pass the WASM boundary easily.
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, PassByCodec)]
+pub struct CreateStatementPassBy {
+    /// A create statement represented as a string, of bytes.
+    pub create_statement: CreateStatement,
+}
 
 /// Wrapper around sxt_core::indexing::RowData, needed to pass the WASM boundary easily
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, PassByCodec)]
@@ -29,6 +37,12 @@ pub enum NativeError {
 
     /// Error reading record batch
     BatchReadError,
+
+    /// Failed to parse ddl provided for record batch
+    DdlParseError,
+
+    /// Failed to parse string column in batch defined as decimal to decimal
+    DecimalParseError,
 
     /// Error converting to an OnChainTable from a record batch
     OnChainTableConversionError,

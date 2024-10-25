@@ -28,6 +28,9 @@ futures = { features = ["thread-pool"], workspace = true, optional = true }
 postcard = "1.0"
 sxt-core.workspace = true
 
+[dev-dependencies]
+proof-of-sql = { workspace = true }
+
 [features]
 default = ["std"]
 std = [

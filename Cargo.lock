@@ -6075,6 +6075,7 @@ dependencies = [
  "on-chain-table",
  "parity-scale-codec",
  "postcard",
+ "proof-of-sql",
  "proof-of-sql-parser",
  "scale-info",
  "sp-core",
