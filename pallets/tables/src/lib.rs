@@ -16,6 +16,7 @@ pub use weights::*;
 #[frame_support::pallet]
 pub mod pallet {
     use commitment_sql::CreateTableAndCommitmentMetadata;
+    use frame_support::dispatch::DispatchResult;
     use frame_support::pallet_prelude::{StorageDoubleMap, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
@@ -121,6 +122,12 @@ pub mod pallet {
 
         /// Failed to parse Create Statement DDL
         CreateStatementParseError,
+
+        /// Not all schemas were removed
+        NotAllSchemasRemovedError,
+
+        /// Not all commitments were removed
+        NotAllCommitmentsRemovedError,
     }
 
     #[pallet::call]
@@ -203,6 +210,50 @@ pub mod pallet {
                 source_and_mode,
                 table_list: tables,
             });
+
+            Ok(())
+        }
+
+        /// Manually reset the genesis for manual loading
+        #[pallet::call_index(2)]
+        #[pallet::weight(<T as Config>::WeightInfo::reset_commitments_and_schemas())]
+        pub fn manual_genesis(origin: OriginFor<T>) -> DispatchResult {
+            let _ = ensure_root(origin)?;
+
+            let schema_res = Schemas::<T>::clear(1000, None);
+            ensure!(
+                schema_res.maybe_cursor.is_none(),
+                Error::<T>::NotAllSchemasRemovedError
+            );
+
+            let commit_res = pallet_commitments::CommitmentStorageMap::<T>::clear(1000, None);
+            ensure!(
+                commit_res.maybe_cursor.is_none(),
+                Error::<T>::NotAllCommitmentsRemovedError
+            );
+
+            GenesisTables::<T>::iter()
+            .map(|(source_and_mode, genesis_list)| {
+                // Process the genesis list and map over each table
+                let tables_with_meta_columns = genesis_list
+                    .tables
+                    .iter()
+                    .map(|GenesisTable { statement, url, identifier }| {
+                        Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone());
+                        let create_table = create_statement_to_sqlparser(statement.clone())
+                            .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                        let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } =
+                            pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(create_table)?;
+                        let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
+                            .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                        Ok((identifier.clone(), statement_with_metadata))
+                    })
+                    .collect::<Result<Vec<(TableIdentifier, CreateStatement)>, DispatchError>>()?;
+                let table_list = UpdateTableList::try_from(tables_with_meta_columns).expect("this should always work");
+                Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode.clone(), table_list));
+                Ok::<(), DispatchError>(())
+            })
+            .collect::<Result<Vec<()>, DispatchError>>()?;
 
             Ok(())
         }

@@ -40,6 +40,9 @@ pub trait WeightInfo {
 
 	/// TODO
 	fn create_tables_with_snapshot_and_commitment() -> Weight;
+
+	/// TODO
+	fn reset_commitments_and_schemas() -> Weight;
 }
 
 /// TODO: add docs
@@ -52,6 +55,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn create_tables_with_snapshot_and_commitment() -> Weight {
 		Weight::from_parts(0,0)
 	}
+
+	fn reset_commitments_and_schemas() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+
 }
 
 // For backwards compatibility and tests
@@ -62,5 +70,9 @@ impl WeightInfo for () {
 
 	fn create_tables_with_snapshot_and_commitment() -> Weight {
 		Weight::from_parts(0,0)
+	}
+
+	fn reset_commitments_and_schemas() -> Weight {
+		Weight::from_parts(0, 0)
 	}
 }
