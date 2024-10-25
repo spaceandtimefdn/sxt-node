@@ -14,6 +14,7 @@ pub use column_type_conversion::UnsupportedColumnType;
 mod metadata_prefix;
 
 mod row_number_column;
+pub use row_number_column::row_number_column_def;
 
 mod validated_create_table;
 pub use validated_create_table::{InvalidCreateTable, ValidatedCreateTable};

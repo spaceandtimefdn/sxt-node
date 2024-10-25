@@ -240,8 +240,12 @@ pub mod pallet {
                     .iter()
                     .map(|GenesisTable { statement, url, identifier }| {
                         Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone());
-                        let create_table = create_statement_to_sqlparser(statement.clone())
+                        let mut create_table = create_statement_to_sqlparser(statement.clone())
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+                        let index = create_table.columns.iter().position(|x| *x == commitment_sql::row_number_column_def()).expect("must have");
+                        create_table.columns.remove(index);
+
                         let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } =
                             pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(create_table)?;
                         let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
@@ -249,6 +253,7 @@ pub mod pallet {
                         Ok((identifier.clone(), statement_with_metadata))
                     })
                     .collect::<Result<Vec<(TableIdentifier, CreateStatement)>, DispatchError>>()?;
+        
                 let table_list = UpdateTableList::try_from(tables_with_meta_columns).expect("this should always work");
                 Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode.clone(), table_list));
                 Ok::<(), DispatchError>(())
