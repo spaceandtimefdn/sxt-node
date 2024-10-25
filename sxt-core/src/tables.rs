@@ -111,7 +111,49 @@ pub struct SourceAndMode {
     pub mode: IndexerMode,
 }
 
-/// Two megabytes
+/// An object to contain everything needed to create a table at genesis
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Default,
+    Serialize,
+    Deserialize,
+)]
+pub struct GenesisTable {
+    /// A DDL Statement to create the table
+    pub statement: CreateStatement,
+    /// The Base URL of the snapshot
+    pub url: SnapshotUrl,
+    /// The name and namespace for the table
+    pub identifier: TableIdentifier,
+}
+
+/// A List of Genesis Tables
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Default,
+    Serialize,
+    Deserialize,
+)]
+pub struct GenesisTableList {
+    /// A list of Genesis Tables
+    pub tables: BoundedVec<GenesisTable, ConstU32<128>>,
+}
+
+/// 500,000 Bytes
 pub const FIVE_HUNDRED_KB: u32 = 500_000;
 
 /// Arrow schema represented by an ipc buffer https://arrow.apache.org/rust/arrow_ipc/convert/fn.try_schema_from_ipc_buffer.html

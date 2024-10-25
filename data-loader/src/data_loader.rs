@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::env;
-use std::error::Error;
 use std::time::Duration;
 
 use deadpool_postgres::{Manager, ManagerConfig, Object, Pool, RecyclingMethod};

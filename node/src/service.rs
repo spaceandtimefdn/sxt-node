@@ -263,6 +263,18 @@ pub fn new_full<
             telemetry.as_ref().map(|x| x.handle()),
         );
 
+        // Only run the flightsql client if the node is a validator and we're running on something
+        // other than the dev spec. The dev spec is used for CI tests so it must be able to run without
+        // FlightSQL. This saves a significant amount of storage on nodes that only need
+        // rpc functionality
+        if role.is_authority() && !is_dev_mode {
+            sxt_core::sql::spawn_flightsql_tasks::<FullClient, Block, FullBackend>(
+                "flightsql-task",
+                &task_manager.spawn_essential_handle(),
+                client.clone(),
+            );
+        }
+
         let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 
         let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(
@@ -352,17 +364,6 @@ pub fn new_full<
     }
 
     network_starter.start_network();
-
-    // Only run the flightsql client if the node is a validator and we're running on something
-    // other than the dev spec. The dev spec is used for CI tests so it must be able to run without
-    // FlightSQL. This saves a significant amount of storage on nodes that only need
-    // rpc functionality
-    if role.is_authority() && !is_dev_mode {
-        sxt_core::sql::spawn_flightsql_tasks(
-            "flightsql-task",
-            &task_manager.spawn_essential_handle(),
-        );
-    }
 
     Ok(task_manager)
 }
