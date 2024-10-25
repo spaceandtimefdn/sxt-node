@@ -1,15 +1,12 @@
 //! TODO make this better
 //!
 
-use std::fs::read_to_string;
 use std::path::PathBuf;
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::sp_runtime::Serialize;
 use frame_support::BoundedVec;
-use proof_of_sql_commitment_map::generic_over_commitment::OptionType;
 use proof_of_sql_commitment_map::{
-    PerCommitmentScheme,
     TableCommitmentBytes,
     TableCommitmentBytesPerCommitmentScheme,
     TableCommitmentMaxLength,

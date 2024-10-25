@@ -11650,6 +11650,7 @@ dependencies = [
  "on-chain-table",
  "parity-scale-codec",
  "postcard",
+ "proof-of-sql",
  "sc-client-api",
  "scale-info",
  "serde",

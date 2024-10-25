@@ -19,18 +19,15 @@ pub mod pallet {
     use frame_support::pallet_prelude::{StorageDoubleMap, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
-    use proof_of_sql_commitment_map::generic_over_commitment::{ConcreteType, OptionType};
-    use proof_of_sql_commitment_map::{
-        PerCommitmentScheme,
-        TableCommitmentBytes,
-        TableCommitmentBytesPerCommitmentScheme,
-    };
+    use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
     use sp_runtime::Vec;
     use sxt_core::permissions::*;
     use sxt_core::tables::{
         create_statement_to_sqlparser,
         sqlparser_to_create_statement,
         CreateStatement,
+        GenesisTable,
+        GenesisTableList,
         IndexerMode,
         SnapshotUrl,
         Source,
@@ -82,6 +79,11 @@ pub mod pallet {
         IndexerMode,
         TableIdentifier,
     >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn genesis_tables)]
+    pub type GenesisTables<T: Config> =
+        StorageMap<_, Blake2_128Concat, SourceAndMode, GenesisTableList>;
 
     #[pallet::storage]
     #[pallet::getter(fn schemas)]
@@ -256,7 +258,7 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            let tables_with_meta: Vec<_> = self
+            let tables_with_meta: Vec<GenesisTable> = self
                 .tables
                 .iter()
                 .map(|(sm, ident, stmnt, commit, snapshot)| {
@@ -268,19 +270,25 @@ pub mod pallet {
                         snapshot.clone(),
                     )
                     .unwrap();
-                    (ident.clone(), statement, commit.clone(), snapshot.clone())
+                    GenesisTable {
+                        statement,
+                        url: snapshot.clone(),
+                        identifier: ident.clone(),
+                    }
                 })
                 .collect();
 
-            let tables = CreateTableList::try_from(tables_with_meta)
-                .expect("Genesis table creation can not fail");
-            pallet::Pallet::<T>::deposit_event(Event::<T>::TablesCreatedWithCommitments {
-                source_and_mode: SourceAndMode {
+            let list = GenesisTableList {
+                tables: BoundedVec::try_from(tables_with_meta).unwrap(),
+            };
+
+            GenesisTables::<T>::insert(
+                SourceAndMode {
                     source: Source::Ethereum,
                     mode: IndexerMode::Core,
                 },
-                table_list: tables,
-            });
+                list,
+            );
         }
     }
 }

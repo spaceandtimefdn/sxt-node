@@ -1,21 +1,19 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use std::env;
 use std::sync::Arc;
-use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
-use futures::channel::mpsc;
+
 use futures::FutureExt;
-use sc_client_api::{Backend, BlockBackend, BlockchainEvents, PreCommitActions};
+use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
 use sc_service::error::Error as ServiceError;
 use sc_service::{Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
-use sc_transaction_pool_api::{ImportNotificationStream, OffchainTransactionPoolFactory};
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sxt_runtime::opaque::Block;
-use sxt_runtime::{self, Hash, RuntimeApi};
+use sxt_runtime::{self, RuntimeApi};
 
 pub(crate) type FullClient = sc_service::TFullClient<
     Block,
@@ -269,11 +267,11 @@ pub fn new_full<
         // other than the dev spec. The dev spec is used for CI tests so it must be able to run without
         // FlightSQL. This saves a significant amount of storage on nodes that only need
         // rpc functionality
-        if role.is_authority() {
-            sxt_core::sql::spawn_flightsql_tasks::<FullClient, Block>(
+        if role.is_authority() && !is_dev_mode {
+            sxt_core::sql::spawn_flightsql_tasks::<FullClient, Block, FullBackend>(
                 "flightsql-task",
                 &task_manager.spawn_essential_handle(),
-                client.clone()
+                client.clone(),
             );
         }
 
