@@ -214,23 +214,40 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Manually reset the genesis for manual loading
-        #[pallet::call_index(2)]
-        #[pallet::weight(<T as Config>::WeightInfo::reset_commitments_and_schemas())]
-        pub fn manual_genesis(origin: OriginFor<T>) -> DispatchResult {
+        /// Clear schemas and tables from chain state for all namespaces and identifiers
+        #[pallet::call_index(3)]
+        #[pallet::weight(<T as Config>::WeightInfo::clear_tables())]
+        pub fn clear_tables(origin: OriginFor<T>) -> DispatchResult {
+            // Only sudo can call this
             let _ = ensure_root(origin)?;
 
+            // Clear up to 1000 schemas
             let schema_res = Schemas::<T>::clear(1000, None);
+
+            // Ensure it's been cleared, if this fails we can call it again and do the next 1000
             ensure!(
                 schema_res.maybe_cursor.is_none(),
                 Error::<T>::NotAllSchemasRemovedError
             );
 
+            // Clear 1000
             let commit_res = pallet_commitments::CommitmentStorageMap::<T>::clear(1000, None);
+
+            // Fail if not empty
             ensure!(
                 commit_res.maybe_cursor.is_none(),
                 Error::<T>::NotAllCommitmentsRemovedError
             );
+
+            Ok(())
+        }
+
+        /// Attempts to recreate all tables stored in the genesis, but does not start loading from
+        /// snapshot
+        #[pallet::call_index(2)]
+        #[pallet::weight(<T as Config>::WeightInfo::create_empty_genesis_tables())]
+        pub fn create_empty_genesis_tables(origin: OriginFor<T>) -> DispatchResult {
+            let _ = ensure_root(origin)?;
 
             GenesisTables::<T>::iter()
             .map(|(source_and_mode, genesis_list)| {
@@ -253,7 +270,7 @@ pub mod pallet {
                         Ok((identifier.clone(), statement_with_metadata))
                     })
                     .collect::<Result<Vec<(TableIdentifier, CreateStatement)>, DispatchError>>()?;
-        
+
                 let table_list = UpdateTableList::try_from(tables_with_meta_columns).expect("this should always work");
                 Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode.clone(), table_list));
                 Ok::<(), DispatchError>(())
