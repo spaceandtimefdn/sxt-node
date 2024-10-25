@@ -138,12 +138,13 @@ where
             for table in tables {
                 let sql = from_utf8(table.statement.as_slice()).unwrap();
                 let ns = from_utf8(table.identifier.namespace.as_slice()).unwrap();
-                let url = from_utf8(table.url.as_slice()).unwrap();
                 let name = from_utf8(table.identifier.name.as_slice()).unwrap();
+                let url = format!("{}/{}", from_utf8(table.url.as_slice()).unwrap(), name);
+
                 log::info!(
                     "FlightSQL: Creating Table {ns}.{name} with snapshot: {url} and DDL\n{sql}\n"
                 );
-                create_table_with_snapshot(&mut c, sql, url, ns)
+                create_table_with_snapshot(&mut c, sql, url.as_str(), ns)
                     .await
                     .unwrap();
             }
