@@ -85,6 +85,7 @@ impl CommitmentParser {
         let commit_data = Some(TableCommitmentBytes { data: commit_data });
 
         let (dory, ipa) = match scheme {
+            "dynamic_dory" => (commit_data, None),
             "dory" => (commit_data, None),
             "ipa" => (None, commit_data),
             _ => return Err(CommitmentParserError::InvalidCommitmentScheme),
@@ -116,7 +117,7 @@ impl CommitmentParser {
                 .map(|pathbuf| {
                     let SingleCommit { ident, commit } =
                         CommitmentParser::single_commit_from_path_buf(pathbuf.clone())
-                            .unwrap_or_else(|_| panic!("failed to parse commit for {:?}", pathbuf));
+                            .unwrap_or_else(|e| panic!("failed to parse commit for {:?} with error {:?}", pathbuf, e));
                     (ident, commit)
                 })
                 .collect();
