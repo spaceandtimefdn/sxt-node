@@ -1,3 +1,7 @@
+## [0.41.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.41.0...v0.41.1) (2024-10-25)
+
+
+
 # [0.41.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.40.0...v0.41.0) (2024-10-25)
 
 
@@ -37,15 +41,6 @@
 ### Features
 
 * add utility for extracting target types from ddl ([563c0eb](https://github.com/spaceandtimelabs/sxt-node/commit/563c0eb7029f96bb52cf6e71f1df3af841887ea0))
-
-
-
-## [0.37.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.37.2...v0.37.3) (2024-10-24)
-
-
-### Bug Fixes
-
-* truncate decimal columns in column_clamp_precision ([fb99b40](https://github.com/spaceandtimelabs/sxt-node/commit/fb99b4039982f3447e10fce542ed3936e106cc0a))
 
 
 
