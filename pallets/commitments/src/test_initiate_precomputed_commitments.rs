@@ -1,6 +1,6 @@
 use frame_support::assert_noop;
 use proof_of_sql::base::commitment::TableCommitment;
-use proof_of_sql::proof_primitive::dory::DoryCommitment;
+use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
 use proof_of_sql_commitment_map::{
     CommitmentScheme,
     KeyExistsError,
@@ -21,7 +21,8 @@ fn we_can_initiate_precomputed_commitments() {
         };
 
         let commitment =
-            TableCommitmentBytes::try_from(&TableCommitment::<DoryCommitment>::default()).unwrap();
+            TableCommitmentBytes::try_from(&TableCommitment::<DynamicDoryCommitment>::default())
+                .unwrap();
 
         let per_commitment_scheme = TableCommitmentBytesPerCommitmentScheme {
             ipa: None,
@@ -56,7 +57,8 @@ fn we_cannot_initiate_commitments_if_table_already_exists() {
         };
 
         let commitment =
-            TableCommitmentBytes::try_from(&TableCommitment::<DoryCommitment>::default()).unwrap();
+            TableCommitmentBytes::try_from(&TableCommitment::<DynamicDoryCommitment>::default())
+                .unwrap();
 
         let per_commitment_scheme = TableCommitmentBytesPerCommitmentScheme {
             ipa: None,

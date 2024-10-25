@@ -2,7 +2,7 @@ use commitment_sql::{process_create_table, CreateTableAndCommitmentMetadata};
 use frame_support::assert_noop;
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::commitment::TableCommitment;
-use proof_of_sql::proof_primitive::dory::{DoryCommitment, DoryScalar};
+use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
 use proof_of_sql_commitment_map::{
     CommitmentScheme,
     CommitmentSchemeFlags,
@@ -60,7 +60,7 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
     }
 
     fn execute(self) -> Result<CreateTableAndCommitmentMetadata, Error<Test>> {
-        let commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
+        let commitment = TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
             self.snapshot_data
                 .iter_committable::<DoryScalar>()
                 .map(Result::unwrap),
@@ -96,15 +96,16 @@ fn we_can_process_create_table_from_snapshot() {
     new_test_ext().execute_with(|| {
         let test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
-        let expected_commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
-            test_params
-                .snapshot_data
-                .iter_committable::<DoryScalar>()
-                .map(Result::unwrap),
-            0,
-            &PUBLIC_SETUPS.dory,
-        )
-        .unwrap();
+        let expected_commitment =
+            TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
+                test_params
+                    .snapshot_data
+                    .iter_committable::<DoryScalar>()
+                    .map(Result::unwrap),
+                0,
+                &PUBLIC_SETUPS.dory,
+            )
+            .unwrap();
 
         let expected_commitment_bytes =
             TableCommitmentBytes::try_from(&expected_commitment).unwrap();

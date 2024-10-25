@@ -123,9 +123,8 @@ pub fn process_create_table(
 mod tests {
     use on_chain_table::OnChainColumn;
     use proof_of_sql::proof_primitive::dory::{
-        DoryCommitment,
-        DoryProverPublicSetup,
         DoryScalar,
+        DynamicDoryCommitment,
         ProverSetup,
         PublicParameters,
     };
@@ -140,11 +139,10 @@ mod tests {
     fn we_can_process_create_table() {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
         let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
             ipa: (),
-            dory: dory_prover_setup,
+            dory: &prover_setup,
         };
 
         // we currently cannot compute ipa commitments in no_std environments
@@ -182,7 +180,7 @@ mod tests {
                 .unwrap();
 
         let expected_dory_commitment =
-            TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
+            TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
                 OnChainTable::try_from_iter([
                     ("animal".parse().unwrap(), OnChainColumn::VarChar(vec![])),
                     ("population".parse().unwrap(), OnChainColumn::BigInt(vec![])),
@@ -191,7 +189,7 @@ mod tests {
                 .iter_committable::<DoryScalar>()
                 .map(|result| result.unwrap()),
                 0,
-                &dory_prover_setup,
+                &&prover_setup,
             )
             .unwrap();
 
@@ -219,11 +217,10 @@ mod tests {
     fn we_cannot_process_invalid_create_table() {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
         let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
             ipa: (),
-            dory: dory_prover_setup,
+            dory: &prover_setup,
         };
 
         let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})

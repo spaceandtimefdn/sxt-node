@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use curve25519_dalek::RistrettoPoint;
 use proof_of_sql::base::database::TableRef;
-use proof_of_sql::proof_primitive::dory::DoryCommitment;
+use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
 
 use crate::commitment_map_implementor::CommitmentMapImplementor;
 use crate::commitment_scheme::{AnyCommitmentScheme, CommitmentScheme};
@@ -16,12 +16,12 @@ use crate::generic_over_commitment::{GenericOverCommitment, OptionType};
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct MemoryCommitmentMap<V: GenericOverCommitment> {
     ipa_map: HashMap<TableRef, V::WithCommitment<RistrettoPoint>>,
-    dory_map: HashMap<TableRef, V::WithCommitment<DoryCommitment>>,
+    dory_map: HashMap<TableRef, V::WithCommitment<DynamicDoryCommitment>>,
 }
 
 impl<V: GenericOverCommitment> CommitmentMapImplementor<TableRef, V> for MemoryCommitmentMap<V>
 where
-    V::WithCommitment<DoryCommitment>: Clone,
+    V::WithCommitment<DynamicDoryCommitment>: Clone,
     V::WithCommitment<RistrettoPoint>: Clone,
 {
     fn has_key_and_scheme_impl(&self, key: &TableRef, scheme: &CommitmentScheme) -> bool {
@@ -126,11 +126,11 @@ mod tests {
         let ipa_ref_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(1);
 
         let dory_ref: TableRef = "table.dory_only".parse().unwrap();
-        let dory_ref_dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(2);
+        let dory_ref_dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(2);
 
         let all_ref: TableRef = "table.all_schemes".parse().unwrap();
         let all_ref_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(3);
-        let all_ref_dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(3);
+        let all_ref_dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(3);
 
         let commitment_map = MemoryCommitmentMap {
             ipa_map: HashMap::from_iter([
@@ -212,7 +212,7 @@ mod tests {
 
         let dory_commitments = PerCommitmentScheme {
             ipa: None,
-            dory: Some(TestCommitmentMetadata::<DoryCommitment>::new(2)),
+            dory: Some(TestCommitmentMetadata::<DynamicDoryCommitment>::new(2)),
         };
         assert_eq!(
             commitment_map.get_commitments(&refs.dory_ref),
@@ -221,7 +221,7 @@ mod tests {
 
         let all_commitments = PerCommitmentScheme {
             ipa: Some(TestCommitmentMetadata::<RistrettoPoint>::new(3)),
-            dory: Some(TestCommitmentMetadata::<DoryCommitment>::new(3)),
+            dory: Some(TestCommitmentMetadata::<DynamicDoryCommitment>::new(3)),
         };
         assert_eq!(
             commitment_map.get_commitments(&refs.all_ref),
@@ -236,7 +236,7 @@ mod tests {
         let all_ref: TableRef = "table.all_schemes".parse().unwrap();
 
         let ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(1);
-        let dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(2);
+        let dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(2);
 
         let mut commitment_map = MemoryCommitmentMap::<TestCommitmentMetadataType>::default();
 
@@ -284,7 +284,7 @@ mod tests {
         let original_commitment_map = commitment_map.clone();
 
         let ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(10);
-        let dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(20);
+        let dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(20);
 
         assert!(matches!(
             commitment_map.create_commitments(refs.ipa_ref, PerCommitmentScheme::default()),
@@ -349,7 +349,7 @@ mod tests {
         let (mut commitment_map, refs) = all_combinations_commitment_map();
 
         let new_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(10);
-        let new_dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(20);
+        let new_dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(20);
 
         assert_ne!(
             commitment_map.ipa_map.get(&refs.ipa_ref).unwrap(),
@@ -420,7 +420,7 @@ mod tests {
         let original_commitment_map = commitment_map.clone();
 
         let new_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(10);
-        let new_dory_commitment = TestCommitmentMetadata::<DoryCommitment>::new(20);
+        let new_dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(20);
 
         let no_commitments = PerCommitmentScheme::default();
         assert!(matches!(

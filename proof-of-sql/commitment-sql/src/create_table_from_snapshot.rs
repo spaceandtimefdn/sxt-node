@@ -90,9 +90,8 @@ mod tests {
     use on_chain_table::{OnChainColumn, OnChainTable};
     use proof_of_sql::base::commitment::TableCommitment;
     use proof_of_sql::proof_primitive::dory::{
-        DoryCommitment,
-        DoryProverPublicSetup,
         DoryScalar,
+        DynamicDoryCommitment,
         ProverSetup,
         PublicParameters,
     };
@@ -146,7 +145,7 @@ mod tests {
 
         fn execute_dory(
             self,
-            dory_setup: DoryProverPublicSetup,
+            dory_setup: &ProverSetup,
         ) -> Result<
             (
                 CreateTableAndCommitmentMetadata,
@@ -162,14 +161,15 @@ mod tests {
                 .try_into()
                 .unwrap();
 
-            let dory_commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
-                self.snapshot_data
-                    .iter_committable::<DoryScalar>()
-                    .map(Result::unwrap),
-                self.commitment_offset,
-                &dory_setup,
-            )
-            .unwrap();
+            let dory_commitment =
+                TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
+                    self.snapshot_data
+                        .iter_committable::<DoryScalar>()
+                        .map(Result::unwrap),
+                    self.commitment_offset,
+                    &dory_setup,
+                )
+                .unwrap();
 
             let snapshot_commitments = PerCommitmentScheme {
                 ipa: None,
@@ -189,7 +189,6 @@ mod tests {
     fn we_can_process_create_table_from_snapshot() {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
         let test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
@@ -214,13 +213,13 @@ mod tests {
             meta_table_inserts: vec![],
         };
 
-        let commitment = TableCommitment::<DoryCommitment>::try_from_columns_with_offset(
+        let commitment = TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
             test_params
                 .snapshot_data
                 .iter_committable::<DoryScalar>()
                 .map(Result::unwrap),
             0,
-            &dory_prover_setup,
+            &&prover_setup,
         )
         .unwrap();
 
@@ -230,7 +229,7 @@ mod tests {
         };
 
         assert_eq!(
-            test_params.execute_dory(dory_prover_setup).unwrap(),
+            test_params.execute_dory(&prover_setup).unwrap(),
             (
                 expected_create_table_and_commitment_metadata,
                 expected_snapshot_commitments
@@ -242,7 +241,6 @@ mod tests {
     fn we_cannot_process_invalid_create_table_from_snapshot() {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
         let mut test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
@@ -253,7 +251,7 @@ mod tests {
             .to_string();
 
         assert!(matches!(
-            test_params.execute_dory(dory_prover_setup),
+            test_params.execute_dory(&prover_setup),
             Err(ProcessCreateTableFromSnapshotError::InvalidCreateTable { .. })
         ),);
     }
@@ -262,14 +260,13 @@ mod tests {
     fn we_cannot_process_create_table_with_noncontiguous_snapshot() {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
         let mut test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
         test_params.commitment_offset = 10;
 
         assert!(matches!(
-            test_params.execute_dory(dory_prover_setup),
+            test_params.execute_dory(&prover_setup),
             Err(ProcessCreateTableFromSnapshotError::InappropriateSnapshotCommitments { .. })
         ),);
     }
@@ -278,7 +275,6 @@ mod tests {
     fn we_cannot_process_create_table_with_mismatched_snapshot() {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
-        let dory_prover_setup = DoryProverPublicSetup::new(&prover_setup, 3);
 
         let mut test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
@@ -301,7 +297,7 @@ mod tests {
         .unwrap();
 
         assert!(matches!(
-            test_params.execute_dory(dory_prover_setup),
+            test_params.execute_dory(&prover_setup),
             Err(ProcessCreateTableFromSnapshotError::InappropriateSnapshotCommitments { .. })
         ),);
     }
