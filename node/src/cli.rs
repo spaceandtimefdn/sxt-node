@@ -7,6 +7,10 @@ pub struct Cli {
 
     #[clap(flatten)]
     pub run: RunCmd,
+
+    /// Start the node with an associated SQL database to act as a Prover for the network
+    #[clap(long)]
+    pub with_db: bool,
 }
 
 #[derive(Debug, clap::Subcommand)]
