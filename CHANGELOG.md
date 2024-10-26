@@ -1,3 +1,12 @@
+# [0.45.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.44.0...v0.45.0) (2024-10-26)
+
+
+### Features
+
+* Increase the block maximum size to 15Mb so that we can deploy ([85c206a](https://github.com/spaceandtimelabs/sxt-node/commit/85c206a45ecdab89c3c8657e92dcf4eb80bd41a8))
+
+
+
 # [0.44.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.43.0...v0.44.0) (2024-10-26)
 
 
@@ -28,15 +37,6 @@
 
 
 ## [0.41.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.41.0...v0.41.1) (2024-10-25)
-
-
-
-# [0.41.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.40.0...v0.41.0) (2024-10-25)
-
-
-### Features
-
-* apply data compliance with target types to realtime data ([2a4f5d1](https://github.com/spaceandtimelabs/sxt-node/commit/2a4f5d197c2424ea49f7724cbae568384619483b))
 
 
 
