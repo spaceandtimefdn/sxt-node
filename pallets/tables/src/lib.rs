@@ -219,7 +219,7 @@ pub mod pallet {
         #[pallet::weight(<T as Config>::WeightInfo::clear_tables())]
         pub fn clear_tables(origin: OriginFor<T>) -> DispatchResult {
             // Only sudo can call this
-            let _ = ensure_root(origin)?;
+            ensure_root(origin)?;
 
             // Clear up to 1000 schemas
             let schema_res = Schemas::<T>::clear(1000, None);
@@ -247,7 +247,7 @@ pub mod pallet {
         #[pallet::call_index(2)]
         #[pallet::weight(<T as Config>::WeightInfo::create_empty_genesis_tables())]
         pub fn create_empty_genesis_tables(origin: OriginFor<T>) -> DispatchResult {
-            let _ = ensure_root(origin)?;
+            ensure_root(origin)?;
 
             GenesisTables::<T>::iter()
             .map(|(source_and_mode, genesis_list)| {

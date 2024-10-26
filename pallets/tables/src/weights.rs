@@ -43,9 +43,10 @@ pub trait WeightInfo {
 	/// TODO
 	fn reset_commitments_and_schemas() -> Weight;
 
-	// Weight for clear tables
+	/// Weight for clear tables
 	fn clear_tables() -> Weight;
 
+	/// Weight for create_empty_genesis_tables
 	fn create_empty_genesis_tables() -> Weight;
 }
 
