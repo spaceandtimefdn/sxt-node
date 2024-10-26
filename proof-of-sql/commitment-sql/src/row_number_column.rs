@@ -15,7 +15,7 @@ const ROW_NUMBER_COLUMN_NAME_SUFFIX: &str = "ROW_NUMBER";
 const ROW_NUMBER_COLUMN_NAME: &str = formatcp!("{METADATA_PREFIX}_{ROW_NUMBER_COLUMN_NAME_SUFFIX}");
 
 /// Returns a sqlparser `ColumnDef` for the row number column.
-fn row_number_column_def() -> ColumnDef {
+pub fn row_number_column_def() -> ColumnDef {
     ColumnDef {
         name: Ident::new(ROW_NUMBER_COLUMN_NAME),
         data_type: DataType::BigInt(None),

@@ -37,9 +37,16 @@ pub trait WeightInfo {
 	/// TODO: add docs
 	fn update_tables() -> Weight;
 
-
 	/// TODO
 	fn create_tables_with_snapshot_and_commitment() -> Weight;
+
+	/// TODO
+	fn reset_commitments_and_schemas() -> Weight;
+
+	// Weight for clear tables
+	fn clear_tables() -> Weight;
+
+	fn create_empty_genesis_tables() -> Weight;
 }
 
 /// TODO: add docs
@@ -52,6 +59,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn create_tables_with_snapshot_and_commitment() -> Weight {
 		Weight::from_parts(0,0)
 	}
+
+	fn reset_commitments_and_schemas() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+
+	/// Weight for Clear Tables
+	fn clear_tables() -> Weight {
+		Weight::from_parts(0,0)
+	}
+
+	fn create_empty_genesis_tables() -> Weight {
+		Weight::from_parts(0,0)
+	}
 }
 
 // For backwards compatibility and tests
@@ -61,6 +81,18 @@ impl WeightInfo for () {
 	}
 
 	fn create_tables_with_snapshot_and_commitment() -> Weight {
+		Weight::from_parts(0,0)
+	}
+
+	fn reset_commitments_and_schemas() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+
+	fn clear_tables() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+
+	fn create_empty_genesis_tables() -> Weight {
 		Weight::from_parts(0,0)
 	}
 }
