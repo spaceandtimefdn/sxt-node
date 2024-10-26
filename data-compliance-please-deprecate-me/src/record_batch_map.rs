@@ -53,7 +53,7 @@ where
             .map(|(field, column)| {
                 let target_type =
                     target_types
-                        .get(field.name())
+                        .get(&field.name().to_uppercase())
                         .ok_or_else(|| TargetTypeNotFound {
                             column_name: field.name().clone(),
                         })?;
@@ -117,7 +117,7 @@ where
             .map(|(field, column)| {
                 let target_type =
                     target_types
-                        .get(field.name())
+                        .get(&field.name().to_uppercase())
                         .ok_or_else(|| TargetTypeNotFound {
                             column_name: field.name().clone(),
                         })?;
@@ -149,10 +149,10 @@ mod tests {
 
     #[test]
     fn we_can_map_record_batch() {
-        let int_id = "int_col";
+        let int_id = "iNT_col";
         let int_column: ArrayRef = Arc::new(Int32Array::from_iter([1, 4, -1, 0]));
 
-        let varchar_id = "varchar_col";
+        let varchar_id = "VarCHAr_col";
         let varchar_column: ArrayRef = Arc::new(StringArray::from_iter([
             Some("lorem"),
             Some("i\0ps\0um"),
@@ -186,10 +186,10 @@ mod tests {
 
     #[test]
     fn we_can_map_record_batch_with_target_type() {
-        let int_id = "int_col";
+        let int_id = "inT_Col";
         let int_column: ArrayRef = Arc::new(Int32Array::from_iter([1, 4, -1]));
 
-        let decimal_as_string_id = "decimal_col";
+        let decimal_as_string_id = "Decimal_coL";
         let decimal_as_string_column: ArrayRef =
             Arc::new(StringArray::from_iter_values(["0", "-10.5", "2e4"]));
         let expected_decimal_column: ArrayRef = Arc::new(
@@ -203,9 +203,9 @@ mod tests {
         );
 
         let target_types = IndexMap::from_iter([
-            (int_id.to_string(), DataType::Int(None)),
+            (int_id.to_string().to_uppercase(), DataType::Int(None)),
             (
-                decimal_as_string_id.to_string(),
+                decimal_as_string_id.to_string().to_uppercase(),
                 DataType::Decimal(ExactNumberInfo::PrecisionAndScale(10, 2)),
             ),
         ]);
@@ -244,15 +244,15 @@ mod tests {
 
     #[test]
     fn we_cannot_map_record_batch_with_missing_target_type() {
-        let int_id = "int_col";
+        let int_id = "INT_col";
         let int_column: ArrayRef = Arc::new(Int32Array::from_iter([1, 4, -1]));
 
-        let decimal_as_string_id = "decimal_col";
+        let decimal_as_string_id = "decimal_COL";
         let decimal_as_string_column: ArrayRef =
             Arc::new(StringArray::from_iter_values(["0", "-10.5", "2e4"]));
 
         let target_types = IndexMap::from_iter([(
-            decimal_as_string_id.to_string(),
+            decimal_as_string_id.to_string().to_uppercase(),
             DataType::Decimal(ExactNumberInfo::PrecisionAndScale(10, 2)),
         )]);
 
@@ -280,17 +280,17 @@ mod tests {
 
     #[test]
     fn we_cannot_map_record_batch_with_map_failure() {
-        let int_id = "int_col";
+        let int_id = "inT_COl";
         let int_column: ArrayRef = Arc::new(Int32Array::from_iter([1, 4, -1]));
 
-        let decimal_as_string_id = "decimal_col";
+        let decimal_as_string_id = "dECImal_col";
         let decimal_as_string_column: ArrayRef =
             Arc::new(StringArray::from_iter_values(["0", "not a decimal", "200"]));
 
         let target_types = IndexMap::from_iter([
-            (int_id.to_string(), DataType::Int(None)),
+            (int_id.to_string().to_uppercase(), DataType::Int(None)),
             (
-                decimal_as_string_id.to_string(),
+                decimal_as_string_id.to_string().to_uppercase(),
                 DataType::Decimal(ExactNumberInfo::PrecisionAndScale(10, 2)),
             ),
         ]);

@@ -9,7 +9,7 @@ pub fn target_types_for_table(create_table: CreateTableBuilder) -> IndexMap<Stri
     create_table
         .columns
         .into_iter()
-        .map(|column_def| (column_def.name.value, column_def.data_type))
+        .map(|column_def| (column_def.name.value.to_uppercase(), column_def.data_type))
         .collect()
 }
 
