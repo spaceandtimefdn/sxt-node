@@ -165,7 +165,7 @@ mod tests {
             Some("57896044618658097711785492504343953926634992332820282019728792003956564819967"),
         ]));
         let illegal_batch =
-            RecordBatch::try_from_iter([("id", id_column), ("price", price_column)]).unwrap();
+            RecordBatch::try_from_iter([("iD", id_column), ("pRIce", price_column)]).unwrap();
 
         let mut buffer: Vec<u8> = Vec::new();
         let mut writer = StreamWriter::try_new(&mut buffer, &illegal_batch.schema()).unwrap();
@@ -178,13 +178,13 @@ mod tests {
 
         let create_statement = CreateStatementPassBy {
             create_statement: create_statement(
-                "CREATE TABLE test.table (id VARCHAR NULL, price DECIMAL(78, 0) NULL)",
+                "CREATE TABLE test.table (Id VARCHAR NULL, pricE DECIMAL(78, 0) NULL)",
             ),
         };
 
         let expected_on_chain_table = OnChainTable::try_from_iter([
             (
-                "id".parse().unwrap(),
+                "iD".parse().unwrap(),
                 OnChainColumn::VarChar(
                     ["lorem", "ipsum", "", "dolor"]
                         .map(ToString::to_string)
@@ -192,7 +192,7 @@ mod tests {
                 ),
             ),
             (
-                "price".parse().unwrap(),
+                "pRIce".parse().unwrap(),
                 OnChainColumn::Decimal75(Precision::new(75).unwrap(), 0, vec![U256::zero(), U256::zero(), U256::MAX - U256::from(999), U256::from_str_radix("896044618658097711785492504343953926634992332820282019728792003956564819967", 10).unwrap()])
             ),
         ]).unwrap();
@@ -205,5 +205,36 @@ mod tests {
         .unwrap();
 
         assert_eq!(result, expected_on_chain_table);
+    }
+
+    #[test]
+    fn we_can_convert_ethereum_blocks_batch() {
+        let batch_bytes = include_bytes!("../test-ethereum-blocks-batch");
+
+        let row_data = RowData {
+            row_data: BoundedVec::try_from(batch_bytes.to_vec()).unwrap(),
+        };
+
+        let create_statement = CreateStatementPassBy {
+            create_statement: create_statement(
+                "CREATE TABLE IF NOT EXISTS ETHEREUM.BLOCKS(
+              BLOCK_NUMBER BIGINT NOT NULL,
+              TIME_STAMP TIMESTAMP,
+              BLOCK_HASH VARCHAR,
+              MINER VARCHAR,
+              REWARD DECIMAL(78, 0),
+              SIZE_ INT,
+              GAS_USED INT,
+              GAS_LIMIT INT,
+              BASE_FEE_PER_GAS DECIMAL(78, 0),
+              TRANSACTION_COUNT INT,
+              PARENT_HASH VARCHAR,
+              PRIMARY KEY(BLOCK_NUMBER)
+            );",
+            ),
+        };
+
+        let res = interface::record_batch_to_onchain(row_data, create_statement);
+        assert!(res.is_ok());
     }
 }
