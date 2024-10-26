@@ -1,3 +1,12 @@
+# [0.44.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.43.0...v0.44.0) (2024-10-26)
+
+
+### Features
+
+* add --with-db flag to enable acting as a prover ([4550250](https://github.com/spaceandtimelabs/sxt-node/commit/455025098e9b0bd46b92a015f05749caae0555fb))
+
+
+
 # [0.43.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.42.0...v0.43.0) (2024-10-26)
 
 
@@ -28,21 +37,6 @@
 ### Features
 
 * apply data compliance with target types to realtime data ([2a4f5d1](https://github.com/spaceandtimelabs/sxt-node/commit/2a4f5d197c2424ea49f7724cbae568384619483b))
-
-
-
-# [0.40.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.39.0...v0.40.0) (2024-10-25)
-
-
-### Bug Fixes
-
-* Ensure Data Loader only loads tables we want ([03f6983](https://github.com/spaceandtimelabs/sxt-node/commit/03f698313ca2f53d4fc161be3c96089a353e1779))
-
-
-### Features
-
-* Handle Genesis Tables via storage client in FlightSQL Task ([c0bbd50](https://github.com/spaceandtimelabs/sxt-node/commit/c0bbd50b2a80a1f29128256c81e28574adc1ba3d))
-* Instead of using subxt for listening to the network, use the ([c3e47a2](https://github.com/spaceandtimelabs/sxt-node/commit/c3e47a269a778384b626419678c03cd4d9d44d56))
 
 
 
