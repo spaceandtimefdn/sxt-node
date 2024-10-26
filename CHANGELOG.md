@@ -1,3 +1,12 @@
+## [0.45.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.45.0...v0.45.1) (2024-10-26)
+
+
+### Bug Fixes
+
+* be insensitive to column name casing in data-compliance ([5484f40](https://github.com/spaceandtimelabs/sxt-node/commit/5484f40d7e2250a17417ed0c4caac9496472090f))
+
+
+
 # [0.45.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.44.0...v0.45.0) (2024-10-26)
 
 
@@ -33,10 +42,6 @@
 ### Features
 
 * upgrade proof-of-sql to 0.33.15 ([83a2e83](https://github.com/spaceandtimelabs/sxt-node/commit/83a2e83efe64bba9e3ed665029e0ba152e81d0c3))
-
-
-
-## [0.41.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.41.0...v0.41.1) (2024-10-25)
 
 
 
