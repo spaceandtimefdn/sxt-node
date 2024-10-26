@@ -1,3 +1,14 @@
+# [0.43.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.42.0...v0.43.0) (2024-10-26)
+
+
+### Features
+
+* manual genesis ([5f92b1b](https://github.com/spaceandtimelabs/sxt-node/commit/5f92b1b06e99b72e32cefe756050b87daf56a031))
+* split manual genesis into two transactions ([eaa8108](https://github.com/spaceandtimelabs/sxt-node/commit/eaa8108ba9187dec9db0830d136dc3d895459b73))
+* test and fix bugs ([e229469](https://github.com/spaceandtimelabs/sxt-node/commit/e2294691a13505a583baa7393a6d9a4dc4e83ce8))
+
+
+
 # [0.42.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.41.1...v0.42.0) (2024-10-25)
 
 
@@ -32,15 +43,6 @@
 
 * Handle Genesis Tables via storage client in FlightSQL Task ([c0bbd50](https://github.com/spaceandtimelabs/sxt-node/commit/c0bbd50b2a80a1f29128256c81e28574adc1ba3d))
 * Instead of using subxt for listening to the network, use the ([c3e47a2](https://github.com/spaceandtimelabs/sxt-node/commit/c3e47a269a778384b626419678c03cd4d9d44d56))
-
-
-
-# [0.39.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.38.0...v0.39.0) (2024-10-24)
-
-
-### Features
-
-* add `column_truncate_decimals` to `data-compliance` ([7d19e5d](https://github.com/spaceandtimelabs/sxt-node/commit/7d19e5dfce5b5e7c1e83f445a0dd726454dbb02b))
 
 
 
