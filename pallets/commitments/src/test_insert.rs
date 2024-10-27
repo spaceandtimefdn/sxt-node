@@ -175,25 +175,6 @@ fn we_cannot_process_inserts_that_dont_match_table() {
             Error::<Test>::InsertDataDoesntMatchExistingCommitments
         );
 
-        // swapped columns
-        let mut insert_params = ProcessInsertTestParams::new_valid();
-        insert_params.insert_data = OnChainTable::try_from_iter([
-            (
-                "population".parse().unwrap(),
-                OnChainColumn::BigInt(vec![100]),
-            ),
-            (
-                "animal".parse().unwrap(),
-                OnChainColumn::VarChar(vec!["cow".to_string()]),
-            ),
-        ])
-        .unwrap();
-
-        assert_noop!(
-            insert_params.execute(),
-            Error::<Test>::InsertDataDoesntMatchExistingCommitments
-        );
-
         // too many columns
         let mut insert_params = ProcessInsertTestParams::new_valid();
         insert_params.insert_data = OnChainTable::try_from_iter([

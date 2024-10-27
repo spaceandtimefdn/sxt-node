@@ -20,10 +20,35 @@ use proof_of_sql_commitment_map::generic_over_commitment::{
     TableCommitmentType,
 };
 use proof_of_sql_commitment_map::{GenericOverCommitmentFn, PerCommitmentScheme};
+use proof_of_sql_parser::Identifier;
 use snafu::Snafu;
 use sxt_core::tables::TableIdentifier;
 
 use crate::row_number_column::on_chain_table_with_row_number_column;
+
+/// Generically accepts a table commitment and returns the order of its column identifiers.
+struct GetColumnOrderFn;
+
+impl GenericOverCommitmentFn for GetColumnOrderFn {
+    type In = TableCommitmentType;
+    type Out = PairType<TableCommitmentType, ConcreteType<Vec<Identifier>>>;
+
+    fn call<C: Commitment>(
+        &self,
+        input: <Self::In as GenericOverCommitment>::WithCommitment<C>,
+    ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
+        let column_order = input
+            .column_commitments()
+            .column_metadata()
+            .iter()
+            // This copy is very sad, but GenericOverCommitmentFn isn't great at handling elided
+            // lifetimes at the moment.
+            .map(|(identifier, _)| *identifier)
+            .collect();
+
+        (input, column_order)
+    }
+}
 
 /// Generically accepts a table commitment and returns the end of its row range.
 struct GetTableCommitmentRangeEndFn;
@@ -157,8 +182,11 @@ pub enum ProcessInsertError {
         source: AppendOnChainTableError,
     },
     /// Table commitments (of different schemes) have different ranges.
-    #[snafu(display("table commitments have differing ranges"))]
+    #[snafu(display("table commitments (of different schemes) have differing ranges"))]
     TableCommitmentRangeMismatch,
+    /// Table commitments (of different schemes) have different column orders.
+    #[snafu(display("table commitments (of different schemes) have differing column orders"))]
+    TableCommitmentColumnOrderMismatch,
     /// No commitments to update.
     #[snafu(display("no commitments to update"))]
     NoCommitments,
@@ -190,6 +218,7 @@ pub fn process_insert(
     ),
     ProcessInsertError,
 > {
+    // get the row count and make sure it matches across commitment schemes
     let (previous_commitments, row_counts): (Vec<_>, Vec<_>) = previous_commitments
         .into_flat_iter()
         .map(|any| {
@@ -208,6 +237,29 @@ pub fn process_insert(
             None => ProcessInsertError::NoCommitments,
         })?;
 
+    // get the column order and make sure it matches across commitment schemes
+    let (previous_commitments, column_orders): (Vec<_>, Vec<_>) = previous_commitments
+        .into_flat_iter()
+        .map(|any| {
+            let (commitment, row_count) = any.map(GetColumnOrderFn).unzip();
+            (commitment, row_count.unwrap())
+        })
+        .unzip();
+
+    let previous_commitments = PerCommitmentScheme::from_iter(previous_commitments);
+
+    let column_order = column_orders
+        .into_iter()
+        .all_equal_value()
+        .map_err(|maybe_unequal| match maybe_unequal {
+            Some(_) => ProcessInsertError::TableCommitmentColumnOrderMismatch,
+            None => ProcessInsertError::NoCommitments,
+        })?;
+
+    // coerce the insert data to the commitment's column order
+    let insert_data = insert_data.with_column_order(column_order.iter());
+
+    // append the insert_data to the commitment
     let commitments = previous_commitments
         .zip(setups.map(SomeFn::new()))
         .map(OptionZipFn::new())
@@ -218,6 +270,7 @@ pub fn process_insert(
         })
         .collect::<Result<_, _>>()?;
 
+    // add the meta row number column to the insert_data
     let insert_with_meta_columns = on_chain_table_with_row_number_column(insert_data, row_count);
 
     Ok((
@@ -350,7 +403,19 @@ mod tests {
             )
         );
 
-        let second_insert = OnChainTable::try_from_iter([
+        let second_insert_with_different_column_order = OnChainTable::try_from_iter([
+            (
+                population_col_id,
+                OnChainColumn::BigInt(population_data[2..].to_vec()),
+            ),
+            (
+                animals_col_id,
+                OnChainColumn::VarChar(animals_data[2..].to_vec()),
+            ),
+        ])
+        .unwrap();
+
+        let second_insert_with_original_column_order = OnChainTable::try_from_iter([
             (
                 animals_col_id,
                 OnChainColumn::VarChar(animals_data[2..].to_vec()),
@@ -386,7 +451,7 @@ mod tests {
                     .unwrap()
                     .try_add(
                         TableCommitment::try_from_columns_with_offset(
-                            second_insert
+                            second_insert_with_original_column_order
                                 .iter_committable::<DoryScalar>()
                                 .map(Result::unwrap),
                             2,
@@ -399,7 +464,13 @@ mod tests {
         };
 
         assert_eq!(
-            process_insert(&table_id, second_insert, expected_first_commitments, setups).unwrap(),
+            process_insert(
+                &table_id,
+                second_insert_with_different_column_order,
+                expected_first_commitments,
+                setups
+            )
+            .unwrap(),
             (
                 InsertAndCommitmentMetadata {
                     insert_with_meta_columns: expected_second_insert_with_meta_columns,
@@ -411,7 +482,7 @@ mod tests {
     }
 
     #[test]
-    fn we_cannot_process_insert_with_differing_commitment_ranges() {
+    fn we_cannot_process_insert_with_differing_commitment_ranges_in_existing_commitments() {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
 
