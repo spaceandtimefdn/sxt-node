@@ -92,6 +92,9 @@ impl<T> From<ProcessInsertError> for Error<T> {
             ProcessInsertError::TableCommitmentRangeMismatch => {
                 Error::ExistingCommitmentsRangeMismatch
             }
+            ProcessInsertError::TableCommitmentColumnOrderMismatch => {
+                Error::ExistingCommitmentsColumnOrderMismatch
+            }
             ProcessInsertError::NoCommitments => Error::NoExistingCommitments,
         }
     }

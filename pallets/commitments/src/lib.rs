@@ -144,6 +144,8 @@ pub mod pallet {
         ColumnWithUnsupportedOption,
         /// Existing commitments of different schemes don't agree on table range.
         ExistingCommitmentsRangeMismatch,
+        /// Existing commitments of different schemes don't agree on column order.
+        ExistingCommitmentsColumnOrderMismatch,
         /// Cannot update table with no existing commitments.
         NoExistingCommitments,
         /// Insert data contains values out of bounds of scalar field.

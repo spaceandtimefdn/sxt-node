@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use indexmap::map::{IntoIter, Iter};
 use proof_of_sql::base::commitment::CommittableColumn;
 use proof_of_sql::base::scalar::Scalar;
@@ -86,6 +88,29 @@ impl OnChainTable {
                 .try_to_committable_column::<S>()
                 .map(|column| (id, column))
         })
+    }
+
+    /// Returns this [`OnChainTable`], with columns in the order provided.
+    ///
+    /// There are a couple edge cases handled infallibly:
+    /// - Any columns in the table that don't appear in the order will be placed at the end of the
+    ///   table in their existing order.
+    /// - Any identifier in the order that doesn't appear in the table is ignored.
+    pub fn with_column_order<'a>(
+        mut self,
+        order: impl IntoIterator<Item = &'a Identifier>,
+    ) -> OnChainTable {
+        let ordered_columns: IndexMap<_, _> = order
+            .into_iter()
+            .filter_map(|identifier| self.0.shift_remove_entry(identifier))
+            // This intermediate collect explicitly performs all the shifting to the original map
+            // before chaining the remainder of the columns, avoiding double mutable reference.
+            .collect::<Vec<_>>()
+            .into_iter()
+            .chain(self.0)
+            .collect();
+
+        OnChainTable(ordered_columns)
     }
 }
 
@@ -259,6 +284,69 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert_eq!(committable_columns, expected);
+    }
+
+    #[test]
+    fn we_can_order_columns() {
+        let bigint_id: Identifier = "bigint_col".parse().unwrap();
+        let bigint_entry = (bigint_id, OnChainColumn::BigInt(vec![-10, 0, 3]));
+
+        let varchar_id: Identifier = "varchar_col".parse().unwrap();
+        let varchar_entry = (
+            varchar_id,
+            OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
+        );
+
+        let int_id: Identifier = "int_col".parse().unwrap();
+        let int_entry = (int_id, OnChainColumn::Int(vec![0, 1, 1000]));
+
+        let table = OnChainTable::try_from_iter([
+            bigint_entry.clone(),
+            varchar_entry.clone(),
+            int_entry.clone(),
+        ])
+        .unwrap();
+
+        let reversed_table = table.with_column_order([&int_id, &varchar_id, &bigint_id]);
+        let expected_reversed_table = OnChainTable::try_from_iter([
+            int_entry.clone(),
+            varchar_entry.clone(),
+            bigint_entry.clone(),
+        ])
+        .unwrap();
+        assert_eq!(reversed_table, expected_reversed_table);
+
+        let bumped_column_table = reversed_table.with_column_order([&varchar_id]);
+        let expected_bumped_column_table = OnChainTable::try_from_iter([
+            varchar_entry.clone(),
+            int_entry.clone(),
+            bigint_entry.clone(),
+        ])
+        .unwrap();
+        assert_eq!(bumped_column_table, expected_bumped_column_table);
+
+        let ignored_column_table =
+            bumped_column_table.with_column_order(&["does_not_exist".parse().unwrap()]);
+        let expected_ignored_column_table = OnChainTable::try_from_iter([
+            varchar_entry.clone(),
+            int_entry.clone(),
+            bigint_entry.clone(),
+        ])
+        .unwrap();
+        assert_eq!(ignored_column_table, expected_ignored_column_table);
+
+        let all_cases_table = ignored_column_table.with_column_order([
+            &bigint_id,
+            &"does_not_exist".parse().unwrap(),
+            &int_id,
+        ]);
+        let expected_all_cases_table = OnChainTable::try_from_iter([
+            bigint_entry.clone(),
+            int_entry.clone(),
+            varchar_entry.clone(),
+        ])
+        .unwrap();
+        assert_eq!(all_cases_table, expected_all_cases_table);
     }
 
     #[test]
