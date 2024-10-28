@@ -60,7 +60,7 @@ jobs:
         with:
           context: ${{ inputs.working-directory }}
           push: true
-          tags: ${{ env_PUB_REPO }}/${{ inputs.IMAGE_NAME }}:${{ env.DOCKER_TAG }}
+          tags: ${{ env.PUB_REPO }}/${{ inputs.IMAGE_NAME }}:${{ env.DOCKER_TAG }}
           labels: ${{ env.DOCKER_TAG }}
           build-args: |
             GIT_REVISION=${{ env.GIT_REVISION }}
