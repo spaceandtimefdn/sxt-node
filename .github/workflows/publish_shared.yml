@@ -13,6 +13,12 @@ on:
       OP_CONNECT_TOKEN:
         required: true
 
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
 jobs:
   build:
     name: Build Image
@@ -20,12 +26,6 @@ jobs:
     env:
       SRC_REPO: spaceandtime.jfrog.io/sxtnode-docker-local
       PUB_REPO: ghcr.io/spaceandtimelabs
-
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
 
     steps:
       - name: Check out
