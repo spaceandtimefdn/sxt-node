@@ -1,3 +1,13 @@
+# [0.49.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.48.1...v0.49.0) (2024-10-28)
+
+
+### Features
+
+* create new chainspec ([b96a159](https://github.com/spaceandtimelabs/sxt-node/commit/b96a1599d031df372b053420cbf731a9e1e0ad3b))
+* create new chainspec and production chainspec option ([990bb8b](https://github.com/spaceandtimelabs/sxt-node/commit/990bb8b99cfa4cb477c6d1e0df7afb8683c370e8))
+
+
+
 ## [0.48.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.48.0...v0.48.1) (2024-10-28)
 
 
@@ -60,15 +70,6 @@
 ### Features
 
 * add OnChainTable::with_column_order method ([30afaff](https://github.com/spaceandtimelabs/sxt-node/commit/30afaff87025c1cb258884375d53518950ae3931))
-
-
-
-## [0.45.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.45.0...v0.45.1) (2024-10-26)
-
-
-### Bug Fixes
-
-* be insensitive to column name casing in data-compliance ([5484f40](https://github.com/spaceandtimelabs/sxt-node/commit/5484f40d7e2250a17417ed0c4caac9496472090f))
 
 
 
