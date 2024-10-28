@@ -26,44 +26,44 @@ jobs:
     env:
       SRC_REPO: spaceandtime.jfrog.io/sxtnode-docker-local
       PUB_REPO: ghcr.io/spaceandtimelabs
-    steps:
-      - name: Check out
-        uses: actions/checkout@v4.1.0
-        with:
-          submodules: true
-          fetch-depth: 0 # download tags, see https://github.com/actions/checkout/issues/100
-          fetch-tags: true
-      - name: Get predefined version
-        run: |
-          cat ${{ inputs.working-directory }}/VERSION >> $GITHUB_ENV
-      - name: Load secrets
-        uses: 1password/load-secrets-action@v1
-        with:
-          export-env: true
-        env:
-          OP_CONNECT_HOST: ${{ secrets.OP_CONNECT_HOST }}
-          OP_CONNECT_TOKEN: ${{ secrets.OP_CONNECT_TOKEN }}
-          ARTIFACTORY_USER: op://op-github-devops/jfrog_devops/username
-          ARTIFACTORY_API_KEY: op://op-github-devops/jfrog_devops/token
-      - uses: jfrog/setup-jfrog-cli@v3
-        env:
-          JF_URL: https://spaceandtime.jfrog.io/
-          JF_USER: ${{ env.ARTIFACTORY_USER }}
-          JF_PASSWORD: ${{ env.ARTIFACTORY_API_KEY }}
-      - name: docker pull from jfrog
-        run: |  
-         jf docker pull ${{ env.JF_URL }}/${{ env.SRC_REPO }}/${{ inputs.IMAGE_NAME }}
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ${{ env.PUB_REPO }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-       - name: Build and push Docker image
-        id: push
-        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
-        with:
-          context: ${{ inputs.working-directory }}
-          push: true
-          tags: ${{ env.DOCKER_TAG }}
-          labels: ${{ env.DOCKER_TAG }}
+  steps:
+    - name: Check out
+      uses: actions/checkout@v4.1.0
+      with:
+        submodules: true
+        fetch-depth: 0 # download tags, see https://github.com/actions/checkout/issues/100
+        fetch-tags: true
+    - name: Get predefined version
+      run: |
+        cat ${{ inputs.working-directory }}/VERSION >> $GITHUB_ENV
+    - name: Load secrets
+      uses: 1password/load-secrets-action@v1
+      with:
+        export-env: true
+      env:
+        OP_CONNECT_HOST: ${{ secrets.OP_CONNECT_HOST }}
+        OP_CONNECT_TOKEN: ${{ secrets.OP_CONNECT_TOKEN }}
+        ARTIFACTORY_USER: op://op-github-devops/jfrog_devops/username
+        ARTIFACTORY_API_KEY: op://op-github-devops/jfrog_devops/token
+    - uses: jfrog/setup-jfrog-cli@v3
+      env:
+        JF_URL: https://spaceandtime.jfrog.io/
+        JF_USER: ${{ env.ARTIFACTORY_USER }}
+        JF_PASSWORD: ${{ env.ARTIFACTORY_API_KEY }}
+    - name: docker pull from jfrog
+      run: |  
+       jf docker pull ${{ env.JF_URL }}/${{ env.SRC_REPO }}/${{ inputs.IMAGE_NAME }}
+    - name: Log in to the Container registry
+      uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+      with:
+        registry: ${{ env.PUB_REPO }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+     - name: Build and push Docker image
+      id: push
+      uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+      with:
+        context: ${{ inputs.working-directory }}
+        push: true
+        tags: ${{ env.DOCKER_TAG }}
+        labels: ${{ env.DOCKER_TAG }}
