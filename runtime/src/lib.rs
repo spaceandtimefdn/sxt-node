@@ -60,7 +60,7 @@ pub use sp_runtime::{Perbill, Permill};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-pub use {pallet_commitments, pallet_indexing, pallet_permissions, pallet_validators};
+pub use {pallet_commitments, pallet_indexing, pallet_permissions, pallet_validators, pallet_tables};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -411,7 +411,6 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
-        [pallet_validators, TemplateModule]
     );
 }
 
