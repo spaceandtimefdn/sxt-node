@@ -22,6 +22,7 @@ use sxt_core::tables::{
     SourceAndMode,
     TableIdentifier,
 };
+use sxt_runtime::opaque::SessionKeys;
 use sxt_runtime::{AccountId, Signature, WASM_BINARY};
 
 // The URL for the telemetry server.
@@ -62,8 +63,12 @@ where
 }
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
-    (get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId) {
+    (
+        get_account_id_from_seed::<sr25519::Public>(s),
+        get_from_seed::<AuraId>(s),
+        get_from_seed::<GrandpaId>(s),
+    )
 }
 
 pub fn authority_keys_from_phrase(s: &str) -> (AuraId, GrandpaId) {
@@ -216,7 +221,7 @@ fn token_properties() -> Properties {
 }
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
-    initial_authorities: Vec<(AuraId, GrandpaId)>,
+    initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     _enable_println: bool,
@@ -227,15 +232,24 @@ fn testnet_genesis(
             "balances": endowed_accounts.iter().cloned().map(|k| (k, 1u64 << 60)).collect::<Vec<_>>(),
         },
         "aura": {
-            "authorities": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
+            "authorities": initial_authorities.iter().map(|x| (x.1.clone())).collect::<Vec<_>>(),
         },
         "grandpa": {
-            "authorities": initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect::<Vec<_>>(),
+            "authorities": initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect::<Vec<_>>(),
         },
         "sudo": {
             // Assign network admin rights.
             "key": Some(root_key),
         },
+        "session": {
+            "keys": initial_authorities.iter().map(|x| {
+                (x.0.clone(), x.0.clone(), SessionKeys { grandpa: x.2.clone(), aura: x.1.clone()})
+            }).collect::<Vec<_>>(),
+        },
+        "validators": {
+            "initial_validators": initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
+        },
+
         "tables": {
             "tables":
                 pair_commits(
@@ -248,6 +262,10 @@ fn testnet_genesis(
             ),
         },
     })
+}
+
+fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
+    SessionKeys { aura, grandpa }
 }
 
 /// Ethereum Core source and mode
