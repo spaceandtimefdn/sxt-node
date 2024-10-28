@@ -14,6 +14,6 @@ jobs:
   build_node:
     uses: ./.github/workflows/publish_shared.yml
     with:
-      IMAGE_NAME: sxi-node
+      IMAGE_NAME: sxt-node
       working-directory: publish/docker
     secrets: inherit
