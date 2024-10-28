@@ -91,7 +91,10 @@ impl CommitmentParser {
             _ => return Err(CommitmentParserError::InvalidCommitmentScheme),
         };
 
-        let commit = TableCommitmentBytesPerCommitmentScheme { dory, ipa };
+        let commit = TableCommitmentBytesPerCommitmentScheme {
+            dynamic_dory: dory,
+            ipa,
+        };
 
         let namespace = TableNamespace::try_from(namespace.as_bytes().to_vec())
             .map_err(|_| CommitmentParserError::TableNamespaceError)?;

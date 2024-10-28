@@ -27,7 +27,7 @@ where
     fn has_key_and_scheme_impl(&self, key: &TableRef, scheme: &CommitmentScheme) -> bool {
         match scheme {
             CommitmentScheme::Ipa => self.ipa_map.contains_key(key),
-            CommitmentScheme::Dory => self.dory_map.contains_key(key),
+            CommitmentScheme::DynamicDory => self.dory_map.contains_key(key),
         }
     }
 
@@ -38,7 +38,9 @@ where
     ) -> AnyCommitmentScheme<OptionType<V>> {
         match scheme {
             CommitmentScheme::Ipa => AnyCommitmentScheme::Ipa(self.ipa_map.get(key).cloned()),
-            CommitmentScheme::Dory => AnyCommitmentScheme::Dory(self.dory_map.get(key).cloned()),
+            CommitmentScheme::DynamicDory => {
+                AnyCommitmentScheme::DynamicDory(self.dory_map.get(key).cloned())
+            }
         }
     }
 
@@ -51,7 +53,7 @@ where
             AnyCommitmentScheme::Ipa(commitment) => {
                 self.ipa_map.insert(key, commitment);
             }
-            AnyCommitmentScheme::Dory(commitment) => {
+            AnyCommitmentScheme::DynamicDory(commitment) => {
                 self.dory_map.insert(key, commitment);
             }
         }
@@ -62,7 +64,7 @@ where
             CommitmentScheme::Ipa => {
                 self.ipa_map.remove(key);
             }
-            CommitmentScheme::Dory => {
+            CommitmentScheme::DynamicDory => {
                 self.dory_map.remove(key);
             }
         }
@@ -158,22 +160,22 @@ mod tests {
         let (commitment_map, refs) = all_combinations_commitment_map();
 
         assert!(commitment_map.has_key_and_scheme(&refs.ipa_ref, &CommitmentScheme::Ipa));
-        assert!(!commitment_map.has_key_and_scheme(&refs.ipa_ref, &CommitmentScheme::Dory));
+        assert!(!commitment_map.has_key_and_scheme(&refs.ipa_ref, &CommitmentScheme::DynamicDory));
         assert!(!commitment_map.has_key_and_scheme(&refs.dory_ref, &CommitmentScheme::Ipa));
-        assert!(commitment_map.has_key_and_scheme(&refs.dory_ref, &CommitmentScheme::Dory));
+        assert!(commitment_map.has_key_and_scheme(&refs.dory_ref, &CommitmentScheme::DynamicDory));
 
         assert_eq!(
             commitment_map.schemes_for_key(&refs.ipa_ref),
             CommitmentSchemeFlags {
                 ipa: true,
-                dory: false
+                dynamic_dory: false
             }
         );
         assert_eq!(
             commitment_map.schemes_for_key(&refs.dory_ref),
             CommitmentSchemeFlags {
                 ipa: false,
-                dory: true,
+                dynamic_dory: true,
             }
         );
         assert_eq!(
@@ -203,7 +205,7 @@ mod tests {
 
         let ipa_commitments = PerCommitmentScheme {
             ipa: Some(TestCommitmentMetadata::<RistrettoPoint>::new(1)),
-            dory: None,
+            dynamic_dory: None,
         };
         assert_eq!(
             commitment_map.get_commitments(&refs.ipa_ref),
@@ -212,7 +214,7 @@ mod tests {
 
         let dory_commitments = PerCommitmentScheme {
             ipa: None,
-            dory: Some(TestCommitmentMetadata::<DynamicDoryCommitment>::new(2)),
+            dynamic_dory: Some(TestCommitmentMetadata::<DynamicDoryCommitment>::new(2)),
         };
         assert_eq!(
             commitment_map.get_commitments(&refs.dory_ref),
@@ -221,7 +223,7 @@ mod tests {
 
         let all_commitments = PerCommitmentScheme {
             ipa: Some(TestCommitmentMetadata::<RistrettoPoint>::new(3)),
-            dory: Some(TestCommitmentMetadata::<DynamicDoryCommitment>::new(3)),
+            dynamic_dory: Some(TestCommitmentMetadata::<DynamicDoryCommitment>::new(3)),
         };
         assert_eq!(
             commitment_map.get_commitments(&refs.all_ref),
@@ -245,7 +247,7 @@ mod tests {
                 ipa_ref,
                 PerCommitmentScheme {
                     ipa: Some(ipa_commitment),
-                    dory: None,
+                    dynamic_dory: None,
                 },
             )
             .unwrap();
@@ -254,7 +256,7 @@ mod tests {
                 dory_ref,
                 PerCommitmentScheme {
                     ipa: None,
-                    dory: Some(dory_commitment),
+                    dynamic_dory: Some(dory_commitment),
                 },
             )
             .unwrap();
@@ -263,7 +265,7 @@ mod tests {
                 all_ref,
                 PerCommitmentScheme {
                     ipa: Some(ipa_commitment),
-                    dory: Some(dory_commitment),
+                    dynamic_dory: Some(dory_commitment),
                 },
             )
             .unwrap();
@@ -295,7 +297,7 @@ mod tests {
                 refs.ipa_ref,
                 PerCommitmentScheme {
                     ipa: Some(ipa_commitment),
-                    dory: None
+                    dynamic_dory: None
                 }
             ),
             Err(KeyExistsError { .. })
@@ -305,7 +307,7 @@ mod tests {
                 refs.ipa_ref,
                 PerCommitmentScheme {
                     ipa: None,
-                    dory: Some(dory_commitment),
+                    dynamic_dory: Some(dory_commitment),
                 }
             ),
             Err(KeyExistsError { .. })
@@ -315,7 +317,7 @@ mod tests {
                 refs.ipa_ref,
                 PerCommitmentScheme {
                     ipa: Some(ipa_commitment),
-                    dory: Some(dory_commitment),
+                    dynamic_dory: Some(dory_commitment),
                 }
             ),
             Err(KeyExistsError { .. })
@@ -360,7 +362,7 @@ mod tests {
                 refs.ipa_ref,
                 PerCommitmentScheme {
                     ipa: Some(new_ipa_commitment),
-                    dory: None,
+                    dynamic_dory: None,
                 },
             )
             .unwrap();
@@ -378,7 +380,7 @@ mod tests {
                 refs.dory_ref,
                 PerCommitmentScheme {
                     ipa: None,
-                    dory: Some(new_dory_commitment),
+                    dynamic_dory: Some(new_dory_commitment),
                 },
             )
             .unwrap();
@@ -400,7 +402,7 @@ mod tests {
                 refs.all_ref,
                 PerCommitmentScheme {
                     ipa: Some(new_ipa_commitment),
-                    dory: Some(new_dory_commitment),
+                    dynamic_dory: Some(new_dory_commitment),
                 },
             )
             .unwrap();
@@ -430,7 +432,7 @@ mod tests {
 
         let dory_commitments = PerCommitmentScheme {
             ipa: None,
-            dory: Some(new_dory_commitment),
+            dynamic_dory: Some(new_dory_commitment),
         };
         assert!(matches!(
             commitment_map.update_commitments(refs.ipa_ref, dory_commitments),
@@ -439,7 +441,7 @@ mod tests {
 
         let all_commitments = PerCommitmentScheme {
             ipa: Some(new_ipa_commitment),
-            dory: Some(new_dory_commitment),
+            dynamic_dory: Some(new_dory_commitment),
         };
         assert!(matches!(
             commitment_map.update_commitments(refs.ipa_ref, all_commitments),

@@ -26,7 +26,7 @@ fn we_can_initiate_precomputed_commitments() {
 
         let per_commitment_scheme = TableCommitmentBytesPerCommitmentScheme {
             ipa: None,
-            dory: Some(commitment.clone()),
+            dynamic_dory: Some(commitment.clone()),
         };
 
         CommitmentsModule::initiate_precomputed_commitments(
@@ -41,7 +41,7 @@ fn we_can_initiate_precomputed_commitments() {
         );
 
         assert_eq!(
-            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Dory),
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::DynamicDory),
             Some(commitment)
         );
     });
@@ -62,7 +62,7 @@ fn we_cannot_initiate_commitments_if_table_already_exists() {
 
         let per_commitment_scheme = TableCommitmentBytesPerCommitmentScheme {
             ipa: None,
-            dory: Some(commitment.clone()),
+            dynamic_dory: Some(commitment.clone()),
         };
 
         CommitmentsModule::initiate_precomputed_commitments(

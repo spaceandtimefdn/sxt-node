@@ -309,7 +309,7 @@ mod tests {
 
         let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
             ipa: (),
-            dory: &prover_setup,
+            dynamic_dory: &prover_setup,
         };
 
         let table_id = TableIdentifier {
@@ -339,7 +339,7 @@ mod tests {
         .unwrap();
         let empty_commitments = PerCommitmentScheme {
             ipa: None,
-            dory: Some(
+            dynamic_dory: Some(
                 TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
                     empty_table
                         .iter_committable::<DoryScalar>()
@@ -380,7 +380,7 @@ mod tests {
         .unwrap();
         let expected_first_commitments = PerCommitmentScheme {
             ipa: None,
-            dory: Some(
+            dynamic_dory: Some(
                 TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
                     first_insert
                         .iter_committable::<DoryScalar>()
@@ -444,10 +444,10 @@ mod tests {
         .unwrap();
         let expected_second_commitments = PerCommitmentScheme {
             ipa: None,
-            dory: Some(
+            dynamic_dory: Some(
                 expected_first_commitments
                     .clone()
-                    .dory
+                    .dynamic_dory
                     .unwrap()
                     .try_add(
                         TableCommitment::try_from_columns_with_offset(
@@ -488,7 +488,7 @@ mod tests {
 
         let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
             ipa: (),
-            dory: &prover_setup,
+            dynamic_dory: &prover_setup,
         };
 
         let table_id = TableIdentifier {
@@ -516,7 +516,7 @@ mod tests {
 
         let previous_commitments = PerCommitmentScheme {
             ipa: Some(TableCommitment::try_new(Default::default(), 0..2).unwrap()),
-            dory: Some(TableCommitment::try_new(Default::default(), 0..3).unwrap()),
+            dynamic_dory: Some(TableCommitment::try_new(Default::default(), 0..3).unwrap()),
         };
 
         assert!(matches!(
@@ -532,7 +532,7 @@ mod tests {
 
         let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
             ipa: (),
-            dory: &prover_setup,
+            dynamic_dory: &prover_setup,
         };
 
         let table_id = TableIdentifier {
@@ -558,7 +558,7 @@ mod tests {
         .unwrap();
         let previous_commitments = PerCommitmentScheme {
             ipa: None,
-            dory: Some(
+            dynamic_dory: Some(
                 TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
                     empty_table
                         .iter_committable::<DoryScalar>()
@@ -596,7 +596,7 @@ mod tests {
 
         let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
             ipa: (),
-            dory: &prover_setup,
+            dynamic_dory: &prover_setup,
         };
 
         let table_id = TableIdentifier {
@@ -637,7 +637,7 @@ mod tests {
 
         let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
             ipa: (),
-            dory: &prover_setup,
+            dynamic_dory: &prover_setup,
         };
 
         let table_id = TableIdentifier {
@@ -665,7 +665,7 @@ mod tests {
 
         let previous_commitments = PerCommitmentScheme {
             ipa: Some(TableCommitment::try_new(Default::default(), 0..2).unwrap()),
-            dory: Some(TableCommitment::try_new(Default::default(), 0..2).unwrap()),
+            dynamic_dory: Some(TableCommitment::try_new(Default::default(), 0..2).unwrap()),
         };
 
         assert!(matches!(

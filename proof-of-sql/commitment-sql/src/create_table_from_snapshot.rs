@@ -173,12 +173,12 @@ mod tests {
 
             let snapshot_commitments = PerCommitmentScheme {
                 ipa: None,
-                dory: Some(dory_commitment),
+                dynamic_dory: Some(dory_commitment),
             };
 
             let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
                 ipa: (),
-                dory: dory_setup,
+                dynamic_dory: dory_setup,
             };
 
             process_create_table_from_snapshot(create_table, setups, snapshot_commitments)
@@ -225,7 +225,7 @@ mod tests {
 
         let expected_snapshot_commitments = PerCommitmentScheme {
             ipa: None,
-            dory: Some(commitment),
+            dynamic_dory: Some(commitment),
         };
 
         assert_eq!(

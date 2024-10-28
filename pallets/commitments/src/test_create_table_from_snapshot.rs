@@ -65,7 +65,7 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
                 .iter_committable::<DoryScalar>()
                 .map(Result::unwrap),
             0,
-            &PUBLIC_SETUPS.dory,
+            &PUBLIC_SETUPS.dynamic_dory,
         )
         .unwrap();
 
@@ -73,7 +73,7 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
 
         let per_commitment_scheme = TableCommitmentBytesPerCommitmentScheme {
             ipa: None,
-            dory: Some(commitment_bytes.clone()),
+            dynamic_dory: Some(commitment_bytes.clone()),
         };
 
         let create_table = Parser::new(&PostgreSqlDialect {})
@@ -103,7 +103,7 @@ fn we_can_process_create_table_from_snapshot() {
                     .iter_committable::<DoryScalar>()
                     .map(Result::unwrap),
                 0,
-                &PUBLIC_SETUPS.dory,
+                &PUBLIC_SETUPS.dynamic_dory,
             )
             .unwrap();
 
@@ -125,7 +125,7 @@ fn we_can_process_create_table_from_snapshot() {
 
         let flags = CommitmentSchemeFlags {
             ipa: false,
-            dory: true,
+            dynamic_dory: true,
         };
         let (expected_create_table_and_commitment_metadata, _) =
             process_create_table(expected_create_table, *PUBLIC_SETUPS, &flags).unwrap();
@@ -141,7 +141,7 @@ fn we_can_process_create_table_from_snapshot() {
             None
         );
         assert_eq!(
-            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Dory),
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::DynamicDory),
             Some(expected_commitment_bytes)
         );
     });

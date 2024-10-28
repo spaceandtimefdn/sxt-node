@@ -63,7 +63,7 @@ pub mod pallet {
                         .try_into()
                         .unwrap(),
                 ),
-                dory: Some(
+                dynamic_dory: Some(
                     (&TableCommitment::<DynamicDoryCommitment>::default())
                         .try_into()
                         .unwrap(),

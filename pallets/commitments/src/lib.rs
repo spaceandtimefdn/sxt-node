@@ -91,7 +91,7 @@ pub mod pallet {
         fn default() -> Self {
             let default_commitment_schemes = CommitmentSchemeFlags {
                 ipa: false,
-                dory: true,
+                dynamic_dory: true,
             };
 
             GenesisConfig {

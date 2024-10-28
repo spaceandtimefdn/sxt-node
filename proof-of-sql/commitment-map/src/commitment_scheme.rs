@@ -22,7 +22,7 @@ pub enum CommitmentScheme {
     /// Scheme with commitments in the ristretto group, proven by inner-product-argument.
     Ipa,
     /// Scheme with dory commitments.
-    Dory,
+    DynamicDory,
 }
 
 /// Flags for selecting a combination of proof-of-sql commitment schemes.
@@ -31,8 +31,8 @@ pub enum CommitmentScheme {
 pub struct CommitmentSchemeFlags {
     /// Select [`CommitmentScheme::Ipa`].
     pub ipa: bool,
-    /// Select [`CommitmentScheme::Dory`].
-    pub dory: bool,
+    /// Select [`CommitmentScheme::DynamicDory`].
+    pub dynamic_dory: bool,
 }
 
 impl CommitmentSchemeFlags {
@@ -40,7 +40,7 @@ impl CommitmentSchemeFlags {
     pub const fn all() -> Self {
         CommitmentSchemeFlags {
             ipa: true,
-            dory: true,
+            dynamic_dory: true,
         }
     }
 }
@@ -51,7 +51,10 @@ impl FromIterator<CommitmentScheme> for CommitmentSchemeFlags {
             CommitmentSchemeFlags::default(),
             |acc, scheme| match scheme {
                 CommitmentScheme::Ipa => CommitmentSchemeFlags { ipa: true, ..acc },
-                CommitmentScheme::Dory => CommitmentSchemeFlags { dory: true, ..acc },
+                CommitmentScheme::DynamicDory => CommitmentSchemeFlags {
+                    dynamic_dory: true,
+                    ..acc
+                },
             },
         )
     }
@@ -63,11 +66,14 @@ impl IntoIterator for CommitmentSchemeFlags {
         core::iter::Chain<core::option::IntoIter<Self::Item>, core::option::IntoIter<Self::Item>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let CommitmentSchemeFlags { ipa, dory } = self;
+        let CommitmentSchemeFlags {
+            ipa,
+            dynamic_dory: dory,
+        } = self;
 
         itertools::chain!(
             ipa.then_some(CommitmentScheme::Ipa),
-            dory.then_some(CommitmentScheme::Dory)
+            dory.then_some(CommitmentScheme::DynamicDory)
         )
     }
 }
@@ -78,8 +84,8 @@ impl IntoIterator for CommitmentSchemeFlags {
 pub enum AnyCommitmentScheme<T: GenericOverCommitment> {
     /// Data with [`CommitmentScheme::Ipa`].
     Ipa(T::WithCommitment<RistrettoPoint>),
-    /// Data with [`CommitmentScheme::Dory`].
-    Dory(T::WithCommitment<DynamicDoryCommitment>),
+    /// Data with [`CommitmentScheme::DynamicDory`].
+    DynamicDory(T::WithCommitment<DynamicDoryCommitment>),
 }
 
 impl<T: GenericOverCommitment> AnyCommitmentScheme<T> {
@@ -95,7 +101,9 @@ impl<T: GenericOverCommitment> AnyCommitmentScheme<T> {
     {
         match self {
             AnyCommitmentScheme::Ipa(data) => AnyCommitmentScheme::Ipa(mapper.call(data)),
-            AnyCommitmentScheme::Dory(data) => AnyCommitmentScheme::Dory(mapper.call(data)),
+            AnyCommitmentScheme::DynamicDory(data) => {
+                AnyCommitmentScheme::DynamicDory(mapper.call(data))
+            }
         }
     }
 }
@@ -105,8 +113,10 @@ impl<T: GenericOverCommitment> AnyCommitmentScheme<OptionType<T>> {
     pub fn transpose_option(self) -> Option<AnyCommitmentScheme<T>> {
         match self {
             AnyCommitmentScheme::Ipa(Some(data)) => Some(AnyCommitmentScheme::Ipa(data)),
-            AnyCommitmentScheme::Dory(Some(data)) => Some(AnyCommitmentScheme::Dory(data)),
-            AnyCommitmentScheme::Ipa(None) | AnyCommitmentScheme::Dory(None) => None,
+            AnyCommitmentScheme::DynamicDory(Some(data)) => {
+                Some(AnyCommitmentScheme::DynamicDory(data))
+            }
+            AnyCommitmentScheme::Ipa(None) | AnyCommitmentScheme::DynamicDory(None) => None,
         }
     }
 }
@@ -116,8 +126,10 @@ impl<T: GenericOverCommitment, E> AnyCommitmentScheme<ResultOkType<T, E>> {
     pub fn transpose_result(self) -> Result<AnyCommitmentScheme<T>, E> {
         match self {
             AnyCommitmentScheme::Ipa(Ok(data)) => Ok(AnyCommitmentScheme::Ipa(data)),
-            AnyCommitmentScheme::Dory(Ok(data)) => Ok(AnyCommitmentScheme::Dory(data)),
-            AnyCommitmentScheme::Ipa(Err(e)) | AnyCommitmentScheme::Dory(Err(e)) => Err(e),
+            AnyCommitmentScheme::DynamicDory(Ok(data)) => {
+                Ok(AnyCommitmentScheme::DynamicDory(data))
+            }
+            AnyCommitmentScheme::Ipa(Err(e)) | AnyCommitmentScheme::DynamicDory(Err(e)) => Err(e),
         }
     }
 }
@@ -130,9 +142,9 @@ impl<T: GenericOverCommitment, U: GenericOverCommitment> AnyCommitmentScheme<Pai
                 AnyCommitmentScheme::Ipa(left),
                 AnyCommitmentScheme::Ipa(right),
             ),
-            AnyCommitmentScheme::Dory((left, right)) => (
-                AnyCommitmentScheme::Dory(left),
-                AnyCommitmentScheme::Dory(right),
+            AnyCommitmentScheme::DynamicDory((left, right)) => (
+                AnyCommitmentScheme::DynamicDory(left),
+                AnyCommitmentScheme::DynamicDory(right),
             ),
         }
     }
@@ -143,7 +155,7 @@ impl<T> AnyCommitmentScheme<ConcreteType<T>> {
     pub fn unwrap(self) -> T {
         match self {
             AnyCommitmentScheme::Ipa(data) => data,
-            AnyCommitmentScheme::Dory(data) => data,
+            AnyCommitmentScheme::DynamicDory(data) => data,
         }
     }
 }
@@ -152,7 +164,7 @@ impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentSchem
     fn from(commitment: &AnyCommitmentScheme<T>) -> Self {
         match commitment {
             AnyCommitmentScheme::Ipa(_) => CommitmentScheme::Ipa,
-            AnyCommitmentScheme::Dory(_) => CommitmentScheme::Dory,
+            AnyCommitmentScheme::DynamicDory(_) => CommitmentScheme::DynamicDory,
         }
     }
 }
@@ -163,8 +175,8 @@ impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentSchem
 pub struct PerCommitmentScheme<T: GenericOverCommitment> {
     /// Element with [`CommitmentScheme::Ipa`].
     pub ipa: T::WithCommitment<RistrettoPoint>,
-    /// Element with [`CommitmentScheme::Dory`].
-    pub dory: T::WithCommitment<DynamicDoryCommitment>,
+    /// Element with [`CommitmentScheme::DynamicDory`].
+    pub dynamic_dory: T::WithCommitment<DynamicDoryCommitment>,
 }
 
 impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
@@ -175,7 +187,7 @@ impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
     {
         PerCommitmentScheme {
             ipa: mapper.call(self.ipa),
-            dory: mapper.call(self.dory),
+            dynamic_dory: mapper.call(self.dynamic_dory),
         }
     }
 
@@ -183,7 +195,7 @@ impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
     pub fn select(self, flags: &CommitmentSchemeFlags) -> PerCommitmentScheme<OptionType<T>> {
         PerCommitmentScheme {
             ipa: flags.ipa.then_some(self.ipa),
-            dory: flags.dory.then_some(self.dory),
+            dynamic_dory: flags.dynamic_dory.then_some(self.dynamic_dory),
         }
     }
 
@@ -194,7 +206,7 @@ impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
     ) -> PerCommitmentScheme<PairType<T, U>> {
         PerCommitmentScheme {
             ipa: (self.ipa, other.ipa),
-            dory: (self.dory, other.dory),
+            dynamic_dory: (self.dynamic_dory, other.dynamic_dory),
         }
     }
 }
@@ -205,11 +217,11 @@ impl<T: GenericOverCommitment, U: GenericOverCommitment> PerCommitmentScheme<Pai
         (
             PerCommitmentScheme {
                 ipa: self.ipa.0,
-                dory: self.dory.0,
+                dynamic_dory: self.dynamic_dory.0,
             },
             PerCommitmentScheme {
                 ipa: self.ipa.1,
-                dory: self.dory.1,
+                dynamic_dory: self.dynamic_dory.1,
             },
         )
     }
@@ -229,10 +241,15 @@ impl<T: GenericOverCommitment> PerCommitmentScheme<OptionType<T>> {
 }
 
 impl<T: GenericOverCommitment> From<&PerCommitmentScheme<OptionType<T>>> for CommitmentSchemeFlags {
-    fn from(PerCommitmentScheme { ipa, dory }: &PerCommitmentScheme<OptionType<T>>) -> Self {
+    fn from(
+        PerCommitmentScheme {
+            ipa,
+            dynamic_dory: dory,
+        }: &PerCommitmentScheme<OptionType<T>>,
+    ) -> Self {
         CommitmentSchemeFlags {
             ipa: ipa.is_some(),
-            dory: dory.is_some(),
+            dynamic_dory: dory.is_some(),
         }
     }
 }
@@ -241,7 +258,7 @@ impl<T: GenericOverCommitment> Default for PerCommitmentScheme<OptionType<T>> {
     fn default() -> Self {
         PerCommitmentScheme {
             ipa: None,
-            dory: None,
+            dynamic_dory: None,
         }
     }
 }
@@ -251,11 +268,14 @@ impl<T: GenericOverCommitment> IntoIterator for PerCommitmentScheme<T> {
     type IntoIter = alloc::vec::IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let PerCommitmentScheme { ipa, dory } = self;
+        let PerCommitmentScheme {
+            ipa,
+            dynamic_dory: dory,
+        } = self;
 
         alloc::vec![
             AnyCommitmentScheme::Ipa(ipa),
-            AnyCommitmentScheme::Dory(dory),
+            AnyCommitmentScheme::DynamicDory(dory),
         ]
         .into_iter()
     }
@@ -271,8 +291,8 @@ impl<G: GenericOverCommitment> FromIterator<AnyCommitmentScheme<G>>
                     ipa: Some(data),
                     ..acc
                 },
-                AnyCommitmentScheme::Dory(data) => PerCommitmentScheme {
-                    dory: Some(data),
+                AnyCommitmentScheme::DynamicDory(data) => PerCommitmentScheme {
+                    dynamic_dory: Some(data),
                     ..acc
                 },
             })
@@ -295,26 +315,29 @@ mod tests {
     fn we_can_iterate_over_commitment_schemes_in_commitment_scheme_flags() {
         let no_flags = CommitmentSchemeFlags {
             ipa: false,
-            dory: false,
+            dynamic_dory: false,
         };
         assert_eq!(Vec::from_iter(no_flags), vec![]);
 
         let ipa_flags = CommitmentSchemeFlags {
             ipa: true,
-            dory: false,
+            dynamic_dory: false,
         };
         assert_eq!(Vec::from_iter(ipa_flags), vec![CommitmentScheme::Ipa]);
 
         let dory_flags = CommitmentSchemeFlags {
             ipa: false,
-            dory: true,
+            dynamic_dory: true,
         };
-        assert_eq!(Vec::from_iter(dory_flags), vec![CommitmentScheme::Dory]);
+        assert_eq!(
+            Vec::from_iter(dory_flags),
+            vec![CommitmentScheme::DynamicDory]
+        );
 
         let all_flags = CommitmentSchemeFlags::all();
         assert_eq!(
             Vec::from_iter(all_flags),
-            vec![CommitmentScheme::Ipa, CommitmentScheme::Dory]
+            vec![CommitmentScheme::Ipa, CommitmentScheme::DynamicDory]
         );
     }
 
@@ -328,21 +351,23 @@ mod tests {
             ipa_flags,
             CommitmentSchemeFlags {
                 ipa: true,
-                dory: false
+                dynamic_dory: false
             }
         );
 
-        let dory_flags = CommitmentSchemeFlags::from_iter([CommitmentScheme::Dory]);
+        let dory_flags = CommitmentSchemeFlags::from_iter([CommitmentScheme::DynamicDory]);
         assert_eq!(
             dory_flags,
             CommitmentSchemeFlags {
                 ipa: false,
-                dory: true
+                dynamic_dory: true
             }
         );
 
-        let all_flags =
-            CommitmentSchemeFlags::from_iter([CommitmentScheme::Ipa, CommitmentScheme::Dory]);
+        let all_flags = CommitmentSchemeFlags::from_iter([
+            CommitmentScheme::Ipa,
+            CommitmentScheme::DynamicDory,
+        ]);
         assert_eq!(all_flags, CommitmentSchemeFlags::all());
     }
 
@@ -350,13 +375,13 @@ mod tests {
     fn we_can_iterate_over_commitments_in_per_commitment_scheme() {
         let all_commitments = PerCommitmentScheme::<CommitmentType> {
             ipa: Default::default(),
-            dory: Default::default(),
+            dynamic_dory: Default::default(),
         };
         assert_eq!(
             Vec::from_iter(all_commitments),
             vec![
                 AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default()),
-                AnyCommitmentScheme::<CommitmentType>::Dory(Default::default())
+                AnyCommitmentScheme::<CommitmentType>::DynamicDory(Default::default())
             ]
         );
     }
@@ -366,45 +391,46 @@ mod tests {
         let ipa_commitment = AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default());
         assert_eq!(ipa_commitment.to_scheme(), CommitmentScheme::Ipa);
 
-        let dory_commitment = AnyCommitmentScheme::<CommitmentType>::Dory(Default::default());
-        assert_eq!(dory_commitment.to_scheme(), CommitmentScheme::Dory);
+        let dory_commitment =
+            AnyCommitmentScheme::<CommitmentType>::DynamicDory(Default::default());
+        assert_eq!(dory_commitment.to_scheme(), CommitmentScheme::DynamicDory);
     }
 
     #[test]
     fn we_can_convert_per_commitment_scheme_to_flags() {
         let no_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: None,
-            dory: None,
+            dynamic_dory: None,
         };
         assert_eq!(no_commitments.to_flags(), CommitmentSchemeFlags::default());
 
         let ipa_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: Some(Default::default()),
-            dory: None,
+            dynamic_dory: None,
         };
         assert_eq!(
             ipa_commitments.to_flags(),
             CommitmentSchemeFlags {
                 ipa: true,
-                dory: false
+                dynamic_dory: false
             }
         );
 
         let dory_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: None,
-            dory: Some(Default::default()),
+            dynamic_dory: Some(Default::default()),
         };
         assert_eq!(
             dory_commitments.to_flags(),
             CommitmentSchemeFlags {
                 ipa: false,
-                dory: true
+                dynamic_dory: true
             }
         );
 
         let all_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: Some(Default::default()),
-            dory: Some(Default::default()),
+            dynamic_dory: Some(Default::default()),
         };
         assert_eq!(all_commitments.to_flags(), CommitmentSchemeFlags::all());
     }
@@ -418,17 +444,18 @@ mod tests {
             Some(AnyCommitmentScheme::Ipa(Default::default()))
         );
 
-        let dory_commitment =
-            AnyCommitmentScheme::<OptionType<CommitmentType>>::Dory(Some(Default::default()));
+        let dory_commitment = AnyCommitmentScheme::<OptionType<CommitmentType>>::DynamicDory(Some(
+            Default::default(),
+        ));
         assert_eq!(
             dory_commitment.transpose_option(),
-            Some(AnyCommitmentScheme::Dory(Default::default()))
+            Some(AnyCommitmentScheme::DynamicDory(Default::default()))
         );
 
         let ipa_commitment = AnyCommitmentScheme::<OptionType<CommitmentType>>::Ipa(None);
         assert_eq!(ipa_commitment.transpose_option(), None);
 
-        let dory_commitment = AnyCommitmentScheme::<OptionType<CommitmentType>>::Dory(None);
+        let dory_commitment = AnyCommitmentScheme::<OptionType<CommitmentType>>::DynamicDory(None);
         assert_eq!(dory_commitment.transpose_option(), None);
     }
 
@@ -441,12 +468,13 @@ mod tests {
             Ok(AnyCommitmentScheme::Ipa(Default::default()))
         );
 
-        let dory_commitment = AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::Dory(Ok(
-            Default::default(),
-        ));
+        let dory_commitment =
+            AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::DynamicDory(Ok(
+                Default::default(),
+            ));
         assert_eq!(
             dory_commitment.transpose_result(),
-            Ok(AnyCommitmentScheme::Dory(Default::default()))
+            Ok(AnyCommitmentScheme::DynamicDory(Default::default()))
         );
 
         let ipa_commitment =
@@ -454,7 +482,7 @@ mod tests {
         assert_eq!(ipa_commitment.transpose_result(), Err(1));
 
         let dory_commitment =
-            AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::Dory(Err(2));
+            AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::DynamicDory(Err(2));
         assert_eq!(dory_commitment.transpose_result(), Err(2));
     }
 
@@ -462,7 +490,7 @@ mod tests {
     fn we_can_collect_per_commitment_scheme_with_option_type_from_iter_and_into_flat_iter() {
         let no_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: None,
-            dory: None,
+            dynamic_dory: None,
         };
         let no_iterator = vec![];
         assert_eq!(
@@ -473,7 +501,7 @@ mod tests {
 
         let ipa_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: Some(Default::default()),
-            dory: None,
+            dynamic_dory: None,
         };
         let ipa_iterator = vec![AnyCommitmentScheme::<CommitmentType>::Ipa(
             Default::default(),
@@ -489,9 +517,9 @@ mod tests {
 
         let dory_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: None,
-            dory: Some(Default::default()),
+            dynamic_dory: Some(Default::default()),
         };
-        let dory_iterator = vec![AnyCommitmentScheme::<CommitmentType>::Dory(
+        let dory_iterator = vec![AnyCommitmentScheme::<CommitmentType>::DynamicDory(
             Default::default(),
         )];
         assert_eq!(
@@ -505,11 +533,11 @@ mod tests {
 
         let all_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: Some(Default::default()),
-            dory: Some(Default::default()),
+            dynamic_dory: Some(Default::default()),
         };
         let all_iterator = vec![
             AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default()),
-            AnyCommitmentScheme::<CommitmentType>::Dory(Default::default()),
+            AnyCommitmentScheme::<CommitmentType>::DynamicDory(Default::default()),
         ];
         assert_eq!(
             all_commitments.into_flat_iter().collect::<Vec<_>>(),
@@ -542,11 +570,11 @@ mod tests {
 
         let per_commitment_scheme = PerCommitmentScheme::<CommitmentType> {
             ipa: Default::default(),
-            dory: Default::default(),
+            dynamic_dory: Default::default(),
         };
         let some_per_commitment_scheme = PerCommitmentScheme::<OptionType<CommitmentType>> {
             ipa: Some(Default::default()),
-            dory: Some(Default::default()),
+            dynamic_dory: Some(Default::default()),
         };
 
         assert_eq!(
@@ -559,7 +587,7 @@ mod tests {
     fn we_can_select_per_commitment_scheme_by_flags() {
         let per_commitment_scheme = PerCommitmentScheme::<CommitmentType> {
             ipa: Default::default(),
-            dory: Default::default(),
+            dynamic_dory: Default::default(),
         };
 
         let no_flags = CommitmentSchemeFlags::default();
@@ -576,19 +604,19 @@ mod tests {
             per_commitment_scheme.select(&ipa_flags),
             PerCommitmentScheme::<OptionType<CommitmentType>> {
                 ipa: Some(Default::default()),
-                dory: None,
+                dynamic_dory: None,
             }
         );
 
         let dory_flags = CommitmentSchemeFlags {
-            dory: true,
+            dynamic_dory: true,
             ..Default::default()
         };
         assert_eq!(
             per_commitment_scheme.select(&dory_flags),
             PerCommitmentScheme::<OptionType<CommitmentType>> {
                 ipa: None,
-                dory: Some(Default::default()),
+                dynamic_dory: Some(Default::default()),
             }
         );
 
@@ -597,7 +625,7 @@ mod tests {
             per_commitment_scheme.select(&all_flags),
             PerCommitmentScheme::<OptionType<CommitmentType>> {
                 ipa: Some(Default::default()),
-                dory: Some(Default::default()),
+                dynamic_dory: Some(Default::default()),
             }
         );
     }
@@ -606,18 +634,18 @@ mod tests {
     fn we_can_zip_and_unzip_per_commitment_scheme() {
         let commitments = PerCommitmentScheme::<CommitmentType> {
             ipa: Default::default(),
-            dory: Default::default(),
+            dynamic_dory: Default::default(),
         };
 
         let scalars = PerCommitmentScheme::<AssociatedScalarType> {
             ipa: Curve25519Scalar::ZERO,
-            dory: DoryScalar::ONE,
+            dynamic_dory: DoryScalar::ONE,
         };
 
         let commitments_with_scalars =
             PerCommitmentScheme::<PairType<CommitmentType, AssociatedScalarType>> {
                 ipa: (Default::default(), Curve25519Scalar::ZERO),
-                dory: (Default::default(), DoryScalar::ONE),
+                dynamic_dory: (Default::default(), DoryScalar::ONE),
             };
 
         assert_eq!(commitments.zip(scalars), commitments_with_scalars);
@@ -639,14 +667,16 @@ mod tests {
             )
         );
 
-        let dory_commitment_with_scalar = AnyCommitmentScheme::<
-            PairType<CommitmentType, AssociatedScalarType>,
-        >::Dory((Default::default(), DoryScalar::TWO));
+        let dory_commitment_with_scalar =
+            AnyCommitmentScheme::<PairType<CommitmentType, AssociatedScalarType>>::DynamicDory((
+                Default::default(),
+                DoryScalar::TWO,
+            ));
         assert_eq!(
             dory_commitment_with_scalar.unzip(),
             (
-                AnyCommitmentScheme::<CommitmentType>::Dory(Default::default()),
-                AnyCommitmentScheme::<AssociatedScalarType>::Dory(DoryScalar::TWO)
+                AnyCommitmentScheme::<CommitmentType>::DynamicDory(Default::default()),
+                AnyCommitmentScheme::<AssociatedScalarType>::DynamicDory(DoryScalar::TWO)
             )
         );
     }
@@ -656,7 +686,7 @@ mod tests {
         let ipa_usize = AnyCommitmentScheme::<ConcreteType<usize>>::Ipa(123);
         assert_eq!(ipa_usize.unwrap(), 123);
 
-        let dory_usize = AnyCommitmentScheme::<ConcreteType<usize>>::Dory(456);
+        let dory_usize = AnyCommitmentScheme::<ConcreteType<usize>>::DynamicDory(456);
         assert_eq!(dory_usize.unwrap(), 456);
     }
 }

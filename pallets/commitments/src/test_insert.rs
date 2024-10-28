@@ -72,12 +72,12 @@ fn we_can_process_insert() {
                     .iter_committable::<DoryScalar>()
                     .map(Result::unwrap),
                 0,
-                &PUBLIC_SETUPS.dory,
+                &PUBLIC_SETUPS.dynamic_dory,
             )
             .unwrap();
 
         let empty_commitments = PerCommitmentScheme {
-            dory: Some(empty_commitment),
+            dynamic_dory: Some(empty_commitment),
             ipa: None,
         };
 
@@ -91,7 +91,7 @@ fn we_can_process_insert() {
         )
         .unwrap();
         let expected_commitment_bytes =
-            TableCommitmentBytes::try_from(&expected_commitments.dory.unwrap()).unwrap();
+            TableCommitmentBytes::try_from(&expected_commitments.dynamic_dory.unwrap()).unwrap();
 
         let table_id = test_params.table_id.clone();
         let insert_and_commitment_metadata = test_params.execute().unwrap();
@@ -106,7 +106,7 @@ fn we_can_process_insert() {
             None
         );
         assert_eq!(
-            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Dory),
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::DynamicDory),
             Some(expected_commitment_bytes)
         );
     });

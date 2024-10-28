@@ -24,6 +24,6 @@ lazy_static::lazy_static! {
     pub static ref PUBLIC_SETUPS: PerCommitmentScheme<AssociatedPublicSetupType<'static>> =
         PerCommitmentScheme {
             ipa: (),
-            dory: &*PROVER_SETUP,
+            dynamic_dory: &*PROVER_SETUP,
         };
 }

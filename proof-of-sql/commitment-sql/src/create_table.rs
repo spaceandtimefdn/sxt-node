@@ -142,12 +142,12 @@ mod tests {
 
         let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
             ipa: (),
-            dory: &prover_setup,
+            dynamic_dory: &prover_setup,
         };
 
         // we currently cannot compute ipa commitments in no_std environments
         let flags = CommitmentSchemeFlags {
-            dory: true,
+            dynamic_dory: true,
             ipa: false,
         };
 
@@ -201,7 +201,7 @@ mod tests {
 
         let expected_commitments = PerCommitmentScheme {
             ipa: None,
-            dory: Some(expected_dory_commitment),
+            dynamic_dory: Some(expected_dory_commitment),
         };
 
         assert_eq!(
@@ -220,7 +220,7 @@ mod tests {
 
         let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
             ipa: (),
-            dory: &prover_setup,
+            dynamic_dory: &prover_setup,
         };
 
         let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
