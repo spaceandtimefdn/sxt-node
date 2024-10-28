@@ -84,6 +84,8 @@ sxt-core.workspace = true
 proof-of-sql-commitment-map = { workspace = true, features = [ "substrate",
 ]}
 sqlparser = { workspace = true, default-features = false }
+bs58 = "0.5.1"
+dotenv = "0.15.0"
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true

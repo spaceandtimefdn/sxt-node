@@ -1,11 +1,14 @@
+use std::env;
 use std::fs::read_to_string;
 
+use dotenv::dotenv;
 use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
 use sc_service::{ChainType, Properties};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::AccountId32;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
@@ -106,6 +109,73 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+        ],
+        true,
+    ))
+    .build())
+}
+
+fn get_env_or_panic(input: &str) -> String {
+    env::var(input).unwrap_or_else(|_| panic!("ERROR: {} ENV variable not set", input))
+}
+
+fn validators_or_panic() -> (String, String, String) {
+    (
+        get_env_or_panic("SXT_VALIDATOR_1"),
+        get_env_or_panic("SXT_VALIDATOR_2"),
+        get_env_or_panic("SXT_VALIDATOR_3"),
+    )
+}
+
+fn indexers_or_panic() -> (String, String, String, String, String) {
+    (
+        get_env_or_panic("SXT_INDEXER_1"),
+        get_env_or_panic("SXT_INDEXER_2"),
+        get_env_or_panic("SXT_INDEXER_3"),
+        get_env_or_panic("SXT_INDEXER_4"),
+        get_env_or_panic("SXT_INDEXER_5"),
+    )
+}
+
+fn sudo_key_or_panic() -> String {
+    get_env_or_panic("SXT_SUDO_KEY")
+}
+
+pub fn production_config() -> Result<ChainSpec, String> {
+    dotenv().ok();
+
+    let (validator1, validator2, validator3) = validators_or_panic();
+    let (indexer1, indexer2, indexer3, indexer4, indexer5) = indexers_or_panic();
+    let sudo_key = sudo_key_or_panic();
+
+    Ok(ChainSpec::builder(
+        WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
+        None,
+    )
+    .with_name("Sxt Testnet")
+    .with_id("sxt-testnet")
+    .with_chain_type(ChainType::Local)
+    .with_properties(token_properties())
+    .with_genesis_config_patch(testnet_genesis(
+        // Initial PoA authorities
+        vec![
+            authority_keys_from_seed(&validator1),
+            authority_keys_from_seed(&validator2),
+            authority_keys_from_seed(&validator3),
+        ],
+        // Sudo account
+        get_account_id_from_seed::<sr25519::Public>(&sudo_key),
+        // Pre-funded accounts
+        vec![
+            get_account_id_from_seed::<sr25519::Public>(&sudo_key),
+            get_account_id_from_seed::<sr25519::Public>(&validator1),
+            get_account_id_from_seed::<sr25519::Public>(&validator2),
+            get_account_id_from_seed::<sr25519::Public>(&validator3),
+            get_account_id_from_seed::<sr25519::Public>(&indexer1),
+            get_account_id_from_seed::<sr25519::Public>(&indexer2),
+            get_account_id_from_seed::<sr25519::Public>(&indexer3),
+            get_account_id_from_seed::<sr25519::Public>(&indexer4),
+            get_account_id_from_seed::<sr25519::Public>(&indexer5),
         ],
         true,
     ))

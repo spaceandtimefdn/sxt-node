@@ -15,6 +15,7 @@ use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sxt_runtime::opaque::Block;
 use sxt_runtime::{self, RuntimeApi};
 
+/// Full client
 pub(crate) type FullClient = sc_service::TFullClient<
     Block,
     RuntimeApi,
