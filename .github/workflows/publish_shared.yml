@@ -62,3 +62,5 @@ jobs:
           push: true
           tags: ${{ env.DOCKER_TAG }}
           labels: ${{ env.DOCKER_TAG }}
+          build-args:
+            - GIT_REVISION=${{ env.GIT_REVISION }}
