@@ -53,7 +53,7 @@ jobs:
           JF_PASSWORD: ${{ env.ARTIFACTORY_API_KEY }}
       - name: docker pull from jfrog
         run: |  
-         jf docker pull ${{ env.JF_URL }}/${{ env.SRC_REPO }}/${{ inputs.IMAGE_NAME }}
+          jf docker pull ${{ env.JF_URL }}/${{ env.SRC_REPO }}/${{ inputs.IMAGE_NAME }}
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
@@ -67,4 +67,4 @@ jobs:
           context: ${{ inputs.working-directory }}
           push: true
           tags: ${{ env.DOCKER_TAG }}
-         labels: ${{ env.DOCKER_TAG }}
+          labels: ${{ env.DOCKER_TAG }}
