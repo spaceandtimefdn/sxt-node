@@ -1,0 +1,48 @@
+{
+    "aura": {
+        "authorities": [
+            "5FxH7N2VW58YDvHG3Vs7U6uxxHazdPpmt94v84eRy5WVx3vN",
+            "5H6pkKPc1DL1BzLcngaDUDn9Rw9TL2GpeABsn269y7zKqvwK",
+            "5Fe6yxSCCHvXmoGthrhtxHkc2RyHjvebH63He25EWrN6WcUe"
+        ]
+    },
+    "balances": {
+        "balances": [
+            [
+                "5FxH7N2VW58YDvHG3Vs7U6uxxHazdPpmt94v84eRy5WVx3vN",
+                1152921504606846976
+            ],
+            [
+                "5H6pkKPc1DL1BzLcngaDUDn9Rw9TL2GpeABsn269y7zKqvwK",
+                1152921504606846976
+            ],
+            [
+                "5Fe6yxSCCHvXmoGthrhtxHkc2RyHjvebH63He25EWrN6WcUe",
+                1152921504606846976
+            ],
+            [
+                "5DHqCXQo4M4RvERYd37DaiytSSkw1mReZJtGWG7hyXLKbjKh",
+                1152921504606846976
+            ]
+        ]
+    },
+    "grandpa": {
+        "authorities": [
+            [
+                "5DzMNgXgYRQbSdQ1mWL4ojHFPdj94FSTzNCeiYVP6ZcUSn2T",
+                1
+            ],
+            [
+                "5CjVYCuAMPpHCafELtbRFJobnueYMivNnXpXbVauqx5MdgyN",
+                1
+            ],
+            [
+                "5FS2hWoNvGSS3Yp2xQzjPmvy91dxwp1KGzGGpJKbHxhGeYqu",
+                1
+            ]
+        ]
+    },
+    "sudo": {
+        "key": "5DHqCXQo4M4RvERYd37DaiytSSkw1mReZJtGWG7hyXLKbjKh"
+    }
+}
