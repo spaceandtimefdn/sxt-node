@@ -60,11 +60,11 @@ jobs:
           registry: ${{ env.PUB_REPO }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-     - name: Build and push Docker image
-       id: push
-       uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
-       with:
-         context: ${{ inputs.working-directory }}
-         push: true
-         tags: ${{ env.DOCKER_TAG }}
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ${{ inputs.working-directory }}
+          push: true
+          tags: ${{ env.DOCKER_TAG }}
          labels: ${{ env.DOCKER_TAG }}
