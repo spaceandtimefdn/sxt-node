@@ -1,9 +1,11 @@
 name: gchr
 
 on:
-#  push:
-#    branches:
-#      - main
+  push:
+    branches:
+      - main
+  paths:
+      - publish/docker/*
   workflow_dispatch:
 
 concurrency:
