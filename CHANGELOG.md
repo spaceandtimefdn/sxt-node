@@ -1,3 +1,12 @@
+## [0.49.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.49.0...v0.49.1) (2024-10-28)
+
+
+### Bug Fixes
+
+* indentation ([2a783bc](https://github.com/spaceandtimelabs/sxt-node/commit/2a783bcd217c513e2bfc421d9159124242803df4))
+
+
+
 # [0.49.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.48.1...v0.49.0) (2024-10-28)
 
 
@@ -56,20 +65,6 @@
 ### Features
 
 * bump proof-of-sql to 0.34.1 ([87c3e3b](https://github.com/spaceandtimelabs/sxt-node/commit/87c3e3bfb0e7d1fa01a47c8b7af01429c02d5284))
-
-
-
-# [0.46.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.45.1...v0.46.0) (2024-10-28)
-
-
-### Bug Fixes
-
-* coerce insert data column order into existing commitment order ([c940fde](https://github.com/spaceandtimelabs/sxt-node/commit/c940fdeb75f7c335a146535b8739774a179e89c7))
-
-
-### Features
-
-* add OnChainTable::with_column_order method ([30afaff](https://github.com/spaceandtimelabs/sxt-node/commit/30afaff87025c1cb258884375d53518950ae3931))
 
 
 
