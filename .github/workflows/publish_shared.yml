@@ -27,7 +27,8 @@ jobs:
       SRC_REPO: spaceandtime.jfrog.io/sxtnode-docker-local
       PUB_REPO: ghcr.io/spaceandtimelabs
     steps:
-      - uses: actions/checkout@v4.1.0
+      - name: Check out
+        uses: actions/checkout@v4.1.0
         with:
           submodules: true
           fetch-depth: 0 # download tags, see https://github.com/actions/checkout/issues/100
