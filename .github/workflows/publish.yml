@@ -1,0 +1,19 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_node:
+    uses: ./.github/workflows/build_shared.yml
+    with:
+      IMAGE_NAME: sxi-node
+      working-directory: publish/docker/sxi-node
+    secrets: inherit
