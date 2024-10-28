@@ -1,0 +1,19 @@
+name: gchr
+
+on:
+#  push:
+#    branches:
+#      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_node:
+    uses: ./.github/workflows/publish_shared.yml
+    with:
+      IMAGE_NAME: sxt-node
+      working-directory: publish/docker
+    secrets: inherit
