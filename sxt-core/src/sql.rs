@@ -4,13 +4,14 @@ use std::hash::Hash;
 use std::sync::Arc;
 use std::time::Duration;
 
+use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use arrow_flight::sql::client::FlightSqlServiceClient;
 use arrow_flight::sql::CommandStatementIngest;
 use codec::Decode;
 use frame_support::__private::log;
 use on_chain_table::OnChainTable;
-use sc_client_api::{Backend, BlockchainEvents, StorageKey, StorageProvider};
+use sc_client_api::{Backend, BlockchainEvents, Finalizer, StorageKey, StorageProvider};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::traits::SpawnEssentialNamed;
@@ -24,6 +25,7 @@ use subxt::ext::futures;
 use subxt::ext::futures::StreamExt;
 use subxt::{OnlineClient, PolkadotConfig};
 use tokio::sync::Mutex;
+use tokio::time::sleep;
 use tonic::transport::Channel;
 #[cfg(not(doctest))] // Skip doc tests on generated file
 use {
@@ -34,6 +36,13 @@ use {
 };
 
 use crate::tables::{GenesisTable, GenesisTableList};
+
+/// Maximum delay between backoff retries (3 minutes)
+pub const MAX_DELAY_SECONDS: u64 = 60 * 3;
+/// Minimum delay between backoff retries (5 Second)
+pub const MIN_DELAY_SECONDS: u64 = 5;
+/// Maximum number of retries
+pub const MAX_RETRY_ATTEMPTS: u32 = 5;
 
 /// Errors relating to the sql interactions with FlightSQL
 #[derive(Debug)]
@@ -64,6 +73,7 @@ pub fn spawn_flightsql_tasks<Client, Block, BE>(
         + HeaderBackend<Block>
         + ProvideRuntimeApi<Block>
         + StorageProvider<Block, BE>
+        + Finalizer<Block, BE>
         + 'static,
     BE: Backend<Block>,
     Block: sp_runtime::traits::Block,
@@ -81,29 +91,45 @@ pub fn spawn_flightsql_tasks<Client, Block, BE>(
 /// data quorum and table creation events.
 async fn run<Client, Block, BE>(chain_client: Arc<Client>)
 where
-    Client: BlockchainEvents<Block> + HeaderBackend<Block> + StorageProvider<Block, BE>,
+    Client: BlockchainEvents<Block>
+        + HeaderBackend<Block>
+        + StorageProvider<Block, BE>
+        + Finalizer<Block, BE>,
     BE: Backend<Block>,
     Block: sp_runtime::traits::Block,
 {
-    let flightsql_host = env::var("HOST").unwrap_or("127.0.0.1".into());
-    let flightsql_port = env::var("PORT").unwrap_or("50555".into());
-    let flightsql_user = env::var("FLIGHTSQL_USER").unwrap_or("admin".into());
-    let flightsql_pass = env::var("FLIGHTSQL_PASSWORD").unwrap_or("admin".into());
-
-    let client = create_flightsql_client(&flightsql_host, &flightsql_port).await.unwrap_or_else(|_|
-        panic!("Unable to connect to flightSQL at {flightsql_host}:{flightsql_port}! FlightSQL is required for all validators!")
-    );
-
-    authenticate_client(&client, &flightsql_user, &flightsql_pass)
-        .await
-        .unwrap();
-
+    let client = Arc::new(Mutex::new(
+        create_and_authenticate_default_flightsql().await.unwrap(),
+    ));
     let api = create_subxt_client().await.unwrap();
 
     log::info!("FlightSQL: Task is running!");
     // Create the event stream
     let mut stream = chain_client.finality_notification_stream();
     while let Some(block) = stream.next().await {
+        // Start by iterating through any blocks that were implicitly finalized
+        let implicitly_finalized = block.tree_route;
+        for hash in implicitly_finalized.iter() {
+            let block = api
+                .blocks()
+                .at(H256::from_slice(hash.as_ref()))
+                .await
+                .unwrap();
+
+            log::info!(
+                "FlightSQL: Processing implicitly finalized block {:?}",
+                block.number()
+            );
+
+            if block.number() == 1 {
+                process_genesis(&chain_client, client.clone()).await;
+            }
+            process_block(&client, block)
+                .await
+                .expect("Unrecoverable FlightSQL Error; Please Verify Your DB Setup");
+        }
+
+        // Now process the latest finalized
         let hash = block.hash;
         let block = api
             .blocks()
@@ -114,51 +140,59 @@ where
         // The genesis block is skipped, so if we're getting block 1 it's because we just missed genesis
         // We need to request the genesis block and its events specifically
         if block.number() == 1 {
-            let genesis_hash = chain_client.hash(0u8.into()).unwrap().unwrap();
-
-            let genesis_table_prefix = StorageKey(
-                sp_core::twox_128("Tables".as_bytes())
-                    .into_iter()
-                    .chain(sp_core::twox_128("GenesisTables".as_bytes()).to_vec())
-                    .collect::<Vec<_>>(),
-            );
-            let genesis_keys = chain_client
-                .storage_keys(genesis_hash, Some(&genesis_table_prefix), None)
-                .unwrap();
-            let tables: Vec<GenesisTable> = genesis_keys
-                .flat_map(|key| {
-                    let data = chain_client.storage(genesis_hash, &key).unwrap().unwrap().0;
-                    let table_list: GenesisTableList =
-                        GenesisTableList::decode(&mut data.as_slice()).unwrap();
-                    table_list.tables.to_vec()
-                })
-                .collect();
-
-            let mut c = client.lock().await;
-            for table in tables {
-                let sql = from_utf8(table.statement.as_slice()).unwrap();
-                let ns = from_utf8(table.identifier.namespace.as_slice()).unwrap();
-                let name = from_utf8(table.identifier.name.as_slice()).unwrap();
-                let url = format!("{}/{}", from_utf8(table.url.as_slice()).unwrap(), name);
-
-                log::info!(
-                    "FlightSQL: Creating Table {ns}.{name} with snapshot: {url} and DDL\n{sql}\n"
-                );
-                create_table_with_snapshot(&mut c, sql, url.as_str(), ns)
-                    .await
-                    .unwrap();
-            }
+            process_genesis(&chain_client, client.clone()).await;
         }
 
         // Process non-genesis blocks
-        log::info!("FlightSQL: Processing Block {:?}", block.number());
-        let result = process_block(&client, block).await;
-        match result {
-            Ok(_) => {}
-            Err(e) => {
-                log::error!("FlightSQL: Error {:?}", e);
-            }
-        }
+        process_block(&client, block)
+            .await
+            .expect("Unrecoverable FlightSQL Error; Please Verify Your DB Setup");
+    }
+}
+
+async fn process_genesis<Client, Block, BE>(
+    chain_client: &Arc<Client>,
+    client: Arc<Mutex<FlightSqlServiceClient<Channel>>>,
+) where
+    Client: BlockchainEvents<Block>
+        + HeaderBackend<Block>
+        + StorageProvider<Block, BE>
+        + Finalizer<Block, BE>,
+    BE: Backend<Block>,
+    Block: sp_runtime::traits::Block,
+{
+    log::info!("FlightSQL Task: Processing GENESIS block");
+    let genesis_hash = chain_client.hash(0u8.into()).unwrap().unwrap();
+
+    let genesis_table_prefix = StorageKey(
+        sp_core::twox_128("Tables".as_bytes())
+            .into_iter()
+            .chain(sp_core::twox_128("GenesisTables".as_bytes()).to_vec())
+            .collect::<Vec<_>>(),
+    );
+    let genesis_keys = chain_client
+        .storage_keys(genesis_hash, Some(&genesis_table_prefix), None)
+        .unwrap();
+    let tables: Vec<GenesisTable> = genesis_keys
+        .flat_map(|key| {
+            let data = chain_client.storage(genesis_hash, &key).unwrap().unwrap().0;
+            let table_list: GenesisTableList =
+                GenesisTableList::decode(&mut data.as_slice()).unwrap();
+            table_list.tables.to_vec()
+        })
+        .collect();
+
+    // let mut c = client.lock().await;
+    for table in tables {
+        let sql = from_utf8(table.statement.as_slice()).unwrap();
+        let ns = from_utf8(table.identifier.namespace.as_slice()).unwrap();
+        let name = from_utf8(table.identifier.name.as_slice()).unwrap();
+        let url = format!("{}/{}", from_utf8(table.url.as_slice()).unwrap(), name);
+
+        log::info!("FlightSQL: Creating Table {ns}.{name} with snapshot: {url} and DDL\n{sql}\n");
+        create_table_with_snapshot(client.clone(), sql, url.as_str(), ns)
+            .await
+            .unwrap();
     }
 }
 
@@ -166,7 +200,8 @@ async fn process_block(
     client: &Arc<Mutex<FlightSqlServiceClient<Channel>>>,
     block: Block<PolkadotConfig, OnlineClient<PolkadotConfig>>,
 ) -> Result<(), SQLError> {
-    let mut client = client.lock().await;
+    log::info!("FlightSQL: Processing Block {:?}", block.number());
+
     let events = block
         .events()
         .await
@@ -181,29 +216,46 @@ async fn process_block(
         });
 
     for event in events {
-        let result;
         // Check for a quorum being reached on submitted data
         if let Some(e) = event.as_event::<QuorumReached>().unwrap() {
             log::info!("FlightSQL: Processing Data Insert");
             let data = e.data;
             let id = identifier_to_sql(e.quorum.table.namespace.0, e.quorum.table.name.0)
                 .expect("Corrupt table identifier!");
-            result = insert_data(&mut client, data.0, id).await;
+            execute_with_backoff(
+                |cli| {
+                    let data = data.0.as_slice();
+                    let id = id.as_str();
+                    async move { insert_data(cli, data, id).await }
+                },
+                client.clone(),
+            )
+            .await
+            .expect("Unrecoverable FlightSQL Error; Please Verify Your DB Setup");
 
         // Check for Schemas being updated (i.e. Table Creation)
         } else if let Some(e) = event.as_event::<SchemaUpdated>().unwrap() {
             log::info!("FlightSQL: Processing Table Creation");
             let raw_list: Vec<BoundedVec<u8>> =
                 e.1 .0.into_iter().map(|(_, statement)| statement).collect();
-            let list: Vec<String> = raw_list
+            let list: Vec<&str> = raw_list
                 .iter()
                 .filter_map(|data| match from_utf8(data.0.as_slice()) {
-                    Ok(sql) => Some(sql.to_string()),
+                    Ok(sql) => Some(sql),
                     Err(_) => None,
                 })
                 .collect();
 
-            result = create_tables(&mut client, list).await;
+            execute_with_backoff(
+                |cli| {
+                    let statement_slice = list.as_slice();
+
+                    async move { create_tables(cli, statement_slice).await }
+                },
+                client.clone(),
+            )
+            .await
+            .expect("Unrecoverable FlightSQL Error; Please Verify Your DB Setup");
         //Check for tables being created with commitments from a snapshot
         } else if let Some(e) = event.as_event::<TablesCreatedWithCommitments>().unwrap() {
             // TODO eventually parallelize this by wrapping the client in an Arc Mutex or similar
@@ -216,20 +268,33 @@ async fn process_block(
                 let namespace = from_utf8(id.namespace.0.as_slice())
                     .expect("Genesis tables must have valid namespace")
                     .to_uppercase();
-                create_table_with_snapshot(&mut client, sql, base_path, &namespace)
-                    .await
-                    .expect("Loading historical data for genesis tables must succeed");
+
+                execute_with_backoff(|cli| {
+                    let namespace = namespace.as_str();
+                    async move { create_table_with_snapshot(cli, sql, base_path, namespace).await }
+                }, client.clone()).await.expect("Loading historical data for genesis tables must succeed");
             }
-            result = Ok(())
         } else {
             continue;
         }
-
-        if let Err(e) = result {
-            log::error!("FlightSQL: Error {:?}", e);
-        }
     }
     Ok(())
+}
+
+async fn create_and_authenticate_default_flightsql(
+) -> Result<FlightSqlServiceClient<Channel>, anyhow::Error> {
+    let flightsql_host = env::var("HOST").unwrap_or("127.0.0.1".into());
+    let flightsql_port = env::var("PORT").unwrap_or("50555".into());
+    let flightsql_user = env::var("FLIGHTSQL_USER").unwrap_or("admin".into());
+    let flightsql_pass = env::var("FLIGHTSQL_PASSWORD").unwrap_or("admin".into());
+
+    let endpoint = Channel::from_shared(format!("http://{flightsql_host}:{flightsql_port}"))?;
+    let channel = endpoint.connect_lazy();
+    let mut client = FlightSqlServiceClient::new(channel);
+    client
+        .handshake(flightsql_user.as_str(), flightsql_pass.as_str())
+        .await?;
+    Ok(client)
 }
 
 /// Create a FlightSQL client to interact with the SQL database
@@ -238,7 +303,7 @@ async fn create_flightsql_client(
     port: &str,
 ) -> Result<Arc<Mutex<FlightSqlServiceClient<Channel>>>, anyhow::Error> {
     let endpoint = Channel::from_shared(format!("http://{host}:{port}"))?;
-    let channel = endpoint.connect().await?;
+    let channel = endpoint.connect_lazy();
     Ok(Arc::new(Mutex::new(FlightSqlServiceClient::new(channel))))
 }
 
@@ -272,8 +337,8 @@ async fn create_subxt_client() -> Result<OnlineClient<PolkadotConfig>, anyhow::E
 }
 
 /// Transforms Postcard Serialized OnChainTable into a RecordBatch
-pub fn record_batch_from_data(on_chain_table_bytes: Vec<u8>) -> Result<RecordBatch, SQLError> {
-    let table: OnChainTable = postcard::from_bytes(on_chain_table_bytes.as_slice())
+pub fn record_batch_from_data(on_chain_table_bytes: &[u8]) -> Result<RecordBatch, SQLError> {
+    let table: OnChainTable = postcard::from_bytes(on_chain_table_bytes)
         .map_err(|e| SQLError::BadRecordBatch(e.to_string()))?;
     Ok(RecordBatch::from(table))
 }
@@ -288,74 +353,60 @@ pub fn identifier_to_sql(namespace: Vec<u8>, name: Vec<u8>) -> Result<String, an
 
 /// Create a schema for the supplied namespace
 pub async fn create_schema_namespace(
-    client: &mut FlightSqlServiceClient<Channel>,
+    client: Arc<Mutex<FlightSqlServiceClient<Channel>>>,
     namespace: &str,
-) -> Result<i64, SQLError> {
+) -> Result<i64, arrow::error::ArrowError> {
+    let mut client = client.lock().await;
     client
         .execute_update(format!("CREATE SCHEMA IF NOT EXISTS {namespace};"), None)
         .await
-        .map_err(|e| SQLError::SQLExecutionError(e.to_string()))
 }
 
 /// Create tables via SQL statements sent over FlightSQL
 pub async fn create_tables(
-    client: &mut FlightSqlServiceClient<Channel>,
-    statement_list: Vec<String>,
-) -> Result<(), SQLError> {
+    client: Arc<Mutex<FlightSqlServiceClient<Channel>>>,
+    statement_list: &[&str],
+) -> Result<(), arrow::error::ArrowError> {
     for sql in statement_list {
-        client
-            .execute_update(sql, None)
-            .await
-            .map_err(|e| SQLError::SQLExecutionError(e.to_string()))?;
+        let mut client = client.lock().await;
+        client.execute_update(sql.to_string(), None).await?;
     }
     Ok(())
 }
 
 /// Create a new table and load existing historical data from a snapshot URL
 pub async fn create_table_with_snapshot(
-    client: &mut FlightSqlServiceClient<Channel>,
+    client: Arc<Mutex<FlightSqlServiceClient<Channel>>>,
     sql: &str,
     snapshot_url: &str,
     namespace: &str,
-) -> Result<(), SQLError> {
-    create_schema_namespace(client, namespace).await?;
+) -> Result<(), arrow::error::ArrowError> {
+    create_schema_namespace(client.clone(), namespace).await?;
 
+    let mut client = client.lock().await;
     // First create the new table with FlightSQL
-    client
-        .execute_update(String::from(sql), None)
-        .await
-        .map_err(|e| SQLError::SQLExecutionError(e.to_string()))?;
+    client.execute_update(String::from(sql), None).await?;
 
-    // Start the historical data load into the table
-    #[allow(clippy::identity_op)]
-    let one_hour_in_seconds = 60 * 60 * 1;
-    match data_loader::data_loader::run_data_loader(
-        snapshot_url,
-        5,
-        Duration::from_secs(one_hour_in_seconds),
-    )
-    .await
-    {
-        Ok(_) => Ok(()),
-        Err(e) => Err(SQLError::DBServiceError(e.to_string())),
-    }
+    log::warn!("Skipping historical load for devnet!");
+    Ok(())
 }
 
 /// Insert some data into FlightSQL via the RecordBatch API. Data is expected to tbe a
 /// postcard serialized OnChainTable, identifier should be of the form "NAMESPACE.NAME"
 pub async fn insert_data(
-    client: &mut FlightSqlServiceClient<Channel>,
-    data: Vec<u8>,
-    identifier: String,
-) -> Result<(), SQLError> {
-    let batch = record_batch_from_data(data)?;
+    client: Arc<Mutex<FlightSqlServiceClient<Channel>>>,
+    data: &[u8],
+    identifier: &str,
+) -> Result<(), arrow::error::ArrowError> {
+    let batch = record_batch_from_data(data)
+        .map_err(|e| arrow::error::ArrowError::ParseError(format!("{:?}", e)))?;
 
     let batches = vec![batch];
 
     // Create the CommandStatementIngest object to be used in the ingestion process
     let cmd = CommandStatementIngest {
         table_definition_options: None,
-        table: identifier.clone(),
+        table: identifier.to_string(),
         schema: None,
         catalog: None,
         temporary: false,
@@ -363,12 +414,62 @@ pub async fn insert_data(
         options: Default::default(),
     };
 
-    // Execute the ingestion and assert that the number of rows ingested is correct
-    let actual_rows = client
+    let mut client = client.lock().await;
+    let rows = client
         .execute_ingest(cmd, futures::stream::iter(batches.clone()).map(Ok))
-        .await
-        .map_err(|e| SQLError::InsertExecutionError(e.to_string()))?;
-
-    log::info!("FlightSQL: Inserted {:?} rows to {identifier}", actual_rows);
+        .await?;
+    log::info!("FlightSQL: Inserted {:?}", rows);
     Ok(())
+}
+
+async fn execute_with_backoff<Fut, F>(
+    mut call: F,
+    client: Arc<Mutex<FlightSqlServiceClient<Channel>>>,
+) -> Result<(), SQLError>
+where
+    F: FnMut(Arc<Mutex<FlightSqlServiceClient<Channel>>>) -> Fut,
+    Fut: std::future::Future<Output = Result<(), arrow::error::ArrowError>>,
+{
+    for duration in exponential_backoff::Backoff::new(
+        MAX_RETRY_ATTEMPTS,
+        Duration::from_secs(MIN_DELAY_SECONDS),
+        Duration::from_secs(MAX_DELAY_SECONDS),
+    ) {
+        match call(client.clone()).await {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                match e {
+                    ArrowError::IpcError(msg) => {
+                        if msg.contains("code: Internal")
+                            || msg.contains("code: Unavailable")
+                            || msg.contains("status: Unavailable")
+                        {
+                            log::error!("FlightSQL Task: Attempting to reconnect to FlightSQL");
+                            let maybe_client = create_and_authenticate_default_flightsql().await;
+
+                            // Attempt a reconnect
+                            if maybe_client.is_ok() {
+                                let mut cli = client.lock().await;
+                                *cli = maybe_client.unwrap();
+                            }
+                        }
+                    }
+                    (e) => {
+                        log::error!("Error with FlightSQL {:?}", e);
+                    }
+                };
+
+                if let Some(duration) = duration {
+                    log::error!("Retrying after {:?} delay in task", duration);
+                    sleep(duration).await;
+                    continue;
+                }
+            }
+        }
+    }
+    Err(SQLError::FlightSQLServiceError(
+        "Unable to recover from Error. Verify your DB Setup".to_string(),
+    ))
 }

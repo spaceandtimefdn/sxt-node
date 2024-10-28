@@ -34,6 +34,7 @@ sc-client-api = { workspace = true, default-features = false, optional = true }
 sp-blockchain = { workspace = true, default-features = false, optional = true }
 sp-api = { workspace = true, default-features = false, optional = true}
 proof-of-sql = { workspace = true, default-features = false }
+exponential-backoff = { workspace = true, default-features = false, optional = true }
 
 [features]
 default = ["std"]
@@ -54,6 +55,7 @@ std = [
 	"dep:sp-api",
 	"dep:sc-client-api",
 	"dep:sp-blockchain",
+	"dep:exponential-backoff",
 ]
 
 [lints]
