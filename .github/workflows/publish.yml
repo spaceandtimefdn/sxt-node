@@ -5,11 +5,7 @@ on:
     branches:
       - main
   paths:
-      - publish/docker
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - publist/docker
+      - publish/docker/*
   workflow_dispatch:
 
 concurrency:
