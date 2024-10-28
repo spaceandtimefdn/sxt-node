@@ -1,3 +1,12 @@
+# [0.47.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.46.0...v0.47.0) (2024-10-28)
+
+
+### Features
+
+* bump proof-of-sql to 0.34.1 ([87c3e3b](https://github.com/spaceandtimelabs/sxt-node/commit/87c3e3bfb0e7d1fa01a47c8b7af01429c02d5284))
+
+
+
 # [0.46.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.45.1...v0.46.0) (2024-10-28)
 
 
@@ -36,17 +45,6 @@
 ### Features
 
 * add --with-db flag to enable acting as a prover ([4550250](https://github.com/spaceandtimelabs/sxt-node/commit/455025098e9b0bd46b92a015f05749caae0555fb))
-
-
-
-# [0.43.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.42.0...v0.43.0) (2024-10-26)
-
-
-### Features
-
-* manual genesis ([5f92b1b](https://github.com/spaceandtimelabs/sxt-node/commit/5f92b1b06e99b72e32cefe756050b87daf56a031))
-* split manual genesis into two transactions ([eaa8108](https://github.com/spaceandtimelabs/sxt-node/commit/eaa8108ba9187dec9db0830d136dc3d895459b73))
-* test and fix bugs ([e229469](https://github.com/spaceandtimelabs/sxt-node/commit/e2294691a13505a583baa7393a6d9a4dc4e83ce8))
 
 
 
