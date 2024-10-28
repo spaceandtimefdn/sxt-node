@@ -1,3 +1,18 @@
+## [0.48.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.48.0...v0.48.1) (2024-10-28)
+
+
+### Bug Fixes
+
+* action versions and build-args list ([4193db4](https://github.com/spaceandtimelabs/sxt-node/commit/4193db482b42b943a8c6d4f886f634b1f5b65f79))
+* build-args in action ([80ee47b](https://github.com/spaceandtimelabs/sxt-node/commit/80ee47b208c4d870b1a8e5423c31ba138ca7407b))
+* only trigger when relevant paths are changed ([6346917](https://github.com/spaceandtimelabs/sxt-node/commit/6346917ecab417ed1e3a26553124402ebf893e0f))
+* tag is full path actually ([855730b](https://github.com/spaceandtimelabs/sxt-node/commit/855730bafe97c4cd48ad5786970586c5d5cf16db))
+* typo ([01065ea](https://github.com/spaceandtimelabs/sxt-node/commit/01065ea7907ad241d6759cf54c72eab7cbe07781))
+* typo ([73429ec](https://github.com/spaceandtimelabs/sxt-node/commit/73429ec1e5f5e39fc61aedc1182eda667a995b9e))
+* use proper tags for jf pull ([b5585a3](https://github.com/spaceandtimelabs/sxt-node/commit/b5585a3d1c6cf000925d0b6dcb07a6cc042ebec5))
+
+
+
 # [0.48.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.47.0...v0.48.0) (2024-10-28)
 
 
@@ -54,15 +69,6 @@
 ### Bug Fixes
 
 * be insensitive to column name casing in data-compliance ([5484f40](https://github.com/spaceandtimelabs/sxt-node/commit/5484f40d7e2250a17417ed0c4caac9496472090f))
-
-
-
-# [0.45.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.44.0...v0.45.0) (2024-10-26)
-
-
-### Features
-
-* Increase the block maximum size to 15Mb so that we can deploy ([85c206a](https://github.com/spaceandtimelabs/sxt-node/commit/85c206a45ecdab89c3c8657e92dcf4eb80bd41a8))
 
 
 
