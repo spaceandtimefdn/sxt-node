@@ -247,7 +247,7 @@ fn testnet_genesis(
             }).collect::<Vec<_>>(),
         },
         "validators": {
-            "initial_validators": initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
+            "initialValidators": initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
         },
 
         "tables": {
