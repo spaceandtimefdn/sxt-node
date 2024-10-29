@@ -1,4 +1,13 @@
-## [0.51.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.51.0...v0.51.1) (2024-10-29)
+# [0.52.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.51.1...v0.52.0) (2024-10-29)
+
+
+### Features
+
+* add/remove validators with sudo extrinsic ([bb6dcbd](https://github.com/spaceandtimelabs/sxt-node/commit/bb6dcbde243433386d5c14c36efd2141585a7068))
+
+
+
+## [0.51.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.1.0-alpha-testnet...v0.51.1) (2024-10-29)
 
 
 ### Bug Fixes
@@ -28,25 +37,6 @@
 ### Features
 
 * Add commitments for all tables in v2 and associated sql ([3f6f373](https://github.com/spaceandtimelabs/sxt-node/commit/3f6f373ac613575e1f25510b74bb3ae38fc853a9))
-
-
-
-## [0.49.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.49.0...v0.49.1) (2024-10-28)
-
-
-### Bug Fixes
-
-* indentation ([2a783bc](https://github.com/spaceandtimelabs/sxt-node/commit/2a783bcd217c513e2bfc421d9159124242803df4))
-
-
-
-# [0.49.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.48.1...v0.49.0) (2024-10-28)
-
-
-### Features
-
-* create new chainspec ([b96a159](https://github.com/spaceandtimelabs/sxt-node/commit/b96a1599d031df372b053420cbf731a9e1e0ad3b))
-* create new chainspec and production chainspec option ([990bb8b](https://github.com/spaceandtimelabs/sxt-node/commit/990bb8b99cfa4cb477c6d1e0df7afb8683c370e8))
 
 
 
