@@ -440,24 +440,26 @@ where
                 return Ok(());
             }
             Err(e) => {
-                match e {
-                    ArrowError::IpcError(msg) => {
-                        if msg.contains("code: Internal")
-                            || msg.contains("code: Unavailable")
-                            || msg.contains("status: Unavailable")
-                        {
-                            log::error!("FlightSQL Task: Attempting to reconnect to FlightSQL");
-                            let maybe_client = create_and_authenticate_default_flightsql().await;
+                log::error!("Error with FlightSQL {:?}", e);
 
-                            // Attempt a reconnect
-                            if maybe_client.is_ok() {
+                if let ArrowError::IpcError(msg) = e {
+                    if msg.contains("code: Internal")
+                        || msg.contains("code: Unavailable")
+                        || msg.contains("status: Unavailable")
+                    {
+                        log::error!("FlightSQL Task: Attempting to reconnect to FlightSQL");
+                        let maybe_client = create_and_authenticate_default_flightsql().await;
+
+                        // Attempt a reconnect
+                        match maybe_client {
+                            Ok(new_client) => {
                                 let mut cli = client.lock().await;
-                                *cli = maybe_client.unwrap();
+                                *cli = new_client;
+                            }
+                            Err(e) => {
+                                log::error!("Error reconnecting with FlightSQL {:?}", e);
                             }
                         }
-                    }
-                    (e) => {
-                        log::error!("Error with FlightSQL {:?}", e);
                     }
                 };
 
