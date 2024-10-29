@@ -37,6 +37,12 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
         .public()
 }
 
+pub fn get_from_phrase<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
+    TPublic::Pair::from_string(seed, None)
+        .expect("static values are valid; qed")
+        .public()
+}
+
 type AccountPublic = <Signature as Verify>::Signer;
 
 /// Generate an account ID from seed.
@@ -47,9 +53,24 @@ where
     AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
+/// Generate an account ID from seed.
+pub fn get_account_id_from_phrase<TPublic: Public>(seed: &str) -> AccountId
+where
+    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
+{
+    AccountPublic::from(get_from_phrase::<TPublic>(seed)).into_account()
+}
+
 /// Generate an Aura authority key.
 pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
     (get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
+}
+
+pub fn authority_keys_from_phrase(s: &str) -> (AuraId, GrandpaId) {
+    (
+        get_from_phrase::<AuraId>(s),
+        get_from_phrase::<GrandpaId>(s),
+    )
 }
 
 pub fn development_config() -> Result<ChainSpec, String> {
@@ -159,23 +180,23 @@ pub fn production_config() -> Result<ChainSpec, String> {
     .with_genesis_config_patch(testnet_genesis(
         // Initial PoA authorities
         vec![
-            authority_keys_from_seed(&validator1),
-            authority_keys_from_seed(&validator2),
-            authority_keys_from_seed(&validator3),
+            authority_keys_from_phrase(&validator1),
+            authority_keys_from_phrase(&validator2),
+            authority_keys_from_phrase(&validator3),
         ],
         // Sudo account
-        get_account_id_from_seed::<sr25519::Public>(&sudo_key),
+        get_account_id_from_phrase::<sr25519::Public>(&sudo_key),
         // Pre-funded accounts
         vec![
-            get_account_id_from_seed::<sr25519::Public>(&sudo_key),
-            get_account_id_from_seed::<sr25519::Public>(&validator1),
-            get_account_id_from_seed::<sr25519::Public>(&validator2),
-            get_account_id_from_seed::<sr25519::Public>(&validator3),
-            get_account_id_from_seed::<sr25519::Public>(&indexer1),
-            get_account_id_from_seed::<sr25519::Public>(&indexer2),
-            get_account_id_from_seed::<sr25519::Public>(&indexer3),
-            get_account_id_from_seed::<sr25519::Public>(&indexer4),
-            get_account_id_from_seed::<sr25519::Public>(&indexer5),
+            get_account_id_from_phrase::<sr25519::Public>(&sudo_key),
+            get_account_id_from_phrase::<sr25519::Public>(&validator1),
+            get_account_id_from_phrase::<sr25519::Public>(&validator2),
+            get_account_id_from_phrase::<sr25519::Public>(&validator3),
+            get_account_id_from_phrase::<sr25519::Public>(&indexer1),
+            get_account_id_from_phrase::<sr25519::Public>(&indexer2),
+            get_account_id_from_phrase::<sr25519::Public>(&indexer3),
+            get_account_id_from_phrase::<sr25519::Public>(&indexer4),
+            get_account_id_from_phrase::<sr25519::Public>(&indexer5),
         ],
         true,
     ))
