@@ -71,8 +71,9 @@ pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId) {
     )
 }
 
-pub fn authority_keys_from_phrase(s: &str) -> (AuraId, GrandpaId) {
+pub fn authority_keys_from_phrase(s: &str) -> (AccountId, AuraId, GrandpaId) {
     (
+        get_account_id_from_phrase::<sr25519::Public>(s),
         get_from_phrase::<AuraId>(s),
         get_from_phrase::<GrandpaId>(s),
     )

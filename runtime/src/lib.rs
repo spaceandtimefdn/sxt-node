@@ -60,7 +60,13 @@ pub use sp_runtime::{Perbill, Permill};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-pub use {pallet_commitments, pallet_indexing, pallet_permissions, pallet_validators, pallet_tables};
+pub use {
+    pallet_commitments,
+    pallet_indexing,
+    pallet_permissions,
+    pallet_tables,
+    pallet_validators,
+};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -133,7 +139,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 pub const MILLISECS_PER_BLOCK: u64 = 6000;
 
 // Set the Block Length to a maximum of 15 Mebibytes
-pub const MAX_BLOCK_SIZE: u32 = 15 * 1024 * 1024;
+pub const MAX_BLOCK_SIZE: u32 = 30 * 1024 * 1024;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
