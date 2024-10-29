@@ -258,12 +258,10 @@ pub fn new_full<
         telemetry: telemetry.as_mut(),
     })?;
 
-    // Only run the flightsql client if the --with-db flag is enabled on the node binary and we aren't
-    // using the dev chain spec. The dev spec is used for CI tests so it must be able to run without
-    // FlightSQL. This saves a significant amount of storage on nodes that only need rpc functionality
-    //
-    // This enables the node to act as a Prover for the SxT network
-    if with_db && !is_dev_mode {
+    // Only run the flightsql client if the --with-db flag is enabled on the node binary
+    // This saves a significant amount of storage on nodes that only need rpc functionality and
+    // validators that only want to participate in consensus
+    if with_db {
         sxt_core::sql::spawn_flightsql_tasks::<FullClient, Block, FullBackend>(
             "flightsql-task",
             &task_manager.spawn_essential_handle(),
@@ -282,18 +280,6 @@ pub fn new_full<
 
         // Set the proposer to a maximum of 15 Mebibytes
         proposer_factory.set_default_block_size_limit(sxt_runtime::MAX_BLOCK_SIZE as usize);
-
-        // Only run the flightsql client if the node is a validator and we're running on something
-        // other than the dev spec. The dev spec is used for CI tests so it must be able to run without
-        // FlightSQL. This saves a significant amount of storage on nodes that only need
-        // rpc functionality
-        if role.is_authority() && !is_dev_mode {
-            sxt_core::sql::spawn_flightsql_tasks::<FullClient, Block, FullBackend>(
-                "flightsql-task",
-                &task_manager.spawn_essential_handle(),
-                client.clone(),
-            );
-        }
 
         let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 
