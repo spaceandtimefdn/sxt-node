@@ -62,7 +62,7 @@ fn we_can_process_create_table() {
                     .iter_committable::<DoryScalar>()
                     .map(Result::unwrap),
                 0,
-                &PUBLIC_SETUPS.dory,
+                &PUBLIC_SETUPS.dynamic_dory,
             )
             .unwrap();
 
@@ -84,7 +84,7 @@ fn we_can_process_create_table() {
 
         let flags = CommitmentSchemeFlags {
             ipa: false,
-            dory: true,
+            dynamic_dory: true,
         };
         let (expected_create_table_and_commitment_metadata, _) =
             process_create_table(expected_create_table, *PUBLIC_SETUPS, &flags).unwrap();
@@ -100,7 +100,7 @@ fn we_can_process_create_table() {
             None
         );
         assert_eq!(
-            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Dory),
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::DynamicDory),
             Some(expected_commitment_bytes)
         );
     });

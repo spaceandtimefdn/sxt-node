@@ -85,12 +85,16 @@ impl CommitmentParser {
         let commit_data = Some(TableCommitmentBytes { data: commit_data });
 
         let (dory, ipa) = match scheme {
+            "dynamic_dory" => (commit_data, None),
             "dory" => (commit_data, None),
             "ipa" => (None, commit_data),
             _ => return Err(CommitmentParserError::InvalidCommitmentScheme),
         };
 
-        let commit = TableCommitmentBytesPerCommitmentScheme { dory, ipa };
+        let commit = TableCommitmentBytesPerCommitmentScheme {
+            dynamic_dory: dory,
+            ipa,
+        };
 
         let namespace = TableNamespace::try_from(namespace.as_bytes().to_vec())
             .map_err(|_| CommitmentParserError::TableNamespaceError)?;
@@ -116,7 +120,12 @@ impl CommitmentParser {
                 .map(|pathbuf| {
                     let SingleCommit { ident, commit } =
                         CommitmentParser::single_commit_from_path_buf(pathbuf.clone())
-                            .unwrap_or_else(|_| panic!("failed to parse commit for {:?}", pathbuf));
+                            .unwrap_or_else(|e| {
+                                panic!(
+                                    "failed to parse commit for {:?} with error {:?}",
+                                    pathbuf, e
+                                )
+                            });
                     (ident, commit)
                 })
                 .collect();

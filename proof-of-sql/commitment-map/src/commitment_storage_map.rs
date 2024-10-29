@@ -92,8 +92,8 @@ impl TryFrom<PerCommitmentScheme<OptionType<TableCommitmentType>>>
                 AnyCommitmentScheme::Ipa(commitment) => {
                     commitment.try_into().map(AnyCommitmentScheme::Ipa)
                 }
-                AnyCommitmentScheme::Dory(commitment) => {
-                    commitment.try_into().map(AnyCommitmentScheme::Dory)
+                AnyCommitmentScheme::DynamicDory(commitment) => {
+                    commitment.try_into().map(AnyCommitmentScheme::DynamicDory)
                 }
             })
             .collect()
@@ -124,8 +124,8 @@ impl TryFrom<TableCommitmentBytesPerCommitmentScheme>
                 AnyCommitmentScheme::Ipa(commitment) => {
                     commitment.try_into().map(AnyCommitmentScheme::Ipa)
                 }
-                AnyCommitmentScheme::Dory(commitment) => {
-                    commitment.try_into().map(AnyCommitmentScheme::Dory)
+                AnyCommitmentScheme::DynamicDory(commitment) => {
+                    commitment.try_into().map(AnyCommitmentScheme::DynamicDory)
                 }
             })
             .collect()
@@ -181,7 +181,7 @@ where
     ) -> AnyCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>> {
         match scheme {
             CommitmentScheme::Ipa => AnyCommitmentScheme::Ipa(S::get(key, scheme)),
-            CommitmentScheme::Dory => AnyCommitmentScheme::Dory(S::get(key, scheme)),
+            CommitmentScheme::DynamicDory => AnyCommitmentScheme::DynamicDory(S::get(key, scheme)),
         }
     }
 
@@ -253,7 +253,7 @@ mod tests {
 
         let per_commitment_scheme = PerCommitmentScheme::<OptionType<TableCommitmentType>> {
             ipa: None,
-            dory: Some(commitment),
+            dynamic_dory: Some(commitment),
         };
 
         let serialized =
@@ -319,7 +319,7 @@ mod tests {
 
         let per_commitment_scheme = PerCommitmentScheme::<OptionType<TableCommitmentType>> {
             ipa: None,
-            dory: Some(commitment),
+            dynamic_dory: Some(commitment),
         };
 
         assert!(matches!(
