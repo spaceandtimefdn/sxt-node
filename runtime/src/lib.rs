@@ -31,15 +31,21 @@ pub use frame_support::{construct_runtime, derive_impl, parameter_types, Storage
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 use pallet_grandpa::AuthorityId as GrandpaId;
-/// Import the template pallet.
-pub use pallet_template;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, One, Verify};
+use sp_runtime::traits::{
+    BlakeTwo256,
+    Block as BlockT,
+    IdentifyAccount,
+    NumberFor,
+    One,
+    OpaqueKeys,
+    Verify,
+};
 use sp_runtime::transaction_validity::{TransactionSource, TransactionValidity};
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -54,7 +60,13 @@ pub use sp_runtime::{Perbill, Permill};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-pub use {pallet_commitments, pallet_indexing, pallet_permissions, pallet_tables};
+pub use {
+    pallet_commitments,
+    pallet_indexing,
+    pallet_permissions,
+    pallet_tables,
+    pallet_validators,
+};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -127,7 +139,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 pub const MILLISECS_PER_BLOCK: u64 = 6000;
 
 // Set the Block Length to a maximum of 15 Mebibytes
-pub const MAX_BLOCK_SIZE: u32 = 15 * 1024 * 1024;
+pub const MAX_BLOCK_SIZE: u32 = 30 * 1024 * 1024;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -262,9 +274,9 @@ impl pallet_sudo::Config for Runtime {
 }
 
 /// Configure the pallet-template in pallets/template.
-impl pallet_template::Config for Runtime {
+impl pallet_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_template::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = pallet_validators::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_permissions::Config for Runtime {
@@ -283,6 +295,23 @@ impl pallet_indexing::Config<native_pallets::native_pallet_indexing::Api> for Ru
 }
 
 impl pallet_commitments::Config for Runtime {}
+
+parameter_types! {
+    pub const Period: u32 = 2 * MINUTES;
+    pub const Offset: u32 = 0;
+}
+
+impl pallet_session::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ValidatorId = <Self as frame_system::Config>::AccountId;
+    type ValidatorIdOf = pallet_validators::IdentityOf<Self>;
+    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type SessionManager = Validators;
+    type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+    type Keys = opaque::SessionKeys;
+    type WeightInfo = ();
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
@@ -308,33 +337,36 @@ mod runtime {
     pub type Timestamp = pallet_timestamp;
 
     #[runtime::pallet_index(2)]
-    pub type Aura = pallet_aura;
+    pub type Session = pallet_session;
 
     #[runtime::pallet_index(3)]
-    pub type Grandpa = pallet_grandpa;
+    pub type Validators = pallet_validators;
 
     #[runtime::pallet_index(4)]
-    pub type Balances = pallet_balances;
+    pub type Aura = pallet_aura;
 
     #[runtime::pallet_index(5)]
-    pub type TransactionPayment = pallet_transaction_payment;
+    pub type Grandpa = pallet_grandpa;
 
     #[runtime::pallet_index(6)]
-    pub type Sudo = pallet_sudo;
+    pub type Balances = pallet_balances;
 
     #[runtime::pallet_index(7)]
-    pub type TemplateModule = pallet_template;
+    pub type TransactionPayment = pallet_transaction_payment;
 
     #[runtime::pallet_index(8)]
-    pub type Permissions = pallet_permissions;
+    pub type Sudo = pallet_sudo;
 
     #[runtime::pallet_index(9)]
-    pub type Tables = pallet_tables;
+    pub type Permissions = pallet_permissions;
 
     #[runtime::pallet_index(10)]
-    pub type Indexing = native_pallets::native_pallet_indexing;
+    pub type Tables = pallet_tables;
 
     #[runtime::pallet_index(11)]
+    pub type Indexing = native_pallets::native_pallet_indexing;
+
+    #[runtime::pallet_index(12)]
     pub type Commitments = pallet_commitments;
 }
 
@@ -385,7 +417,6 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
-        [pallet_template, TemplateModule]
     );
 }
 
