@@ -222,6 +222,7 @@ async fn process_block(
             let data = e.data;
             let id = identifier_to_sql(e.quorum.table.namespace.0, e.quorum.table.name.0)
                 .expect("Corrupt table identifier!");
+            log::info!("FlightSQL Task: Attempting insert to {id}");
             execute_with_backoff(
                 |cli| {
                     let data = data.0.as_slice();
@@ -245,7 +246,7 @@ async fn process_block(
                     Err(_) => None,
                 })
                 .collect();
-
+            log::info!("FlightSQL Task: Attempting Table Creation with {:?}", list);
             execute_with_backoff(
                 |cli| {
                     let statement_slice = list.as_slice();
@@ -268,7 +269,9 @@ async fn process_block(
                 let namespace = from_utf8(id.namespace.0.as_slice())
                     .expect("Genesis tables must have valid namespace")
                     .to_uppercase();
-
+                log::info!(
+                    "FlightSQL Task: Attempting table creation from genesis for {namespace}"
+                );
                 execute_with_backoff(|cli| {
                     let namespace = namespace.as_str();
                     async move { create_table_with_snapshot(cli, sql, base_path, namespace).await }
@@ -443,6 +446,11 @@ where
                 log::error!("Error with FlightSQL {:?}", e);
 
                 if let ArrowError::IpcError(msg) = e {
+                    if msg.contains("ERROR: duplicate key value violates unique constraint") {
+                        log::warn!("FlightSQL Task: Encountered a duplicate key!");
+                        return Ok(());
+                    }
+
                     if msg.contains("code: Internal")
                         || msg.contains("code: Unavailable")
                         || msg.contains("status: Unavailable")
