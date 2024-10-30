@@ -6653,6 +6653,7 @@ dependencies = [
  "frame-system",
  "native",
  "native-api",
+ "native-pallets",
  "on-chain-table",
  "pallet-commitments",
  "pallet-permissions",

@@ -62,12 +62,11 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 pub use {
     pallet_commitments,
-    pallet_validators,
+    pallet_indexing,
     pallet_permissions,
     pallet_tables,
-    pallet_indexing,
+    pallet_validators,
 };
-
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -279,7 +278,6 @@ impl pallet_sudo::Config for Runtime {
     type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
-
 /// Configure the pallet-template in pallets/template.
 impl pallet_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -375,10 +373,9 @@ mod runtime {
 
     #[runtime::pallet_index(12)]
     pub type Commitments = pallet_commitments;
-    
+
     #[runtime::pallet_index(13)]
     pub type Indexing = native_pallets::native_pallet_indexing;
-
 }
 
 /// The address format for describing accounts.
@@ -430,6 +427,7 @@ mod benches {
         [pallet_sudo, Sudo]
         [pallet_template, Template]
         [pallet_permissions, Permissions]
+        [pallet_indexing, Indexing]
     );
 }
 

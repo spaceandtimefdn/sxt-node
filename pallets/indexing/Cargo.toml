@@ -39,6 +39,7 @@ sp-core.workspace = true
 sp-io.workspace = true
 sp-runtime.workspace = true
 native.workspace = true
+native-pallets.workspace = true
 arrow.workspace = true
 
 [features]
@@ -52,6 +53,8 @@ std = [
 	"native/std",
 	"native-api/std",
 	"on-chain-table/std",
+	"pallet-commitments/std",
+	"pallet-tables/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

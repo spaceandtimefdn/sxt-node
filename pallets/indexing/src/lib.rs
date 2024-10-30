@@ -23,6 +23,9 @@ pub use pallet::*;
 pub use sxt_core::indexing::*;
 pub use weights::*;
 
+#[cfg(all(feature = "runtime-benchmarks", not(doctest)))]
+mod benchmarking;
+
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
