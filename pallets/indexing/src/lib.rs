@@ -44,7 +44,10 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config<I: 'static = ()>:
-        frame_system::Config + pallet_permissions::Config + pallet_commitments::Config
+        frame_system::Config
+        + pallet_permissions::Config
+        + pallet_commitments::Config
+        + pallet_tables::Config
     where
         I: NativeApi,
     {
@@ -208,7 +211,6 @@ pub mod pallet {
     ) -> DispatchResult
     where
         T: Config<I>,
-        T: pallet_tables::Config,
         I: NativeApi,
     {
         // Iterate over the submitters who submitted differing data and collect
@@ -288,7 +290,6 @@ pub mod pallet {
     ) -> DispatchResult
     where
         T: Config<I>,
-        T: pallet_tables::Config,
         I: NativeApi,
     {
         ensure!(
