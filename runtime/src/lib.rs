@@ -62,11 +62,12 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 pub use {
     pallet_commitments,
-    pallet_indexing,
+    pallet_validators,
     pallet_permissions,
     pallet_tables,
-    pallet_validators,
+    pallet_indexing,
 };
+
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -213,6 +214,11 @@ impl pallet_aura::Config for Runtime {
     type SlotDuration = pallet_aura::MinimumPeriodTimesTwo<Runtime>;
 }
 
+impl pallet_template::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_template::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_grandpa::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 
@@ -273,28 +279,12 @@ impl pallet_sudo::Config for Runtime {
     type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
+
 /// Configure the pallet-template in pallets/template.
 impl pallet_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_validators::weights::SubstrateWeight<Runtime>;
 }
-
-impl pallet_permissions::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_permissions::weights::SubstrateWeight<Runtime>;
-}
-
-impl pallet_tables::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
-}
-
-impl pallet_indexing::Config<native_pallets::native_pallet_indexing::Api> for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
-}
-
-impl pallet_commitments::Config for Runtime {}
 
 parameter_types! {
     pub const Period: u32 = 2 * MINUTES;
@@ -311,6 +301,23 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = opaque::SessionKeys;
     type WeightInfo = ();
+}
+
+impl pallet_permissions::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_permissions::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_tables::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_commitments::Config for Runtime {}
+
+impl pallet_indexing::Config<native_pallets::native_pallet_indexing::Api> for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -358,16 +365,20 @@ mod runtime {
     pub type Sudo = pallet_sudo;
 
     #[runtime::pallet_index(9)]
-    pub type Permissions = pallet_permissions;
+    pub type Template = pallet_template;
 
     #[runtime::pallet_index(10)]
-    pub type Tables = pallet_tables;
+    pub type Permissions = pallet_permissions;
 
     #[runtime::pallet_index(11)]
-    pub type Indexing = native_pallets::native_pallet_indexing;
+    pub type Tables = pallet_tables;
 
     #[runtime::pallet_index(12)]
     pub type Commitments = pallet_commitments;
+    
+    #[runtime::pallet_index(13)]
+    pub type Indexing = native_pallets::native_pallet_indexing;
+
 }
 
 /// The address format for describing accounts.
@@ -417,6 +428,8 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
+        [pallet_template, Template]
+        [pallet_permissions, Permissions]
     );
 }
 

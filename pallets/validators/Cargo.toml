@@ -53,7 +53,7 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"pallet-session/std",
 	"sp-std/std",
-		"sp-weights/std",
+	"sp-weights/std",
 	"sp-staking/std",
 	"sp-runtime/std",
 
