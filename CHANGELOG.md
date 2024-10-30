@@ -1,3 +1,12 @@
+## [0.53.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.53.1...v0.53.2) (2024-10-30)
+
+
+### Bug Fixes
+
+* Added special case for duplicate keys and additional logging info ([ddbe56c](https://github.com/spaceandtimelabs/sxt-node/commit/ddbe56cf89394ba96698d7fa6e552d412c53386e))
+
+
+
 ## [0.53.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.53.0...v0.53.1) (2024-10-30)
 
 
@@ -22,15 +31,6 @@
 ### Features
 
 * add/remove validators with sudo extrinsic ([bb6dcbd](https://github.com/spaceandtimelabs/sxt-node/commit/bb6dcbde243433386d5c14c36efd2141585a7068))
-
-
-
-## [0.51.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.1.0-alpha-testnet...v0.51.1) (2024-10-29)
-
-
-### Bug Fixes
-
-* Removed accidental second instantiation of the FlightSQL task ([a8fa44e](https://github.com/spaceandtimelabs/sxt-node/commit/a8fa44eaa9d6a910ef13e582d859c294c6bc730d))
 
 
 
