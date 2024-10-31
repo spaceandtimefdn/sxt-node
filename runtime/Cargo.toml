@@ -106,6 +106,7 @@ std = [
 ]
 
 runtime-benchmarks = [
+	"pallet-validators/runtime-benchmarks",
 	"pallet-indexing/runtime-benchmarks",
 	"pallet-tables/runtime-benchmarks",
 	"pallet-permissions/runtime-benchmarks",

@@ -428,6 +428,7 @@ mod benches {
         [pallet_template, Template]
         [pallet_permissions, Permissions]
         [pallet_indexing, Indexing]
+        [pallet_validators, Validators]
     );
 }
 
