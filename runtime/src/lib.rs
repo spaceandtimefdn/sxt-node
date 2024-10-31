@@ -273,28 +273,11 @@ impl pallet_sudo::Config for Runtime {
     type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
-/// Configure the pallet-template in pallets/template.
+/// Configure the validators pallet
 impl pallet_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_validators::weights::SubstrateWeight<Runtime>;
 }
-
-impl pallet_permissions::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_permissions::weights::SubstrateWeight<Runtime>;
-}
-
-impl pallet_tables::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
-}
-
-impl pallet_indexing::Config<native_pallets::native_pallet_indexing::Api> for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
-}
-
-impl pallet_commitments::Config for Runtime {}
 
 parameter_types! {
     pub const Period: u32 = 2 * MINUTES;
@@ -311,6 +294,23 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = opaque::SessionKeys;
     type WeightInfo = ();
+}
+
+impl pallet_permissions::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_permissions::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_tables::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_commitments::Config for Runtime {}
+
+impl pallet_indexing::Config<native_pallets::native_pallet_indexing::Api> for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -417,6 +417,9 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
+        [pallet_permissions, Permissions]
+        [pallet_indexing, Indexing]
+        [pallet_validators, Validators]
     );
 }
 

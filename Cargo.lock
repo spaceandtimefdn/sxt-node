@@ -6653,6 +6653,7 @@ dependencies = [
  "frame-system",
  "native",
  "native-api",
+ "native-pallets",
  "on-chain-table",
  "pallet-commitments",
  "pallet-permissions",
@@ -6737,6 +6738,20 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sxt-core",
+]
+
+[[package]]
+name = "pallet-template"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -11761,6 +11776,7 @@ dependencies = [
  "pallet-session",
  "pallet-sudo",
  "pallet-tables",
+ "pallet-template",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",

@@ -15,13 +15,18 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
+#[cfg(not(doctest))]
 pub mod weights;
 // Do not remove this or the same attribute for the pallet
 // The cargo doc command will fail because of a bug even though the code is working properly
 #[cfg(not(doc))]
 pub use pallet::*;
 pub use sxt_core::indexing::*;
+#[cfg(not(doctest))]
 pub use weights::*;
+
+#[cfg(all(feature = "runtime-benchmarks", not(doctest)))]
+mod benchmarking;
 
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
@@ -44,7 +49,10 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config<I: 'static = ()>:
-        frame_system::Config + pallet_permissions::Config + pallet_commitments::Config
+        frame_system::Config
+        + pallet_permissions::Config
+        + pallet_commitments::Config
+        + pallet_tables::Config
     where
         I: NativeApi,
     {
@@ -208,7 +216,6 @@ pub mod pallet {
     ) -> DispatchResult
     where
         T: Config<I>,
-        T: pallet_tables::Config,
         I: NativeApi,
     {
         // Iterate over the submitters who submitted differing data and collect
@@ -288,7 +295,6 @@ pub mod pallet {
     ) -> DispatchResult
     where
         T: Config<I>,
-        T: pallet_tables::Config,
         I: NativeApi,
     {
         ensure!(

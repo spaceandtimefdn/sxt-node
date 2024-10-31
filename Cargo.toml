@@ -13,6 +13,7 @@ members = [
     "pallets/tables",
     "pallets/permissions",
     "pallets/commitments",
+    "pallets/template",
     "proof-of-sql/commitment-map",
     "runtime",
     "sxt-core",
@@ -41,6 +42,7 @@ sxt-runtime = { path = "./runtime", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
 pallet-validators = { path = "./pallets/validators", default-features = false }
 pallet-permissions = { path = "pallets/permissions", default-features = false }
+pallet-template = { path = "pallets/template", default-features = false}
 sxt-core = { path = "sxt-core", default-features = false}
 pallet-tables = { path = "pallets/tables", default-features = false}
 pallet-indexing = { path = "pallets/indexing", default-features = false }
@@ -124,6 +126,7 @@ sp-storage = { version = "21.0.0", default-features = false }
 sp-transaction-pool = { version = "34.0.0", default-features = false }
 sp-version = { version = "37.0.0", default-features = false }
 substrate-wasm-builder = { version = "24.0.0", default-features = false }
+pallet-session = { version = "37.0.0", default-features = false }
 
 [workspace.lints]
 rust.missing_docs = "warn"

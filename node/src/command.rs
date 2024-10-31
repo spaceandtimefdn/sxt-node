@@ -137,7 +137,7 @@ pub fn run() -> sc_cli::Result<()> {
                             );
                         }
 
-                        cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, ()>(Some(
+                        cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, native::HostFunctions>(Some(
                             config.chain_spec,
                         ))
                     }

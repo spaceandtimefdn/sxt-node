@@ -48,13 +48,14 @@ pallet-transaction-payment-rpc-runtime-api.workspace = true
 frame-benchmarking = { optional = true, workspace = true }
 frame-system-benchmarking = { optional = true, workspace = true }
 pallet-commitments.workspace = true
-pallet-validators.workspace = true
-pallet-permissions.workspace = true
-pallet-indexing.workspace = true
-pallet-tables.workspace = true
 native-pallets.workspace = true
-pallet-session = { version= "37.0.0", default-features = false }
+pallet-template.workspace = true
+pallet-validators.workspace = true
+pallet-session.workspace = true
 sp-std.workspace = true
+pallet-permissions.workspace = true
+pallet-tables.workspace = true
+pallet-indexing.workspace = true
 
 [build-dependencies]
 substrate-wasm-builder = { optional = true, workspace = true, default-features = true }
@@ -62,12 +63,15 @@ substrate-wasm-builder = { optional = true, workspace = true, default-features =
 [features]
 default = ["std"]
 std = [
-	"sp-std/std",
-	"pallet-session/std",
+	"pallet-validators/std",
+	"pallet-indexing/std",
 	"pallet-tables/std",
+	"pallet-permissions/std",
+	"sp-std/std",
 	"codec/std",
 	"scale-info/std",
 
+	"pallet-template/std",
 	"frame-executive/std",
 	"frame-support/std",
 	"frame-system-benchmarking?/std",
@@ -98,16 +102,14 @@ std = [
 	"sp-storage/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
-
 	"substrate-wasm-builder",
-
-
-	"pallet-indexing/std",
-	"pallet-validators/std",
-	"pallet-permissions/std",
 ]
 
 runtime-benchmarks = [
+	"pallet-validators/runtime-benchmarks",
+	"pallet-indexing/runtime-benchmarks",
+	"pallet-tables/runtime-benchmarks",
+	"pallet-permissions/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
@@ -115,9 +117,9 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
-	"pallet-validators/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"pallet-template/runtime-benchmarks",
 ]
 
 try-runtime = [
@@ -129,7 +131,6 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-sudo/try-runtime",
-	"pallet-validators/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"sp-runtime/try-runtime",

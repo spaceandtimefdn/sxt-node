@@ -1,4 +1,5 @@
 use frame_support::derive_impl;
+use native_api::NativeApi;
 use sp_core::H256;
 use sp_runtime::BuildStorage;
 
@@ -26,6 +27,8 @@ pub mod api_impl {
     pub type Pallet<T> = pallet_indexing::pallet::Pallet<T, Api>;
     pub type Event<T> = pallet_indexing::pallet::Event<T, Api>;
     pub type Error<T> = pallet_indexing::pallet::Error<T, Api>;
+
+    pub type PalletWithApi<T> = pallet_indexing::Pallet<T, Api>;
 
     pub use crate::pallet::{
         __substrate_call_check,
@@ -56,7 +59,7 @@ impl frame_system::Config for Test {
 
 impl pallet_indexing::pallet::Config<Api> for Test {
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
+    type WeightInfo = pallet_indexing::weights::SubstrateWeight<Test>;
 }
 
 impl pallet_tables::Config for Test {
