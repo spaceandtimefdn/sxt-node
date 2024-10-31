@@ -1,14 +1,12 @@
 //! Benchmarking setup for pallet-template
 use frame_benchmarking::v2::*;
 use frame_system::RawOrigin;
+use scale_info::prelude::vec;
+use sp_runtime::BoundedVec;
 
 use super::*;
 #[allow(unused)]
 use crate::Pallet as ValidatorsPallet;
-
- 
-use scale_info::prelude::vec;
-use sp_runtime::BoundedVec;
 
 #[benchmarks]
 mod benchmarks {
@@ -27,12 +25,16 @@ mod benchmarks {
         let caller: T::ValidatorId = whitelisted_caller();
 
         let validators = BoundedVec::try_from(vec![caller.clone()]).unwrap();
-        
+
         Validators::<T>::set(validators);
 
         #[extrinsic_call]
         remove_validator(RawOrigin::Root, caller.clone());
     }
 
-    impl_benchmark_test_suite!(ValidatorsPallet, crate::mock::new_test_ext(), crate::mock::Test);
+    impl_benchmark_test_suite!(
+        ValidatorsPallet,
+        crate::mock::new_test_ext(),
+        crate::mock::Test
+    );
 }

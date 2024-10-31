@@ -10,6 +10,7 @@ use crate::mock::api_impl::PalletWithApi as IndexingWithApi;
 #[allow(unused)]
 use crate::Pallet as Indexing;
 
+#[allow(clippy::multiple_bound_locations)]
 #[instance_benchmarks(where I: NativeApi)]
 mod benchmarks {
     use native_api::NativeApi;

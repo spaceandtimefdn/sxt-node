@@ -213,11 +213,6 @@ impl pallet_aura::Config for Runtime {
     type SlotDuration = pallet_aura::MinimumPeriodTimesTwo<Runtime>;
 }
 
-impl pallet_template::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_template::weights::SubstrateWeight<Runtime>;
-}
-
 impl pallet_grandpa::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 
@@ -278,7 +273,7 @@ impl pallet_sudo::Config for Runtime {
     type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
-/// Configure the pallet-template in pallets/template.
+/// Configure the validators pallet
 impl pallet_validators::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_validators::weights::SubstrateWeight<Runtime>;
@@ -363,19 +358,16 @@ mod runtime {
     pub type Sudo = pallet_sudo;
 
     #[runtime::pallet_index(9)]
-    pub type Template = pallet_template;
-
-    #[runtime::pallet_index(10)]
     pub type Permissions = pallet_permissions;
 
-    #[runtime::pallet_index(11)]
+    #[runtime::pallet_index(10)]
     pub type Tables = pallet_tables;
+
+    #[runtime::pallet_index(11)]
+    pub type Indexing = native_pallets::native_pallet_indexing;
 
     #[runtime::pallet_index(12)]
     pub type Commitments = pallet_commitments;
-
-    #[runtime::pallet_index(13)]
-    pub type Indexing = native_pallets::native_pallet_indexing;
 }
 
 /// The address format for describing accounts.
@@ -425,7 +417,6 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
-        [pallet_template, Template]
         [pallet_permissions, Permissions]
         [pallet_indexing, Indexing]
         [pallet_validators, Validators]

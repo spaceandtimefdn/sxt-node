@@ -59,7 +59,7 @@ impl frame_system::Config for Test {
 
 impl pallet_indexing::pallet::Config<Api> for Test {
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
+    type WeightInfo = pallet_indexing::weights::SubstrateWeight<Test>;
 }
 
 impl pallet_tables::Config for Test {

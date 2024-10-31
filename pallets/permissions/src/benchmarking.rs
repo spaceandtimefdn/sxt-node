@@ -1,18 +1,17 @@
 //! Benchmarking setup for pallet-template
 use frame_benchmarking::v2::*;
 use frame_system::RawOrigin;
+use scale_info::prelude::vec;
 
 use super::*;
 #[allow(unused)]
 use crate::Pallet as PermissionPallet;
 
- 
-use scale_info::prelude::vec;
-
 #[benchmarks]
 mod benchmarks {
-    use super::*;
     use sxt_core::permissions::{PermissionLevel, PermissionList};
+
+    use super::*;
 
     #[benchmark]
     fn set_permissions() {
@@ -20,7 +19,7 @@ mod benchmarks {
 
         let permission_level = PermissionLevel::UpdatePermissions;
         let permission_list = PermissionList::try_from(vec![permission_level]).unwrap();
-        
+
         #[extrinsic_call]
         set_permissions(RawOrigin::Root, caller.clone(), permission_list.clone());
 
@@ -42,5 +41,9 @@ mod benchmarks {
         assert_eq!(Permissions::<T>::get(caller), None);
     }
 
-    impl_benchmark_test_suite!(PermissionPallet, crate::mock::new_test_ext(), crate::mock::Test);
+    impl_benchmark_test_suite!(
+        PermissionPallet,
+        crate::mock::new_test_ext(),
+        crate::mock::Test
+    );
 }
