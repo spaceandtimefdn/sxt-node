@@ -1,3 +1,12 @@
+## [0.54.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.54.0...v0.54.1) (2024-11-01)
+
+
+### Bug Fixes
+
+* adjust NativeApi trait bounds and fix docs in pallet-indexing ([2235f3f](https://github.com/spaceandtimelabs/sxt-node/commit/2235f3f8b676baa2e8037bae4088da28a9fcd0fe))
+
+
+
 # [0.54.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.53.2...v0.54.0) (2024-10-31)
 
 
@@ -39,15 +48,6 @@
 ### Features
 
 * create newest chainspec ([c93d7f5](https://github.com/spaceandtimelabs/sxt-node/commit/c93d7f51211e641fbd37314d6780f74e674a84f1))
-
-
-
-# [0.52.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.51.1...v0.52.0) (2024-10-29)
-
-
-### Features
-
-* add/remove validators with sudo extrinsic ([bb6dcbd](https://github.com/spaceandtimelabs/sxt-node/commit/bb6dcbde243433386d5c14c36efd2141585a7068))
 
 
 
