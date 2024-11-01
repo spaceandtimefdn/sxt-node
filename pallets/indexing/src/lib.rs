@@ -15,24 +15,19 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
-#[cfg(not(doctest))]
 pub mod weights;
 // Do not remove this or the same attribute for the pallet
 // The cargo doc command will fail because of a bug even though the code is working properly
-#[cfg(not(doc))]
 pub use pallet::*;
 pub use sxt_core::indexing::*;
-#[cfg(not(doctest))]
 pub use weights::*;
 
-#[cfg(all(feature = "runtime-benchmarks", not(doctest)))]
+#[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    // Do not remove this attribute or the one for the pallet above,
-    #![cfg(not(doc))]
 
     use commitment_sql::InsertAndCommitmentMetadata;
     use frame_support::pallet_prelude::*;
@@ -53,8 +48,6 @@ pub mod pallet {
         + pallet_permissions::Config
         + pallet_commitments::Config
         + pallet_tables::Config
-    where
-        I: NativeApi,
     {
         /// Binding for the runtime event, typically provided by an implementation
         /// in runtime/lib.rs
@@ -86,10 +79,7 @@ pub mod pallet {
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config<I>, I: 'static = ()>
-    where
-        I: NativeApi,
-    {
+    pub enum Event<T: Config<I>, I: 'static = ()> {
         /// This event is emitted every time data is submitted by an indexer.
         /// It can be used to verify that the data was successfully processed and received.
         DataSubmitted {
