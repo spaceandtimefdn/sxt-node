@@ -22,7 +22,7 @@ scale-info = { features = [
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
-pallet-session = { version= "37.0.0", default-features = false }
+pallet-session = { workspace = true, default-features = false }
 sp-std.workspace = true
 sp-runtime.workspace = true
 sp-staking = {version = "36.0.0", default-features =  false }

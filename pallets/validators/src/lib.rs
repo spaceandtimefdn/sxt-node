@@ -23,7 +23,8 @@ pub mod pallet {
         ValidatorSetWithIdentification,
     };
     use frame_system::pallet_prelude::*;
-    use sp_runtime::traits::{Convert, Zero};
+    use pallet_session::{KeyOwner, NextKeys};
+    use sp_runtime::traits::{Convert, OpaqueKeys, Zero};
     use sp_std::vec::Vec;
 
     use super::*;
@@ -100,6 +101,48 @@ pub mod pallet {
 
             Self::do_remove_validator(validator_id.clone())?;
 
+            Ok(())
+        }
+
+        /// Onboard a validator while providing the session keys. Requires Sudo
+        #[pallet::call_index(2)]
+        #[pallet::weight(<T as pallet::Config>::WeightInfo::remove_validator())]
+        pub fn onboard_validator_with_keys(
+            origin: OriginFor<T>,
+            validator_id: T::ValidatorId,
+            session_keys: T::Keys,
+        ) -> DispatchResult {
+            // Sudo calls only
+            ensure_root(origin)?;
+
+            let old_keys = pallet_session::NextKeys::<T>::get(&validator_id);
+
+            for id in <T as pallet_session::Config>::Keys::key_ids() {
+                let key = session_keys.get_raw(*id);
+
+                // ensure keys are without duplication.
+                ensure!(
+                    pallet_session::KeyOwner::<T>::get((id, key))
+                        .map_or(true, |owner| owner == validator_id),
+                    pallet_session::Error::<T>::DuplicatedKey
+                );
+            }
+
+            for id in T::Keys::key_ids() {
+                let key = session_keys.get_raw(*id);
+
+                if let Some(old) = old_keys.as_ref().map(|k| k.get_raw(*id)) {
+                    if key == old {
+                        continue;
+                    }
+                    pallet_session::KeyOwner::<T>::remove((id, old));
+                }
+
+                pallet_session::KeyOwner::<T>::insert((id, key), validator_id.clone());
+            }
+            NextKeys::<T>::insert(validator_id.clone(), session_keys);
+
+            Self::do_add_validator(validator_id)?;
             Ok(())
         }
     }

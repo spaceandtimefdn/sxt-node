@@ -40,6 +40,8 @@ pub trait WeightInfo {
 	
 	/// Remove validator
 	fn remove_validator() -> Weight;
+	/// Onboard validator as Sudo, supplying keys
+	fn onboard_validator_with_keys() -> Weight;
 }
 
 /// Weights for pallet_template using the Substrate node and recommended hardware.
@@ -52,6 +54,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn remove_validator() -> Weight {
 		Weight::from_parts(0,0)
 	}
+
+	fn onboard_validator_with_keys() -> Weight {
+		Weight::from_parts(0, 0)
+	}
 }
 
 // For backwards compatibility and tests
@@ -61,6 +67,10 @@ impl WeightInfo for () {
 	}
 
 	fn remove_validator() -> Weight {
+		Weight::from_parts(0,0)
+	}
+
+	fn onboard_validator_with_keys() -> Weight {
 		Weight::from_parts(0,0)
 	}
 }
