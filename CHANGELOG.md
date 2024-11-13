@@ -1,3 +1,12 @@
+# [0.55.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.54.1...v0.55.0) (2024-11-13)
+
+
+### Features
+
+* added an extrinsic for onboarding nodes as sudo ([413dd54](https://github.com/spaceandtimelabs/sxt-node/commit/413dd54cdbd2033928f82094c8702a78ac1100b1))
+
+
+
 ## [0.54.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.54.0...v0.54.1) (2024-11-01)
 
 
@@ -39,15 +48,6 @@
 ### Bug Fixes
 
 * log more error information with flightsql connection issues ([4a0af76](https://github.com/spaceandtimelabs/sxt-node/commit/4a0af76d4e90df20f39b5b7583ad035af83254db))
-
-
-
-# [0.53.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.52.0...v0.53.0) (2024-10-29)
-
-
-### Features
-
-* create newest chainspec ([c93d7f5](https://github.com/spaceandtimelabs/sxt-node/commit/c93d7f51211e641fbd37314d6780f74e674a84f1))
 
 
 
