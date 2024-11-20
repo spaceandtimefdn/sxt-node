@@ -1,3 +1,12 @@
+## [0.55.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.55.0...v0.55.1) (2024-11-20)
+
+
+### Bug Fixes
+
+* remove subkey from dockerfile ([75f8add](https://github.com/spaceandtimelabs/sxt-node/commit/75f8add00720b38b376682db74ae9536b4b71a01))
+
+
+
 # [0.55.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.54.1...v0.55.0) (2024-11-13)
 
 
@@ -39,15 +48,6 @@
 ### Bug Fixes
 
 * Added special case for duplicate keys and additional logging info ([ddbe56c](https://github.com/spaceandtimelabs/sxt-node/commit/ddbe56cf89394ba96698d7fa6e552d412c53386e))
-
-
-
-## [0.53.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.53.0...v0.53.1) (2024-10-30)
-
-
-### Bug Fixes
-
-* log more error information with flightsql connection issues ([4a0af76](https://github.com/spaceandtimelabs/sxt-node/commit/4a0af76d4e90df20f39b5b7583ad035af83254db))
 
 
 
