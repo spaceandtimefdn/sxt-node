@@ -10,12 +10,6 @@ RUN rustup target add wasm32-unknown-unknown
 RUN cargo fetch
 RUN cargo build --locked --release
 
-FROM docker.io/rust:1.76.0-bullseye AS builder2
-
-WORKDIR /opt
-RUN apt update && apt install -y cmake pkg-config libssl-dev git gcc build-essential git protobuf-compiler clang libclang-dev
-RUN cargo install subkey
-
 #Stage 2: Build SxT Node Image with PostgreSQL
 FROM docker.io/parity/base-bin:latest
 
@@ -65,8 +59,6 @@ RUN --mount=type=secret,id=ARTIFACTORY_LOGIN  \
 
 # Copy the built application from builder
 COPY --from=builder --chmod=755 /opt/sxt/target/release/sxt-node /usr/local/bin
-COPY --from=builder2 --chmod=755 /usr/local/cargo/bin/subkey /usr/local/bin
-
 
 # Copy SxT Initializetion scripts
 COPY --chmod=755 scripts/* /opt
