@@ -35,10 +35,19 @@ sp-blockchain = { workspace = true, default-features = false, optional = true }
 sp-api = { workspace = true, default-features = false, optional = true}
 proof-of-sql = { workspace = true, default-features = false }
 exponential-backoff = { workspace = true, default-features = false, optional = true }
+k256 = { version = "0.13.4", default-features = false }
+sha3 = { version = "0.10.8", default-features = false }
+hex = { version = "0.4.3", default-features = false }
+
+[dev-dependencies]
+rand = "0.8.5"
 
 [features]
 default = ["std"]
 std = [
+	"hex/std",
+	"k256/std",
+	"sha3/std",
 	"codec/std",
 	"frame-benchmarking?/std",
 	"frame-support/std",

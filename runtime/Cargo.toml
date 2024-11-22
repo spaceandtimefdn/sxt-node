@@ -56,6 +56,7 @@ sp-std.workspace = true
 pallet-permissions.workspace = true
 pallet-tables.workspace = true
 pallet-indexing.workspace = true
+pallet-attestation.workspace = true
 
 [build-dependencies]
 substrate-wasm-builder = { optional = true, workspace = true, default-features = true }
@@ -63,6 +64,7 @@ substrate-wasm-builder = { optional = true, workspace = true, default-features =
 [features]
 default = ["std"]
 std = [
+	"pallet-attestation/std",
 	"pallet-validators/std",
 	"pallet-indexing/std",
 	"pallet-tables/std",

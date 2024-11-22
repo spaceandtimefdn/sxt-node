@@ -19,6 +19,8 @@ pub mod indexing;
 /// Types consumed by the native code interface
 pub mod native;
 
+pub mod attestation;
+
 /// Functionality relating to interacting with FlightSQL
 #[cfg(feature = "std")]
 pub mod sql;

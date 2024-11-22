@@ -61,6 +61,7 @@ pub use sp_runtime::{Perbill, Permill};
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 pub use {
+    pallet_attestation,
     pallet_commitments,
     pallet_indexing,
     pallet_permissions,
@@ -123,7 +124,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 101,
+    spec_version: 103,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -313,6 +314,10 @@ impl pallet_indexing::Config<native_pallets::native_pallet_indexing::Api> for Ru
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_attestation::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_attestation::weights::SubstrateWeight<Runtime>;
+}
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -368,6 +373,9 @@ mod runtime {
 
     #[runtime::pallet_index(12)]
     pub type Commitments = pallet_commitments;
+
+    #[runtime::pallet_index(13)]
+    pub type Attestations = pallet_attestation;
 }
 
 /// The address format for describing accounts.
