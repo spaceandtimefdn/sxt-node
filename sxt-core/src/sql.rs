@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
+use arrow_flight::flight_service_client::FlightServiceClient;
 use arrow_flight::sql::client::FlightSqlServiceClient;
 use arrow_flight::sql::CommandStatementIngest;
 use codec::Decode;
@@ -293,7 +294,12 @@ async fn create_and_authenticate_default_flightsql(
 
     let endpoint = Channel::from_shared(format!("http://{flightsql_host}:{flightsql_port}"))?;
     let channel = endpoint.connect_lazy();
-    let mut client = FlightSqlServiceClient::new(channel);
+    
+    // 20MB max message size
+    let max_message_size: usize = 20 * 1024 * 1024;
+    let inner = FlightServiceClient::new(channel)
+        .max_decoding_message_size(max_message_size);
+    let mut client = FlightSqlServiceClient::new_from_inner(inner);
     client
         .handshake(flightsql_user.as_str(), flightsql_pass.as_str())
         .await?;
