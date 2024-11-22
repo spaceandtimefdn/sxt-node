@@ -294,37 +294,15 @@ async fn create_and_authenticate_default_flightsql(
 
     let endpoint = Channel::from_shared(format!("http://{flightsql_host}:{flightsql_port}"))?;
     let channel = endpoint.connect_lazy();
-    
+
     // 20MB max message size
     let max_message_size: usize = 20 * 1024 * 1024;
-    let inner = FlightServiceClient::new(channel)
-        .max_decoding_message_size(max_message_size);
+    let inner = FlightServiceClient::new(channel).max_decoding_message_size(max_message_size);
     let mut client = FlightSqlServiceClient::new_from_inner(inner);
     client
         .handshake(flightsql_user.as_str(), flightsql_pass.as_str())
         .await?;
     Ok(client)
-}
-
-/// Create a FlightSQL client to interact with the SQL database
-async fn create_flightsql_client(
-    host: &str,
-    port: &str,
-) -> Result<Arc<Mutex<FlightSqlServiceClient<Channel>>>, anyhow::Error> {
-    let endpoint = Channel::from_shared(format!("http://{host}:{port}"))?;
-    let channel = endpoint.connect_lazy();
-    Ok(Arc::new(Mutex::new(FlightSqlServiceClient::new(channel))))
-}
-
-/// Authenticate with the flightsql server using the provided username and password
-async fn authenticate_client(
-    client: &Arc<Mutex<FlightSqlServiceClient<Channel>>>,
-    user: &str,
-    pass: &str,
-) -> Result<(), anyhow::Error> {
-    let mut c = client.lock().await;
-    let _ = c.handshake(user, pass).await?;
-    Ok(())
 }
 
 /// Create a subxt client to listen for blocks and events
