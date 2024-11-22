@@ -1,3 +1,13 @@
+## [0.56.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.56.0...v0.56.1) (2024-11-22)
+
+
+### Bug Fixes
+
+* Increase the message size limit in flightsql to match our ([a47aaa0](https://github.com/spaceandtimelabs/sxt-node/commit/a47aaa04ca22545e2451465c1eb0ba55d33e8dd2))
+* Remove dead code for creating and authenticating FlightSQL ([a19daad](https://github.com/spaceandtimelabs/sxt-node/commit/a19daad0c33c3ff7e098f46020d0375691d7ea51))
+
+
+
 # [0.56.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.55.1...v0.56.0) (2024-11-22)
 
 
@@ -31,23 +41,6 @@
 ### Bug Fixes
 
 * adjust NativeApi trait bounds and fix docs in pallet-indexing ([2235f3f](https://github.com/spaceandtimelabs/sxt-node/commit/2235f3f8b676baa2e8037bae4088da28a9fcd0fe))
-
-
-
-# [0.54.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.53.2...v0.54.0) (2024-10-31)
-
-
-### Bug Fixes
-
-* supertrait indexing Config with a tables Config ([671788f](https://github.com/spaceandtimelabs/sxt-node/commit/671788f71cfa98f3af139b3cda3713c8da6c4b3e))
-
-
-### Features
-
-* add validators benchmarks ([5eed63b](https://github.com/spaceandtimelabs/sxt-node/commit/5eed63b3176f9424a4ac91e3ac39c22bcc0e9fc5))
-* benchmark indexing pallet ([439ac39](https://github.com/spaceandtimelabs/sxt-node/commit/439ac39c49662e9ba9d433925cbc6a217d0a0fb3))
-* enable benchmarking ([0b632d2](https://github.com/spaceandtimelabs/sxt-node/commit/0b632d26e78a4bd5b789f3072c231dd3970d6d95))
-* Integrated weights for indexing pallet ([3852a9e](https://github.com/spaceandtimelabs/sxt-node/commit/3852a9e9310ffb7196a09dd0eb33c56c5ea18d71))
 
 
 
