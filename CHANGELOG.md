@@ -1,3 +1,12 @@
+# [0.56.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.55.1...v0.56.0) (2024-11-22)
+
+
+### Features
+
+* create attestation pallet and watcher cli for attesting ([84a0c42](https://github.com/spaceandtimelabs/sxt-node/commit/84a0c42c231d09c054eeaf80a40b9734403c86d8))
+
+
+
 ## [0.55.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.55.0...v0.55.1) (2024-11-20)
 
 
@@ -39,15 +48,6 @@
 * benchmark indexing pallet ([439ac39](https://github.com/spaceandtimelabs/sxt-node/commit/439ac39c49662e9ba9d433925cbc6a217d0a0fb3))
 * enable benchmarking ([0b632d2](https://github.com/spaceandtimelabs/sxt-node/commit/0b632d26e78a4bd5b789f3072c231dd3970d6d95))
 * Integrated weights for indexing pallet ([3852a9e](https://github.com/spaceandtimelabs/sxt-node/commit/3852a9e9310ffb7196a09dd0eb33c56c5ea18d71))
-
-
-
-## [0.53.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.53.1...v0.53.2) (2024-10-30)
-
-
-### Bug Fixes
-
-* Added special case for duplicate keys and additional logging info ([ddbe56c](https://github.com/spaceandtimelabs/sxt-node/commit/ddbe56cf89394ba96698d7fa6e552d412c53386e))
 
 
 
