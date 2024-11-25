@@ -1,3 +1,7 @@
+## [0.56.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.56.1...v0.56.2) (2024-11-25)
+
+
+
 ## [0.56.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.56.0...v0.56.1) (2024-11-22)
 
 
@@ -32,15 +36,6 @@
 ### Features
 
 * added an extrinsic for onboarding nodes as sudo ([413dd54](https://github.com/spaceandtimelabs/sxt-node/commit/413dd54cdbd2033928f82094c8702a78ac1100b1))
-
-
-
-## [0.54.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.54.0...v0.54.1) (2024-11-01)
-
-
-### Bug Fixes
-
-* adjust NativeApi trait bounds and fix docs in pallet-indexing ([2235f3f](https://github.com/spaceandtimelabs/sxt-node/commit/2235f3f8b676baa2e8037bae4088da28a9fcd0fe))
 
 
 
