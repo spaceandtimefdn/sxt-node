@@ -1,0 +1,144 @@
+//! Benchmarking setup for pallet-attestation
+use frame_benchmarking::v2::*;
+use frame_system::RawOrigin;
+
+use super::*;
+#[allow(unused)]
+use crate::Pallet as AttestationPallet;
+
+#[benchmarks]
+mod benchmarks {
+    use codec::Encode;
+    use frame_support::{assert_err, assert_noop, assert_ok, BoundedVec};
+    use k256::ecdsa::{SigningKey, VerifyingKey};
+    use sha3::digest::generic_array::GenericArray;
+    use sxt_core::attestation::{
+        blake2_256,
+        sign_eth_message,
+        Attestation,
+        AttestationKey,
+        EthereumSignature,
+        RegisterExternalAddress,
+        H256,
+    };
+
+    use super::*;
+
+    // Deterministic key generation using `blake2_256`
+    fn create_signed_message_and_keypair(seed: u64) -> (SigningKey, [u8; 33], EthereumSignature) {
+        // Convert the seed to bytes and hash it to generate a 32-byte private key
+        let seed_bytes = seed.to_le_bytes();
+        let private_key_bytes = blake2_256(&seed_bytes);
+
+        let signing_key = SigningKey::from_bytes(GenericArray::from_slice(&private_key_bytes))
+            .expect("Valid private key");
+        let verifying_key = signing_key.verifying_key();
+        let verifying_key_sec1 = &*verifying_key.to_sec1_bytes();
+        let verifying_key_sec1: [u8; 33] = verifying_key_sec1.try_into().unwrap();
+
+        // Sign the message (account ID encoded as bytes)
+        let message = seed.to_le_bytes();
+        let signature =
+            sign_eth_message(&private_key_bytes, &message).expect("Failed to sign message");
+
+        (signing_key, verifying_key_sec1, signature)
+    }
+
+    // Helper function to convert T::AccountId into a u64 for compatibility
+    fn account_id_to_u64<T: Config>(account_id: &T::AccountId) -> u64 {
+        let encoded = account_id.encode();
+        u64::from_le_bytes(encoded[0..8].try_into().unwrap_or([0u8; 8]))
+    }
+
+    // Helper function to create a registered attestation key
+    fn create_registered_attestation_key<T: Config>(account_id: T::AccountId) -> AttestationKey {
+        let account_id_u64 = account_id_to_u64::<T>(&account_id);
+        let (_, public_key, signature) = create_signed_message_and_keypair(account_id_u64);
+        let registration = RegisterExternalAddress::EthereumAddress {
+            signature,
+            proposed_pub_key: public_key,
+        };
+        assert_ok!(AttestationPallet::<T>::register_attestation_key(
+            RawOrigin::Root.into(),
+            account_id.clone(),
+            registration,
+        ));
+        AttestationKey::EthereumKey {
+            pub_key: public_key,
+        }
+    }
+
+    #[benchmark]
+    fn register_attestation_key() {
+        let caller: T::AccountId = whitelisted_caller();
+        let caller_u64 = account_id_to_u64::<T>(&caller);
+
+        // Generate deterministic keypair and signature
+        let (_, public_key, signature) = create_signed_message_and_keypair(caller_u64);
+
+        let registration = RegisterExternalAddress::EthereumAddress {
+            signature,
+            proposed_pub_key: public_key,
+        };
+
+        #[extrinsic_call]
+        register_attestation_key(RawOrigin::Root, caller.clone(), registration);
+
+        // Assert that the key was registered
+        let keys = AttestationKeys::<T>::get();
+        assert!(keys.iter().any(|(id, key)| *id == caller
+            && key
+                == &AttestationKey::EthereumKey {
+                    pub_key: public_key
+                }));
+    }
+
+    #[benchmark]
+    fn attest_block() {
+        let current_block: u32 = 15;
+        frame_system::Pallet::<T>::set_block_number(current_block.into());
+
+        let caller: T::AccountId = whitelisted_caller();
+        let block_number: BlockNumber = 10;
+
+        // Register the attestation key
+        let attestation_key = create_registered_attestation_key::<T>(caller.clone());
+
+        // Generate deterministic attestation
+        let caller_u64 = account_id_to_u64::<T>(&caller);
+        let (_, public_key, signature) = create_signed_message_and_keypair(caller_u64);
+        let attestation = Attestation::EthereumAttestation {
+            signature,
+            proposed_pub_key: public_key,
+            state_root: H256::zero(),
+        };
+
+        #[extrinsic_call]
+        attest_block(RawOrigin::Signed(caller.clone()), block_number, attestation);
+
+        // Assert that the attestation was recorded
+        let attestations = Attestations::<T>::get(block_number);
+        assert!(attestations.iter().any(|stored| stored == &attestation));
+    }
+
+    #[benchmark]
+    fn remove_attestation_key() {
+        let caller: T::AccountId = whitelisted_caller();
+        let attestation_key = create_registered_attestation_key::<T>(caller.clone());
+
+        #[extrinsic_call]
+        remove_attestation_key(RawOrigin::Root, caller.clone(), attestation_key.clone());
+
+        // Assert that the key was removed
+        let keys = AttestationKeys::<T>::get();
+        assert!(!keys
+            .iter()
+            .any(|(id, key)| *id == caller && key == &attestation_key));
+    }
+
+    impl_benchmark_test_suite!(
+        AttestationPallet,
+        crate::mock::new_test_ext(),
+        crate::mock::Test
+    );
+}

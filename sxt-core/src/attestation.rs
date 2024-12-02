@@ -9,7 +9,8 @@ use scale_info::TypeInfo;
 use sha3::digest::core_api::CoreWrapper;
 use sha3::{Digest, Keccak256, Keccak256Core};
 use snafu::{ResultExt, Snafu};
-use sp_core::{RuntimeDebug, H256};
+pub use sp_core::hashing::{blake2_128, blake2_256};
+pub use sp_core::{RuntimeDebug, H256};
 use sp_runtime::format;
 
 /// Represents an Ethereum-style ECDSA signature, broken into its components.
