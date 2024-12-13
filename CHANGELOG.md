@@ -1,3 +1,12 @@
+# [0.57.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.56.2...v0.57.0) (2024-12-13)
+
+
+### Features
+
+* create weights and benchmarks for attestation pallet ([db3992c](https://github.com/spaceandtimelabs/sxt-node/commit/db3992caf2ab6403346969ae8a8d3ad3be309bd2))
+
+
+
 ## [0.56.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.56.1...v0.56.2) (2024-11-25)
 
 
@@ -27,15 +36,6 @@
 ### Bug Fixes
 
 * remove subkey from dockerfile ([75f8add](https://github.com/spaceandtimelabs/sxt-node/commit/75f8add00720b38b376682db74ae9536b4b71a01))
-
-
-
-# [0.55.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.54.1...v0.55.0) (2024-11-13)
-
-
-### Features
-
-* added an extrinsic for onboarding nodes as sudo ([413dd54](https://github.com/spaceandtimelabs/sxt-node/commit/413dd54cdbd2033928f82094c8702a78ac1100b1))
 
 
 
