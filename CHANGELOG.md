@@ -1,3 +1,12 @@
+# [0.58.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.57.0...v0.58.0) (2024-12-13)
+
+
+### Features
+
+* track block numbers from SxT on chain tables ([12e53a0](https://github.com/spaceandtimelabs/sxt-node/commit/12e53a0466e4f6199e16ffcbe18096716a187945))
+
+
+
 # [0.57.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.56.2...v0.57.0) (2024-12-13)
 
 
@@ -27,15 +36,6 @@
 ### Features
 
 * create attestation pallet and watcher cli for attesting ([84a0c42](https://github.com/spaceandtimelabs/sxt-node/commit/84a0c42c231d09c054eeaf80a40b9734403c86d8))
-
-
-
-## [0.55.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.55.0...v0.55.1) (2024-11-20)
-
-
-### Bug Fixes
-
-* remove subkey from dockerfile ([75f8add](https://github.com/spaceandtimelabs/sxt-node/commit/75f8add00720b38b376682db74ae9536b4b71a01))
 
 
 
