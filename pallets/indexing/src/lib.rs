@@ -31,11 +31,15 @@ pub mod pallet {
 
     use commitment_sql::InsertAndCommitmentMetadata;
     use frame_support::pallet_prelude::*;
+    use frame_support::{Blake2_128, Blake2_128Concat};
     use frame_system::pallet_prelude::*;
     use native_api::NativeApi;
-    use sp_runtime::traits::Hash;
+    use sp_core::U256;
+    use sp_runtime::traits::{Bounded, Hash};
+    use sp_runtime::BoundedVec;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
-    use sxt_core::tables::TableIdentifier;
+    use sxt_core::tables::{TableIdentifier, TableNamespace};
+    use sxt_core::IdentLength;
 
     use super::*;
 
@@ -76,6 +80,11 @@ pub mod pallet {
     #[pallet::getter(fn final_data)]
     pub type FinalData<T: Config<I>, I: 'static = ()> =
         StorageMap<_, Blake2_128Concat, BatchId, DataQuorum<T::AccountId, T::Hash>>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn block_numbers)]
+    pub type BlockNumbers<T: Config<I>, I: 'static = ()> =
+        StorageMap<_, Blake2_128Concat, TableIdentifier, i64>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -226,12 +235,14 @@ pub mod pallet {
             Submissions::<T, I>::remove(&batch_id, second_key);
         });
 
+        let block_number = <frame_system::Pallet<T>>::block_number();
+
         // Decide on the quorum
         let quorum = DataQuorum {
             table: table.clone(),
             batch_id: batch_id.clone(),
             data_hash,
-            block_number: <frame_system::Pallet<T>>::block_number().into(),
+            block_number: block_number.into(),
             agreements: match_submissions,
             dissents: dissenters,
         };
@@ -259,7 +270,7 @@ pub mod pallet {
             ..
         } = pallet_commitments::Pallet::<T>::process_insert_and_update_commitments(
             table.clone(),
-            oc_table,
+            oc_table.clone(),
         )?;
 
         let on_chain_table_bytes = postcard::to_allocvec(&insert_with_meta_columns)
@@ -272,6 +283,12 @@ pub mod pallet {
             quorum,
             data: on_chain_table_bytes,
         });
+
+        let block_number = oc_table.max_block_number();
+
+        if let Some(block_number) = block_number {
+            BlockNumbers::<T, I>::insert(table, block_number);
+        }
 
         Ok(())
     }

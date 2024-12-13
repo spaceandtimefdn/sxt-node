@@ -112,6 +112,20 @@ impl OnChainTable {
 
         OnChainTable(ordered_columns)
     }
+
+    /// Get the maximum block number contained in this on chain table
+    pub fn max_block_number(&self) -> Option<i64> {
+        // All SxT DDLs use BLOCK_NUMBER
+        // TODO update this for user defined tables
+        let column_id: Identifier = "BLOCK_NUMBER".parse().ok()?;
+        let column = self.as_map().get(&column_id)?;
+
+        match column {
+            // All SxT DDLs use big int for block numbers
+            OnChainColumn::BigInt(values) => values.iter().max().cloned(),
+            _ => None,
+        }
+    }
 }
 
 impl IntoIterator for OnChainTable {
