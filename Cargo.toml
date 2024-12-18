@@ -9,6 +9,7 @@ edition = "2021"
 members = [
     "node",
     "rpc",
+    "watcher",
     "pallets/validators",
     "pallets/indexing",
     "pallets/tables",

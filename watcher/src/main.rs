@@ -22,17 +22,15 @@ use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 use ratatui::Terminal;
 use runtime::api::runtime_types::sxt_core::attestation::{self, Attestation};
 use sha3::digest::generic_array::GenericArray;
-use sp_core::H256;
 use subxt::blocks::Block as BlockT;
 use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;
 use subxt::config::substrate::{BlakeTwo256, SubstrateHeader};
+use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
 use sxt_core::attestation::{verify_eth_signature, RegisterExternalAddress};
 use sxt_core::sxt_chain_runtime as runtime;
 use thiserror::Error;
-
-//mod runtime;
 
 type SxtConfig = PolkadotConfig;
 
@@ -283,16 +281,12 @@ impl AttestationClient {
         substrate_key_path: &str,
     ) -> Result<u64, AttestationError> {
         let substrate_key = load_substrate_key(substrate_key_path)?;
-        let account_info = api
-            .storage()
-            .at_latest()
-            .await?
-            .fetch(
-                &runtime::api::storage()
-                    .system()
-                    .account(substrate_key.public_key().to_account_id()),
-            )
-            .await?;
+        let account_id = substrate_key.public_key();
+        let addr = runtime::api::storage()
+            .system()
+            .account(account_id.to_account_id());
+
+        let account_info = api.storage().at_latest().await?.fetch(&addr).await?;
 
         Ok(account_info.map_or(0, |info| info.nonce as u64))
     }
@@ -507,36 +501,40 @@ async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationErr
         .at_latest()
         .await?
         .fetch(&attestations_addr)
-        .await?
-        .ok_or_else(|| AttestationError::ErrorFetchingAttestations(block_number))?;
+        .await?;
 
-    if attestations.0.is_empty() {
+    if attestations.is_none() {
         progress.push(format!("No attestations found for block {}", block_number));
         update_ui(&mut terminal, &progress)?;
-        cleanup_terminal(&mut terminal)?;
-        return Ok(());
+    } else {
+        let attestations = attestations.unwrap();
+
+        if attestations.0.is_empty() {
+            progress.push(format!("No attestations found for block {}", block_number));
+            update_ui(&mut terminal, &progress)?;
+            return Ok(());
+        } else {
+            progress.push(format!("Found {} attestations", attestations.0.len()));
+            update_ui(&mut terminal, &progress)?;
+
+            // Process attestations
+            progress.push("Verifying attestations...".to_string());
+            update_ui(&mut terminal, &progress)?;
+
+            if let Err(err) =
+                verify_attestations(block_number, &attestations.0, &mut progress, &mut terminal)
+            {
+                progress.push(format!("Error: {:?}", err));
+                update_ui(&mut terminal, &progress)?;
+            } else {
+                progress.push(format!(
+                    "Successfully verified all attestations for block {}",
+                    block_number
+                ));
+            }
+        }
     }
 
-    progress.push(format!("Found {} attestations", attestations.0.len()));
-    update_ui(&mut terminal, &progress)?;
-
-    // Process attestations
-    progress.push("Verifying attestations...".to_string());
-    update_ui(&mut terminal, &progress)?;
-
-    if let Err(err) =
-        verify_attestations(block_number, &attestations.0, &mut progress, &mut terminal)
-    {
-        progress.push(format!("Error: {:?}", err));
-        update_ui(&mut terminal, &progress)?;
-        cleanup_terminal(&mut terminal)?;
-        return Err(err);
-    }
-
-    progress.push(format!(
-        "Successfully verified all attestations for block {}",
-        block_number
-    ));
     progress.push("Press q to quit".into());
     update_ui(&mut terminal, &progress)?;
 
@@ -548,8 +546,6 @@ async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationErr
             }
         }
     }
-
-    // TODO pause for user input here so it doesn't just immediately close
 
     cleanup_terminal(&mut terminal)?;
     Ok(())

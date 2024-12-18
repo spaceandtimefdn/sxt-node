@@ -19,7 +19,7 @@ use sp_core::traits::SpawnEssentialNamed;
 use sp_core::H256;
 use sp_runtime::traits::Header;
 use sp_runtime_interface::sp_wasm_interface::anyhow;
-use subxt::backend::rpc::reconnecting_rpc_client::Client;
+use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
 use subxt::blocks::Block;
 use subxt::client::OfflineClientT;
 use subxt::ext::futures;
@@ -113,7 +113,7 @@ where
         for hash in implicitly_finalized.iter() {
             let block = api
                 .blocks()
-                .at(H256::from_slice(hash.as_ref()))
+                .at(subxt::utils::H256::from_slice(hash.as_ref()))
                 .await
                 .unwrap();
 
@@ -134,7 +134,7 @@ where
         let hash = block.hash;
         let block = api
             .blocks()
-            .at(H256::from_slice(hash.as_ref()))
+            .at(subxt::utils::H256::from_slice(hash.as_ref()))
             .await
             .unwrap();
 
@@ -310,7 +310,7 @@ async fn create_subxt_client() -> Result<OnlineClient<PolkadotConfig>, anyhow::E
     let local_node_rpc = "ws://127.0.0.1:9944";
 
     // Build a custom WebSocket client so that we can apply our request and response size requirements
-    let ws_client = Client::builder()
+    let ws_client = RpcClient::builder()
         .max_request_size(50 * 1024 * 1024) // 50 Mb
         .max_response_size(50 * 1024 * 1024) // 50 Mb
         .request_timeout(Duration::from_secs(60))
