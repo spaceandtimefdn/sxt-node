@@ -8,6 +8,7 @@ edition = "2021"
 [workspace]
 members = [
     "node",
+    "rpc",
     "pallets/validators",
     "pallets/indexing",
     "pallets/tables",

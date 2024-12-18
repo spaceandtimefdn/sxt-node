@@ -1,0 +1,41 @@
+[package]
+name = "node-rpc"
+version = "0.1.0"
+authors.workspace = true
+description = "Space and Time node rpc methods."
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+jsonrpsee = { features = ["server"], workspace = true }
+pallet-transaction-payment-rpc = { workspace = true, default-features = true }
+sc-chain-spec = { workspace = true, default-features = true }
+sc-client-api = { workspace = true, default-features = true }
+sc-consensus-babe = { workspace = true, default-features = true }
+sc-consensus-babe-rpc = { workspace = true, default-features = true }
+sc-consensus-grandpa = { workspace = true, default-features = true }
+sc-consensus-grandpa-rpc = { workspace = true, default-features = true }
+sc-rpc = { workspace = true, default-features = true }
+sc-sync-state-rpc = { workspace = true, default-features = true }
+sc-transaction-pool-api = { workspace = true, default-features = true }
+sp-api = { workspace = true, default-features = true }
+sp-block-builder = { workspace = true, default-features = true }
+sp-blockchain = { workspace = true, default-features = true }
+sp-consensus = { workspace = true, default-features = true }
+sp-consensus-babe = { workspace = true, default-features = true }
+sp-keystore = { workspace = true, default-features = true }
+sp-runtime = { workspace = true, default-features = true }
+sp-application-crypto = { workspace = true, default-features = true }
+sp-statement-store = { workspace = true, default-features = true }
+substrate-frame-rpc-system = { workspace = true, default-features = true }
+substrate-state-trie-migration-rpc = { workspace = true, default-features = true }
+sxt-runtime = { workspace = true, default-features = false }
