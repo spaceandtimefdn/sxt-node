@@ -480,6 +480,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "paste",
+ "rayon",
  "rustc_version 0.4.0",
  "zeroize",
 ]
@@ -553,6 +554,7 @@ dependencies = [
  "ark-std 0.4.0",
  "derivative",
  "hashbrown 0.13.2",
+ "rayon",
 ]
 
 [[package]]
@@ -7494,6 +7496,7 @@ version = "0.2.0"
 dependencies = [
  "arrow",
  "arrow-flight",
+ "commitment-sql",
  "data-compliance-please-deprecate-me",
  "frame-benchmarking 38.0.0",
  "frame-support 37.0.1",
@@ -7502,9 +7505,10 @@ dependencies = [
  "log",
  "on-chain-table",
  "parity-scale-codec",
- "postcard",
  "proof-of-sql",
+ "proof-of-sql-commitment-map",
  "proof-of-sql-parser",
+ "proof-of-sql-static-setups",
  "scale-info",
  "sp-core",
  "sp-runtime 39.0.3",
@@ -7517,16 +7521,8 @@ dependencies = [
 name = "native-api"
 version = "0.1.0"
 dependencies = [
- "sxt-core",
-]
-
-[[package]]
-name = "native-pallets"
-version = "0.1.0"
-dependencies = [
  "native",
- "native-api",
- "pallet-indexing",
+ "proof-of-sql-commitment-map",
  "sxt-core",
 ]
 
@@ -8708,17 +8704,17 @@ dependencies = [
 name = "pallet-commitments"
 version = "0.1.0"
 dependencies = [
- "ark-serialize 0.4.2",
  "commitment-sql",
  "frame-benchmarking 38.0.0",
  "frame-support 37.0.1",
  "frame-system 37.1.0",
- "lazy_static",
+ "native-api",
  "on-chain-table",
  "parity-scale-codec",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
  "proof-of-sql-parser",
+ "proof-of-sql-static-setups",
  "scale-info",
  "sp-core",
  "sp-io 38.0.0",
@@ -9151,7 +9147,6 @@ dependencies = [
  "frame-system 37.1.0",
  "native",
  "native-api",
- "native-pallets",
  "on-chain-table",
  "pallet-commitments",
  "pallet-permissions",
@@ -9212,6 +9207,23 @@ dependencies = [
  "safe-mix",
  "scale-info",
  "sp-runtime 39.0.3",
+]
+
+[[package]]
+name = "pallet-keystore"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking 38.0.0",
+ "frame-support 37.0.1",
+ "frame-system 37.1.0",
+ "k256",
+ "parity-scale-codec",
+ "scale-info",
+ "sha3",
+ "sp-core",
+ "sp-io 38.0.0",
+ "sp-runtime 39.0.3",
+ "sxt-core",
 ]
 
 [[package]]
@@ -12024,6 +12036,7 @@ dependencies = [
  "postcard",
  "proof-of-sql-parser",
  "rand",
+ "rayon",
  "serde",
  "serde_json",
  "snafu",
@@ -12052,6 +12065,7 @@ dependencies = [
  "serde",
  "snafu",
  "sp-core",
+ "sp-runtime-interface",
  "sxt-core",
 ]
 
@@ -12068,6 +12082,16 @@ dependencies = [
  "lalrpop-util",
  "serde",
  "snafu",
+]
+
+[[package]]
+name = "proof-of-sql-static-setups"
+version = "0.1.0"
+dependencies = [
+ "ark-serialize 0.4.2",
+ "lazy_static",
+ "proof-of-sql",
+ "proof-of-sql-commitment-map",
 ]
 
 [[package]]
@@ -17377,7 +17401,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "frame-try-runtime 0.44.0",
- "native-pallets",
+ "native-api",
  "pallet-asset-conversion-tx-payment 19.0.0",
  "pallet-asset-tx-payment 37.0.0",
  "pallet-assets 37.0.0",
@@ -17394,6 +17418,7 @@ dependencies = [
  "pallet-im-online 36.0.0",
  "pallet-indexing",
  "pallet-indices 37.0.0",
+ "pallet-keystore",
  "pallet-offences 36.0.0",
  "pallet-permissions",
  "pallet-session 37.0.0",
