@@ -102,6 +102,48 @@ pub fn authority_keys_from_phrase(s: &str) -> (AccountId, AccountId, GrandpaId, 
     )
 }
 
+pub fn devnet_config() -> Result<ChainSpec, String> {
+    Ok(ChainSpec::builder(
+        WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
+        Default::default(),
+    )
+    .with_name("SxT Devnet")
+    .with_id("devnet")
+    .with_chain_type(ChainType::Live)
+    .with_properties(token_properties())
+    .with_genesis_config_patch(testnet_genesis(
+        // Initial NPoS authorities
+        vec![
+            authority_keys_from_seed("Bob"),
+            authority_keys_from_seed("Charlie"),
+            authority_keys_from_seed("Dave"),
+        ],
+        vec![
+            get_account_id_from_seed::<sr25519::Public>("Eve"),
+            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+        ],
+        // Sudo account
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        // Pre-funded accounts
+        vec![
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            get_account_id_from_seed::<sr25519::Public>("Bob"),
+            get_account_id_from_seed::<sr25519::Public>("Charlie"),
+            get_account_id_from_seed::<sr25519::Public>("Dave"),
+            get_account_id_from_seed::<sr25519::Public>("Eve"),
+            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+            get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+            get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+            get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+            get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+            get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
+            get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+        ],
+        true,
+    ))
+    .build())
+}
+
 pub fn development_config() -> Result<ChainSpec, String> {
     Ok(ChainSpec::builder(
         WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
