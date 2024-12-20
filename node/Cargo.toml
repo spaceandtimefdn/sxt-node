@@ -118,6 +118,7 @@ runtime-benchmarks = [
 	"sc-service/runtime-benchmarks",
 	"sxt-runtime/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"pallet-staking/runtime-benchmarks",
 ]
 # Enable features that allow the runtime to be tried and debugged. Name might be subject to change
 # in the near future.
@@ -126,6 +127,7 @@ try-runtime = [
 	"pallet-transaction-payment/try-runtime",
 	"sxt-runtime/try-runtime",
 	"sp-runtime/try-runtime",
+	"pallet-staking/try-runtime",
 ]
 
 [lints]

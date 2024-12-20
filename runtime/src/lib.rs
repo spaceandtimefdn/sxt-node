@@ -300,7 +300,7 @@ where
 }
 
 parameter_types! {
-    pub StatementCost: Balance = 1 * DOLLARS;
+    pub StatementCost: Balance = DOLLARS;
     pub StatementByteCost: Balance = 100 * MILLICENTS;
     pub const MinAllowedStatements: u32 = 4;
     pub const MaxAllowedStatements: u32 = 10;
@@ -508,7 +508,7 @@ impl pallet_authorship::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+    pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::MAX;
     pub const MaxKeys: u32 = 10_000;
     pub const MaxPeerInHeartbeats: u32 = 10_000;
 }
@@ -888,9 +888,17 @@ pub type Executive = frame_executive::Executive<
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_benchmarking, BaselineBench::<Runtime>]
-        [frame_system, SystemBench::<Runtime>]
+        [pallet_babe, Babe]
+        [pallet_bags_list, VoterList]
         [pallet_balances, Balances]
+        [pallet_election_provider_multi_phase, ElectionProviderMultiPhase]
+        [pallet_grandpa, Grandpa]
+        [pallet_im_online, ImOnline]
+        [pallet_staking, Staking]
+        [pallet_sudo, Sudo]
+        [frame_system, SystemBench::<Runtime>]
         [pallet_timestamp, Timestamp]
+        [pallet_utility, Utility]
         [pallet_sudo, Sudo]
         [pallet_permissions, Permissions]
         [pallet_indexing, Indexing]

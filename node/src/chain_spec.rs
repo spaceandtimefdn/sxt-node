@@ -88,8 +88,8 @@ pub fn authority_keys_from_seed(s: &str) -> (AccountId, AccountId, GrandpaId, Ba
     (
         get_from_seed::<sr25519::Public>(s).into(),
         get_from_seed::<sr25519::Public>(s).into(),
-        get_from_seed::<GrandpaId>(s).into(),
-        get_from_seed::<BabeId>(s).into(),
+        get_from_seed::<GrandpaId>(s),
+        get_from_seed::<BabeId>(s),
     )
 }
 
@@ -260,6 +260,7 @@ fn token_properties() -> Properties {
     map
 }
 
+#[allow(clippy::type_complexity)]
 fn configure_accounts(
     initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId)>,
     initial_nominators: Vec<AccountId>,

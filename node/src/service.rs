@@ -36,6 +36,7 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
+#[allow(clippy::type_complexity)]
 pub fn new_partial(
     config: &Configuration,
 ) -> Result<
@@ -262,10 +263,10 @@ pub fn new_full_base<
 
     let is_dev_mode = config.dev_key_seed.is_some();
     let role = config.role.clone();
-    let force_authoring = config.force_authoring.clone();
+    let force_authoring = config.force_authoring;
     let backoff_authoring_blocks: Option<()> = None;
     let name = config.network.node_name.clone();
-    let enable_grandpa = !config.disable_grandpa.clone();
+    let enable_grandpa = !config.disable_grandpa;
     let prometheus_registry = config.prometheus_registry().cloned();
 
     let mut net_config = sc_network::config::FullNetworkConfiguration::<
@@ -345,7 +346,7 @@ pub fn new_full_base<
     }
 
     let rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-        config: config,
+        config,
         backend: backend.clone(),
         client: client.clone(),
         keystore: keystore_container.keystore(),
@@ -492,14 +493,12 @@ pub fn new_full(config: Configuration, with_db: bool) -> Result<TaskManager, Ser
 
     let task_manager = match config.network.network_backend {
         sc_network::config::NetworkBackendType::Libp2p => {
-            let task_manager = new_full_base::<sc_network::NetworkWorker<_, _>>(config, with_db)
-                .map(|NewFullBase { task_manager, .. }| task_manager)?;
-            task_manager
+            new_full_base::<sc_network::NetworkWorker<_, _>>(config, with_db)
+                .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
         sc_network::config::NetworkBackendType::Litep2p => {
-            let task_manager = new_full_base::<sc_network::Litep2pNetworkBackend>(config, with_db)
-                .map(|NewFullBase { task_manager, .. }| task_manager)?;
-            task_manager
+            new_full_base::<sc_network::Litep2pNetworkBackend>(config, with_db)
+                .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
     };
 

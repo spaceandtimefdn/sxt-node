@@ -10,12 +10,10 @@ members = [
     "node",
     "rpc",
     "watcher",
-    "pallets/validators",
     "pallets/indexing",
     "pallets/tables",
     "pallets/permissions",
     "pallets/commitments",
-    "pallets/template",
     "proof-of-sql/commitment-map",
     "runtime",
     "sxt-core",
@@ -45,9 +43,7 @@ data-loader = { path = "./data-loader", default-features = false}
 arrow-flight = { version = "53.0.0", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
-pallet-validators = { path = "./pallets/validators", default-features = false }
 pallet-permissions = { path = "pallets/permissions", default-features = false }
-pallet-template = { path = "pallets/template", default-features = false}
 pallet-attestation ={ path = "pallets/attestation", default-features = false}
 pallet-keystore = { path = "pallets/keystore", default-features = false}
 sxt-core = { path = "sxt-core", default-features = false}
@@ -107,19 +103,18 @@ sp-inherents = { version = "34.0.0", default-features = false }
 sp-io = { version = "38.0.0", default-features = false }
 sp-keyring = { version = "39.0.0", default-features = false }
 sp-runtime = { version = "39.0.0", default-features = false }
-sp-runtime-interface = { version = "28.0.0", default-features = false }
 sp-timestamp = { version = "34.0.0", default-features = false }
 sp-std = { version = "14.0.0", default-features = false }
 subxt = { version = "0.38.0", default-features = false }
 substrate-frame-rpc-system = { version = "38.0.0", default-features = false }
 substrate-build-script-utils = { version = "11.0.0", default-features = false }
 codec = { version = "3.6.12", default-features = false, package = "parity-scale-codec" }
-frame-benchmarking = { version = "38.0.0", default-features = false }
+frame-benchmarking = { version = "37.0.0", default-features = false }
 frame-executive = { version = "37.0.0", default-features = false }
 frame-support = { version = "37.0.0", default-features = false }
-frame-system-benchmarking = { version = "38.0.0", default-features = false }
+frame-system-benchmarking = { version = "37.0.0", default-features = false }
 frame-system-rpc-runtime-api = { version = "34.0.0", default-features = false }
-frame-try-runtime = { version = "0.44.0", default-features = false }
+frame-try-runtime = { version = "0.43.0", default-features = false }
 pallet-aura = { version = "36.0.0", default-features = false }
 pallet-balances = { version = "38.0.0", default-features = false }
 pallet-grandpa = { version = "37.0.0", default-features = false }
@@ -155,9 +150,7 @@ sp-weights = { version = "31.0.0", default-features = false }
 frame-election-provider-support = { version = "37.0.0", default-features = false }
 pallet-bags-list = { version = "36.0.0", default-features = false }
 pallet-utility = { version = "37.0.0", default-features = false }
-pallet-assets = { version = "37.0.0", default-features = false }
-pallet-asset-tx-payment = { version = "37.0.0", default-features = false }
-pallet-asset-conversion-tx-payment = { version = "19.0.0", default-features = false }
+sp-runtime-interface = { version = "28.0.0", default-features = false }
 pallet-staking-runtime-api = { version = "24.0.0", default-features = false }
 sc-sync-state-rpc = { version = "0.44.0", default-features = false }
 substrate-state-trie-migration-rpc = { version = "37.0.0", default-features = false }
