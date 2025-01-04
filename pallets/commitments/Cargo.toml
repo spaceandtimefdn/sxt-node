@@ -13,7 +13,6 @@ publish = false
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-ark-serialize.workspace = true
 codec = { features = [
 	"derive",
 ], workspace = true }
@@ -24,11 +23,11 @@ scale-info = { features = [
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
-lazy_static.workspace = true
 on-chain-table.workspace = true
 proof-of-sql.workspace = true
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
 proof-of-sql-parser.workspace = true
+proof-of-sql-static-setups.workspace = true
 sqlparser.workspace = true
 sxt-core.workspace = true
 

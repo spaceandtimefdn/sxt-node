@@ -3,12 +3,12 @@ use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
 use proof_of_sql_commitment_map::{CommitmentScheme, CommitmentSchemeFlags, TableCommitmentBytes};
+use proof_of_sql_static_setups::PUBLIC_SETUPS;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 use sxt_core::tables::TableIdentifier;
 
 use crate::mock::*;
-use crate::public_setups::PUBLIC_SETUPS;
 use crate::test_create_table_generic::{self, CreateTableApiTestParams};
 use crate::Error;
 

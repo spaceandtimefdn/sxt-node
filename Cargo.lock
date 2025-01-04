@@ -6742,17 +6742,16 @@ dependencies = [
 name = "pallet-commitments"
 version = "0.1.0"
 dependencies = [
- "ark-serialize",
  "commitment-sql",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
- "lazy_static",
  "on-chain-table",
  "parity-scale-codec",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
  "proof-of-sql-parser",
+ "proof-of-sql-static-setups",
  "scale-info",
  "sp-core 34.0.0",
  "sp-io 38.0.0",
@@ -7866,6 +7865,16 @@ dependencies = [
  "lalrpop-util",
  "serde",
  "snafu",
+]
+
+[[package]]
+name = "proof-of-sql-static-setups"
+version = "0.1.0"
+dependencies = [
+ "ark-serialize",
+ "lazy_static",
+ "proof-of-sql",
+ "proof-of-sql-commitment-map",
 ]
 
 [[package]]

@@ -20,6 +20,7 @@ members = [
     "data-loader",
     "proof-of-sql/on-chain-table",
     "proof-of-sql/commitment-sql",
+    "proof-of-sql/static-setups",
     "native",
     "native-api",
     "native-pallets",
@@ -70,6 +71,7 @@ primitive-types = { version = "0.12.2", default-features = false }
 proof-of-sql = { version = "0.34.1", default-features = false }
 proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
 proof-of-sql-parser = { version = "0.34.1", default-features = false }
+proof-of-sql-static-setups = { path = "./proof-of-sql/static-setups/" }
 rand = { version = "0.8.5", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 snafu = { version = "0.8.4", default-features = false }

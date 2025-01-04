@@ -21,8 +21,6 @@ mod test_create_table_from_snapshot;
 #[cfg(test)]
 mod test_insert;
 
-mod public_setups;
-
 mod error_conversions;
 
 pub use pallet::*;
@@ -50,7 +48,7 @@ pub mod pallet {
         TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
     };
-    use public_setups::PUBLIC_SETUPS;
+    use proof_of_sql_static_setups::PUBLIC_SETUPS;
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
     use sxt_core::tables::TableIdentifier;
 

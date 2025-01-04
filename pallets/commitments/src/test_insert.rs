@@ -5,11 +5,11 @@ use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
 use proof_of_sql_commitment_map::{CommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
+use proof_of_sql_static_setups::PUBLIC_SETUPS;
 use sp_core::U256;
 use sxt_core::tables::TableIdentifier;
 
 use crate::mock::{new_test_ext, CommitmentsModule, Test};
-use crate::public_setups::PUBLIC_SETUPS;
 use crate::test_create_table::ProcessCreateTableTestParams;
 use crate::test_create_table_generic::CreateTableApiTestParams;
 use crate::Error;

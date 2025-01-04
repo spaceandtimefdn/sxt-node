@@ -1,3 +1,6 @@
+#![no_std]
+#![doc = include_str!("../README.md")]
+
 use ark_serialize::{CanonicalDeserialize, Compress, Validate};
 use proof_of_sql::proof_primitive::dory::{ProverSetup, PublicParameters};
 use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
