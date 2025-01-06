@@ -186,7 +186,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// `SLOT_DURATION` should have the same value.
 ///
 /// <https://research.web3.foundation/Polkadot/protocols/block-production/Babe#6-practical-results>
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
+pub const MILLISECS_PER_BLOCK: u64 = 4000;
 pub const SECS_PER_BLOCK: u64 = MILLISECS_PER_BLOCK / 1000;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
@@ -210,8 +210,10 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
-/// Each epoch is 12 hours
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = 12 * HOURS;
+pub const MAX_AUTHORITIES: u32 = 100_000u32;
+
+/// Each epoch is 4 hours
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = 4 * HOURS;
 
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
     const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
@@ -233,7 +235,7 @@ const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 2400;
     pub const Version: RuntimeVersion = VERSION;
-    /// We allow for 3 seconds of compute with a 6 second average block time.
+    /// We allow for 3 seconds of compute with a 4 second average block time.
     pub BlockWeights: frame_system::limits::BlockWeights =
         frame_system::limits::BlockWeights::with_sensible_defaults(
             Weight::from_parts(3u64 * WEIGHT_REF_TIME_PER_SECOND, u64::MAX),
@@ -346,7 +348,7 @@ impl pallet_transaction_payment::Config for Runtime {
 impl pallet_grandpa::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
-    type MaxAuthorities = ConstU32<32>;
+    type MaxAuthorities = ConstU32<MAX_AUTHORITIES>;
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = ConstU64<0>;
     type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BabeId)>>::Proof;
@@ -411,7 +413,7 @@ impl pallet_babe::Config for Runtime {
     type EpochChangeTrigger = pallet_babe::ExternalTrigger;
     type DisabledValidators = Session;
     type WeightInfo = ();
-    type MaxAuthorities = ConstU32<50>;
+    type MaxAuthorities = ConstU32<MAX_AUTHORITIES>;
     type MaxNominators = ConstU32<100_000>;
     type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BabeId)>>::Proof;
     type EquivocationReportSystem =
@@ -452,16 +454,12 @@ parameter_types! {
     // Six sessions in an era (24 hours).
     pub const SessionsPerEra: SessionIndex = 6;
 
-    // 28 eras for unbonding (28 days).
-    pub BondingDuration: sp_staking::EraIndex = 28;
-    pub SlashDeferDuration: sp_staking::EraIndex = 27;
+    // 7 eras for unbonding (7 days).
+    pub BondingDuration: sp_staking::EraIndex = 7;
+    pub SlashDeferDuration: sp_staking::EraIndex = 6;
     pub const MaxExposurePageSize: u32 = 512;
-    // Note: this is not really correct as Max Nominators is (MaxExposurePageSize * page_count) but
-    // this is an unbounded number. We just set it to a reasonably high value, 1 full page
-    // of nominators.
-    pub const MaxNominators: u32 = 512;
+    pub const MaxNominators: u32 = 100_000;
     pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
-    // 16
     pub const MaxNominations: u32 = <NposCompactSolution16 as frame_election_provider_support::NposSolution>::LIMIT as u32;
     pub const MaxControllersInDeprecationBatch: u32 = 5900;
     pub HistoryDepth: u32 = 84;
@@ -490,7 +488,7 @@ impl pallet_staking::Config for Runtime {
     type SessionInterface = Self;
     type EraPayout = EraPayout;
     type NextNewSession = Session;
-    type MaxExposurePageSize = ConstU32<256>;
+    type MaxExposurePageSize = MaxExposurePageSize;
     type VoterList = VoterList;
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = frame_support::traits::ConstU32<32>;
@@ -632,7 +630,7 @@ impl pallet_election_provider_multi_phase::MinerConfig for Runtime {
 }
 
 impl pallet_authority_discovery::Config for Runtime {
-    type MaxAuthorities = MaxActiveValidators;
+    type MaxAuthorities = ConstU32<MAX_AUTHORITIES>;
 }
 
 /// The numbers configured here could always be more than the the maximum limits of staking pallet
