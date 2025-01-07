@@ -18,7 +18,7 @@ frame-system = { workspace = true, default-features = false }
 snafu = { workspace = true }
 sp-runtime = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false}
-sp-runtime-interface = { version = "28.0.0", default-features = false }
+sp-runtime-interface = { workspace = true }
 sqlparser = { workspace = true, default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"]}
 postcard = { workspace = true, features = ["alloc"], optional = true }

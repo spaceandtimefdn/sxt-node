@@ -11,7 +11,7 @@ homepage.workspace = true
 codec = { workspace = true }
 data-compliance-please-deprecate-me = { workspace = true, optional = true, features = ["std"] }
 log = "0.4.11"
-sp-runtime-interface = { version = "28.0.0", default-features = false }
+sp-runtime-interface = { workspace = true }
 sp-runtime = { workspace = true, default-features = false}
 frame-support = { workspace = true, default-features = false}
 on-chain-table = { workspace = true, default-features = false, features = ["arrow"], optional=true}
