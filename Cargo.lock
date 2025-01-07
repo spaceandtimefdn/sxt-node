@@ -7849,6 +7849,7 @@ dependencies = [
  "serde",
  "snafu",
  "sp-core 34.0.0",
+ "sp-runtime-interface 28.0.0",
  "sxt-core",
 ]
 
