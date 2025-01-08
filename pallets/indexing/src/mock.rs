@@ -1,5 +1,5 @@
 use frame_support::derive_impl;
-use native_api::NativeApi;
+use native_api::Api;
 use sp_core::H256;
 use sp_runtime::BuildStorage;
 
@@ -7,44 +7,11 @@ use crate as pallet_indexing;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
-pub mod api_impl {
-    use native::interface;
-    use native_api::NativeApi;
-    use sxt_core::native::{CreateStatementPassBy, RowData};
-
-    use super::*;
-    pub struct Api;
-
-    impl NativeApi for Api {
-        fn record_batch_to_onchain(
-            row_data: RowData,
-            create_statement: CreateStatementPassBy,
-        ) -> Result<sxt_core::native::OnChainTableBytes, sxt_core::native::NativeError> {
-            interface::record_batch_to_onchain(row_data, create_statement)
-        }
-    }
-
-    pub type Pallet<T> = pallet_indexing::pallet::Pallet<T, Api>;
-    pub type Event<T> = pallet_indexing::pallet::Event<T, Api>;
-    pub type Error<T> = pallet_indexing::pallet::Error<T, Api>;
-
-    pub type PalletWithApi<T> = pallet_indexing::Pallet<T, Api>;
-
-    pub use crate::pallet::{
-        __substrate_call_check,
-        __substrate_event_check,
-        tt_default_parts,
-        tt_error_token,
-    };
-}
-
-pub use api_impl::Api;
-
 frame_support::construct_runtime!(
     pub enum Test
     {
         System: frame_system,
-        Indexing: api_impl,
+        Indexing: pallet_indexing::native_pallet,
         Permissions: pallet_permissions,
         Commitments: pallet_commitments,
         Tables: pallet_tables,

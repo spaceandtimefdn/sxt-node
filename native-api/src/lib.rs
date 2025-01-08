@@ -23,3 +23,15 @@ impl NativeApi for () {
         unimplemented!()
     }
 }
+
+/// Actual NativeApi implementation that uses runtime_interface functions.
+pub struct Api;
+
+impl NativeApi for Api {
+    fn record_batch_to_onchain(
+        row_data: RowData,
+        create_statement: CreateStatementPassBy,
+    ) -> Result<OnChainTableBytes, NativeError> {
+        native::interface::record_batch_to_onchain(row_data, create_statement)
+    }
+}

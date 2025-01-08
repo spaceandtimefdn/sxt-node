@@ -23,7 +23,6 @@ members = [
     "proof-of-sql/static-setups",
     "native",
     "native-api",
-    "native-pallets",
     "utils/commit-grouper", "data-compliance-please-deprecate-me",
     "watcher",
     "pallets/attestation"
@@ -52,7 +51,6 @@ pallet-tables = { path = "pallets/tables", default-features = false}
 pallet-indexing = { path = "pallets/indexing", default-features = false }
 native = { path = "native", default-features = false}
 native-api = { path = "native-api", default-features = false}
-native-pallets = { path ="native-pallets", default-features = false}
 num-bigint = { version = "0.4", default-features = false }
 clap = { version = "4.5.3" }
 exponential-backoff = { version = "2.0.0", default-features = false }

@@ -9,9 +9,11 @@ edition.workspace = true
 
 [dependencies]
 sxt-core.workspace = true
+native.workspace = true
 
 [features]
 default = ["std"]
 std = [
-    'sxt-core/std'
+    'sxt-core/std',
+    'native/std'
 ]

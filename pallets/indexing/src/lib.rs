@@ -25,6 +25,9 @@ pub use weights::*;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+/// Native wrapper around the indexing pallet.
+pub mod native_pallet;
+
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {

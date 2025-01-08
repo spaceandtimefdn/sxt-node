@@ -11,6 +11,7 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::TypeInfo;
 use frame_support::{assert_err, assert_ok};
 use frame_system::ensure_signed;
+use native_api::Api;
 use sp_core::Hasher;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{

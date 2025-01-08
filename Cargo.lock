@@ -6220,16 +6220,7 @@ dependencies = [
 name = "native-api"
 version = "0.1.0"
 dependencies = [
- "sxt-core",
-]
-
-[[package]]
-name = "native-pallets"
-version = "0.1.0"
-dependencies = [
  "native",
- "native-api",
- "pallet-indexing",
  "sxt-core",
 ]
 
@@ -6794,7 +6785,6 @@ dependencies = [
  "frame-system",
  "native",
  "native-api",
- "native-pallets",
  "on-chain-table",
  "pallet-commitments",
  "pallet-permissions",
@@ -12360,7 +12350,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
- "native-pallets",
+ "native-api",
  "pallet-attestation",
  "pallet-aura",
  "pallet-balances",
