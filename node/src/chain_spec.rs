@@ -181,7 +181,7 @@ pub fn production_config() -> Result<ChainSpec, String> {
     )
     .with_name("Sxt Testnet")
     .with_id("sxt-testnet")
-    .with_chain_type(ChainType::Local)
+    .with_chain_type(ChainType::Live)
     .with_properties(token_properties())
     .with_genesis_config_patch(testnet_genesis(
         // Initial PoA authorities
