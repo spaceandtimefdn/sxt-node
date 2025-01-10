@@ -90,6 +90,15 @@ jobs:
           jf rt u --flat target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm sxtnode-generic-local/sxt-node/${{ steps.conventional-changelog.outputs.version }}/;
         timeout-minutes: 90
 
+      - name: Build and Release Watcher Docker Image
+        env:
+          DOCKERTAG: spaceandtime.jfrog.io/sxt-node/watcher:${{ steps.conventional-changelog.outputs.version }}
+        working-directory: watcher
+        run: |-
+          cp ../target/release/watcher .
+          docker build . -t $DOCKERTAG
+          jf docker push $DOCKERTAG
+
       - name: Build and Release Dockerfile
         env:
           DOCKERTAG: spaceandtime.jfrog.io/sxtnode-docker-local/sxt-node:${{ steps.conventional-changelog.outputs.version }}
