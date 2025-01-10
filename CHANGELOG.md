@@ -1,3 +1,7 @@
+## [0.59.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.59.0...v0.59.1) (2025-01-10)
+
+
+
 # [0.59.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.58.1...v0.59.0) (2025-01-10)
 
 
@@ -31,10 +35,6 @@
 ### Features
 
 * create weights and benchmarks for attestation pallet ([db3992c](https://github.com/spaceandtimelabs/sxt-node/commit/db3992caf2ab6403346969ae8a8d3ad3be309bd2))
-
-
-
-## [0.56.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.56.1...v0.56.2) (2024-11-25)
 
 
 
