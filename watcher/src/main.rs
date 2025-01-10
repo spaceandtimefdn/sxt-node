@@ -261,7 +261,7 @@ impl AttestationClient {
         eth_key_path: &str,
         substrate_key_path: &str,
     ) -> Result<Self, AttestationError> {
-        let api = OnlineClient::<PolkadotConfig>::from_url(websocket).await?;
+        let api = OnlineClient::<PolkadotConfig>::from_insecure_url(websocket).await?;
 
         info!("Connected to chain at {}", websocket);
 
