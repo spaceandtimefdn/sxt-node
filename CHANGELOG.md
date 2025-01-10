@@ -1,3 +1,12 @@
+# [0.59.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.58.1...v0.59.0) (2025-01-10)
+
+
+### Features
+
+* enable insecure urls for watcher ([182506f](https://github.com/spaceandtimelabs/sxt-node/commit/182506f1e85f406016e8a2a9fb1693b202d22fc9))
+
+
+
 ## [0.58.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.58.0...v0.58.1) (2025-01-09)
 
 
@@ -26,16 +35,6 @@
 
 
 ## [0.56.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.56.1...v0.56.2) (2024-11-25)
-
-
-
-## [0.56.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.56.0...v0.56.1) (2024-11-22)
-
-
-### Bug Fixes
-
-* Increase the message size limit in flightsql to match our ([a47aaa0](https://github.com/spaceandtimelabs/sxt-node/commit/a47aaa04ca22545e2451465c1eb0ba55d33e8dd2))
-* Remove dead code for creating and authenticating FlightSQL ([a19daad](https://github.com/spaceandtimelabs/sxt-node/commit/a19daad0c33c3ff7e098f46020d0375691d7ea51))
 
 
 
