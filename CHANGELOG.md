@@ -1,3 +1,7 @@
+## [0.59.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.59.1...v0.59.2) (2025-01-13)
+
+
+
 ## [0.59.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.59.0...v0.59.1) (2025-01-10)
 
 
@@ -26,15 +30,6 @@
 ### Features
 
 * track block numbers from SxT on chain tables ([12e53a0](https://github.com/spaceandtimelabs/sxt-node/commit/12e53a0466e4f6199e16ffcbe18096716a187945))
-
-
-
-# [0.57.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.56.2...v0.57.0) (2024-12-13)
-
-
-### Features
-
-* create weights and benchmarks for attestation pallet ([db3992c](https://github.com/spaceandtimelabs/sxt-node/commit/db3992caf2ab6403346969ae8a8d3ad3be309bd2))
 
 
 
