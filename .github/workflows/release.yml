@@ -58,7 +58,7 @@ jobs:
         run: echo "VERSION=${{ steps.conventional-changelog.outputs.version }}" >> $GITHUB_ENV
       - name: Set VERSION for development branch
         if: github.ref_name != 'main'
-        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> $GITHUB_ENV
 
 
       - name: Push Conventional Changelog
