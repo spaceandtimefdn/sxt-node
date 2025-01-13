@@ -6227,6 +6227,7 @@ name = "native-api"
 version = "0.1.0"
 dependencies = [
  "native",
+ "proof-of-sql-commitment-map",
  "sxt-core",
 ]
 
