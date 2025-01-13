@@ -9,6 +9,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
 use sp_core::RuntimeDebug;
+use sp_runtime_interface::pass_by::PassByCodec;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::ast::ObjectName;
 use sqlparser::dialect::PostgreSqlDialect;
@@ -175,6 +176,7 @@ pub type TableNamespace = ByteString;
     RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
+    PassByCodec,
     Default,
     Serialize,
     Deserialize,
