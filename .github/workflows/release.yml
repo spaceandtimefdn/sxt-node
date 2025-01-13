@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   release:
@@ -42,6 +43,7 @@ jobs:
           fetch-tags: true
 
       - name: Conventional Changelog Action
+        if: github.ref_name == 'main'
         id: conventional-changelog
         uses: TriPSs/conventional-changelog-action@v5
         with:
@@ -51,7 +53,16 @@ jobs:
           git-push: false
           skip-on-empty: false # Always create commit
 
+      - name: Set VERSION for main branch
+        if: github.ref_name == 'main'
+        run: echo "VERSION=${{ steps.conventional-changelog.outputs.version }}" >> $GITHUB_ENV
+      - name: Set VERSION for development branch
+        if: github.ref_name != 'main'
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+
+
       - name: Push Conventional Changelog
+        if: github.ref_name == 'main'
         uses: ad-m/github-push-action@master
         id: push
         with:
@@ -86,13 +97,13 @@ jobs:
       - name: Build and Release SxT-Node Binaries
         run: |-
           cargo build --locked --release
-          jf rt u --flat target/release/sxt-node sxtnode-generic-local/sxt-node/${{ steps.conventional-changelog.outputs.version }}/;
-          jf rt u --flat target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm sxtnode-generic-local/sxt-node/${{ steps.conventional-changelog.outputs.version }}/;
+          jf rt u --flat target/release/sxt-node sxtnode-generic-local/sxt-node/$VERSION/;
+          jf rt u --flat target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm sxtnode-generic-local/sxt-node/$VERSION/;
         timeout-minutes: 90
 
       - name: Build and Release Watcher Docker Image
         env:
-          DOCKERTAG: spaceandtime.jfrog.io/sxt-node/watcher:${{ steps.conventional-changelog.outputs.version }}
+          DOCKERTAG: spaceandtime.jfrog.io/sxt-node/watcher:${{ env.VERSION }}
         working-directory: watcher
         run: |-
           cp ../target/release/watcher .
@@ -101,7 +112,7 @@ jobs:
 
       - name: Build and Release Dockerfile
         env:
-          DOCKERTAG: spaceandtime.jfrog.io/sxtnode-docker-local/sxt-node:${{ steps.conventional-changelog.outputs.version }}
+          DOCKERTAG: spaceandtime.jfrog.io/sxtnode-docker-local/sxt-node:${{ env.VERSION }}
         run: |-
           docker buildx version
           docker buildx ls
@@ -122,6 +133,7 @@ jobs:
 
       - name: Create Release
         uses: ncipollo/release-action@v1
+        if: github.ref_name == 'main'
         with:
           tag: ${{ steps.conventional-changelog.outputs.tag }}
           body: ${{ steps.conventional-changelog.outputs.changelog }}
