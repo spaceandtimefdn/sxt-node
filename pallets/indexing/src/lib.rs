@@ -270,7 +270,7 @@ pub mod pallet {
         let InsertAndCommitmentMetadata {
             insert_with_meta_columns,
             ..
-        } = pallet_commitments::Pallet::<T>::process_insert_and_update_commitments(
+        } = pallet_commitments::Pallet::<T>::process_insert_and_update_commitments::<I>(
             table.clone(),
             oc_table.clone(),
         )?;

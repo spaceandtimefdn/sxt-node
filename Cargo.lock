@@ -6744,6 +6744,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "native-api",
  "on-chain-table",
  "parity-scale-codec",
  "proof-of-sql",

@@ -1,5 +1,6 @@
 use commitment_sql::{process_insert, InsertAndCommitmentMetadata};
 use frame_support::assert_noop;
+use native_api::Api;
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql::base::math::decimal::Precision;
@@ -51,7 +52,10 @@ impl ProcessInsertTestParams {
     }
 
     fn execute(self) -> Result<InsertAndCommitmentMetadata, Error<Test>> {
-        CommitmentsModule::process_insert_and_update_commitments(self.table_id, self.insert_data)
+        CommitmentsModule::process_insert_and_update_commitments::<Api>(
+            self.table_id,
+            self.insert_data,
+        )
     }
 }
 
