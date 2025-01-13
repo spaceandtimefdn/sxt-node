@@ -106,3 +106,32 @@ impl From<OnChainTableToBytesError> for NativeError {
         NativeError::SerializationError
     }
 }
+
+/// Errors that can occur in the native commitment computation functions.
+#[derive(Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum NativeCommitmentError {
+    /// The commitment failed to deserialize.
+    CommitmentDeserialization,
+    /// The table failed to deserialize
+    TableDeserialization,
+    /// Attempted to compute commitment to out of bounds data.
+    OutOfScalarBounds,
+    /// Commitment metadata indicates that operand tables cannot be the same.
+    ColumnCommitmentsMismatch,
+    /// Table commitments (of different schemes) have different ranges.
+    TableCommitmentRangeMismatch,
+    /// Table commitments (of different schemes) have different column orders.
+    TableCommitmentColumnOrderMismatch,
+    /// No commitments to update.
+    NoCommitments,
+    /// The commitment failed to serialize.
+    CommitmentSerialization,
+    /// The table failed to serialize
+    TableSerialization,
+}
+
+impl From<OnChainTableToBytesError> for NativeCommitmentError {
+    fn from(_: OnChainTableToBytesError) -> Self {
+        NativeCommitmentError::TableSerialization
+    }
+}

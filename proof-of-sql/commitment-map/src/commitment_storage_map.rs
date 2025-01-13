@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use snafu::Snafu;
 use sp_core::{ConstU32, RuntimeDebug, TypedGet};
 use sp_runtime_interface::pass_by::PassByCodec;
+use sxt_core::native::NativeCommitmentError;
 use sxt_core::tables::{MaxColsPerTable, TableIdentifier};
 
 use crate::commitment_map_implementor::CommitmentMapImplementor;
@@ -64,6 +65,12 @@ pub enum TableCommitmentToBytesError {
 impl From<postcard::Error> for TableCommitmentToBytesError {
     fn from(error: postcard::Error) -> Self {
         TableCommitmentToBytesError::Postcard { error }
+    }
+}
+
+impl From<TableCommitmentToBytesError> for NativeCommitmentError {
+    fn from(_: TableCommitmentToBytesError) -> Self {
+        NativeCommitmentError::CommitmentSerialization
     }
 }
 

@@ -282,6 +282,7 @@ dependencies = [
  "hashbrown 0.13.2",
  "itertools 0.10.5",
  "num-traits",
+ "rayon",
  "zeroize",
 ]
 
@@ -301,6 +302,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "paste",
+ "rayon",
  "rustc_version",
  "zeroize",
 ]
@@ -339,6 +341,7 @@ dependencies = [
  "ark-std",
  "derivative",
  "hashbrown 0.13.2",
+ "rayon",
 ]
 
 [[package]]
@@ -372,6 +375,7 @@ checksum = "94893f1e0c6eeab764ade8dc4c0db24caf4fe7cbbaafc0eba0a9030f447b5185"
 dependencies = [
  "num-traits",
  "rand",
+ "rayon",
 ]
 
 [[package]]
@@ -6197,6 +6201,7 @@ version = "0.2.0"
 dependencies = [
  "arrow",
  "arrow-flight",
+ "commitment-sql",
  "data-compliance-please-deprecate-me",
  "frame-benchmarking",
  "frame-support",
@@ -6206,7 +6211,9 @@ dependencies = [
  "on-chain-table",
  "parity-scale-codec",
  "proof-of-sql",
+ "proof-of-sql-commitment-map",
  "proof-of-sql-parser",
+ "proof-of-sql-static-setups",
  "scale-info",
  "sp-core 34.0.0",
  "sp-runtime 39.0.2",
@@ -7810,6 +7817,7 @@ dependencies = [
  "postcard",
  "proof-of-sql-parser",
  "rand",
+ "rayon",
  "serde",
  "serde_json",
  "snafu",
