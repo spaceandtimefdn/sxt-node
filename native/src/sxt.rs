@@ -11,8 +11,6 @@ use data_compliance_please_deprecate_me::{
     record_batch_try_map_with_target_types,
     target_types_for_table,
 };
-use postcard::to_allocvec;
-use sp_runtime::BoundedVec;
 use sp_runtime_interface::runtime_interface;
 use sxt_core::native::{CreateStatementPassBy, NativeError, OnChainTableBytes, RowData};
 use sxt_core::tables::create_statement_to_sqlparser;
@@ -39,13 +37,7 @@ pub trait Interface {
         let on_chain_table = on_chain_table::OnChainTable::try_from(compliant_batch)
             .map_err(|_| NativeError::OnChainTableConversionError)?;
 
-        let table_bytes =
-            to_allocvec(&on_chain_table).map_err(|_| NativeError::SerializationError)?;
-
-        let table_bytes: BoundedVec<u8, _> =
-            BoundedVec::try_from(table_bytes).map_err(|_| NativeError::BoundedVecError)?;
-
-        Ok(OnChainTableBytes { data: table_bytes })
+        Ok(OnChainTableBytes::try_from(on_chain_table)?)
     }
 
     /// Convert a sxt_core::native::RowData into a serialized OnChainTable, and force data
@@ -86,19 +78,12 @@ pub trait Interface {
         let on_chain_table = on_chain_table::OnChainTable::try_from(compliant_batch)
             .map_err(|_| NativeError::OnChainTableConversionError)?;
 
-        let table_bytes =
-            to_allocvec(&on_chain_table).map_err(|_| NativeError::SerializationError)?;
-
-        let table_bytes: BoundedVec<u8, _> =
-            BoundedVec::try_from(table_bytes).map_err(|_| NativeError::BoundedVecError)?;
-
-        Ok(OnChainTableBytes { data: table_bytes })
+        Ok(OnChainTableBytes::try_from(on_chain_table)?)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use core::str::FromStr;
     use std::io::Cursor;
     use std::sync::Arc;
 
@@ -108,6 +93,7 @@ mod tests {
     use on_chain_table::{OnChainColumn, OnChainTable};
     use proof_of_sql::base::math::decimal::Precision;
     use sp_core::U256;
+    use sp_runtime::BoundedVec;
     use sxt_core::tables::create_statement;
 
     use super::*;
@@ -197,12 +183,11 @@ mod tests {
             ),
         ]).unwrap();
 
-        let result: OnChainTable = postcard::from_bytes(
-            &interface::record_batch_to_onchain(illegal_batch_bytes, create_statement)
+        let result: OnChainTable =
+            interface::record_batch_to_onchain(illegal_batch_bytes, create_statement)
                 .unwrap()
-                .data,
-        )
-        .unwrap();
+                .try_into()
+                .unwrap();
 
         assert_eq!(result, expected_on_chain_table);
     }
