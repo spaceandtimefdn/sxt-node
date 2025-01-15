@@ -37,10 +37,6 @@ sc-transaction-pool-api.workspace = true
 sc-transaction-pool-api.default-features = true
 sc-offchain.workspace = true
 sc-offchain.default-features = true
-sc-consensus-aura.workspace = true
-sc-consensus-aura.default-features = true
-sp-consensus-aura.workspace = true
-sp-consensus-aura.default-features = true
 sc-consensus.workspace = true
 sc-consensus.default-features = true
 sc-consensus-grandpa.workspace = true
@@ -81,11 +77,28 @@ frame-benchmarking-cli.default-features = true
 sxt-runtime.workspace = true
 native.workspace = true
 sxt-core.workspace = true
-proof-of-sql-commitment-map = { workspace = true, features = [ "substrate",
-]}
+proof-of-sql-commitment-map = { workspace = true, features = [ "substrate"] }
 sqlparser = { workspace = true, default-features = false }
 bs58 = "0.5.1"
 dotenv = "0.15.0"
+
+rand.workspace = true
+sp-transaction-storage-proof.workspace = true
+pallet-staking.workspace = true
+sc-consensus-babe.workspace = true
+sc-consensus-babe.default-features = true
+sp-consensus-babe.workspace = true
+sp-consensus-babe.default-features = true
+sp-statement-store.workspace = true
+node-rpc.workspace = true
+sc-statement-store.workspace = true
+sc-rpc.workspace = true
+sc-network-statement.workspace = true
+sc-storage-monitor.workspace = true
+sc-network-sync.workspace = true
+sc-chain-spec.workspace = true
+serde.workspace = true
+sc-sync-state-rpc.workspace = true
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true

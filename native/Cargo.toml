@@ -12,7 +12,7 @@ codec = { workspace = true }
 commitment-sql = { workspace = true, optional = true }
 data-compliance-please-deprecate-me = { workspace = true, optional = true, features = ["std"] }
 log = "0.4.11"
-sp-runtime-interface = { workspace = true }
+sp-runtime-interface = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false}
 frame-support = { workspace = true, default-features = false}
 on-chain-table = { workspace = true, default-features = false, features = ["arrow"], optional=true}

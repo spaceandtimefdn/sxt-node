@@ -51,13 +51,34 @@ frame-system-benchmarking = { optional = true, workspace = true }
 pallet-commitments.workspace = true
 pallet-template.workspace = true
 pallet-validators.workspace = true
-pallet-session.workspace = true
+pallet-session = { workspace = true, features = ["historical"]}
 sp-std.workspace = true
 pallet-permissions.workspace = true
 pallet-tables.workspace = true
 pallet-indexing.workspace = true
 pallet-attestation.workspace = true
 pallet-keystore.workspace = true
+
+pallet-staking.workspace = true
+pallet-staking-runtime-api.workspace = true
+pallet-authorship.workspace = true
+pallet-im-online.workspace = true
+pallet-offences.workspace = true
+pallet-authority-discovery.workspace = true
+pallet-election-provider-multi-phase.workspace = true
+pallet-babe.workspace = true
+pallet-indices.workspace = true
+sp-consensus-babe.workspace = true
+sp-staking.workspace = true
+frame-election-provider-support.workspace = true
+pallet-bags-list.workspace = true
+pallet-utility.workspace = true
+pallet-assets.workspace = true
+pallet-asset-tx-payment.workspace = true
+pallet-asset-conversion-tx-payment.workspace = true
+sp-arithmetic.workspace = true
+sp-statement-store.workspace =true
+pallet-statement.workspace = true
 
 [build-dependencies]
 substrate-wasm-builder = { optional = true, workspace = true, default-features = true }
@@ -67,6 +88,10 @@ default = ["std"]
 std = [
 	"native-api/std",
 	"pallet-keystore/std",
+	"sp-arithmetic/std",
+	"sp-statement-store/std",
+	"pallet-statement/std",
+	"pallet-staking-runtime-api/std",
 	"pallet-attestation/std",
 	"pallet-validators/std",
 	"pallet-indexing/std",
@@ -93,6 +118,23 @@ std = [
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
+
+	"pallet-staking/std",
+	"pallet-authorship/std",
+	"pallet-im-online/std",
+	"pallet-offences/std",
+	"pallet-authority-discovery/std",
+	"pallet-election-provider-multi-phase/std",
+	"pallet-babe/std",
+	"pallet-indices/std",
+	"sp-consensus-babe/std",
+	"sp-staking/std",
+	"frame-election-provider-support/std",
+	"pallet-bags-list/std",
+	"pallet-utility/std",
+	"pallet-assets/std",
+	"pallet-asset-tx-payment/std",
+	"pallet-asset-conversion-tx-payment/std",
 
 	"sp-api/std",
 	"sp-block-builder/std",
@@ -126,6 +168,18 @@ runtime-benchmarks = [
 	"pallet-timestamp/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"pallet-template/runtime-benchmarks",
+	"pallet-staking/runtime-benchmarks",
+	"pallet-im-online/runtime-benchmarks",
+	"pallet-offences/runtime-benchmarks",
+	"pallet-election-provider-multi-phase/runtime-benchmarks",
+	"pallet-babe/runtime-benchmarks",
+	"pallet-indices/runtime-benchmarks",
+	"sp-staking/runtime-benchmarks",
+	"frame-election-provider-support/runtime-benchmarks",
+	"pallet-bags-list/runtime-benchmarks",
+	"pallet-utility/runtime-benchmarks",
+	"pallet-assets/runtime-benchmarks",
+	"pallet-asset-tx-payment/runtime-benchmarks",
 ]
 
 try-runtime = [
@@ -140,6 +194,21 @@ try-runtime = [
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"sp-runtime/try-runtime",
+	"pallet-statement/try-runtime",
+	"pallet-staking/try-runtime",
+	"pallet-authorship/try-runtime",
+	"pallet-im-online/try-runtime",
+	"pallet-offences/try-runtime",
+	"pallet-authority-discovery/try-runtime",
+	"pallet-election-provider-multi-phase/try-runtime",
+	"pallet-babe/try-runtime",
+	"pallet-indices/try-runtime",
+	"frame-election-provider-support/try-runtime",
+	"pallet-bags-list/try-runtime",
+	"pallet-utility/try-runtime",
+	"pallet-assets/try-runtime",
+	"pallet-asset-tx-payment/try-runtime",
+	"pallet-asset-conversion-tx-payment/try-runtime",
 ]
 
 [lints]

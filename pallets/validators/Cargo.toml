@@ -25,8 +25,8 @@ frame-system.workspace = true
 pallet-session = { workspace = true, default-features = false }
 sp-std.workspace = true
 sp-runtime.workspace = true
-sp-staking = {version = "36.0.0", default-features =  false }
-sp-weights = { version = "31.0.0", default-features = false}
+sp-staking.workspace = true
+sp-weights.workspace = true
 
 [dev-dependencies]
 sp-core = { default-features = true, workspace = true }
