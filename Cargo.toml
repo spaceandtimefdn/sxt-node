@@ -167,6 +167,11 @@ sc-network-statement = { version = "0.26.0", default-features = false }
 sc-storage-monitor = { version = "0.22.0", default-features = false }
 sc-network-sync = { version = "0.43.0", default-features = false }
 
+k256 = { version = "0.13.4", default-features = false }
+sha3 = { version = "0.10.8", default-features = false }
+hex = { version = "0.4.3", default-features = false }
+alloy = { version = "0.6.4", features = ["full"]}
+glob = "0.3.1"
 
 [workspace.lints]
 rust.missing_docs = "warn"

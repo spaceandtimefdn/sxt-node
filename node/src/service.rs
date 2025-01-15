@@ -14,6 +14,8 @@ use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sxt_runtime::opaque::Block;
 use sxt_runtime::{self, RuntimeApi};
 
+use crate::cli::EventForwarderDetails;
+
 /// Full client
 pub(crate) type FullClient = sc_service::TFullClient<
     Block,
@@ -81,7 +83,7 @@ pub fn new_partial(
     )>(config);
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
-            config.clone(),
+            config,
             telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
             executor,
         )?;
@@ -247,6 +249,7 @@ pub fn new_full_base<
 >(
     config: Configuration,
     with_db: bool,
+    event_forwarder: Option<EventForwarderDetails>,
 ) -> Result<NewFullBase, ServiceError> {
     let sc_service::PartialComponents {
         client,
@@ -371,8 +374,17 @@ pub fn new_full_base<
         );
     }
 
-    if role.clone().is_authority() {
-        // Build and start the block proposer task
+    if let Some(EventForwarderDetails { key, rpc }) = event_forwarder {
+        sxt_core::multiplexer::spawn_multiplexer(
+            "event-multiplexer",
+            &task_manager.spawn_essential_handle(),
+            client.clone(),
+            key,
+            rpc,
+        );
+    }
+
+    if role.is_authority() {
         let mut proposer_factory = sc_basic_authorship::ProposerFactory::new(
             task_manager.spawn_handle(),
             client.clone(),
@@ -488,17 +500,29 @@ pub fn new_full_base<
 }
 
 /// Builds a new service for a full client.
-pub fn new_full(config: Configuration, with_db: bool) -> Result<TaskManager, ServiceError> {
+pub fn new_full(
+    config: Configuration,
+    with_db: bool,
+    event_forwarder_details: Option<EventForwarderDetails>,
+) -> Result<TaskManager, ServiceError> {
     let database_path = config.database.path().map(Path::to_path_buf);
 
     let task_manager = match config.network.network_backend {
         sc_network::config::NetworkBackendType::Libp2p => {
-            new_full_base::<sc_network::NetworkWorker<_, _>>(config, with_db)
-                .map(|NewFullBase { task_manager, .. }| task_manager)?
+            new_full_base::<sc_network::NetworkWorker<_, _>>(
+                config,
+                with_db,
+                event_forwarder_details,
+            )
+            .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
         sc_network::config::NetworkBackendType::Litep2p => {
-            new_full_base::<sc_network::Litep2pNetworkBackend>(config, with_db)
-                .map(|NewFullBase { task_manager, .. }| task_manager)?
+            new_full_base::<sc_network::Litep2pNetworkBackend>(
+                config,
+                with_db,
+                event_forwarder_details,
+            )
+            .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
     };
 
