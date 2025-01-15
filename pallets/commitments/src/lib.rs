@@ -21,8 +21,6 @@ mod test_create_table_from_snapshot;
 #[cfg(test)]
 mod test_insert;
 
-mod public_setups;
-
 mod error_conversions;
 
 pub use pallet::*;
@@ -30,16 +28,16 @@ pub use pallet::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    use alloc::str;
+    use alloc::{str, vec};
 
     use commitment_sql::{
         process_create_table,
         process_create_table_from_snapshot,
-        process_insert,
         CreateTableAndCommitmentMetadata,
         InsertAndCommitmentMetadata,
     };
     use frame_support::pallet_prelude::*;
+    use native_api::NativeApi;
     use on_chain_table::OnChainTable;
     use proof_of_sql_commitment_map::{
         CommitmentMap,
@@ -49,8 +47,9 @@ pub mod pallet {
         KeyExistsError,
         TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
+        TableCommitmentBytesPerCommitmentSchemePassBy,
     };
-    use public_setups::PUBLIC_SETUPS;
+    use proof_of_sql_static_setups::PUBLIC_SETUPS;
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
     use sxt_core::tables::TableIdentifier;
 
@@ -118,6 +117,10 @@ pub mod pallet {
         SerializeCommitment,
         /// Failed to deserialize proof-of-sql commitment.
         DeserializeCommitment,
+        /// Failed to serialize `OnChainTable`.
+        SerializeInsertData,
+        /// Failed to deserialize `OnChainTable`.
+        DeserializeInsertData,
         /// Snapshot commitments don't match table definition.
         InappropriateSnapshotCommitments,
         /// Table must have at least one column.
@@ -142,6 +145,14 @@ pub mod pallet {
         ColumnWithoutNotNull,
         /// Column option not supported.
         ColumnWithUnsupportedOption,
+        /// Failed to serialize proof-of-sql commitment in native interface.
+        NativeSerializeCommitment,
+        /// Failed to deserialize proof-of-sql commitment in native interface.
+        NativeDeserializeCommitment,
+        /// Failed to serialize `OnChainTable` in native interface.
+        NativeSerializeInsertData,
+        /// Failed to deserialize `OnChainTable` in native interface.
+        NativeDeserializeInsertData,
         /// Existing commitments of different schemes don't agree on table range.
         ExistingCommitmentsRangeMismatch,
         /// Existing commitments of different schemes don't agree on column order.
@@ -237,27 +248,35 @@ pub mod pallet {
         /// Processes the insert and updates commitments for the table in storage.
         ///
         /// Returns the original insert with additional commitment metadata columns.
-        pub fn process_insert_and_update_commitments(
+        pub fn process_insert_and_update_commitments<I: NativeApi>(
             table: TableIdentifier,
             insert_data: OnChainTable,
         ) -> Result<InsertAndCommitmentMetadata, Error<T>> {
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 
-            let previous_commitments = handler
-                .get_commitments(&table)
-                .try_into()
-                .map_err(|_| Error::DeserializeCommitment)?;
+            let previous_commitments = TableCommitmentBytesPerCommitmentSchemePassBy {
+                data: handler.get_commitments(&table),
+            };
 
-            let (insert_and_commitment_metadata, commitments) =
-                process_insert(&table, insert_data, previous_commitments, *PUBLIC_SETUPS)?;
+            let table_bytes = insert_data.try_into()?;
 
-            let commitments_bytes = commitments.try_into()?;
+            let (insert_with_meta_columns_bytes, commitments_bytes) =
+                I::process_insert(table.clone(), table_bytes, previous_commitments)?;
+
+            let commitments_bytes = commitments_bytes.data;
 
             handler
-                .update_commitments(table, commitments_bytes)
-                .expect("process_insert guarantees to update the same commitment schemes that were provided to it");
+                 .update_commitments(table, commitments_bytes)
+                 .expect("process_insert guarantees to update the same commitment schemes that were provided to it");
 
-            Ok(insert_and_commitment_metadata)
+            let insert_with_meta_columns = insert_with_meta_columns_bytes
+                .try_into()
+                .map_err(|_| Error::DeserializeInsertData)?;
+
+            Ok(InsertAndCommitmentMetadata {
+                insert_with_meta_columns,
+                meta_table_inserts: vec![],
+            })
         }
     }
 }

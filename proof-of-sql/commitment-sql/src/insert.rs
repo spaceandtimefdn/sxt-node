@@ -22,6 +22,7 @@ use proof_of_sql_commitment_map::generic_over_commitment::{
 use proof_of_sql_commitment_map::{GenericOverCommitmentFn, PerCommitmentScheme};
 use proof_of_sql_parser::Identifier;
 use snafu::Snafu;
+use sxt_core::native::NativeCommitmentError;
 use sxt_core::tables::TableIdentifier;
 
 use crate::row_number_column::on_chain_table_with_row_number_column;
@@ -132,6 +133,19 @@ pub enum AppendOnChainTableError {
     },
 }
 
+impl From<AppendOnChainTableError> for NativeCommitmentError {
+    fn from(error: AppendOnChainTableError) -> Self {
+        match error {
+            AppendOnChainTableError::ColumnCommitmentsMismatch { .. } => {
+                NativeCommitmentError::ColumnCommitmentsMismatch
+            }
+            AppendOnChainTableError::OutOfScalarBounds { .. } => {
+                NativeCommitmentError::OutOfScalarBounds
+            }
+        }
+    }
+}
+
 struct AppendOnChainTableToTableCommitmentFn<'a, 's>(&'a OnChainTable, PhantomData<&'s ()>);
 
 impl<'a, 's> AppendOnChainTableToTableCommitmentFn<'a, 's> {
@@ -190,6 +204,21 @@ pub enum ProcessInsertError {
     /// No commitments to update.
     #[snafu(display("no commitments to update"))]
     NoCommitments,
+}
+
+impl From<ProcessInsertError> for NativeCommitmentError {
+    fn from(error: ProcessInsertError) -> Self {
+        match error {
+            ProcessInsertError::AppendOnChainTable { source } => source.into(),
+            ProcessInsertError::TableCommitmentRangeMismatch => {
+                NativeCommitmentError::TableCommitmentRangeMismatch
+            }
+            ProcessInsertError::TableCommitmentColumnOrderMismatch => {
+                NativeCommitmentError::TableCommitmentColumnOrderMismatch
+            }
+            ProcessInsertError::NoCommitments => NativeCommitmentError::NoCommitments,
+        }
+    }
 }
 
 /// Insert transformed to support commitment metadata.

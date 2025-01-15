@@ -9,9 +9,12 @@ edition.workspace = true
 
 [dependencies]
 sxt-core.workspace = true
+native.workspace = true
+proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
 
 [features]
 default = ["std"]
 std = [
-    'sxt-core/std'
+    'sxt-core/std',
+    'native/std'
 ]

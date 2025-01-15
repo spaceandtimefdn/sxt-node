@@ -9,9 +9,10 @@ homepage.workspace = true
 
 [dependencies]
 codec = { workspace = true }
+commitment-sql = { workspace = true, optional = true }
 data-compliance-please-deprecate-me = { workspace = true, optional = true, features = ["std"] }
 log = "0.4.11"
-sp-runtime-interface = { version = "28.0.0", default-features = false }
+sp-runtime-interface = { workspace = true }
 sp-runtime = { workspace = true, default-features = false}
 frame-support = { workspace = true, default-features = false}
 on-chain-table = { workspace = true, default-features = false, features = ["arrow"], optional=true}
@@ -22,10 +23,11 @@ sp-core = { workspace = true, default-features = false}
 tonic = { workspace = true, optional = true }
 arrow = { workspace = true, optional = true, features = ["ipc"]}
 arrow-flight = { workspace = true, optional = true, features = ["flight-sql-experimental"] }
+proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
 proof-of-sql-parser = { workspace = true, default-features = false}
+proof-of-sql-static-setups = { workspace = true, optional = true }
 futures = { features = ["thread-pool"], workspace = true, optional = true }
 
-postcard = "1.0"
 sxt-core.workspace = true
 
 [dev-dependencies]
@@ -37,8 +39,10 @@ std = [
     "codec/std",
     "sp-runtime-interface/std",
     "dep:arrow", # <------- put std dependencies here
+    "dep:commitment-sql",
     "dep:data-compliance-please-deprecate-me",
     "dep:on-chain-table",
+    "dep:proof-of-sql-static-setups",
     "dep:arrow-flight",
     "dep:tonic",
     "dep:futures",
@@ -46,4 +50,5 @@ std = [
     "frame-support/std",
     "frame-system/std",
     "sp-core/std",
+    "proof-of-sql/cpu-perf",
 ]

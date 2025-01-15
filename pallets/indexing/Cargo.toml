@@ -39,7 +39,6 @@ sp-core.workspace = true
 sp-io.workspace = true
 sp-runtime.workspace = true
 native.workspace = true
-native-pallets.workspace = true
 arrow.workspace = true
 
 [features]

@@ -24,6 +24,7 @@ frame-support = { features = ["experimental"], workspace = true }
 frame-system.workspace = true
 frame-try-runtime = { optional = true, workspace = true }
 frame-executive.workspace = true
+native-api.workspace = true
 pallet-aura.workspace = true
 pallet-balances.workspace = true
 pallet-grandpa.workspace = true
@@ -48,7 +49,6 @@ pallet-transaction-payment-rpc-runtime-api.workspace = true
 frame-benchmarking = { optional = true, workspace = true }
 frame-system-benchmarking = { optional = true, workspace = true }
 pallet-commitments.workspace = true
-native-pallets.workspace = true
 pallet-template.workspace = true
 pallet-validators.workspace = true
 pallet-session.workspace = true
@@ -64,6 +64,7 @@ substrate-wasm-builder = { optional = true, workspace = true, default-features =
 [features]
 default = ["std"]
 std = [
+	"native-api/std",
 	"pallet-attestation/std",
 	"pallet-validators/std",
 	"pallet-indexing/std",

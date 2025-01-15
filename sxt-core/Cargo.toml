@@ -18,11 +18,11 @@ frame-system = { workspace = true, default-features = false }
 snafu = { workspace = true }
 sp-runtime = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false}
-sp-runtime-interface = { version = "28.0.0", default-features = false }
+sp-runtime-interface = { workspace = true }
 sqlparser = { workspace = true, default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"]}
-postcard = { workspace = true, features = ["alloc"], optional = true }
-on-chain-table = { workspace = true, default-features = false, features = ["arrow"], optional = true }
+postcard = { workspace = true, features = ["alloc"] }
+on-chain-table = { workspace = true, default-features = false }
 tonic = { workspace = true, optional = true }
 arrow = { workspace = true, optional = true, features = ["ipc"]}
 arrow-flight = { workspace = true, optional = true, features = ["flight-sql-experimental"] }
@@ -52,14 +52,13 @@ std = [
 	"frame-benchmarking?/std",
 	"frame-support/std",
 	"frame-system/std",
+	"on-chain-table/arrow",
 	"scale-info/std",
 	"dep:tokio",
 	"dep:tonic",
 	"dep:arrow",
 	"dep:arrow-flight",
 	"dep:subxt",
-	"dep:on-chain-table",
-	"dep:postcard",
 	"dep:data-loader",
 	"dep:sp-api",
 	"dep:sc-client-api",

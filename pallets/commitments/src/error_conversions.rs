@@ -9,6 +9,7 @@ use commitment_sql::{
     UnsupportedColumnType,
 };
 use proof_of_sql_commitment_map::{KeyExistsError, TableCommitmentToBytesError};
+use sxt_core::native::{NativeCommitmentError, OnChainTableToBytesError};
 
 use crate::pallet::Error;
 
@@ -96,6 +97,34 @@ impl<T> From<ProcessInsertError> for Error<T> {
                 Error::ExistingCommitmentsColumnOrderMismatch
             }
             ProcessInsertError::NoCommitments => Error::NoExistingCommitments,
+        }
+    }
+}
+
+impl<T> From<OnChainTableToBytesError> for Error<T> {
+    fn from(_: OnChainTableToBytesError) -> Self {
+        Error::SerializeInsertData
+    }
+}
+
+impl<T> From<NativeCommitmentError> for Error<T> {
+    fn from(error: NativeCommitmentError) -> Self {
+        match error {
+            NativeCommitmentError::CommitmentDeserialization => Error::NativeDeserializeCommitment,
+            NativeCommitmentError::TableDeserialization => Error::NativeDeserializeInsertData,
+            NativeCommitmentError::OutOfScalarBounds => Error::InsertDataOutOfBounds,
+            NativeCommitmentError::ColumnCommitmentsMismatch => {
+                Error::InsertDataDoesntMatchExistingCommitments
+            }
+            NativeCommitmentError::TableCommitmentRangeMismatch => {
+                Error::ExistingCommitmentsRangeMismatch
+            }
+            NativeCommitmentError::TableCommitmentColumnOrderMismatch => {
+                Error::ExistingCommitmentsColumnOrderMismatch
+            }
+            NativeCommitmentError::NoCommitments => Error::NoExistingCommitments,
+            NativeCommitmentError::CommitmentSerialization => Error::NativeSerializeCommitment,
+            NativeCommitmentError::TableSerialization => Error::NativeSerializeInsertData,
         }
     }
 }

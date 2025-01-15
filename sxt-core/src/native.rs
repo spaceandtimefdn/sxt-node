@@ -1,5 +1,7 @@
 use codec::{Decode, Encode, MaxEncodedLen};
+use on_chain_table::OnChainTable;
 use scale_info::TypeInfo;
+use snafu::Snafu;
 use sp_core::RuntimeDebug;
 use sp_runtime_interface::pass_by::PassByCodec;
 
@@ -24,8 +26,53 @@ pub struct RowData {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, PassByCodec)]
 pub struct OnChainTableBytes {
     /// A serialized OnChainTable represented as bytes
-    pub data: indexing::RowData,
+    data: indexing::RowData,
 }
+
+impl OnChainTableBytes {
+    /// Returns the underlying bytes.
+    pub fn data(&self) -> &indexing::RowData {
+        &self.data
+    }
+}
+
+impl TryFrom<OnChainTableBytes> for OnChainTable {
+    type Error = postcard::Error;
+
+    fn try_from(value: OnChainTableBytes) -> Result<Self, Self::Error> {
+        postcard::from_bytes(value.data())
+    }
+}
+
+/// Errors that can occur when encoding an `OnChainTable` to bytes.
+#[derive(Debug, Snafu)]
+pub enum OnChainTableToBytesError {
+    ///  Unable to serialize `OnChainTable`.
+    #[snafu(display("unable to serialize OnChainTable: {error}"))]
+    Serialize {
+        /// The source postcard error.
+        error: postcard::Error,
+    },
+    /// `OnChainTable` exceeds the maximum size for this byte encoding.
+    #[snafu(display("OnChainTable exceeds the maximum size for this byte encoding"))]
+    ExceedsMaxSize,
+}
+
+impl TryFrom<OnChainTable> for OnChainTableBytes {
+    type Error = OnChainTableToBytesError;
+
+    fn try_from(value: OnChainTable) -> Result<Self, Self::Error> {
+        let bytes = postcard::to_allocvec(&value)
+            .map_err(|error| OnChainTableToBytesError::Serialize { error })?;
+
+        let data = bytes
+            .try_into()
+            .map_err(|_| OnChainTableToBytesError::ExceedsMaxSize)?;
+
+        Ok(OnChainTableBytes { data })
+    }
+}
+
 /// Errors that can occur in the native code interface
 #[derive(Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum NativeError {
@@ -52,4 +99,39 @@ pub enum NativeError {
 
     /// Error creating a bounded vector for this OnChainTable
     BoundedVecError,
+}
+
+impl From<OnChainTableToBytesError> for NativeError {
+    fn from(_: OnChainTableToBytesError) -> Self {
+        NativeError::SerializationError
+    }
+}
+
+/// Errors that can occur in the native commitment computation functions.
+#[derive(Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum NativeCommitmentError {
+    /// The commitment failed to deserialize.
+    CommitmentDeserialization,
+    /// The table failed to deserialize
+    TableDeserialization,
+    /// Attempted to compute commitment to out of bounds data.
+    OutOfScalarBounds,
+    /// Commitment metadata indicates that operand tables cannot be the same.
+    ColumnCommitmentsMismatch,
+    /// Table commitments (of different schemes) have different ranges.
+    TableCommitmentRangeMismatch,
+    /// Table commitments (of different schemes) have different column orders.
+    TableCommitmentColumnOrderMismatch,
+    /// No commitments to update.
+    NoCommitments,
+    /// The commitment failed to serialize.
+    CommitmentSerialization,
+    /// The table failed to serialize
+    TableSerialization,
+}
+
+impl From<OnChainTableToBytesError> for NativeCommitmentError {
+    fn from(_: OnChainTableToBytesError) -> Self {
+        NativeCommitmentError::TableSerialization
+    }
 }

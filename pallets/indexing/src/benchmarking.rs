@@ -6,7 +6,7 @@ use frame_system::RawOrigin;
 
 use super::*;
 #[cfg(test)]
-use crate::mock::api_impl::PalletWithApi as IndexingWithApi;
+use crate::native_pallet::Pallet as PalletWithApi;
 #[allow(unused)]
 use crate::Pallet as Indexing;
 
@@ -111,7 +111,7 @@ mod benchmarks {
     }
 
     impl_benchmark_test_suite!(
-        IndexingWithApi,
+        PalletWithApi,
         crate::mock::new_test_ext(),
         crate::mock::Test
     );

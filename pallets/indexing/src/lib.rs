@@ -25,16 +25,19 @@ pub use weights::*;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+/// Native wrapper around the indexing pallet.
+pub mod native_pallet;
+
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
 
     use commitment_sql::InsertAndCommitmentMetadata;
     use frame_support::pallet_prelude::*;
-    use frame_support::{Blake2_128, Blake2_128Concat};
+    use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
     use native_api::NativeApi;
-    use sp_core::U256;
+    use on_chain_table::OnChainTable;
     use sp_runtime::traits::{Bounded, Hash};
     use sp_runtime::BoundedVec;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
@@ -261,14 +264,13 @@ pub mod pallet {
         .map_err(|_| Error::<T, I>::ParseTableError)?;
 
         // Deserialize into a usable OnChainTable
-        let oc_table =
-            postcard::from_bytes::<on_chain_table::OnChainTable>(table_bytes.data.as_ref())
-                .map_err(|_| Error::<T, I>::TableDeserializationError)?;
+        let oc_table = OnChainTable::try_from(table_bytes)
+            .map_err(|_| Error::<T, I>::TableDeserializationError)?;
 
         let InsertAndCommitmentMetadata {
             insert_with_meta_columns,
             ..
-        } = pallet_commitments::Pallet::<T>::process_insert_and_update_commitments(
+        } = pallet_commitments::Pallet::<T>::process_insert_and_update_commitments::<I>(
             table.clone(),
             oc_table.clone(),
         )?;

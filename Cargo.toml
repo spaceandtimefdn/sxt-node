@@ -20,9 +20,9 @@ members = [
     "data-loader",
     "proof-of-sql/on-chain-table",
     "proof-of-sql/commitment-sql",
+    "proof-of-sql/static-setups",
     "native",
     "native-api",
-    "native-pallets",
     "utils/commit-grouper", "data-compliance-please-deprecate-me",
     "watcher",
     "pallets/attestation"
@@ -51,7 +51,6 @@ pallet-tables = { path = "pallets/tables", default-features = false}
 pallet-indexing = { path = "pallets/indexing", default-features = false }
 native = { path = "native", default-features = false}
 native-api = { path = "native-api", default-features = false}
-native-pallets = { path ="native-pallets", default-features = false}
 num-bigint = { version = "0.4", default-features = false }
 clap = { version = "4.5.3" }
 exponential-backoff = { version = "2.0.0", default-features = false }
@@ -70,6 +69,7 @@ primitive-types = { version = "0.12.2", default-features = false }
 proof-of-sql = { version = "0.34.1", default-features = false }
 proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
 proof-of-sql-parser = { version = "0.34.1", default-features = false }
+proof-of-sql-static-setups = { path = "./proof-of-sql/static-setups/" }
 rand = { version = "0.8.5", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 snafu = { version = "0.8.4", default-features = false }
@@ -103,6 +103,7 @@ sp-inherents = { version = "34.0.0", default-features = false }
 sp-io = { version = "38.0.0", default-features = false }
 sp-keyring = { version = "39.0.0", default-features = false }
 sp-runtime = { version = "39.0.0", default-features = false }
+sp-runtime-interface = { version = "28.0.0", default-features = false }
 sp-timestamp = { version = "34.0.0", default-features = false }
 sp-std = { version = "14.0.0", default-features = false }
 subxt = { version = "0.37.0", default-features = false }

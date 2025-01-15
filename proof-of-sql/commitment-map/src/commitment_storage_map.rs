@@ -9,7 +9,9 @@ use proof_of_sql::base::commitment::{Commitment, TableCommitment};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
-use sp_core::{ConstU32, TypedGet};
+use sp_core::{ConstU32, RuntimeDebug, TypedGet};
+use sp_runtime_interface::pass_by::PassByCodec;
+use sxt_core::native::NativeCommitmentError;
 use sxt_core::tables::{MaxColsPerTable, TableIdentifier};
 
 use crate::commitment_map_implementor::CommitmentMapImplementor;
@@ -36,6 +38,13 @@ pub struct TableCommitmentBytes {
 pub type TableCommitmentBytesPerCommitmentScheme =
     PerCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>>;
 
+/// [`TableCommitmentBytesPerCommitmentScheme`] wrapper that can cross the native-runtime boundary.
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, PassByCodec)]
+pub struct TableCommitmentBytesPerCommitmentSchemePassBy {
+    /// Internal serialized table commitments.
+    pub data: TableCommitmentBytesPerCommitmentScheme,
+}
+
 /// Errors that can occur when converting a `TableCommitment` to [`TableCommitmentBytes`].
 #[derive(Debug, Snafu)]
 pub enum TableCommitmentToBytesError {
@@ -56,6 +65,12 @@ pub enum TableCommitmentToBytesError {
 impl From<postcard::Error> for TableCommitmentToBytesError {
     fn from(error: postcard::Error) -> Self {
         TableCommitmentToBytesError::Postcard { error }
+    }
+}
+
+impl From<TableCommitmentToBytesError> for NativeCommitmentError {
+    fn from(_: TableCommitmentToBytesError) -> Self {
+        NativeCommitmentError::CommitmentSerialization
     }
 }
 
