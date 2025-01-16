@@ -112,6 +112,10 @@ pub enum VerificationError {
     /// The signature could not be recovered.
     #[snafu(display("Signature recovery error"))]
     SignatureRecoveryError,
+
+    /// Signature mismatch error
+    #[snafu(display("The recovered and expected signatures did not match"))]
+    SignatureMismatchError,
 }
 
 /// Errors related to signature generation and validation.
@@ -155,11 +159,7 @@ pub fn create_ethereum_attestation_registration(
 /// * `pub_key` - The public key to verify against.
 ///
 /// Returns `true` if the signature is valid.
-pub fn verify_eth_signature(
-    msg: &[u8],
-    scalars: &EthereumSignature,
-    pub_key: &[u8],
-) -> Result<bool> {
+pub fn verify_eth_signature(msg: &[u8], scalars: &EthereumSignature, pub_key: &[u8]) -> Result<()> {
     let signature = Signature::from_scalars(scalars.r, scalars.s)
         .map_err(|_| VerificationError::SignatureRecoveryError)
         .context(VerificationSnafu)?;
@@ -180,7 +180,11 @@ pub fn verify_eth_signature(
         .map_err(|_| VerificationError::PublicKeyParsingError)
         .context(VerificationSnafu)?;
 
-    Ok(recovered_pub_key == expected_key)
+    if recovered_pub_key == expected_key {
+        Ok(())
+    } else {
+        Err(VerificationError::SignatureMismatchError).context(VerificationSnafu)
+    }
 }
 
 /// Hashes a message with the Ethereum-specific prefix.
@@ -242,6 +246,7 @@ pub enum Attestation {
 
 #[cfg(test)]
 mod tests {
+    use frame_support::{assert_err, assert_ok};
     use k256::elliptic_curve::rand_core::OsRng;
 
     use super::*;
@@ -258,6 +263,44 @@ mod tests {
         let message = b"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
 
         let signature = sign_eth_message(&private_key, message).unwrap();
-        assert!(verify_eth_signature(message, &signature, &verifying_key.to_sec1_bytes()).unwrap());
+        assert_ok!(verify_eth_signature(
+            message,
+            &signature,
+            &verifying_key.to_sec1_bytes()
+        ));
+    }
+
+    #[test]
+    fn verify_eth_signature_detects_different_signer() {
+        let (signing_key, verifying_key) = generate_keypair();
+        let private_key = signing_key.to_bytes();
+        let message = b"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
+
+        // Sign the message with the first keypair.
+        let signature = sign_eth_message(&private_key, message).unwrap();
+
+        // First verification should succeed.
+        assert_ok!(verify_eth_signature(
+            message,
+            &signature,
+            &verifying_key.to_sec1_bytes()
+        ));
+
+        // Generate a second keypair and sign the same message.
+        let (_, second_public) = generate_keypair();
+
+        // Verify with the second public key. This should fail with VerificationError::SignatureMismatchError.
+        let result = verify_eth_signature(message, &signature, &second_public.to_sec1_bytes());
+
+        // Check that the result is an error, and match the wrapped error type.
+        assert!(
+            matches!(
+                result,
+                Err(AttestationError::VerificationError {
+                    source: VerificationError::SignatureMismatchError
+                })
+            ),
+            "Expected SignatureMismatchError, but got a different error or success"
+        );
     }
 }

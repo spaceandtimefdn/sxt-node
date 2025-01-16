@@ -132,7 +132,7 @@ fn attest_block_success() {
 }
 
 #[test]
-fn register_attestation_key_fails_if_key_already_registered() {
+fn register_attestation_key_fails_if_wrong_key_used() {
     new_test_ext().execute_with(|| {
         let account_id_1: u64 = 1;
         let account_id_2: u64 = 2;
@@ -162,7 +162,7 @@ fn register_attestation_key_fails_if_key_already_registered() {
                 account_id_2,
                 duplicate_registration
             ),
-            Error::<Test>::PublicKeyAlreadyRegistered
+            Error::<Test>::VerificationError
         );
     });
 }

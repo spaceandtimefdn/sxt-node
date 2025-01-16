@@ -657,9 +657,7 @@ fn verify_signature(
         v: *v,
     };
 
-    if !verify_eth_signature(msg, &signature, proposed_pub_key)? {
-        return Err(AttestationError::InvalidSignature(block_number));
-    }
+    verify_eth_signature(msg, &signature, proposed_pub_key)?;
 
     Ok(())
 }
