@@ -1,3 +1,12 @@
+# [0.62.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.61.0...v0.62.0) (2025-01-16)
+
+
+### Features
+
+* add keystore pallet ([4caa8ef](https://github.com/spaceandtimelabs/sxt-node/commit/4caa8efd24e3c177c40cfdc5652c2a2faae31270))
+
+
+
 # [0.61.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.60.1...v0.61.0) (2025-01-16)
 
 
@@ -27,10 +36,6 @@
 
 
 ## [0.59.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.59.2...v0.59.3) (2025-01-13)
-
-
-
-## [0.59.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.59.1...v0.59.2) (2025-01-13)
 
 
 
