@@ -246,6 +246,21 @@ pub type UpdateTableCmd = (TableIdentifier, CreateStatement);
 /// TODO: add docs
 pub type UpdateTableList = BoundedVec<UpdateTableCmd, ConstU32<MAX_TABLES_PER_SCHEMA>>;
 
+/// The maximum number of identifiers allowed per source and mode.
+/// This constant defines an upper limit for the number of `TableIdentifier` elements
+/// that can be associated with a single source and mode.
+pub const MAX_IDENTIFIERS_PER_SOURCE_AND_MODE: u32 = 1024;
+
+/// A type alias for the constant representing the maximum number of identifiers per source and mode.
+/// Used to constrain the size of collections in storage or logic that rely on this limit.
+pub type MaxIdentifiersPerSourceAndMode = ConstU32<MAX_IDENTIFIERS_PER_SOURCE_AND_MODE>;
+
+/// A bounded vector of `TableIdentifier` elements, constrained by the maximum
+/// number of identifiers per source and mode (`MaxIdentifiersPerSourceAndMode`).
+/// This type ensures that no more than `MAX_IDENTIFIERS_PER_SOURCE_AND_MODE` identifiers
+/// can be stored for a source and mode, improving storage efficiency and preventing overflows.
+pub type IdentifierList = BoundedVec<TableIdentifier, MaxIdentifiersPerSourceAndMode>;
+
 /// A url that points to a known snapshot of a table in storage
 pub type SnapshotUrl = BoundedVec<u8, ConstU32<MAX_SNAPSHOT_LEN>>;
 

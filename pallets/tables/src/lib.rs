@@ -17,7 +17,7 @@ pub use weights::*;
 pub mod pallet {
     use commitment_sql::CreateTableAndCommitmentMetadata;
     use frame_support::dispatch::DispatchResult;
-    use frame_support::pallet_prelude::{StorageDoubleMap, *};
+    use frame_support::pallet_prelude::{StorageDoubleMap, ValueQuery, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
     use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
@@ -29,6 +29,7 @@ pub mod pallet {
         CreateStatement,
         GenesisTable,
         GenesisTableList,
+        IdentifierList,
         IndexerMode,
         SnapshotUrl,
         Source,
@@ -70,6 +71,7 @@ pub mod pallet {
     }
 
     /// A double map connecting an identifier (name, namespace) and a (source, mode) to a Schema, allowing us to interate over all tables in a namespace
+    /// ValueQuery is used so when we insert the identifiers if none have been set we get an empty bounded vec to append to
     #[pallet::storage]
     #[pallet::getter(fn identifiers)]
     pub type Identifiers<T: Config> = StorageDoubleMap<
@@ -78,7 +80,8 @@ pub mod pallet {
         Source,
         Blake2_128Concat,
         IndexerMode,
-        TableIdentifier,
+        IdentifierList,
+        ValueQuery,
     >;
 
     #[pallet::storage]
@@ -285,7 +288,10 @@ pub mod pallet {
         /// Uodate the schema and commitment for a table and source and mode combo
         pub fn insert_schema(sm: SourceAndMode, ident: TableIdentifier, stmnt: CreateStatement) {
             let SourceAndMode { source, mode } = sm.clone();
-            Identifiers::<T>::insert(source, mode, ident.clone());
+            let mut identifiers = Identifiers::<T>::get(source.clone(), mode.clone());
+
+            identifiers.try_push(ident.clone());
+            Identifiers::<T>::insert(source, mode, identifiers);
 
             let TableIdentifier { name, namespace } = ident.clone();
             Schemas::<T>::insert(namespace, name, stmnt.clone());
