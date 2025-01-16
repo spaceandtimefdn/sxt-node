@@ -2,6 +2,7 @@ use std::env;
 use std::fs::read_to_string;
 
 use dotenv::dotenv;
+use jsonrpsee::tracing::log;
 use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::{ChainType, Properties};
@@ -23,6 +24,7 @@ use sxt_core::tables::{
     SourceAndMode,
     TableIdentifier,
 };
+use sxt_core::ByteString;
 use sxt_runtime::opaque::SessionKeys;
 use sxt_runtime::{
     AccountId,
@@ -38,6 +40,18 @@ use sxt_runtime::{
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
+/// Helper struct that contains each component required to configure a validator node during the
+/// genesis creation
+#[derive(Clone)]
+pub struct NodeIdSet {
+    pub controller: AccountId,
+    pub stash: AccountId,
+    pub grandpa: GrandpaId,
+    pub babe: BabeId,
+}
+
+/// This struct defines extension modules that will be needed in generating and parsing
+/// the chain spec
 #[derive(Default, Clone, Serialize, Deserialize, ChainSpecExtension)]
 #[serde(rename_all = "camelCase")]
 pub struct Extensions {
@@ -84,22 +98,22 @@ where
 }
 
 /// Helper function to generate stash, controller and session key from seed.
-pub fn authority_keys_from_seed(s: &str) -> (AccountId, AccountId, GrandpaId, BabeId) {
-    (
-        get_from_seed::<sr25519::Public>(s).into(),
-        get_from_seed::<sr25519::Public>(s).into(),
-        get_from_seed::<GrandpaId>(s),
-        get_from_seed::<BabeId>(s),
-    )
+pub fn authority_keys_from_seed(s: &str) -> NodeIdSet {
+    NodeIdSet {
+        controller: get_from_seed::<sr25519::Public>(s).into(),
+        stash: get_from_seed::<sr25519::Public>(s).into(),
+        grandpa: get_from_seed::<GrandpaId>(s),
+        babe: get_from_seed::<BabeId>(s),
+    }
 }
 
-pub fn authority_keys_from_phrase(s: &str) -> (AccountId, AccountId, GrandpaId, BabeId) {
-    (
-        get_account_id_from_phrase::<sr25519::Public>(s),
-        get_account_id_from_phrase::<sr25519::Public>(s),
-        get_from_phrase::<GrandpaId>(s),
-        get_from_phrase::<BabeId>(s),
-    )
+pub fn authority_keys_from_phrase(s: &str) -> NodeIdSet {
+    NodeIdSet {
+        controller: get_account_id_from_phrase::<sr25519::Public>(s),
+        stash: get_account_id_from_phrase::<sr25519::Public>(s),
+        grandpa: get_from_phrase::<GrandpaId>(s),
+        babe: get_from_phrase::<BabeId>(s),
+    }
 }
 
 pub fn devnet_config() -> Result<ChainSpec, String> {
@@ -304,14 +318,13 @@ fn token_properties() -> Properties {
 
 #[allow(clippy::type_complexity)]
 fn configure_accounts(
-    initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId)>,
+    initial_authorities: Vec<NodeIdSet>,
     initial_nominators: Vec<AccountId>,
     mut endowed_accounts: Vec<AccountId>,
     stash: Balance,
 ) -> (
-    Vec<(AccountId, AccountId, GrandpaId, BabeId)>,
+    Vec<NodeIdSet>,
     Vec<AccountId>,
-    usize,
     Vec<(
         AccountId,
         AccountId,
@@ -322,7 +335,7 @@ fn configure_accounts(
     // endow all authorities and nominators.
     initial_authorities
         .iter()
-        .map(|x| &x.0)
+        .map(|x| &x.controller)
         .chain(initial_nominators.iter())
         .for_each(|x| {
             if !endowed_accounts.contains(x) {
@@ -335,8 +348,8 @@ fn configure_accounts(
         .iter()
         .map(|x| {
             (
-                x.0.clone(),
-                x.0.clone(),
+                x.controller.clone(),
+                x.stash.clone(),
                 stash,
                 pallet_staking::StakerStatus::Validator,
             )
@@ -346,7 +359,7 @@ fn configure_accounts(
             let nominations = initial_authorities
                 .clone()
                 .into_iter()
-                .map(|target| target.0.clone())
+                .map(|target| target.controller.clone())
                 .collect::<Vec<_>>();
             (
                 x.clone(),
@@ -357,18 +370,12 @@ fn configure_accounts(
         }))
         .collect::<Vec<_>>();
 
-    let num_endowed_accounts = endowed_accounts.len();
-    (
-        initial_authorities,
-        endowed_accounts,
-        num_endowed_accounts,
-        stakers,
-    )
+    (initial_authorities, endowed_accounts, stakers)
 }
 
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
-    initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId)>,
+    initial_authorities: Vec<NodeIdSet>,
     initial_nominators: Vec<AccountId>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
@@ -377,7 +384,7 @@ fn testnet_genesis(
     const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
     const STASH: Balance = ENDOWMENT / 1000;
 
-    let (initial_authorities, endowed_accounts, num_endowed_accounts, stakers) = configure_accounts(
+    let (initial_authorities, endowed_accounts, stakers) = configure_accounts(
         initial_authorities,
         initial_nominators,
         endowed_accounts,
@@ -390,7 +397,7 @@ fn testnet_genesis(
         },
         "session": {
             "keys": initial_authorities.iter().map(|x| {
-                (x.0.clone(), x.1.clone(), SessionKeys { grandpa: x.2.clone(), babe: x.3.clone()})
+                (x.controller.clone(), x.stash.clone(), SessionKeys { grandpa: x.grandpa.clone(), babe: x.babe.clone()})
             }).collect::<Vec<_>>(),
         },
         "staking": {
@@ -398,7 +405,7 @@ fn testnet_genesis(
             "minimumValidatorCount": initial_authorities.len() as u32,
             "maxNominatorCount": 22_500u32,
             "maxValidatorCount": 10u32,
-            "invulnerables": initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
+            "invulnerables": initial_authorities.iter().map(|x| x.controller.clone()).collect::<Vec<_>>(),
             "slashRewardFraction": Perbill::from_percent(10),
             "stakers": stakers,
         },
@@ -485,7 +492,7 @@ pub fn pair_commits(input: DdlList, paths: Vec<String>) -> CreateTableList {
     }
 
     if !commits.is_empty() {
-        panic!("not all commits were utilized")
+        log::warn!("not all commits were utilized")
     }
 
     output
