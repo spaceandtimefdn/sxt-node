@@ -1,3 +1,7 @@
+## [0.60.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.60.0...v0.60.1) (2025-01-16)
+
+
+
 # [0.60.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.59.3...v0.60.0) (2025-01-15)
 
 
@@ -22,15 +26,6 @@
 
 
 ## [0.59.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.59.0...v0.59.1) (2025-01-10)
-
-
-
-# [0.59.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.58.1...v0.59.0) (2025-01-10)
-
-
-### Features
-
-* enable insecure urls for watcher ([182506f](https://github.com/spaceandtimelabs/sxt-node/commit/182506f1e85f406016e8a2a9fb1693b202d22fc9))
 
 
 
