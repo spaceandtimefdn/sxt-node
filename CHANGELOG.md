@@ -1,3 +1,12 @@
+# [0.61.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.60.1...v0.61.0) (2025-01-16)
+
+
+### Features
+
+* identifier list fix ([0ab872e](https://github.com/spaceandtimelabs/sxt-node/commit/0ab872e17dd4f1e79967c045a6147c781d5645de))
+
+
+
 ## [0.60.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.60.0...v0.60.1) (2025-01-16)
 
 
@@ -22,10 +31,6 @@
 
 
 ## [0.59.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.59.1...v0.59.2) (2025-01-13)
-
-
-
-## [0.59.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.59.0...v0.59.1) (2025-01-10)
 
 
 
