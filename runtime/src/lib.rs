@@ -64,6 +64,7 @@ pub use {
     pallet_attestation,
     pallet_commitments,
     pallet_indexing,
+    pallet_keystore,
     pallet_permissions,
     pallet_tables,
     pallet_validators,
@@ -318,6 +319,12 @@ impl pallet_attestation::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_attestation::weights::SubstrateWeight<Runtime>;
 }
+
+impl pallet_keystore::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_keystore::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -376,6 +383,9 @@ mod runtime {
 
     #[runtime::pallet_index(13)]
     pub type Attestations = pallet_attestation;
+
+    #[runtime::pallet_index(14)]
+    pub type Keystore = pallet_keystore;
 }
 
 /// The address format for describing accounts.
@@ -429,6 +439,7 @@ mod benches {
         [pallet_indexing, Indexing]
         [pallet_validators, Validators]
         [pallet_attestation, Attestations]
+        [pallet_keystore, Keystore]
     );
 }
 
