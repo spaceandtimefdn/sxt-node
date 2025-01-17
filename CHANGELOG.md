@@ -1,3 +1,12 @@
+# [0.65.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.64.0...v0.65.0) (2025-01-17)
+
+
+### Features
+
+* integrate keystore into attestation pallet ([03e7cd8](https://github.com/spaceandtimelabs/sxt-node/commit/03e7cd8b3284e328b6f05edf479fbd8f9b3f330e))
+
+
+
 # [0.64.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.63.0...v0.64.0) (2025-01-17)
 
 
@@ -43,10 +52,6 @@
 ### Features
 
 * identifier list fix ([0ab872e](https://github.com/spaceandtimelabs/sxt-node/commit/0ab872e17dd4f1e79967c045a6147c781d5645de))
-
-
-
-## [0.60.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.60.0...v0.60.1) (2025-01-16)
 
 
 
