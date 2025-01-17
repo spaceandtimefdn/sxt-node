@@ -24,11 +24,7 @@ jobs:
         uses: ./.github/actions/ubuntu-dependencies
       - if: contains(matrix.os, 'macos')
         uses: ./.github/actions/macos-dependencies
-
-      - name: Build the template
-        run: cargo build
-        timeout-minutes: 90
-
+       
       - name: Run fmt
         run: cargo fmt --all --check -- --config imports_granularity=Module,group_imports=StdExternalCrate,imports_layout=HorizontalVertical
         timeout-minutes: 30
@@ -47,11 +43,29 @@ jobs:
         run: SKIP_WASM_BUILD=1 cargo doc --workspace --no-deps
         timeout-minutes: 15
 
+      - name: Build the template
+        run: cargo build --release --bin sxt-node
+        timeout-minutes: 90
+
+      - name: Prepare binary for upload
+        run: |
+          mkdir -p artifacts
+          cp ./target/release/sxt-node artifacts/
+
+      - name: Upload built binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: sxt-node-binary-${{ matrix.os }}-${{ github.run_id }}
+          path: artifacts/
+
+
+
   run-node:
     runs-on: ${{ matrix.os }}
+    needs: build # Wait for build step to finish
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-22.04-8core, macos-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -62,9 +76,14 @@ jobs:
       - if: contains(matrix.os, 'macos')
         uses: ./.github/actions/macos-dependencies
 
-      - name: Build the node individually in release mode
-        run: cargo build --package sxt-node --release
-        timeout-minutes: 90
+      - name: Download built binary
+        uses: actions/download-artifact@v4
+        with:
+          name: sxt-node-binary-${{ matrix.os }}-${{ github.run_id }}
+          path: ./target/release/
+        
+      - name: Set executable permissions on the binary
+        run: chmod +x ./target/release/sxt-node
 
       - name: Make sure the node is on and past the genesis change
         run: |
