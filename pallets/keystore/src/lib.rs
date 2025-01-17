@@ -28,7 +28,7 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
-    use sxt_core::attestation::{verify_eth_signature, RegisterExternalAddress};
+    use sxt_core::attestation::{verify_eth_signature, EthereumSignature, RegisterExternalAddress};
     use sxt_core::keystore::{EthereumKey, KeyType, UnregisterExternalAddress, UserKeystore};
 
     use crate::weights::WeightInfo;
@@ -67,6 +67,10 @@ pub mod pallet {
         NoEthereumKeyRegistered,
         /// An ethereum key has already been registered, to register a new one you must deregister the old one
         EthereumKeyAlreadyRegistered,
+        /// The verification of the signature was not successful
+        SignatureVerificationFailed,
+        /// The key provided does not match what is stored on chain
+        KeyMismatch,
     }
 
     /// Events emitted by the keystore pallet.
@@ -161,7 +165,7 @@ pub mod pallet {
                 return Ok(());
             }
 
-            let mut user_keystore = user_keystore.unwrap();
+            let user_keystore = user_keystore.unwrap();
 
             ensure!(
                 user_keystore.eth_key.is_none(),
@@ -194,6 +198,65 @@ pub mod pallet {
 
             // If the keystore is empty after removal, we can remove the entry entirely
             Keys::<T>::insert(&who, user_keystore);
+
+            Ok(())
+        }
+
+        /// Verifies the Ethereum key and its associated signature for a given account.
+        ///
+        /// This function checks if the provided `EthereumKey` matches the one stored on-chain
+        /// for the specified account (`who`) and verifies the validity of the provided signature.
+        ///
+        /// # Arguments
+        ///
+        /// * `who` - The account ID whose Ethereum key is being verified.
+        /// * `key` - The Ethereum key (public key) provided for verification.
+        /// * `signature` - The cryptographic signature to verify against the account ID and key.
+        ///
+        /// # Returns
+        ///
+        /// * `Ok(())` - If the Ethereum key and signature are successfully verified.
+        /// * `Err` - Returns an appropriate error if:
+        ///     - The account has no associated keystore (`KeyNotFound`).
+        ///     - No Ethereum key is registered for the account (`KeyNotFound`).
+        ///     - The provided key does not match the stored key (`KeyMismatch`).
+        ///     - The signature verification fails (`SignatureVerificationFailed`).
+        ///
+        /// # Errors
+        ///
+        /// This function can return the following errors:
+        /// * [`Error::KeyNotFound`] - If the account does not have a keystore or the keystore
+        ///   does not contain an Ethereum key.
+        /// * [`Error::KeyMismatch`] - If the provided Ethereum key does not match the stored key.
+        /// * [`Error::SignatureVerificationFailed`] - If the cryptographic signature is invalid.
+        ///
+        /// # Security
+        ///
+        /// The `verify_eth_signature` function is used to ensure that the signature matches
+        /// the provided public key and account ID. It is critical to ensure the signature
+        /// and key generation are secure and follow Ethereum's ECDSA standards.
+        ///
+        /// # Notes
+        ///
+        /// - This function assumes that the `EthereumKey` is properly formatted and adheres
+        ///   to Ethereum's cryptographic standards.
+        pub fn verify_ethereum_key(
+            who: &T::AccountId,
+            key: &EthereumKey,
+            signature: &EthereumSignature,
+        ) -> DispatchResult {
+            let keystore = Keys::<T>::get(who).ok_or(Error::<T>::KeyNotFound)?;
+
+            let stored_key = keystore.eth_key.ok_or(Error::<T>::KeyNotFound)?;
+            let stored_key = stored_key.pub_key;
+            let EthereumKey { pub_key } = key;
+
+            ensure!(stored_key == *pub_key, Error::<T>::KeyMismatch);
+
+            let msg = who.encode();
+
+            verify_eth_signature(&msg, signature, pub_key)
+                .map_err(|_| Error::<T>::SignatureVerificationFailed)?;
 
             Ok(())
         }

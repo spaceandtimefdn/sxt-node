@@ -11,6 +11,8 @@ frame_support::construct_runtime!(
     {
         System: frame_system,
         TemplateModule: pallet_template,
+        Keystore: pallet_keystore,
+        Permissions: pallet_permissions,
     }
 );
 
@@ -20,6 +22,16 @@ impl frame_system::Config for Test {
 }
 
 impl pallet_template::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+}
+
+impl pallet_keystore::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+}
+
+impl pallet_permissions::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
 }

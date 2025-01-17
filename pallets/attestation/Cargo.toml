@@ -25,6 +25,8 @@ frame-system.workspace = true
 k256 = { version = "0.13.4", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
 sxt-core.workspace = true
+pallet-permissions.workspace = true
+pallet-keystore.workspace = true
 
 [dev-dependencies]
 sp-io = { default-features = true, workspace = true }
@@ -34,6 +36,8 @@ sp-core = { default-features = true, workspace = true }
 [features]
 default = ["std"]
 std = [
+	"pallet-permissions/std",
+	"pallet-keystore/std",
 	"codec/std",
 	"frame-benchmarking?/std",
 	"frame-support/std",

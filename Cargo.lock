@@ -8973,6 +8973,8 @@ dependencies = [
  "frame-support 37.1.0",
  "frame-system 37.1.0",
  "k256",
+ "pallet-keystore",
+ "pallet-permissions",
  "parity-scale-codec",
  "scale-info",
  "sha3",

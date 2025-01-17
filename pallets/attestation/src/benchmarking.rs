@@ -11,6 +11,8 @@ mod benchmarks {
     use codec::Encode;
     use frame_support::{assert_err, assert_noop, assert_ok, BoundedVec};
     use k256::ecdsa::{SigningKey, VerifyingKey};
+    use pallet_keystore::Pallet as Keystore;
+    use pallet_permissions::Pallet as Permissions;
     use sha3::digest::generic_array::GenericArray;
     use sxt_core::attestation::{
         blake2_256,
@@ -21,9 +23,9 @@ mod benchmarks {
         RegisterExternalAddress,
         H256,
     };
+    use sxt_core::permissions::{AttestationPalletPermission, PermissionLevel, PermissionList};
 
     use super::*;
-
     // Deterministic key generation using `blake2_256`
     fn create_signed_message_and_keypair(seed: u64) -> (SigningKey, [u8; 33], EthereumSignature) {
         // Convert the seed to bytes and hash it to generate a 32-byte private key
@@ -58,39 +60,27 @@ mod benchmarks {
             signature,
             proposed_pub_key: public_key,
         };
-        assert_ok!(AttestationPallet::<T>::register_attestation_key(
+
+        assert_ok!(Keystore::<T>::register_key(
             RawOrigin::Root.into(),
             account_id.clone(),
-            registration,
+            registration
         ));
+
+        let permissions = PermissionList::try_from(vec![PermissionLevel::AttestationPallet(
+            AttestationPalletPermission::AttestBlock,
+        )])
+        .unwrap();
+
+        assert_ok!(Permissions::<T>::set_permissions(
+            RawOrigin::Root.into(),
+            account_id.clone(),
+            permissions
+        ));
+
         AttestationKey::EthereumKey {
             pub_key: public_key,
         }
-    }
-
-    #[benchmark]
-    fn register_attestation_key() {
-        let caller: T::AccountId = whitelisted_caller();
-        let caller_u64 = account_id_to_u64::<T>(&caller);
-
-        // Generate deterministic keypair and signature
-        let (_, public_key, signature) = create_signed_message_and_keypair(caller_u64);
-
-        let registration = RegisterExternalAddress::EthereumAddress {
-            signature,
-            proposed_pub_key: public_key,
-        };
-
-        #[extrinsic_call]
-        register_attestation_key(RawOrigin::Root, caller.clone(), registration);
-
-        // Assert that the key was registered
-        let keys = AttestationKeys::<T>::get();
-        assert!(keys.iter().any(|(id, key)| *id == caller
-            && key
-                == &AttestationKey::EthereumKey {
-                    pub_key: public_key
-                }));
     }
 
     #[benchmark]
@@ -119,21 +109,6 @@ mod benchmarks {
         // Assert that the attestation was recorded
         let attestations = Attestations::<T>::get(block_number);
         assert!(attestations.iter().any(|stored| stored == &attestation));
-    }
-
-    #[benchmark]
-    fn remove_attestation_key() {
-        let caller: T::AccountId = whitelisted_caller();
-        let attestation_key = create_registered_attestation_key::<T>(caller.clone());
-
-        #[extrinsic_call]
-        remove_attestation_key(RawOrigin::Root, caller.clone(), attestation_key.clone());
-
-        // Assert that the key was removed
-        let keys = AttestationKeys::<T>::get();
-        assert!(!keys
-            .iter()
-            .any(|(id, key)| *id == caller && key == &attestation_key));
     }
 
     impl_benchmark_test_suite!(

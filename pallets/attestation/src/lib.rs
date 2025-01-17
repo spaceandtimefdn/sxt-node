@@ -35,6 +35,8 @@ pub mod pallet {
         EthereumSignature,
         RegisterExternalAddress,
     };
+    use sxt_core::keystore::EthereumKey;
+    use sxt_core::permissions::{AttestationPalletPermission, PermissionLevel};
 
     use crate::weights::WeightInfo;
 
@@ -46,7 +48,9 @@ pub mod pallet {
 
     /// Configuration trait for the pallet.
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config:
+        frame_system::Config + pallet_permissions::Config + pallet_keystore::Config
+    {
         /// Associated event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// Weight information for extrinsics.
@@ -130,31 +134,6 @@ pub mod pallet {
     /// Pallet extrinsics implementation.
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Register an external attestation key.
-        ///
-        /// # Arguments
-        /// * `who` - The account ID associated with the attestation key.
-        /// * `registration` - The external key registration details.
-        ///
-        /// # Emits
-        /// * [`Event::BlockAttested`]
-        ///
-        /// # Errors
-        /// * [`Error::VerificationError`]
-        /// * [`Error::PublicKeyAlreadyRegistered`]
-        /// * [`Error::AccountIdAlreadyLinked`]
-        #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::register_attestation_key())]
-        pub fn register_attestation_key(
-            origin: OriginFor<T>,
-            who: T::AccountId,
-            registration: RegisterExternalAddress,
-        ) -> DispatchResult {
-            ensure_root(origin)?;
-
-            Self::try_validate_attestation_key_registration(who, registration)
-        }
-
         /// Submit a block attestation.
         ///
         /// # Arguments
@@ -170,13 +149,13 @@ pub mod pallet {
         /// * [`Error::MaxAttestationsForBlockError`]
         /// * [`Error::AttestationAlreadyRecordedError`]
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::attest_block())]
+        #[pallet::weight(<T as Config>::WeightInfo::attest_block())]
         pub fn attest_block(
             origin: OriginFor<T>,
             block_number: BlockNumber,
             attestation: Attestation,
         ) -> DispatchResult {
-            let who = ensure_signed(origin)?;
+            let who = ensure_signed(origin.clone())?;
 
             let current_block = frame_system::Pallet::<T>::block_number();
 
@@ -189,18 +168,26 @@ pub mod pallet {
                 Error::<T>::CannotAttestCurrentBlock
             );
 
+            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin,
+                &PermissionLevel::AttestationPallet(AttestationPalletPermission::AttestBlock),
+            )?;
+
             match attestation {
                 Attestation::EthereumAttestation {
                     signature,
                     proposed_pub_key: attestor_pub_key,
                     ..
                 } => {
-                    let proposed_attestation_key = AttestationKey::EthereumKey {
+                    let proposed_key = EthereumKey {
                         pub_key: attestor_pub_key,
                     };
 
-                    Self::must_verify_eth_signature(&who, &signature, &attestor_pub_key)?;
-                    Self::must_be_registered_attestor(&who, &proposed_attestation_key)?;
+                    pallet_keystore::Pallet::<T>::verify_ethereum_key(
+                        &who,
+                        &proposed_key,
+                        &signature,
+                    )?;
 
                     let mut attestations_for_block = Attestations::<T>::get(block_number);
 
@@ -225,127 +212,10 @@ pub mod pallet {
 
             Ok(())
         }
-
-        /// Remove an attestation key.
-        ///
-        /// This extrinsic allows the root (sudo) origin to remove an attestation key.
-        ///
-        /// # Arguments
-        /// * `who` - The account ID associated with the attestation key to be removed.
-        /// * `key` - The attestation key to be removed.
-        ///
-        /// # Errors
-        /// * [`Error::InsufficientPermissions`] - If the caller does not have sufficient permissions.
-        /// * [`Error::PublicKeyAlreadyRegistered`] - If the key is not found in the storage.
-        #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::remove_attestation_key())]
-        pub fn remove_attestation_key(
-            origin: OriginFor<T>,
-            who: T::AccountId,
-            key: AttestationKey,
-        ) -> DispatchResult {
-            // Ensure the caller has root (sudo) access
-            ensure_root(origin)?;
-
-            // Fetch the list of attestation keys
-            let mut attestation_keys = AttestationKeys::<T>::get();
-
-            // Find the index of the key to be removed
-            if let Some(index) = attestation_keys
-                .iter()
-                .position(|(account_id, stored_key)| account_id == &who && stored_key == &key)
-            {
-                // Remove the key from the list
-                attestation_keys.remove(index);
-
-                // Update storage
-                AttestationKeys::<T>::put(attestation_keys);
-
-                Ok(())
-            } else {
-                // Return an error if the key is not found
-                Err(Error::<T>::KeyNotFound.into())
-            }
-        }
     }
 
     /// Utility functions for the pallet.
     impl<T: Config> Pallet<T> {
-        /// Verifies an Ethereum signature.
-        pub fn must_verify_eth_signature(
-            who: &T::AccountId,
-            signature: &EthereumSignature,
-            proposed_pub_key: &[u8; 33],
-        ) -> DispatchResult {
-            let msg = who.encode();
-            verify_eth_signature(&msg, signature, proposed_pub_key)
-                .map_err(|_| Error::<T>::AttestationSignatureError)?;
-
-            Ok(())
-        }
-
-        /// Ensures the given attestation key and account ID are registered.
-        pub fn must_be_registered_attestor(
-            who: &T::AccountId,
-            attestation_key: &AttestationKey,
-        ) -> DispatchResult {
-            let keys = AttestationKeys::<T>::get();
-
-            ensure!(
-                keys.contains(&(who.clone(), attestation_key.clone())),
-                Error::<T>::InsufficientPermissions
-            );
-
-            Ok(())
-        }
-
-        /// Validates and registers an external attestation key.
-        pub fn try_validate_attestation_key_registration(
-            id: T::AccountId,
-            registration: RegisterExternalAddress,
-        ) -> DispatchResult {
-            match registration {
-                RegisterExternalAddress::EthereumAddress {
-                    signature,
-                    proposed_pub_key,
-                } => {
-                    let msg = id.encode();
-                    Self::try_register_ethereum_address(&id, &msg, &signature, &proposed_pub_key)
-                }
-            }
-        }
-
-        /// Attempts to register an Ethereum address as an attestation key.
-        ///
-        /// # Arguments
-        /// * `id` - The account ID associated with the attestation key.
-        /// * `msg` - The message that was signed (e.g., the account ID encoded as bytes).
-        /// * `signature` - The Ethereum-style ECDSA signature.
-        /// * `pub_key` - The proposed public key in SEC1 format (33 bytes).
-        ///
-        /// # Returns
-        /// * `Ok(())` if the registration is successful.
-        ///
-        /// # Errors
-        /// * [`Error::VerificationError`] - If the signature cannot be verified.
-        /// * [`Error::AccountIdAlreadyLinked`] - If the account ID is already linked to a key.
-        /// * [`Error::PublicKeyAlreadyRegistered`] - If the key is already registered.
-        /// * [`Error::MaxAttestationKeys`] - If the maximum number of keys is reached.
-        pub fn try_register_ethereum_address(
-            id: &T::AccountId,
-            msg: &[u8],
-            signature: &EthereumSignature,
-            pub_key: &[u8; 33],
-        ) -> DispatchResult {
-            // Verify the signature.
-            verify_eth_signature(msg, signature, pub_key)
-                .map_err(|_| Error::<T>::VerificationError)?;
-
-            // Construct a new attestation key and attempt to add it.
-            let new_key = AttestationKey::EthereumKey { pub_key: *pub_key };
-            Self::try_add_attestation_key(id.clone(), new_key)
-        }
-
         /// Ensures that the attestor has not submitted an attestation for the given block.
         ///
         /// # Arguments
@@ -363,81 +233,16 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure!(
                 !attestations_for_block.iter().any(|x| {
-                    if let Attestation::EthereumAttestation {
+                    let Attestation::EthereumAttestation {
                         proposed_pub_key, ..
-                    } = x
-                    {
-                        proposed_pub_key == attestor_key
-                    } else {
-                        false
-                    }
+                    } = x;
+
+                    proposed_pub_key == attestor_key
                 }),
                 Error::<T>::AttestationAlreadyRecordedError
             );
 
             Ok(())
-        }
-
-        /// Attempts to add a new attestation key to the storage.
-        ///
-        /// This function enforces the following rules:
-        /// 1. An account ID can only be linked to one attestation key.
-        /// 2. An attestation key must not already be registered to another account.
-        /// 3. The total number of attestation keys must not exceed the maximum limit.
-        ///
-        /// # Arguments
-        /// * `id` - The account ID to associate with the new attestation key.
-        /// * `new_key` - The new attestation key to register.
-        ///
-        /// # Returns
-        /// * `Ok(())` if the key is successfully added.
-        ///
-        /// # Errors
-        /// * [`Error::AccountIdAlreadyLinked`] - If the account ID is already associated with a key.
-        /// * [`Error::PublicKeyAlreadyRegistered`] - If the key is already registered to another account.
-        /// * [`Error::MaxAttestationKeys`] - If the maximum number of keys is reached.
-        pub fn try_add_attestation_key(
-            id: T::AccountId,
-            new_key: AttestationKey,
-        ) -> DispatchResult {
-            // Ensure the account ID is not already linked to another key.
-            ensure!(
-                !Self::is_account_id_used(&id),
-                Error::<T>::AccountIdAlreadyLinked
-            );
-
-            // Ensure the key is not already registered.
-            ensure!(
-                !Self::is_attestation_key_registered(&new_key),
-                Error::<T>::PublicKeyAlreadyRegistered
-            );
-
-            // Get the current list of attestation keys.
-            let mut attestation_keys = AttestationKeys::<T>::get();
-
-            // Attempt to add the new key, ensuring the maximum limit is not exceeded.
-            attestation_keys
-                .try_push((id.clone(), new_key))
-                .map_err(|_| Error::<T>::MaxAttestationKeys)?;
-
-            // Update the storage with the new list of keys.
-            AttestationKeys::<T>::put(attestation_keys);
-
-            Ok(())
-        }
-
-        /// Return true if the attestation key is already registered
-        pub fn is_attestation_key_registered(addr: &AttestationKey) -> bool {
-            AttestationKeys::<T>::get()
-                .iter()
-                .any(|(_, key)| key == addr)
-        }
-
-        /// Return true if the account id is already in use
-        pub fn is_account_id_used(id: &T::AccountId) -> bool {
-            AttestationKeys::<T>::get()
-                .iter()
-                .any(|(account_id, _)| account_id == id)
         }
     }
 }
