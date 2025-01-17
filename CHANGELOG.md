@@ -1,3 +1,12 @@
+# [0.66.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.65.0...v0.66.0) (2025-01-17)
+
+
+### Bug Fixes
+
+* reuse node binary in run-node step ([6c7f23e](https://github.com/spaceandtimelabs/sxt-node/commit/6c7f23ea4a67bce17a65a79168e214aac39007b1))
+
+
+
 # [0.65.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.64.0...v0.65.0) (2025-01-17)
 
 
@@ -43,15 +52,6 @@
 ### Features
 
 * add keystore pallet ([4caa8ef](https://github.com/spaceandtimelabs/sxt-node/commit/4caa8efd24e3c177c40cfdc5652c2a2faae31270))
-
-
-
-# [0.61.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.60.1...v0.61.0) (2025-01-16)
-
-
-### Features
-
-* identifier list fix ([0ab872e](https://github.com/spaceandtimelabs/sxt-node/commit/0ab872e17dd4f1e79967c045a6147c781d5645de))
 
 
 
