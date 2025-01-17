@@ -40,6 +40,9 @@ pub enum PermissionLevel {
 
     /// Premisions related to the governance pallet
     IndexingPallet(IndexingPalletPermission),
+
+    /// Permissions related to attestations
+    AttestationPallet(AttestationPalletPermission),
 }
 
 /// Permissions for pallet_tables
@@ -98,6 +101,24 @@ pub enum GovernancePalletPermission {
 pub enum IndexingPalletPermission {
     /// Represents the permission needed to submit data as an indexer
     SubmitData,
+}
+
+/// Permissions used by the indexing pallet
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Serialize,
+    Deserialize,
+)]
+pub enum AttestationPalletPermission {
+    /// The permission to have attestations accepted from your signed account id
+    AttestBlock,
 }
 
 /// A collection of user permissions
