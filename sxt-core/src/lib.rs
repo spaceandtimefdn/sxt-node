@@ -40,3 +40,7 @@ pub type ByteString = BoundedVec<u8, IdentLength>;
 
 /// Types related to the keystore pallet
 pub mod keystore;
+
+/// On chain event multiplexer
+#[cfg(all(feature = "std", not(doctest)))]
+pub mod multiplexer;

@@ -5,7 +5,7 @@ use sp_keyring::Sr25519Keyring;
 use sxt_runtime::{Block, EXISTENTIAL_DEPOSIT};
 
 use crate::benchmarking::{inherent_benchmark_data, RemarkBuilder, TransferKeepAliveBuilder};
-use crate::cli::{Cli, Subcommand};
+use crate::cli::{Cli, EventForwarderDetails, Subcommand};
 use crate::{chain_spec, service};
 
 impl SubstrateCli for Cli {
@@ -51,12 +51,6 @@ pub fn run() -> sc_cli::Result<()> {
     let cli = Cli::from_args();
 
     match &cli.subcommand {
-        None => {
-            let runner = cli.create_runner(&cli.run)?;
-            runner.run_node_until_exit(|config| async move {
-                service::new_full(config, cli.with_db).map_err(sc_cli::Error::Service)
-            })
-        }
         Some(Subcommand::Key(cmd)) => cmd.run(&cli),
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
@@ -202,6 +196,26 @@ pub fn run() -> sc_cli::Result<()> {
         Some(Subcommand::ChainInfo(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run::<Block>(&config))
+        }
+        None => {
+            let runner = cli.create_runner(&cli.run)?;
+            runner.run_node_until_exit(|config| async move {
+                let mut event_forwarder_details: Option<EventForwarderDetails> = None;
+
+                if cli.event_forwarder {
+                    // Why is arg group not working for this?
+                    if cli.event_forwarder_key.is_none() || cli.event_forwarder_rpc.is_none() {
+                        eprintln!("Error: --event-forwarder requires both --event-forwarder-key and --event-forwarder-rpc");
+                        std::process::exit(1);
+                    }
+                    event_forwarder_details = Some(EventForwarderDetails {
+                        key: cli.event_forwarder_key.unwrap(),
+                        rpc: cli.event_forwarder_rpc.unwrap(),
+                    });
+                }
+
+                service::new_full(config, cli.with_db, event_forwarder_details).map_err(sc_cli::Error::Service)
+            })
         }
     }
 }

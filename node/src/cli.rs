@@ -1,3 +1,4 @@
+use clap::ArgGroup;
 use sc_cli::RunCmd;
 
 #[derive(Debug, clap::Parser)]
@@ -11,6 +12,15 @@ pub struct Cli {
     /// Start the node with an associated SQL database to act as a Prover for the network
     #[clap(long)]
     pub with_db: bool,
+
+    #[clap(long)]
+    pub event_forwarder: bool,
+
+    #[clap(long)]
+    pub event_forwarder_key: Option<String>,
+
+    #[clap(long)]
+    pub event_forwarder_rpc: Option<String>,
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -47,4 +57,9 @@ pub enum Subcommand {
 
     /// Db meta columns information.
     ChainInfo(sc_cli::ChainInfoCmd),
+}
+
+pub struct EventForwarderDetails {
+    pub key: String,
+    pub rpc: String,
 }
