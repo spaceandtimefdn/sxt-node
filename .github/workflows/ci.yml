@@ -68,9 +68,9 @@ jobs:
 
       - name: Make sure the node is on and past the genesis change
         run: |
-          ./target/release/sxt-node --chain chainspecs/raw/testnet-spec.json 2>&1 | tee out.txt &
+          ./target/release/sxt-node --disable-log-color --chain chainspecs/raw/testnet-spec.json 2>&1 | tee out.txt &
           until curl -s '127.0.0.1:9944'; do sleep 5; done
-          until cat out.txt | grep -s "💤 Idle (0 peers)"; do sleep 5; done
+          until cat out.txt | grep -s "Idle (0 peers)"; do sleep 5; done
         shell: bash
         timeout-minutes: 5
 

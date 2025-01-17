@@ -36,6 +36,7 @@ impl SubstrateCli for Cli {
     fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
         Ok(match id {
             "dev" => Box::new(chain_spec::development_config()?),
+            "devnet" => Box::new(chain_spec::devnet_config()?),
             "production" => Box::new(chain_spec::production_config()?),
             "" | "local" => Box::new(chain_spec::local_testnet_config()?),
             path => Box::new(chain_spec::ChainSpec::from_json_file(
@@ -50,6 +51,12 @@ pub fn run() -> sc_cli::Result<()> {
     let cli = Cli::from_args();
 
     match &cli.subcommand {
+        None => {
+            let runner = cli.create_runner(&cli.run)?;
+            runner.run_node_until_exit(|config| async move {
+                service::new_full(config, cli.with_db).map_err(sc_cli::Error::Service)
+            })
+        }
         Some(Subcommand::Key(cmd)) => cmd.run(&cli),
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
@@ -195,26 +202,6 @@ pub fn run() -> sc_cli::Result<()> {
         Some(Subcommand::ChainInfo(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run::<Block>(&config))
-        }
-        None => {
-            let runner = cli.create_runner(&cli.run)?;
-            runner.run_node_until_exit(|config| async move {
-                match config.network.network_backend {
-                    sc_network::config::NetworkBackendType::Libp2p => {
-                        service::new_full::<
-                            sc_network::NetworkWorker<
-                                sxt_runtime::opaque::Block,
-                                <sxt_runtime::opaque::Block as sp_runtime::traits::Block>::Hash,
-                            >,
-                        >(config, cli.with_db)
-                        .map_err(sc_cli::Error::Service)
-                    }
-                    sc_network::config::NetworkBackendType::Litep2p => {
-                        service::new_full::<sc_network::Litep2pNetworkBackend>(config, cli.with_db)
-                            .map_err(sc_cli::Error::Service)
-                    }
-                }
-            })
         }
     }
 }

@@ -8,12 +8,12 @@ edition = "2021"
 [workspace]
 members = [
     "node",
-    "pallets/validators",
+    "rpc",
+    "watcher",
     "pallets/indexing",
     "pallets/tables",
     "pallets/permissions",
     "pallets/commitments",
-    "pallets/template",
     "proof-of-sql/commitment-map",
     "runtime",
     "sxt-core",
@@ -43,9 +43,7 @@ data-loader = { path = "./data-loader", default-features = false}
 arrow-flight = { version = "53.0.0", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
-pallet-validators = { path = "./pallets/validators", default-features = false }
 pallet-permissions = { path = "pallets/permissions", default-features = false }
-pallet-template = { path = "pallets/template", default-features = false}
 pallet-attestation ={ path = "pallets/attestation", default-features = false}
 pallet-keystore = { path = "pallets/keystore", default-features = false}
 sxt-core = { path = "sxt-core", default-features = false}
@@ -105,10 +103,9 @@ sp-inherents = { version = "34.0.0", default-features = false }
 sp-io = { version = "38.0.0", default-features = false }
 sp-keyring = { version = "39.0.0", default-features = false }
 sp-runtime = { version = "39.0.0", default-features = false }
-sp-runtime-interface = { version = "28.0.0", default-features = false }
 sp-timestamp = { version = "34.0.0", default-features = false }
 sp-std = { version = "14.0.0", default-features = false }
-subxt = { version = "0.37.0", default-features = false }
+subxt = { version = "0.38.0", default-features = false }
 substrate-frame-rpc-system = { version = "38.0.0", default-features = false }
 substrate-build-script-utils = { version = "11.0.0", default-features = false }
 codec = { version = "3.6.12", default-features = false, package = "parity-scale-codec" }
@@ -132,7 +129,44 @@ sp-storage = { version = "21.0.0", default-features = false }
 sp-transaction-pool = { version = "34.0.0", default-features = false }
 sp-version = { version = "37.0.0", default-features = false }
 substrate-wasm-builder = { version = "24.0.0", default-features = false }
-pallet-session = { version = "37.0.0", default-features = false }
+pallet-session = { version = "37.0.0", default-features = false, features = ["historical"] }
+
+pallet-staking = { version = "37.0.0", default-features = false }
+pallet-authorship = { version = "37.0.0", default-features = false }
+pallet-im-online = { version = "36.0.0", default-features = false }
+pallet-offences = { version = "36.0.0", default-features = false }
+pallet-authority-discovery = { version = "37.0.0", default-features = false }
+pallet-election-provider-multi-phase = { version = "36.0.0", default-features = false }
+pallet-babe = { version = "37.0.0", default-features = false }
+pallet-indices = { version = "37.0.0", default-features = false }
+sc-consensus-babe = { version = "0.44.0", default-features = false }
+sc-consensus-babe-rpc = { version = "0.44.0", default-features = false }
+sp-consensus-babe = { version = "0.40.0", default-features = false }
+sc-consensus-grandpa-rpc = { version = "0.29.0", default-features = false }
+sp-transaction-storage-proof = { version = "34.0.0", default-features = false }
+sp-arithmetic = { version = "26.0.0", default-features = false }
+sp-staking = { version = "34.0.0", default-features = false }
+sp-weights = { version = "31.0.0", default-features = false }
+frame-election-provider-support = { version = "37.0.0", default-features = false }
+pallet-bags-list = { version = "36.0.0", default-features = false }
+pallet-utility = { version = "37.0.0", default-features = false }
+sp-runtime-interface = { version = "28.0.0", default-features = false }
+pallet-staking-runtime-api = { version = "24.0.0", default-features = false }
+sc-sync-state-rpc = { version = "0.44.0", default-features = false }
+substrate-state-trie-migration-rpc = { version = "37.0.0", default-features = false }
+node-rpc = { path = "./rpc", default-features = false }
+sc-chain-spec = { version = "37.0.0", default-features = false }
+sc-rpc = { version = "39.0.0", default-features = false }
+sp-application-crypto = { version = "37.0.0", default-features = false }
+sp-consensus = { version = "0.40.0", default-features = false }
+sp-keystore = { version = "0.40.0", default-features = false }
+sp-statement-store = { version = "18.0.0", default-features = false }
+sc-statement-store = { version = "19.0.1", default-features = false }
+pallet-statement = { version = "19.0.0", default-features = false }
+sc-network-statement = { version = "0.26.0", default-features = false }
+sc-storage-monitor = { version = "0.22.0", default-features = false }
+sc-network-sync = { version = "0.43.0", default-features = false }
+
 
 [workspace.lints]
 rust.missing_docs = "warn"
