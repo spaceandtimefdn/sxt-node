@@ -44,3 +44,6 @@ pub mod keystore;
 /// On chain event multiplexer
 #[cfg(all(feature = "std", not(doctest)))]
 pub mod multiplexer;
+
+/// Types needed for pallet-smartcontracts
+pub mod smartcontracts;

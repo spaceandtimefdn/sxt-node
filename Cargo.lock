@@ -10710,6 +10710,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-smartcontracts"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking 37.0.0",
+ "frame-support 37.1.0",
+ "frame-system 37.1.0",
+ "pallet-permissions",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io 38.0.0",
+ "sp-runtime",
+ "sxt-core",
+]
+
+[[package]]
 name = "pallet-society"
 version = "38.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -18075,6 +18091,7 @@ dependencies = [
  "pallet-offences 36.0.0",
  "pallet-permissions",
  "pallet-session 37.0.0",
+ "pallet-smartcontracts",
  "pallet-staking 37.0.0",
  "pallet-staking-runtime-api",
  "pallet-statement 19.0.0",

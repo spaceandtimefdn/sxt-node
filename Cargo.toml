@@ -27,6 +27,7 @@ members = [
     "watcher",
     "pallets/attestation",
     "pallets/keystore",
+    "pallets/smartcontracts",
 ]
 resolver = "2"
 
@@ -46,6 +47,7 @@ pallet-commitments = { path = "./pallets/commitments", default-features = false 
 pallet-permissions = { path = "pallets/permissions", default-features = false }
 pallet-attestation ={ path = "pallets/attestation", default-features = false}
 pallet-keystore = { path = "pallets/keystore", default-features = false}
+pallet-smartcontracts = { path = "pallets/smartcontracts", default-features = false}
 sxt-core = { path = "sxt-core", default-features = false}
 pallet-tables = { path = "pallets/tables", default-features = false}
 pallet-indexing = { path = "pallets/indexing", default-features = false }

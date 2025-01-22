@@ -56,6 +56,7 @@ pallet-tables.workspace = true
 pallet-indexing.workspace = true
 pallet-attestation.workspace = true
 pallet-keystore.workspace = true
+pallet-smartcontracts.workspace = true
 
 pallet-staking.workspace = true
 pallet-staking-runtime-api.workspace = true
@@ -81,6 +82,7 @@ substrate-wasm-builder = { optional = true, workspace = true, default-features =
 [features]
 default = ["std"]
 std = [
+	"pallet-smartcontracts/std",
 	"native-api/std",
 	"pallet-keystore/std",
 	"sp-arithmetic/std",
