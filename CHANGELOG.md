@@ -1,3 +1,12 @@
+# [0.67.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.66.0...v0.67.0) (2025-01-22)
+
+
+### Features
+
+* add smartcontract pallet ([d799296](https://github.com/spaceandtimelabs/sxt-node/commit/d799296c8267e18dcadfd5324748d8fab64faa0a))
+
+
+
 # [0.66.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.65.0...v0.66.0) (2025-01-17)
 
 
@@ -43,15 +52,6 @@
 * Integrate staking functionality into node and runtime ([89f057a](https://github.com/spaceandtimelabs/sxt-node/commit/89f057a96eb040dcc85ab3dd7ddeb504cc21b3e2))
 * Update Chain spec for staking ([1bfadbe](https://github.com/spaceandtimelabs/sxt-node/commit/1bfadbe0d8be88740ab7ad775421deaabc7ac5fa))
 * Update components depending on subxt to use the new version ([6e59efe](https://github.com/spaceandtimelabs/sxt-node/commit/6e59efe7ed0c7c30c0126cb7caf7d60507c956bc))
-
-
-
-# [0.62.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.61.0...v0.62.0) (2025-01-16)
-
-
-### Features
-
-* add keystore pallet ([4caa8ef](https://github.com/spaceandtimelabs/sxt-node/commit/4caa8efd24e3c177c40cfdc5652c2a2faae31270))
 
 
 
