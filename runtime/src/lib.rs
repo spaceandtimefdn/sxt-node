@@ -103,6 +103,7 @@ pub use {
     pallet_offences,
     pallet_permissions,
     pallet_session,
+    pallet_smartcontracts,
     pallet_staking,
     pallet_tables,
 };
@@ -755,6 +756,11 @@ impl pallet_keystore::Config for Runtime {
     type WeightInfo = pallet_keystore::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_smartcontracts::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_smartcontracts::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -841,6 +847,8 @@ mod runtime {
     pub type Attestations = pallet_attestation::Pallet<Runtime>;
     #[runtime::pallet_index(105)]
     pub type Keystore = pallet_keystore;
+    #[runtime::pallet_index(106)]
+    pub type Smartcontracts = pallet_smartcontracts;
 }
 
 /// The address format for describing accounts.

@@ -43,6 +43,9 @@ pub enum PermissionLevel {
 
     /// Permissions related to attestations
     AttestationPallet(AttestationPalletPermission),
+
+    /// Permissions related to the smart contracts pallet.
+    SmartContractsPallet(SmartContractsPalletPermission),
 }
 
 /// Permissions for pallet_tables
@@ -119,6 +122,24 @@ pub enum IndexingPalletPermission {
 pub enum AttestationPalletPermission {
     /// The permission to have attestations accepted from your signed account id
     AttestBlock,
+}
+
+/// PErmissions for the pallet-smartcontracts
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Serialize,
+    Deserialize,
+)]
+pub enum SmartContractsPalletPermission {
+    /// Permission to update the ABI of a smart contract.
+    UpdateABI,
 }
 
 /// A collection of user permissions
