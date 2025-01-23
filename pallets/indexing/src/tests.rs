@@ -154,11 +154,11 @@ fn submission_fails_when_data_is_already_submitted() {
 
         let hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_data);
 
-        /// Verify that the submission was stored as expected
-        /// and the hash was generated from the submitted data
+        // Verify that the submission was stored as expected
+        // and the hash was generated from the submitted data
         assert_eq!(Indexing::submissions(test_batch.clone(), hash).len(), 1);
 
-        /// Verify that submitting the same thing again returns the expected error
+        // Verify that submitting the same thing again returns the expected error
         assert_err!(
             Indexing::submit_data(
                 signer.clone(),
@@ -184,7 +184,7 @@ fn data_submission_fails_if_no_permissions() {
         let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
         let test_data = RowData::try_from(b"some arbitrary row data".to_vec()).unwrap();
 
-        /// Create a non permissioned signer
+        // Create a non permissioned signer
         let signer = RuntimeOrigin::signed(1);
         assert_err!(
             Indexing::submit_data(
@@ -198,7 +198,7 @@ fn data_submission_fails_if_no_permissions() {
 
         let hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_data);
 
-        /// Verify that the submission was not stored
+        // Verify that the submission was not stored
         assert_eq!(Indexing::submissions(test_batch.clone(), hash).len(), 0);
     })
 }
@@ -248,7 +248,7 @@ fn data_is_decided_on_after_required_submissions() {
         let test_data_hash =
             <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_submission.data);
 
-        /// Add permissions for the test accounts
+        // Add permissions for the test accounts
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
             IndexingPalletPermission::SubmitData,
         )])
@@ -258,7 +258,7 @@ fn data_is_decided_on_after_required_submissions() {
             pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
         }
 
-        /// Submit 4 entries with 4 different accounts
+        // Submit 4 entries with 4 different accounts
         assert_ok!(submit_test_data(
             RuntimeOrigin::signed(1),
             test_submission.clone()
@@ -272,16 +272,16 @@ fn data_is_decided_on_after_required_submissions() {
             test_submission.clone()
         ));
 
-        /// We haven't reached enough submissions yet, so this should not be decided on
+        // We haven't reached enough submissions yet, so this should not be decided on
         assert!(Indexing::final_data(test_submission.batch_id.clone()).is_none());
 
-        /// Send the final required submission
+        // Send the final required submission
         assert_ok!(submit_test_data(
             RuntimeOrigin::signed(4),
             test_submission.clone()
         ));
 
-        /// Now that we have 4 submissions, verify that the data was decided on
+        // Now that we have 4 submissions, verify that the data was decided on
         let maybe_final_data = Indexing::final_data(test_submission.batch_id.clone());
         assert!(maybe_final_data.is_some());
 
@@ -289,7 +289,7 @@ fn data_is_decided_on_after_required_submissions() {
         assert_eq!(fd.data_hash, test_data_hash);
         assert_eq!(fd.table, test_submission.table);
 
-        /// Verify that the old data was successfully removed for this batch
+        // Verify that the old data was successfully removed for this batch
         let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
         assert!(submitters.is_empty());
     })
@@ -317,7 +317,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
             create_statement.clone(),
         );
 
-        /// Add permissions for the test accounts
+        // Add permissions for the test accounts
         for id in 1..6 {
             let who = ensure_signed(RuntimeOrigin::signed(id)).unwrap();
             let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
@@ -327,7 +327,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
             pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
         }
 
-        /// Helper function to streamline data submission
+        // Helper function to streamline data submission
         fn submit_test_data(signer: RuntimeOrigin, submission: TestSubmission) -> DispatchResult {
             Indexing::submit_data(
                 signer.clone(),
@@ -353,7 +353,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
         let data_hash =
             <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_submission.data);
 
-        /// Submit 4 entries with 4 different accounts
+        // Submit 4 entries with 4 different accounts
         assert_ok!(submit_test_data(
             RuntimeOrigin::signed(1),
             test_submission.clone()
@@ -367,10 +367,10 @@ fn correct_data_is_decided_on_after_required_submissions() {
             test_submission.clone()
         ));
 
-        /// We haven't reached enough submissions yet, so this should not be decided on
+        // We haven't reached enough submissions yet, so this should not be decided on
         assert!(Indexing::final_data(test_submission.batch_id.clone()).is_none());
 
-        /// Send a submission that is with different data
+        // Send a submission that is with different data
         let differing_submission = TestSubmission {
             table: TableIdentifier {
                 name: TableName::try_from(b"test_table".to_vec()).unwrap(),
@@ -384,23 +384,23 @@ fn correct_data_is_decided_on_after_required_submissions() {
             differing_submission.clone()
         ));
 
-        /// This should still not be decided on yet, so double check
+        // This should still not be decided on yet, so double check
         assert!(Indexing::final_data(test_submission.batch_id.clone()).is_none());
 
-        /// Now submit a final matching entry
+        // Now submit a final matching entry
         assert_ok!(submit_test_data(
             RuntimeOrigin::signed(5),
             test_submission.clone()
         ));
 
-        /// Now that we have 4 submissions, verify that the data was decided on
+        // Now that we have 4 submissions, verify that the data was decided on
         let final_data = Indexing::final_data(test_submission.batch_id.clone());
         assert!(final_data.is_some());
 
-        /// Verify that it matches the originally submitted test data
+        // Verify that it matches the originally submitted test data
         assert_eq!(final_data.unwrap().data_hash, data_hash);
 
-        /// Verify that the old data was successfully removed for this batch
+        // Verify that the old data was successfully removed for this batch
         for _i in 1..4 {
             assert!(Indexing::submissions(test_submission.batch_id.clone(), data_hash).is_empty())
         }
@@ -427,7 +427,7 @@ fn inserting_data_fails_when_data_is_empty() {
 
         let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
 
-        /// Create an empty data submission to ensure the submission fails
+        // Create an empty data submission to ensure the submission fails
         let test_data = RowData::default();
 
         assert_err!(
@@ -451,7 +451,7 @@ fn inserting_data_fails_when_table_name_is_empty() {
         pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
 
         let test_identifier = TableIdentifier {
-            /// Create an empty table name
+            // Create an empty table name
             name: TableName::try_from(b"".to_vec()).unwrap(),
             namespace: TableNamespace::try_from(b"test_namespace".to_vec()).unwrap(),
         };
@@ -481,7 +481,7 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
 
         let test_identifier = TableIdentifier {
             name: TableName::try_from(b"test_name".to_vec()).unwrap(),
-            /// Create an empty namespace
+            // Create an empty namespace
             namespace: TableNamespace::try_from(b"".to_vec()).unwrap(),
         };
 
