@@ -129,6 +129,8 @@ pub struct SourceAndMode {
 pub struct GenesisTable {
     /// A DDL Statement to create the table
     pub statement: CreateStatement,
+    /// Quorum size required to insert data into the table.
+    pub insert_quorum_size: InsertQuorumSize,
     /// The Base URL of the snapshot
     pub url: SnapshotUrl,
     /// The name and namespace for the table
@@ -299,7 +301,7 @@ impl InsertQuorumSize {
 }
 
 /// TODO: add docs
-pub type UpdateTableCmd = (TableIdentifier, CreateStatement);
+pub type UpdateTableCmd = (TableIdentifier, CreateStatement, InsertQuorumSize);
 /// TODO: add docs
 pub type UpdateTableList = BoundedVec<UpdateTableCmd, ConstU32<MAX_TABLES_PER_SCHEMA>>;
 

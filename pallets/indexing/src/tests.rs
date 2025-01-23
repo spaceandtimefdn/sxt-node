@@ -19,6 +19,7 @@ use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, Permissio
 use sxt_core::tables::{
     create_statement_to_sqlparser,
     CreateStatement,
+    InsertQuorumSize,
     SourceAndMode,
     TableIdentifier,
     TableName,
@@ -112,7 +113,16 @@ fn inserting_data_succeeds_when_data_is_good() {
         Tables::update_tables(
             RuntimeOrigin::root(),
             SourceAndMode::default(),
-            vec![(table_id.clone(), test_create)].try_into().unwrap(),
+            vec![(
+                table_id.clone(),
+                test_create,
+                InsertQuorumSize {
+                    public: Some(3),
+                    ..Default::default()
+                },
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
 
@@ -150,7 +160,16 @@ fn submission_fails_when_data_is_already_submitted() {
         Tables::update_tables(
             RuntimeOrigin::root(),
             SourceAndMode::default(),
-            vec![(table_id.clone(), test_create)].try_into().unwrap(),
+            vec![(
+                table_id.clone(),
+                test_create,
+                InsertQuorumSize {
+                    public: Some(3),
+                    ..Default::default()
+                },
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
         let signer = RuntimeOrigin::signed(1);
@@ -229,9 +248,16 @@ fn data_is_decided_on_after_required_submissions() {
         Tables::update_tables(
             RuntimeOrigin::root(),
             SourceAndMode::default(),
-            vec![(table_id.clone(), create_statement.clone())]
-                .try_into()
-                .unwrap(),
+            vec![(
+                table_id.clone(),
+                create_statement.clone(),
+                InsertQuorumSize {
+                    public: Some(3),
+                    ..Default::default()
+                },
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
 
@@ -303,9 +329,16 @@ fn correct_data_is_decided_on_after_required_submissions() {
         Tables::update_tables(
             RuntimeOrigin::root(),
             SourceAndMode::default(),
-            vec![(table_id.clone(), create_statement.clone())]
-                .try_into()
-                .unwrap(),
+            vec![(
+                table_id.clone(),
+                create_statement.clone(),
+                InsertQuorumSize {
+                    public: Some(3),
+                    ..Default::default()
+                },
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
 
@@ -396,9 +429,16 @@ fn inserting_data_fails_when_data_is_empty() {
         Tables::update_tables(
             RuntimeOrigin::root(),
             SourceAndMode::default(),
-            vec![(test_identifier.clone(), create_statement.clone())]
-                .try_into()
-                .unwrap(),
+            vec![(
+                test_identifier.clone(),
+                create_statement.clone(),
+                InsertQuorumSize {
+                    public: Some(3),
+                    ..Default::default()
+                },
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
 
@@ -437,9 +477,16 @@ fn inserting_data_fails_when_table_name_is_empty() {
         Tables::update_tables(
             RuntimeOrigin::root(),
             SourceAndMode::default(),
-            vec![(test_identifier.clone(), create_statement.clone())]
-                .try_into()
-                .unwrap(),
+            vec![(
+                test_identifier.clone(),
+                create_statement.clone(),
+                InsertQuorumSize {
+                    public: Some(3),
+                    ..Default::default()
+                },
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
 
@@ -475,9 +522,16 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
         Tables::update_tables(
             RuntimeOrigin::root(),
             SourceAndMode::default(),
-            vec![(test_identifier.clone(), create_statement.clone())]
-                .try_into()
-                .unwrap(),
+            vec![(
+                test_identifier.clone(),
+                create_statement.clone(),
+                InsertQuorumSize {
+                    public: Some(3),
+                    ..Default::default()
+                },
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
 
@@ -510,9 +564,16 @@ fn inserting_data_fails_when_batch_id_is_empty() {
         Tables::update_tables(
             RuntimeOrigin::root(),
             SourceAndMode::default(),
-            vec![(test_identifier.clone(), create_statement.clone())]
-                .try_into()
-                .unwrap(),
+            vec![(
+                test_identifier.clone(),
+                create_statement.clone(),
+                InsertQuorumSize {
+                    public: Some(3),
+                    ..Default::default()
+                },
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
 
@@ -536,9 +597,16 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
         Tables::update_tables(
             RuntimeOrigin::root(),
             SourceAndMode::default(),
-            vec![(table_id.clone(), create_statement.clone())]
-                .try_into()
-                .unwrap(),
+            vec![(
+                table_id.clone(),
+                create_statement.clone(),
+                InsertQuorumSize {
+                    public: Some(3),
+                    ..Default::default()
+                },
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
 
@@ -604,9 +672,16 @@ fn submit_data_with_mothership_key_work() {
         Tables::update_tables(
             RuntimeOrigin::root(),
             SourceAndMode::default(),
-            vec![(test_identifier.clone(), test_create.clone())]
-                .try_into()
-                .unwrap(),
+            vec![(
+                test_identifier.clone(),
+                test_create.clone(),
+                InsertQuorumSize {
+                    public: Some(3),
+                    ..Default::default()
+                },
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
 

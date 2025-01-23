@@ -31,6 +31,7 @@ pub mod pallet {
         GenesisTableList,
         IdentifierList,
         IndexerMode,
+        InsertQuorumSize,
         SnapshotUrl,
         Source,
         SourceAndMode,
@@ -103,10 +104,15 @@ pub mod pallet {
     #[pallet::storage]
     pub type Snapshots<T: Config> = StorageMap<_, Blake2_128Concat, TableIdentifier, SnapshotUrl>;
 
+    #[pallet::storage]
+    pub type TableInsertQuorums<T: Config> =
+        StorageMap<_, Blake2_128Concat, TableIdentifier, InsertQuorumSize, ValueQuery>;
+
     /// A table identifier, a sql statement for table creation, and an initial commitment
     pub type CreateTableCmd = (
         TableIdentifier,
         CreateStatement,
+        InsertQuorumSize,
         TableCommitmentBytesPerCommitmentScheme,
         SnapshotUrl,
     );
@@ -129,6 +135,9 @@ pub mod pallet {
         /// Not all schemas were removed
         NotAllSchemasRemovedError,
 
+        /// Not all insert quorums were removed
+        NotAllInsertQuorumsRemovedError,
+
         /// Not all commitments were removed
         NotAllCommitmentsRemovedError,
     }
@@ -148,8 +157,8 @@ pub mod pallet {
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
             )?;
 
-            let tables_with_meta_columns = tables.into_iter().map(|(identifier, statement)| {
-                    Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone());
+            let tables_with_meta_columns = tables.into_iter().map(|(identifier, statement, insert_quorum_size)| {
+                    Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), insert_quorum_size);
 
                     let create_table = create_statement_to_sqlparser(statement)
                         .map_err(|_| Error::<T>::CreateStatementParseError)?;
@@ -160,7 +169,7 @@ pub mod pallet {
 
                     let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
                         .map_err(|_| Error::<T>::CreateStatementParseError)?;
-                    Ok((identifier, statement_with_metadata))
+                    Ok((identifier, statement_with_metadata, insert_quorum_size))
                 })
                 .collect::<Result<Vec<_>, DispatchError>>()?
                 .try_into()
@@ -189,22 +198,31 @@ pub mod pallet {
 
             let tables = tables
                 .into_iter()
-                .map(|(identifier, statement, commit, snapshot)| {
-                    Self::insert_schema(
-                        source_and_mode.clone(),
-                        identifier.clone(),
-                        statement.clone(),
-                    );
+                .map(
+                    |(identifier, statement, insert_quorum_size, commit, snapshot)| {
+                        Self::insert_schema(
+                            source_and_mode.clone(),
+                            identifier.clone(),
+                            statement.clone(),
+                            insert_quorum_size,
+                        );
 
-                    let statement_with_metadata = Self::insert_initial_commitment(
-                        identifier.clone(),
-                        statement,
-                        commit.clone(),
-                        snapshot.clone(),
-                    )?;
+                        let statement_with_metadata = Self::insert_initial_commitment(
+                            identifier.clone(),
+                            statement,
+                            commit.clone(),
+                            snapshot.clone(),
+                        )?;
 
-                    Ok((identifier, statement_with_metadata, commit, snapshot))
-                })
+                        Ok((
+                            identifier,
+                            statement_with_metadata,
+                            insert_quorum_size,
+                            commit,
+                            snapshot,
+                        ))
+                    },
+                )
                 .collect::<Result<Vec<_>, DispatchError>>()?
                 .try_into()
                 .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
@@ -234,6 +252,15 @@ pub mod pallet {
             );
 
             // Clear 1000
+            let insert_quorum_size_res = TableInsertQuorums::<T>::clear(1000, None);
+
+            // Fail if not empty
+            ensure!(
+                insert_quorum_size_res.maybe_cursor.is_none(),
+                Error::<T>::NotAllInsertQuorumsRemovedError
+            );
+
+            // Clear 1000
             let commit_res = pallet_commitments::CommitmentStorageMap::<T>::clear(1000, None);
 
             // Fail if not empty
@@ -258,8 +285,8 @@ pub mod pallet {
                 let tables_with_meta_columns = genesis_list
                     .tables
                     .iter()
-                    .map(|GenesisTable { statement, url, identifier }| {
-                        Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone());
+                    .map(|GenesisTable { statement, url, identifier, insert_quorum_size }| {
+                        Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), *insert_quorum_size);
                         let mut create_table = create_statement_to_sqlparser(statement.clone())
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
@@ -270,9 +297,9 @@ pub mod pallet {
                             pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(create_table)?;
                         let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
-                        Ok((identifier.clone(), statement_with_metadata))
+                        Ok((identifier.clone(), statement_with_metadata, *insert_quorum_size))
                     })
-                    .collect::<Result<Vec<(TableIdentifier, CreateStatement)>, DispatchError>>()?;
+                    .collect::<Result<Vec<(TableIdentifier, CreateStatement, InsertQuorumSize)>, DispatchError>>()?;
 
                 let table_list = UpdateTableList::try_from(tables_with_meta_columns).expect("this should always work");
                 Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode.clone(), table_list));
@@ -286,7 +313,12 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         /// Uodate the schema and commitment for a table and source and mode combo
-        pub fn insert_schema(sm: SourceAndMode, ident: TableIdentifier, stmnt: CreateStatement) {
+        pub fn insert_schema(
+            sm: SourceAndMode,
+            ident: TableIdentifier,
+            stmnt: CreateStatement,
+            insert_quorum_size: InsertQuorumSize,
+        ) {
             let SourceAndMode { source, mode } = sm.clone();
             let mut identifiers = Identifiers::<T>::get(source.clone(), mode.clone());
 
@@ -295,6 +327,8 @@ pub mod pallet {
 
             let TableIdentifier { name, namespace } = ident.clone();
             Schemas::<T>::insert(namespace, name, stmnt.clone());
+
+            TableInsertQuorums::<T>::insert(ident, insert_quorum_size);
         }
 
         /// Insert the initial commit for this table using the commitments-sql pallet.
@@ -328,6 +362,7 @@ pub mod pallet {
             SourceAndMode,
             TableIdentifier,
             CreateStatement,
+            InsertQuorumSize,
             TableCommitmentBytesPerCommitmentScheme,
             SnapshotUrl,
         )>,
@@ -340,8 +375,13 @@ pub mod pallet {
             let tables_with_meta: Vec<GenesisTable> = self
                 .tables
                 .iter()
-                .map(|(sm, ident, stmnt, commit, snapshot)| {
-                    pallet::Pallet::<T>::insert_schema(sm.clone(), ident.clone(), stmnt.clone());
+                .map(|(sm, ident, stmnt, insert_quorum_size, commit, snapshot)| {
+                    pallet::Pallet::<T>::insert_schema(
+                        sm.clone(),
+                        ident.clone(),
+                        stmnt.clone(),
+                        *insert_quorum_size,
+                    );
                     let statement = pallet::Pallet::<T>::insert_initial_commitment(
                         ident.clone(),
                         stmnt.clone(),
@@ -351,6 +391,7 @@ pub mod pallet {
                     .unwrap();
                     GenesisTable {
                         statement,
+                        insert_quorum_size: *insert_quorum_size,
                         url: snapshot.clone(),
                         identifier: ident.clone(),
                     }
