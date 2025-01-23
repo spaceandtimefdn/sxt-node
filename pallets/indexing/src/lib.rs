@@ -156,7 +156,9 @@ pub mod pallet {
 
             pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin,
-                &PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitData),
+                &PermissionLevel::IndexingPallet(
+                    IndexingPalletPermission::SubmitDataForPublicQuorum,
+                ),
             )
             .or(Err(Error::<T, I>::UnauthorizedSubmitter))?;
 

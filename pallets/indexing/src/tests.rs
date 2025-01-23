@@ -119,7 +119,7 @@ fn inserting_data_succeeds_when_data_is_good() {
         let signer = RuntimeOrigin::signed(1);
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitData,
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
         pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
@@ -156,7 +156,7 @@ fn submission_fails_when_data_is_already_submitted() {
         let signer = RuntimeOrigin::signed(1);
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitData,
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
         pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
@@ -247,7 +247,7 @@ fn data_is_decided_on_after_required_submissions() {
 
         // Add permissions for the test accounts
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitData,
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
         for id in 0..5 {
@@ -313,7 +313,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
         for id in 1..6 {
             let who = ensure_signed(RuntimeOrigin::signed(id)).unwrap();
             let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-                IndexingPalletPermission::SubmitData,
+                IndexingPalletPermission::SubmitDataForPublicQuorum,
             )])
             .unwrap();
             pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
@@ -387,7 +387,7 @@ fn inserting_data_fails_when_data_is_empty() {
         let signer = RuntimeOrigin::signed(1);
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitData,
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
         pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
@@ -422,7 +422,7 @@ fn inserting_data_fails_when_table_name_is_empty() {
         let signer = RuntimeOrigin::signed(1);
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitData,
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
         pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
@@ -461,7 +461,7 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
         let signer = RuntimeOrigin::signed(1);
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitData,
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
         pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
@@ -500,7 +500,7 @@ fn inserting_data_fails_when_batch_id_is_empty() {
         let signer = RuntimeOrigin::signed(1);
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitData,
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
         pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
@@ -544,7 +544,7 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
 
         // Add permissions for the test accounts
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitData,
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
         for id in 0..5 {
@@ -615,7 +615,7 @@ fn submit_data_with_mothership_key_work() {
         let admin = 2;
 
         let admin_permission = PermissionLevel::EditSpecificPermission(Box::new(
-            PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitData),
+            PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum),
         ));
         let permission_list = BoundedVec::try_from(vec![admin_permission]).unwrap();
         assert_ok!(pallet_permissions::Pallet::<Test>::set_permissions(
@@ -624,7 +624,8 @@ fn submit_data_with_mothership_key_work() {
             permission_list,
         ));
 
-        let permission = PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitData);
+        let permission =
+            PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum);
         assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
             RuntimeOrigin::signed(admin),
             signer_key,

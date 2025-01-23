@@ -216,7 +216,7 @@ fn ensure_root_or_permissioned_should_fail_when_not_signed() {
 fn edit_specific_permission_does_not_spillover() {
     new_test_ext().execute_with(|| {
         let permission = PermissionLevel::EditSpecificPermission(Box::new(
-            PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitData),
+            PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum),
         ));
 
         let permission_list = PermissionList::try_from(vec![permission]).unwrap();

@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use sp_core::RuntimeDebug;
 
 use super::ByteString;
+use crate::tables::TableIdentifier;
 
 /// A user created permission level represented by a byte string;
 pub type UserCreatedPermissionLevel = ByteString;
@@ -107,8 +108,12 @@ pub enum GovernancePalletPermission {
     Deserialize,
 )]
 pub enum IndexingPalletPermission {
-    /// Represents the permission needed to submit data as an indexer
-    SubmitData,
+    /// Represents the permission needed to submit data as an indexer for public quorum.
+    SubmitDataForPublicQuorum,
+    /// Represents the permission needed to submit data as an indexer for privileged quorum.
+    ///
+    /// This permission is table-specific.
+    SubmitDataForPrivilegedQuorum(TableIdentifier),
 }
 
 /// Permissions used by the indexing pallet

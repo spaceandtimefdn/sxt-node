@@ -241,6 +241,63 @@ pub type CreateStatement = BoundedVec<u8, ConstU32<CREATE_STMNT_LENGTH>>;
 /// TODO: add docs
 pub type CreateStatements = BoundedVec<CreateStatement, ConstU32<MAX_TABLES_PER_SCHEMA>>;
 
+/// Identifier for the scope of a quorum procedure.
+#[derive(
+    Copy,
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Serialize,
+    Deserialize,
+)]
+pub enum QuorumScope {
+    /// Refers to public quorum.
+    Public,
+    /// Refers to privileged quorum.
+    Privileged,
+}
+
+/// Quorum sizes to exceed to insert to a table for all [`QuorumScope`]s.
+#[derive(
+    Copy,
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Default,
+    Serialize,
+    Deserialize,
+)]
+pub struct InsertQuorumSize {
+    /// Number of matching submissions from any indexer to exceed to reach quorum.
+    ///
+    /// `None` disables the ability to insert to this table via public quorum.
+    pub public: Option<u8>,
+    /// Number of matching submissions from priveleged indexers to exceed to reach quorum.
+    ///
+    /// `None` disables the ability to insert to this table via priveleged quorum.
+    pub privileged: Option<u8>,
+}
+
+impl InsertQuorumSize {
+    /// Returns the quorum size to exceed to reach quorum in the given quorum scope.
+    pub fn of_scope(&self, quorum_scope: &QuorumScope) -> &Option<u8> {
+        match quorum_scope {
+            QuorumScope::Public => &self.public,
+            QuorumScope::Privileged => &self.privileged,
+        }
+    }
+}
+
 /// TODO: add docs
 pub type UpdateTableCmd = (TableIdentifier, CreateStatement);
 /// TODO: add docs
@@ -464,5 +521,33 @@ mod tests {
             create_statement_to_sqlparser(create_statement.clone()),
             Err(CreateStatementParseError::Sqlparser { .. })
         ));
+    }
+
+    #[test]
+    fn we_can_get_quorum_size_of_given_scope() {
+        let none_insert_quorum_size = InsertQuorumSize::default();
+
+        assert_eq!(
+            *none_insert_quorum_size.of_scope(&QuorumScope::Public),
+            None
+        );
+        assert_eq!(
+            *none_insert_quorum_size.of_scope(&QuorumScope::Privileged),
+            None
+        );
+
+        let some_insert_quorum_size = InsertQuorumSize {
+            public: Some(3),
+            privileged: Some(0),
+        };
+
+        assert_eq!(
+            *some_insert_quorum_size.of_scope(&QuorumScope::Public),
+            Some(3)
+        );
+        assert_eq!(
+            *some_insert_quorum_size.of_scope(&QuorumScope::Privileged),
+            Some(0)
+        );
     }
 }
