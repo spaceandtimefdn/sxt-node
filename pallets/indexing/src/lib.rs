@@ -178,7 +178,7 @@ pub mod pallet {
                 Err(Error::<T, I>::AlreadySubmitted)?
             }
 
-            let _ = match_submissions.try_push(who.clone());
+            let _ = match_submissions.try_insert(who.clone());
             Submissions::<T, I>::insert(&batch_id, data_hash, match_submissions.clone());
 
             let submission = DataSubmission {
@@ -225,8 +225,12 @@ pub mod pallet {
         let dissenters = Submissions::<T, I>::iter_prefix(&batch_id)
             .filter(|(hash, _)| hash != &data_hash)
             .flat_map(|(_, submitters)| submitters)
+            // de-dup collection
+            .collect::<alloc::collections::BTreeSet<_>>()
+            .into_iter()
+            // resulting set should contain up to MAX_SUBMITTERS items *after* de-dup
             .take(MAX_SUBMITTERS as usize)
-            .collect::<alloc::vec::Vec<_>>()
+            .collect::<alloc::collections::BTreeSet<_>>()
             .try_into()
             .expect("source Vec is constructed to not exceed maximum submitter list size");
 

@@ -3,6 +3,7 @@ use frame_support::BoundedVec;
 use frame_support::__private::RuntimeDebug;
 use frame_support::pallet_prelude::{ConstU32, TypeInfo};
 use sp_core::U256;
+use sp_runtime::BoundedBTreeSet;
 
 use crate::tables::TableIdentifier;
 
@@ -22,7 +23,7 @@ pub type BatchId = BoundedVec<u8, ConstU32<ID_LEN>>;
 pub const MAX_SUBMITTERS: u32 = 32;
 /// A list of submitter account IDs, We use the generic to allow us to use the runtime's
 /// accountId, regardless of the underlying implementation of that Id
-pub type SubmitterList<T> = BoundedVec<T, ConstU32<MAX_SUBMITTERS>>;
+pub type SubmitterList<T> = BoundedBTreeSet<T, ConstU32<MAX_SUBMITTERS>>;
 
 /// This struct is used to represent all relevant data from an indexing submission
 /// when emitting an event
