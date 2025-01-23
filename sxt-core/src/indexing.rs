@@ -119,6 +119,9 @@ pub struct DataSubmission<Hash> {
 
     /// The Hash of the submitted data
     pub data_hash: Hash,
+
+    /// Quorum scope this submission contributed to.
+    pub quorum_scope: QuorumScope,
 }
 
 /// Once the network has received enough submissions for a given BatchId, we will
@@ -144,6 +147,9 @@ pub struct DataQuorum<AccountId, Hash> {
 
     /// List of account ids that submitted different data for this batch
     pub dissents: SubmitterList<AccountId>,
+
+    /// Quorum scope that reached quorum.
+    pub quorum_scope: QuorumScope,
 }
 
 #[cfg(test)]

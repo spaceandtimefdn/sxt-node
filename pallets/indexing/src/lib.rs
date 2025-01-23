@@ -41,7 +41,7 @@ pub mod pallet {
     use sp_runtime::traits::Hash;
     use sp_runtime::BoundedVec;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
-    use sxt_core::tables::TableIdentifier;
+    use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
     use super::*;
 
@@ -74,7 +74,7 @@ pub mod pallet {
         BatchId,
         Blake2_128Concat,
         <T as frame_system::Config>::Hash,
-        SubmitterList<T::AccountId>,
+        SubmittersByScope<T::AccountId>,
         ValueQuery, // Allows us to receive a default instead of None
     >;
 
@@ -154,54 +154,65 @@ pub mod pallet {
             // https://docs.substrate.io/main-docs/build/origins/
             let who = ensure_signed(origin.clone())?;
 
-            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin,
-                &PermissionLevel::IndexingPallet(
-                    IndexingPalletPermission::SubmitDataForPublicQuorum,
-                ),
-            )
-            .or(Err(Error::<T, I>::UnauthorizedSubmitter))?;
+            let table_insert_quorum = pallet_tables::TableInsertQuorums::<T>::get(&table);
+
+            let can_submit_for_public_quorum =
+                pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                    origin.clone(),
+                    &PermissionLevel::IndexingPallet(
+                        IndexingPalletPermission::SubmitDataForPublicQuorum,
+                    ),
+                )
+                .is_ok()
+                    && table_insert_quorum.public.is_some();
+
+            let can_submit_for_privileged_quorum =
+                pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                    origin,
+                    &PermissionLevel::IndexingPallet(
+                        IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table.clone()),
+                    ),
+                )
+                .is_ok()
+                    && table_insert_quorum.privileged.is_some();
+
+            if !can_submit_for_public_quorum && !can_submit_for_privileged_quorum {
+                Err(Error::<T, I>::UnauthorizedSubmitter)?;
+            }
 
             // Run the basic checks on the submissions
             validate_submission::<T, I>(&table, &batch_id, &data)?;
 
-            // Check if this batch has already been decided on
-            if FinalData::<T, I>::contains_key(&batch_id) {
-                Err(Error::<T, I>::LateBatch)?
-            }
-
             let data_hash = T::Hashing::hash(&data);
 
-            // We don't need to save the full data. We just need a count associated with each submission
-            let mut match_submissions = Submissions::<T, I>::get(&batch_id, data_hash);
-
-            // Check if this user has already submitted this data
-            if match_submissions.contains(&who) {
-                Err(Error::<T, I>::AlreadySubmitted)?
-            }
-
-            let _ = match_submissions.try_insert(who.clone());
-            Submissions::<T, I>::insert(&batch_id, data_hash, match_submissions.clone());
-
-            let submission = DataSubmission {
-                table: table.clone(),
-                batch_id: batch_id.clone(),
-                data_hash,
+            let public_data_quorum = if can_submit_for_public_quorum {
+                submit_data_and_find_quorum::<T, I>(
+                    who.clone(),
+                    batch_id.clone(),
+                    data_hash,
+                    table.clone(),
+                    &table_insert_quorum,
+                    &QuorumScope::Public,
+                )?
+            } else {
+                None
             };
 
-            // Emit an event noting who submitted what
-            Self::deposit_event(Event::<T, I>::DataSubmitted { who, submission });
-
-            // 3 is a temporary number here until we get Indexer staking/registration integrated
-            if match_submissions.len() > 3 {
-                // Finalize the data submissions and emit an event
-                check_quorum_and_finalize::<T, I>(
+            let privileged_data_quorum = if can_submit_for_privileged_quorum {
+                submit_data_and_find_quorum::<T, I>(
+                    who,
                     batch_id,
                     data_hash,
-                    data.clone(),
                     table,
-                    match_submissions,
-                )?;
+                    &table_insert_quorum,
+                    &QuorumScope::Privileged,
+                )?
+            } else {
+                None
+            };
+
+            if let Some(data_quorum) = public_data_quorum.or(privileged_data_quorum) {
+                finalize_quorum::<T, I>(data_quorum, data)?;
             }
 
             // Return a successful Result
@@ -209,62 +220,112 @@ pub mod pallet {
         }
     }
 
-    /// Check if we have a quorum.
-    /// Finalize the data, update commitments, and emit an event if we do.
-    pub fn check_quorum_and_finalize<T, I>(
+    /// Submit data and check if we have a quorum.
+    ///
+    /// If quorum is reached, the associated [`DataQuorum`] is returned, otherwise returns `None`.
+    #[allow(clippy::type_complexity)]
+    fn submit_data_and_find_quorum<T, I>(
+        who: T::AccountId,
         batch_id: BatchId,
         data_hash: T::Hash,
-        data: RowData,
         table: TableIdentifier,
-        match_submissions: SubmitterList<T::AccountId>,
+        table_insert_quorum: &InsertQuorumSize,
+        quorum_scope: &QuorumScope,
+    ) -> Result<Option<DataQuorum<T::AccountId, T::Hash>>, DispatchError>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        // We don't need to save the full data. We just need a count associated with each submission
+        let match_submissions = Submissions::<T, I>::get(&batch_id, data_hash);
+
+        // Check if this user has already submitted this data
+        let current_num_matching_submissions = match_submissions.len_of_scope(quorum_scope);
+
+        let new_match_submissions = match_submissions
+            .with_submitter(who.clone(), quorum_scope)
+            // Just return the unchanged submissions if maximum is exceeded.
+            .unwrap_or_else(|(submitters, _)| submitters);
+
+        if new_match_submissions.len_of_scope(quorum_scope) == current_num_matching_submissions {
+            Err(Error::<T, I>::AlreadySubmitted)?
+        }
+
+        Submissions::<T, I>::insert(&batch_id, data_hash, &new_match_submissions);
+
+        let submission = DataSubmission {
+            table: table.clone(),
+            batch_id: batch_id.clone(),
+            data_hash,
+            quorum_scope: *quorum_scope,
+        };
+
+        // Emit an event noting who submitted what
+        Pallet::<T, I>::deposit_event(Event::DataSubmitted { who, submission });
+
+        match table_insert_quorum.of_scope(quorum_scope) {
+            Some(quorum_size)
+                if new_match_submissions.len_of_scope(quorum_scope) as u8 > *quorum_size =>
+            {
+                // Iterate over the submitters who submitted differing data and collect
+                // their account ids
+                let dissenters = Submissions::<T, I>::iter_prefix(&batch_id)
+                    .filter(|(hash, _)| hash != &data_hash)
+                    .flat_map(|(_, submitters)| submitters.into_iter_scope(quorum_scope))
+                    // de-dup collection
+                    .collect::<alloc::collections::BTreeSet<_>>()
+                    .into_iter()
+                    // resulting set should contain up to MAX_SUBMITTERS items *after* de-dup
+                    .take(MAX_SUBMITTERS as usize)
+                    .collect::<alloc::collections::BTreeSet<_>>()
+                    .try_into()
+                    .expect("source Vec is constructed to not exceed maximum submitter list size");
+
+                let block_number = <frame_system::Pallet<T>>::block_number();
+
+                // Decide on the quorum
+                let data_quorum = DataQuorum {
+                    table,
+                    batch_id,
+                    data_hash,
+                    block_number: block_number.into(),
+                    agreements: new_match_submissions.of_scope(quorum_scope).clone(),
+                    dissents: dissenters,
+                    quorum_scope: *quorum_scope,
+                };
+
+                Ok(Some(data_quorum))
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// Performs all steps necessary after reaching quorum, such as...
+    /// - recording final data
+    /// - committing to data
+    /// - emitting `QuorumReached` event
+    /// - cleaning up submissions
+    fn finalize_quorum<T, I>(
+        quorum: DataQuorum<T::AccountId, T::Hash>,
+        row_data: RowData,
     ) -> DispatchResult
     where
         T: Config<I>,
         I: NativeApi,
     {
-        // Iterate over the submitters who submitted differing data and collect
-        // their account ids
-        let dissenters = Submissions::<T, I>::iter_prefix(&batch_id)
-            .filter(|(hash, _)| hash != &data_hash)
-            .flat_map(|(_, submitters)| submitters)
-            // de-dup collection
-            .collect::<alloc::collections::BTreeSet<_>>()
-            .into_iter()
-            // resulting set should contain up to MAX_SUBMITTERS items *after* de-dup
-            .take(MAX_SUBMITTERS as usize)
-            .collect::<alloc::collections::BTreeSet<_>>()
-            .try_into()
-            .expect("source Vec is constructed to not exceed maximum submitter list size");
-
-        // Cleanup other entries from the state and log that we chose this data for this batch_id
-        // Use an iterator to find all keys with the given prefix and remove them
-        // We are also using this opportunity to identify the dissenting votes
-        Submissions::<T, I>::iter_prefix(&batch_id).for_each(|(second_key, _)| {
-            // Remove the entry associated with the first key and each second key
-            Submissions::<T, I>::remove(&batch_id, second_key);
-        });
-
-        let block_number = <frame_system::Pallet<T>>::block_number();
-
-        // Decide on the quorum
-        let quorum = DataQuorum {
-            table: table.clone(),
-            batch_id: batch_id.clone(),
-            data_hash,
-            block_number: block_number.into(),
-            agreements: match_submissions,
-            dissents: dissenters,
-        };
+        Submissions::<T, I>::iter_key_prefix(&quorum.batch_id)
+            .for_each(|key| Submissions::<T, I>::remove(&quorum.batch_id, key));
 
         // Save the final data that we decided on
-        FinalData::<T, I>::insert(&batch_id, quorum.clone());
+        FinalData::<T, I>::insert(&quorum.batch_id, &quorum);
 
         // Convert from row_data to a serialized OnChainTable
-        let create_statement = pallet_tables::Schemas::<T>::get(&table.namespace, &table.name)
-            .expect("we've already validated that schema exists");
+        let create_statement =
+            pallet_tables::Schemas::<T>::get(&quorum.table.namespace, &quorum.table.name)
+                .expect("we've already validated that schema exists");
 
         let table_bytes = I::record_batch_to_onchain(
-            sxt_core::native::RowData { row_data: data },
+            sxt_core::native::RowData { row_data },
             sxt_core::native::CreateStatementPassBy { create_statement },
         )
         .map_err(|_| Error::<T, I>::ParseTableError)?;
@@ -277,7 +338,7 @@ pub mod pallet {
             insert_with_meta_columns,
             ..
         } = pallet_commitments::Pallet::<T>::process_insert_and_update_commitments::<I>(
-            table.clone(),
+            quorum.table.clone(),
             oc_table.clone(),
         )?;
 
@@ -286,17 +347,17 @@ pub mod pallet {
             .try_into()
             .map_err(|_| Error::<T, I>::TableSerializationError)?;
 
-        // Emit an event.
-        Pallet::<T, I>::deposit_event(Event::<T, I>::QuorumReached {
-            quorum,
-            data: on_chain_table_bytes,
-        });
-
         let block_number = oc_table.max_block_number();
 
         if let Some(block_number) = block_number {
-            BlockNumbers::<T, I>::insert(table, block_number);
+            BlockNumbers::<T, I>::insert(&quorum.table, block_number);
         }
+
+        // Emit an event.
+        Pallet::<T, I>::deposit_event(Event::QuorumReached {
+            quorum,
+            data: on_chain_table_bytes,
+        });
 
         Ok(())
     }
@@ -312,6 +373,11 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
+        // Check if this batch has already been decided on
+        if FinalData::<T, I>::contains_key(batch_id) {
+            Err(Error::<T, I>::LateBatch)?
+        }
+
         ensure!(
             !(table.namespace.is_empty() || table.name.is_empty()),
             Error::<T, I>::InvalidTable
