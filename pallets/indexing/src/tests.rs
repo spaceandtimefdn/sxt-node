@@ -36,6 +36,16 @@ struct TestSubmission {
     data: RowData,
 }
 
+/// Helper function to streamline data submission
+fn submit_test_data(signer: RuntimeOrigin, submission: TestSubmission) -> DispatchResult {
+    Indexing::submit_data(
+        signer.clone(),
+        submission.table.clone(),
+        submission.batch_id.clone(),
+        submission.data.clone(),
+    )
+}
+
 fn row_data() -> RowData {
     let schema = Arc::new(Schema::new(vec![Field::new(
         "int_column",
@@ -224,15 +234,6 @@ fn data_is_decided_on_after_required_submissions() {
                 .unwrap(),
         )
         .unwrap();
-        /// Helper function to streamline data submission
-        fn submit_test_data(signer: RuntimeOrigin, submission: TestSubmission) -> DispatchResult {
-            Indexing::submit_data(
-                signer.clone(),
-                submission.table.clone(),
-                submission.batch_id.clone(),
-                submission.data.clone(),
-            )
-        }
 
         let create_table = create_statement_to_sqlparser(create_statement).unwrap();
 
@@ -317,18 +318,6 @@ fn correct_data_is_decided_on_after_required_submissions() {
             .unwrap();
             pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
         }
-
-        // Helper function to streamline data submission
-        fn submit_test_data(signer: RuntimeOrigin, submission: TestSubmission) -> DispatchResult {
-            Indexing::submit_data(
-                signer.clone(),
-                submission.table.clone(),
-                submission.batch_id.clone(),
-                submission.data.clone(),
-            )
-        }
-
-        let create_table = create_statement_to_sqlparser(create_statement).unwrap();
 
         let test_batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
         let test_submission = TestSubmission {
