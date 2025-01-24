@@ -1,3 +1,5 @@
+use alloc::boxed::Box;
+
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::storage::bounded_vec::BoundedVec;
 use frame_support::traits::ConstU32;
@@ -46,6 +48,9 @@ pub enum PermissionLevel {
 
     /// Permissions related to the smart contracts pallet.
     SmartContractsPallet(SmartContractsPalletPermission),
+
+    /// The ability to proxy a permission level on behalf of other users
+    EditSpecificPermission(Box<PermissionLevel>),
 }
 
 /// Permissions for pallet_tables

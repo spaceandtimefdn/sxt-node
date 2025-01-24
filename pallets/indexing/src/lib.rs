@@ -38,11 +38,10 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
-    use sp_runtime::traits::{Bounded, Hash};
+    use sp_runtime::traits::Hash;
     use sp_runtime::BoundedVec;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
-    use sxt_core::tables::{TableIdentifier, TableNamespace};
-    use sxt_core::IdentLength;
+    use sxt_core::tables::TableIdentifier;
 
     use super::*;
 
@@ -154,6 +153,7 @@ pub mod pallet {
             // This function will return an error if the extrinsic is not signed.
             // https://docs.substrate.io/main-docs/build/origins/
             let who = ensure_signed(origin.clone())?;
+
             pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin,
                 &PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitData),

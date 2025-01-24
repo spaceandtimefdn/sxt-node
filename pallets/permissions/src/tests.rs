@@ -211,3 +211,26 @@ fn ensure_root_or_permissioned_should_fail_when_not_signed() {
         );
     })
 }
+
+#[test]
+fn edit_specific_permission_does_not_spillover() {
+    new_test_ext().execute_with(|| {
+        let permission = PermissionLevel::EditSpecificPermission(Box::new(
+            PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitData),
+        ));
+
+        let permission_list = PermissionList::try_from(vec![permission]).unwrap();
+        assert_ok!(Permissions::set_permissions(
+            RuntimeOrigin::root(),
+            1,
+            permission_list,
+        ));
+
+        let bad_permission =
+            PermissionLevel::AttestationPallet(AttestationPalletPermission::AttestBlock);
+        assert_err!(
+            Permissions::add_proxy_permission(RuntimeOrigin::signed(1), 2, bad_permission),
+            Error::<Test>::InsufficientPermissions
+        );
+    })
+}
