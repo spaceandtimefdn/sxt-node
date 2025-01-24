@@ -1,8 +1,8 @@
 use core::str::from_utf8;
-use std::env;
 use std::hash::Hash;
 use std::sync::Arc;
 use std::time::Duration;
+use std::{env, fmt};
 
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
@@ -63,6 +63,22 @@ pub enum SQLError {
     /// The RecordBatch provided was either corrupt or in the incorrect format
     BadRecordBatch(String),
 }
+
+impl fmt::Display for SQLError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SQLError::DBServiceError(err) => write!(f, "Database service error: {}", err),
+            SQLError::FlightSQLServiceError(err) => write!(f, "FlightSQL service error: {}", err),
+            SQLError::BadTableIdentifier(err) => write!(f, "Invalid table identifier: {}", err),
+            SQLError::BadSQLStatement(err) => write!(f, "Invalid SQL statement: {}", err),
+            SQLError::SQLExecutionError(err) => write!(f, "SQL execution error: {}", err),
+            SQLError::InsertExecutionError(err) => write!(f, "Insert execution error: {}", err),
+            SQLError::BadRecordBatch(err) => write!(f, "Invalid or corrupt record batch: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for SQLError {}
 
 /// Wrapper to spawn the flightsql task using the provided Spawn handle.
 pub fn spawn_flightsql_tasks<Client, Block, BE>(
