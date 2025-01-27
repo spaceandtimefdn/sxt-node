@@ -38,6 +38,9 @@ pub trait WeightInfo {
     fn set_permissions() -> Weight;
     /// TODO: add docs
     fn clear_permissions() -> Weight;
+    
+    /// weight for adding a proxy permission
+    fn add_proxy_permission() -> Weight;
 }
 
 /// Weights for pallet_template using the Substrate node and recommended hardware.
@@ -49,6 +52,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
     fn clear_permissions() -> Weight {
         Weight::from_parts(0,0)     
     }
+    fn add_proxy_permission() -> Weight {
+        Weight::from_parts(0,0)     
+    }
 }
 
 impl WeightInfo for () {
@@ -56,6 +62,9 @@ impl WeightInfo for () {
         Weight::from_parts(0,0)     
     }
     fn clear_permissions() -> Weight {
+        Weight::from_parts(0,0)     
+    }
+    fn add_proxy_permission() -> Weight {
         Weight::from_parts(0,0)     
     }
 }

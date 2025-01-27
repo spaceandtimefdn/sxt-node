@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use std::convert::Into;
 use std::io::Cursor;
 use std::sync::Arc;
@@ -9,10 +10,11 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::__private::RuntimeDebug;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::TypeInfo;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok, StorageValue};
 use frame_system::ensure_signed;
 use native_api::Api;
 use sp_core::Hasher;
+use sp_runtime::{AccountId32, BoundedVec};
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{
     create_statement_to_sqlparser,
@@ -23,7 +25,7 @@ use sxt_core::tables::{
 };
 
 use crate::mock::*;
-use crate::{BatchId, RowData};
+use crate::{BatchId, Error, RowData};
 
 /// Used as a convenience wrapper for data we need to submit
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -598,5 +600,60 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
             ),
             crate::Error::<Test, Api>::LateBatch
         );
+    })
+}
+
+#[test]
+fn submit_data_with_mothership_key_work() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"test_namespace".to_owned().to_vec()).unwrap(),
+            name: TableName::try_from(b"test_table".to_owned().to_vec()).unwrap(),
+        };
+        let test_create = CreateStatement::try_from(b"Some Statement".to_owned().to_vec()).unwrap();
+        pallet_tables::Schemas::<Test>::insert(table_id.namespace, table_id.name, test_create);
+
+        let signer_key = 1;
+        let signer = RuntimeOrigin::signed(signer_key);
+        let admin = 2;
+
+        let admin_permission = PermissionLevel::EditSpecificPermission(Box::new(
+            PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitData),
+        ));
+        let permission_list = BoundedVec::try_from(vec![admin_permission]).unwrap();
+        assert_ok!(pallet_permissions::Pallet::<Test>::set_permissions(
+            RuntimeOrigin::root(),
+            admin,
+            permission_list,
+        ));
+
+        let permission = PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitData);
+        assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
+            RuntimeOrigin::signed(admin),
+            signer_key,
+            permission,
+        ));
+
+        let test_identifier = TableIdentifier {
+            name: TableName::try_from(b"test_table".to_vec()).unwrap(),
+            namespace: TableNamespace::try_from(b"test_namespace".to_vec()).unwrap(),
+        };
+
+        let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+        let test_data = row_data();
+
+        assert_ok!(Indexing::submit_data(
+            signer.clone(),
+            test_identifier.clone(),
+            test_batch.clone(),
+            test_data.clone(),
+        ),);
+
+        let hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_data);
+
+        // Verify that the submission was stored as expected
+        // and the hash was generated from the submitted data
+        assert_eq!(Indexing::submissions(test_batch.clone(), hash).len(), 1);
     })
 }

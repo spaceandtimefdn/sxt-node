@@ -1,6 +1,8 @@
 //! TODO: add docs
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
 pub use pallet::*;
 
 #[cfg(test)]
@@ -18,6 +20,9 @@ pub use weights::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
+    use alloc::boxed::Box;
+
+    use frame_support::dispatch::DispatchResult;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use sxt_core::permissions::{PermissionLevel, PermissionList};
@@ -60,6 +65,12 @@ pub mod pallet {
 
         /// Bad Origin
         PermissionsBadOrigin,
+
+        /// The proxy user already has this permission
+        PermissionAlreadyExists,
+
+        /// The proxy user's permission list is full
+        PermissionListFull,
     }
 
     #[pallet::call]
@@ -92,6 +103,59 @@ pub mod pallet {
             Permissions::<T>::remove(who.clone());
             Self::deposit_event(Event::PermissionsSet(who, permissions));
 
+            Ok(())
+        }
+
+        /// Adds a specified permission level to the permissions list of a proxy account.
+        ///
+        /// This extrinsic allows a user with the `EditSpecificPermission(Permission)` level
+        /// to assign the specified `PermissionLevel` to a given proxy account (`proxy`).
+        ///
+        /// The permissions list is managed as a bounded vector to ensure storage limits are respected.
+        /// Duplicate permissions are not allowed, and an error is returned if the permission already exists
+        /// or if the permissions list is full.
+        ///
+        /// Emits:
+        /// - `Event::PermissionsSet` on successful addition of the permission.
+        ///
+        /// Errors:
+        /// - `Error::PermissionAlreadyExists` if the permission is already assigned to the proxy.
+        /// - `Error::PermissionListFull` if the proxy's permissions list has reached its capacity.
+        ///
+        /// Requirements:
+        /// - The caller must be authorized by being either the root origin or having the
+        ///   `EditSpecificPermission` level for the specified permission.        #[pallet::call_index(2)]
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::add_proxy_permission())]
+        pub fn add_proxy_permission(
+            origin: OriginFor<T>,
+            proxy: T::AccountId,
+            permission: PermissionLevel,
+        ) -> DispatchResult {
+            Self::ensure_root_or_permissioned(
+                origin,
+                &PermissionLevel::EditSpecificPermission(Box::new(permission.clone())),
+            )?;
+
+            // Retrieve the current permissions for the proxy
+            Permissions::<T>::try_mutate(&proxy, |permissions_opt| -> DispatchResult {
+                let permissions = permissions_opt.get_or_insert_with(PermissionList::default);
+
+                // Add the new permission, ensuring no duplicates and bounded size
+                if permissions.contains(&permission) {
+                    Err(Error::<T>::PermissionAlreadyExists.into())
+                } else {
+                    permissions
+                        .try_push(permission)
+                        .map_err(|_| Error::<T>::PermissionListFull)?;
+
+                    Self::deposit_event(Event::PermissionsSet(proxy.clone(), permissions.clone()));
+
+                    Ok(())
+                }
+            })?;
+
+            // Emit an event for successful addition of permission
             Ok(())
         }
     }
