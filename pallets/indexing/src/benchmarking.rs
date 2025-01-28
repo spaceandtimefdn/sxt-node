@@ -33,7 +33,7 @@ mod benchmarks {
                 .unwrap();
 
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitData,
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
 
@@ -64,7 +64,7 @@ mod benchmarks {
                 .unwrap();
 
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitData,
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
 
