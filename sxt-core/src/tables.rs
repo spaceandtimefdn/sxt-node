@@ -112,6 +112,28 @@ pub struct SourceAndMode {
     pub mode: IndexerMode,
 }
 
+/// A struct that holds all the information necessary to construct a
+/// genesis runtime. This is used as an intermediary step when we create the chain spec
+#[derive(Serialize, Deserialize)]
+pub struct RawGenesisTable {
+    /// The source and mode for the table
+    pub source_and_mode: SourceAndMode,
+    /// The Table Identifier for the table
+    pub table_identifier: TableIdentifier,
+    /// The DDL Statement for the table
+    pub create_statement: CreateStatement,
+    /// The Azure Snapshot URL for the table's historical data
+    pub snapshot_url: SnapshotUrl,
+    /// The quorum size to use for this table at genesis
+    pub insert_quorum_size: InsertQuorumSize,
+    /// The version of schema and UUIDs provided
+    pub table_version: TableVersion,
+    /// The table UUID for the given table
+    pub table_uuid: TableUuid,
+    /// The List of UUIDs for the columns in the table
+    pub column_uuid_list: ColumnUuidList,
+}
+
 /// An object to contain everything needed to create a table at genesis
 #[derive(
     Clone,
@@ -135,6 +157,12 @@ pub struct GenesisTable {
     pub url: SnapshotUrl,
     /// The name and namespace for the table
     pub identifier: TableIdentifier,
+    /// The table uuid for this table
+    pub table_uuid: TableUuid,
+    /// The UUUIDs for the columns in this table
+    pub column_uuids: ColumnUuidList,
+    /// The version of the current schema for this table
+    pub version: TableVersion,
 }
 
 /// A List of Genesis Tables
@@ -168,6 +196,13 @@ pub type TableName = ByteString;
 /// TODO: add docs
 pub type TableNamespace = ByteString;
 
+/// Version of a given table's schema as a simple incrementing count
+pub type TableVersion = u16;
+
+const UUID_MAX_LEN: u32 = 36;
+/// The UUID for a given table
+pub type TableUuid = BoundedVec<u8, ConstU32<UUID_MAX_LEN>>;
+
 /// A unique identifier for a work assignment, a key that maps to the 'TableSchema'
 #[derive(
     Clone,
@@ -188,6 +223,31 @@ pub struct TableIdentifier {
     pub name: TableName,
     /// TODO: add docs
     pub namespace: TableNamespace,
+}
+
+/// A list of UUIDs associated with the columns of a table
+pub type ColumnUuidList = BoundedVec<ColumnUuid, ConstU32<64>>;
+
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    PassByCodec,
+    Default,
+    Serialize,
+    Deserialize,
+)]
+/// The type used to define the UUID of a Column within a table
+pub struct ColumnUuid {
+    /// The name of the column
+    pub name: ByteString,
+    /// The uuid of the column
+    pub uuid: TableUuid,
 }
 
 /// Errors that can occur when converting a sqlparser ObjectName to a [`TableIdentifier`].

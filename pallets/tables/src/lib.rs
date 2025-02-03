@@ -26,18 +26,22 @@ pub mod pallet {
     use sxt_core::tables::{
         create_statement_to_sqlparser,
         sqlparser_to_create_statement,
+        ColumnUuidList,
         CreateStatement,
         GenesisTable,
         GenesisTableList,
         IdentifierList,
         IndexerMode,
         InsertQuorumSize,
+        RawGenesisTable,
         SnapshotUrl,
         Source,
         SourceAndMode,
         TableIdentifier,
         TableName,
         TableNamespace,
+        TableUuid,
+        TableVersion,
         UpdateTableList,
     };
 
@@ -70,6 +74,32 @@ pub mod pallet {
             table_list: CreateTableList,
         },
     }
+
+    /// A Map of Column UUIDs by Table Identifier and Version
+    #[pallet::storage]
+    #[pallet::getter(fn column_versions)]
+    pub type ColumnVersions<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        TableIdentifier,
+        Blake2_128Concat,
+        TableVersion,
+        ColumnUuidList,
+        ValueQuery,
+    >;
+
+    /// A Map of Table UUID by Table Identifier and Version
+    #[pallet::storage]
+    #[pallet::getter(fn table_versions)]
+    pub type TableVersions<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        TableIdentifier,
+        Blake2_128Concat,
+        TableVersion,
+        TableUuid,
+        ValueQuery,
+    >;
 
     /// A double map connecting an identifier (name, namespace) and a (source, mode) to a Schema, allowing us to interate over all tables in a namespace
     /// ValueQuery is used so when we insert the identifiers if none have been set we get an empty bounded vec to append to
@@ -117,9 +147,30 @@ pub mod pallet {
         SnapshotUrl,
     );
 
+    /// A struct to act as a wrapper around all the information required to create a table.
+    #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode, TypeInfo)]
+    pub struct CreateTableRequest {
+        /// The UUID for the table being created.
+        pub table_uuid: TableUuid,
+        /// The version for this table/UUID/Schema
+        pub table_version: TableVersion,
+        /// A list of UUIDs and their corresponding column names
+        pub column_uuids: ColumnUuidList,
+        /// The name and namespace of the table as a TableIdentifier
+        pub table_name: TableIdentifier,
+        /// The raw DDL Statement that should be used to create the table
+        pub ddl: CreateStatement,
+        /// The commitment for the historical data
+        pub commitment: TableCommitmentBytesPerCommitmentScheme,
+        /// The url of the historical data parquet files
+        pub snapshot_url: SnapshotUrl,
+        /// The quorum size to use for this table's indexing
+        pub insert_quorum_size: InsertQuorumSize,
+    }
+
     /// A bounded vec of create table commands, used to create tables from a known starting commit
     pub type CreateTableList =
-        BoundedVec<CreateTableCmd, ConstU32<{ sxt_core::tables::MAX_TABLES_PER_SCHEMA }>>;
+        BoundedVec<CreateTableRequest, ConstU32<{ sxt_core::tables::MAX_TABLES_PER_SCHEMA }>>;
 
     #[pallet::error]
     pub enum Error<T> {
@@ -131,6 +182,9 @@ pub mod pallet {
 
         /// Failed to parse Create Statement DDL
         CreateStatementParseError,
+
+        /// The version submitted for this table already exists
+        VersionAlreadyExists,
 
         /// Not all schemas were removed
         NotAllSchemasRemovedError,
@@ -198,31 +252,32 @@ pub mod pallet {
 
             let tables = tables
                 .into_iter()
-                .map(
-                    |(identifier, statement, insert_quorum_size, commit, snapshot)| {
-                        Self::insert_schema(
-                            source_and_mode.clone(),
-                            identifier.clone(),
-                            statement.clone(),
-                            insert_quorum_size,
-                        );
+                .map(|table| {
+                    Self::insert_schema(
+                        source_and_mode.clone(),
+                        table.table_name.clone(),
+                        table.ddl.clone(),
+                        table.insert_quorum_size,
+                    );
 
-                        let statement_with_metadata = Self::insert_initial_commitment(
-                            identifier.clone(),
-                            statement,
-                            commit.clone(),
-                            snapshot.clone(),
-                        )?;
-
-                        Ok((
-                            identifier,
-                            statement_with_metadata,
-                            insert_quorum_size,
-                            commit,
-                            snapshot,
-                        ))
-                    },
-                )
+                    let statement_with_metadata = Self::insert_initial_commitment(
+                        table.table_name.clone(),
+                        table.ddl,
+                        table.commitment.clone(),
+                        table.snapshot_url.clone(),
+                    )?;
+                    let out = CreateTableRequest {
+                        table_uuid: table.table_uuid,
+                        table_version: table.table_version,
+                        column_uuids: table.column_uuids,
+                        table_name: table.table_name,
+                        ddl: statement_with_metadata,
+                        commitment: table.commitment,
+                        snapshot_url: table.snapshot_url,
+                        insert_quorum_size: table.insert_quorum_size,
+                    };
+                    Ok(out)
+                })
                 .collect::<Result<Vec<_>, DispatchError>>()?
                 .try_into()
                 .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
@@ -285,7 +340,7 @@ pub mod pallet {
                 let tables_with_meta_columns = genesis_list
                     .tables
                     .iter()
-                    .map(|GenesisTable { statement, url, identifier, insert_quorum_size }| {
+                    .map(| GenesisTable { statement, url, identifier, insert_quorum_size, .. }| {
                         Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), *insert_quorum_size);
                         let mut create_table = create_statement_to_sqlparser(statement.clone())
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
@@ -312,6 +367,24 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        /// Add a UUID for this table
+        pub fn insert_uuid(
+            ident: TableIdentifier,
+            version: u16,
+            uuid: TableUuid,
+            column_uuids: ColumnUuidList,
+        ) -> Result<(), DispatchError> {
+            if TableVersions::<T>::contains_key(&ident, version) {
+                // Error, this version has already been assigned a UUID
+                return Err(Error::<T>::VersionAlreadyExists.into());
+            }
+
+            TableVersions::<T>::set(&ident, version, uuid);
+            ColumnVersions::<T>::set(&ident, version, column_uuids);
+
+            Ok(())
+        }
+
         /// Uodate the schema and commitment for a table and source and mode combo
         pub fn insert_schema(
             sm: SourceAndMode,
@@ -358,14 +431,7 @@ pub mod pallet {
     #[pallet::genesis_config]
     #[derive(frame_support::DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
-        tables: Vec<(
-            SourceAndMode,
-            TableIdentifier,
-            CreateStatement,
-            InsertQuorumSize,
-            TableCommitmentBytesPerCommitmentScheme,
-            SnapshotUrl,
-        )>,
+        tables: Vec<(RawGenesisTable, TableCommitmentBytesPerCommitmentScheme)>,
         _marker: PhantomData<T>,
     }
 
@@ -375,25 +441,28 @@ pub mod pallet {
             let tables_with_meta: Vec<GenesisTable> = self
                 .tables
                 .iter()
-                .map(|(sm, ident, stmnt, insert_quorum_size, commit, snapshot)| {
+                .map(|(table, commitments)| {
                     pallet::Pallet::<T>::insert_schema(
-                        sm.clone(),
-                        ident.clone(),
-                        stmnt.clone(),
-                        *insert_quorum_size,
+                        table.source_and_mode.clone(),
+                        table.table_identifier.clone(),
+                        table.create_statement.clone(),
+                        table.insert_quorum_size,
                     );
                     let statement = pallet::Pallet::<T>::insert_initial_commitment(
-                        ident.clone(),
-                        stmnt.clone(),
-                        commit.clone(),
-                        snapshot.clone(),
+                        table.table_identifier.clone(),
+                        table.create_statement.clone(),
+                        commitments.clone(),
+                        table.snapshot_url.clone(),
                     )
                     .unwrap();
                     GenesisTable {
                         statement,
-                        insert_quorum_size: *insert_quorum_size,
-                        url: snapshot.clone(),
-                        identifier: ident.clone(),
+                        insert_quorum_size: table.insert_quorum_size,
+                        url: table.snapshot_url.clone(),
+                        identifier: table.table_identifier.clone(),
+                        table_uuid: table.table_uuid.clone(),
+                        column_uuids: table.column_uuid_list.clone(),
+                        version: table.table_version,
                     }
                 })
                 .collect();

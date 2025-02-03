@@ -11,18 +11,25 @@ use sp_consensus_babe::AuthorityId as BabeId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::MultiAddress::Raw;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
+use sqlparser::test_utils::table;
 use sxt_core::tables::{
     create_statement,
     table_identifier,
+    ColumnUuidList,
     CreateStatement,
     IndexerMode,
+    InsertQuorumSize,
+    RawGenesisTable,
     SnapshotUrl,
     Source,
     SourceAndMode,
     TableIdentifier,
+    TableUuid,
+    TableVersion,
 };
 use sxt_core::ByteString;
 use sxt_runtime::opaque::SessionKeys;
@@ -391,6 +398,25 @@ fn testnet_genesis(
         STASH,
     );
 
+    let default_quorum_size = InsertQuorumSize {
+        public: Some(3),
+        privileged: Some(0),
+    };
+
+    let test = serde_json::json!({
+    "test": ddls_to_genesis(vec![
+                    (
+                        "snapshots/v2/ethereum_core/ddl_ethereum_snapshot_v2.sql".into(),
+                        ethereum_core(),
+                        "snapshots/v2/ethereum_core/url_snapshot_v2.url".into(),
+                        default_quorum_size,
+                        0,
+                        Default::default(),
+                        Default::default(),
+                    )
+                ]),
+    });
+
     serde_json::json!({
         "balances": {
             "balances": endowed_accounts.iter().cloned().map(|k| (k, ENDOWMENT)).collect::<Vec<_>>(),
@@ -417,15 +443,21 @@ fn testnet_genesis(
             "epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG),
         },
         "tables": {
-            "tables":
-                pair_commits(
-                    ddls_to_genesis(vec![(
+            "tables": pair_commits(
+                    ddls_to_genesis(vec![
+                    (
                         "snapshots/v2/ethereum_core/ddl_ethereum_snapshot_v2.sql".into(),
                         ethereum_core(),
                         "snapshots/v2/ethereum_core/url_snapshot_v2.url".into(),
-                    )]),
-                    vec!["snapshots/v2/ethereum_core/commitments_snapshot_v2.commits".into()],
-            ),
+                        default_quorum_size,
+                        0,
+                        Default::default(),
+                        Default::default(),
+                    )
+                ]),
+                    vec![
+                    "snapshots/v2/ethereum_core/commitments_snapshot_v2.commits".into(),
+                ]),
         },
     })
 }
@@ -443,16 +475,10 @@ pub fn ethereum_core() -> SourceAndMode {
 }
 
 /// Create table list
-pub type CreateTableList = Vec<(
-    SourceAndMode,
-    TableIdentifier,
-    CreateStatement,
-    TableCommitmentBytesPerCommitmentScheme,
-    SnapshotUrl,
-)>;
+pub type CreateTableList = Vec<(RawGenesisTable, TableCommitmentBytesPerCommitmentScheme)>;
 
 /// List of ddsl
-pub type DdlList = Vec<(SourceAndMode, TableIdentifier, CreateStatement, SnapshotUrl)>;
+pub type DdlList = Vec<RawGenesisTable>;
 
 /// List of commitments
 pub type CommitmentList = Vec<(TableIdentifier, TableCommitmentBytesPerCommitmentScheme)>;
@@ -479,12 +505,22 @@ pub fn pair_commits(input: DdlList, paths: Vec<String>) -> CreateTableList {
         );
     }
 
-    for (source, ident, stmnt, snapshot) in input.into_iter() {
+    for table in input.into_iter() {
         for i in 0..commits.len() {
             let commit = commits.get(i).expect("could not get commit");
 
-            if ident == commit.0 {
-                output.push((source, ident, stmnt, commit.1.clone(), snapshot));
+            if table.table_identifier == commit.0 {
+                let entry: RawGenesisTable = RawGenesisTable {
+                    source_and_mode: table.source_and_mode,
+                    table_identifier: table.table_identifier,
+                    create_statement: table.create_statement,
+                    snapshot_url: table.snapshot_url,
+                    insert_quorum_size: table.insert_quorum_size,
+                    table_version: table.table_version,
+                    table_uuid: table.table_uuid,
+                    column_uuid_list: table.column_uuid_list,
+                };
+                output.push((entry, commit.1.clone()));
                 commits.remove(i);
                 break;
             }
@@ -503,7 +539,11 @@ pub fn ddl_to_tables(
     p: String,
     sm: SourceAndMode,
     snapshot: String,
-) -> Vec<(SourceAndMode, TableIdentifier, CreateStatement, SnapshotUrl)> {
+    quorum: InsertQuorumSize,
+    version: TableVersion,
+    uuid: TableUuid,
+    column_uuids: ColumnUuidList,
+) -> Vec<RawGenesisTable> {
     let ddl = read_to_string(p).unwrap();
 
     let snapshot_url = read_to_string(snapshot).unwrap();
@@ -526,12 +566,16 @@ pub fn ddl_to_tables(
                 let s = c.build().to_string();
                 let sm = sm.clone();
 
-                Some((
-                    sm,
-                    table_identifier(name, namespace),
-                    create_statement(&s),
-                    snapshot_url.clone(),
-                ))
+                Some(RawGenesisTable {
+                    source_and_mode: sm,
+                    table_identifier: table_identifier(name, namespace),
+                    create_statement: create_statement(&s),
+                    snapshot_url: snapshot_url.clone(),
+                    insert_quorum_size: quorum,
+                    table_version: version,
+                    table_uuid: uuid.clone(),
+                    column_uuid_list: column_uuids.clone(),
+                })
             }
             Err(_) => panic!("Error parsing table {}", x),
         })
@@ -546,11 +590,31 @@ pub type SnapshotPath = String;
 
 /// Convert a vector of ddl paths and source and modes into a vector of tables for genesis configuration
 pub fn ddls_to_genesis(
-    input: Vec<(DdlPath, SourceAndMode, SnapshotPath)>,
-) -> Vec<(SourceAndMode, TableIdentifier, CreateStatement, SnapshotUrl)> {
+    input: Vec<(
+        DdlPath,
+        SourceAndMode,
+        SnapshotPath,
+        InsertQuorumSize,
+        TableVersion,
+        TableUuid,
+        ColumnUuidList,
+    )>,
+) -> Vec<RawGenesisTable> {
     input
         .iter()
-        .flat_map(|(path, sm, snapshot)| ddl_to_tables(path.clone(), sm.clone(), snapshot.clone()))
+        .flat_map(
+            |(path, sm, snapshot, quorum_size, version, uuid, column_uuids)| {
+                ddl_to_tables(
+                    path.clone(),
+                    sm.clone(),
+                    snapshot.clone(),
+                    *quorum_size,
+                    *version,
+                    uuid.clone(),
+                    column_uuids.clone(),
+                )
+            },
+        )
         .collect()
 }
 
@@ -564,6 +628,13 @@ pub mod tests {
             "testing/test_ddl.sql".into(),
             ethereum_core(),
             "testing/test.url".into(),
+            InsertQuorumSize {
+                public: Some(1),
+                privileged: Some(1),
+            },
+            0,
+            Default::default(),
+            Default::default(),
         )]);
 
         let paths = vec!["testing/test.commits".into()];
@@ -577,6 +648,13 @@ pub mod tests {
             "testing/ddl.sql".into(),
             SourceAndMode::default(),
             "testing/test.url".into(),
+            InsertQuorumSize {
+                public: Some(1),
+                privileged: Some(1),
+            },
+            0,
+            Default::default(),
+            Default::default(),
         );
     }
 
@@ -587,11 +665,25 @@ pub mod tests {
                 "testing/ddl.sql".into(),
                 SourceAndMode::default(),
                 "testing/test.url".into(),
+                InsertQuorumSize {
+                    public: Some(1),
+                    privileged: Some(1),
+                },
+                0,
+                Default::default(),
+                Default::default(),
             ),
             (
                 "testing/ddl2.sql".into(),
                 SourceAndMode::default(),
                 "testing/test.url".into(),
+                InsertQuorumSize {
+                    public: Some(1),
+                    privileged: Some(1),
+                },
+                0,
+                Default::default(),
+                Default::default(),
             ),
         ]);
     }
