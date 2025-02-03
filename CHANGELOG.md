@@ -1,3 +1,13 @@
+# [0.71.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.70.0...v0.71.0) (2025-02-03)
+
+
+### Features
+
+* Add support for Table and Column UUIDs including schema versions ([63a2b24](https://github.com/spaceandtimelabs/sxt-node/commit/63a2b24d30bbf299f37854fbc095337e5ee32f60))
+* Build new chainspecs for devnet and testnet ([5668052](https://github.com/spaceandtimelabs/sxt-node/commit/566805260873bd9a9d770bb7a86e149cda514380))
+
+
+
 # [0.70.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.69.0...v0.70.0) (2025-01-28)
 
 
@@ -33,15 +43,6 @@
 ### Features
 
 * add smartcontract pallet ([d799296](https://github.com/spaceandtimelabs/sxt-node/commit/d799296c8267e18dcadfd5324748d8fab64faa0a))
-
-
-
-# [0.66.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.65.0...v0.66.0) (2025-01-17)
-
-
-### Bug Fixes
-
-* reuse node binary in run-node step ([6c7f23e](https://github.com/spaceandtimelabs/sxt-node/commit/6c7f23ea4a67bce17a65a79168e214aac39007b1))
 
 
 
