@@ -9,6 +9,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+extern crate core;
 
 #[cfg(test)]
 mod mock;
@@ -31,17 +32,30 @@ pub mod native_pallet;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
+    use alloc::string::String;
+    use alloc::vec::Vec;
 
+    use codec::Decode;
     use commitment_sql::InsertAndCommitmentMetadata;
+    use frame_support::dispatch::RawOrigin;
     use frame_support::pallet_prelude::*;
-    use frame_support::Blake2_128Concat;
+    use frame_support::{Blake2_128, Blake2_128Concat};
     use frame_system::pallet_prelude::*;
+    use hex::FromHex;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
-    use sp_runtime::traits::Hash;
-    use sp_runtime::BoundedVec;
+    use sp_core::{H256, U256};
+    use sp_runtime::traits::{Bounded, Hash, StaticLookup, UniqueSaturatedInto};
+    use sp_runtime::{BoundedVec, SaturatedConversion};
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
-    use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
+    use sxt_core::tables::{
+        InsertQuorumSize,
+        QuorumScope,
+        TableIdentifier,
+        TableName,
+        TableNamespace,
+    };
+    use sxt_core::IdentLength;
 
     use super::*;
 
@@ -54,6 +68,7 @@ pub mod pallet {
         + pallet_permissions::Config
         + pallet_commitments::Config
         + pallet_tables::Config
+        + pallet_parsing::Config
     {
         /// Binding for the runtime event, typically provided by an implementation
         /// in runtime/lib.rs
@@ -105,6 +120,9 @@ pub mod pallet {
             /// The quorum object representing the metadata about the decision
             quorum: DataQuorum<T::AccountId, T::Hash>,
             /// The finalized raw data in postcard serialized OnChainTable bytes
+            data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
+        },
+        SystemTableUpdate {
             data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
         },
     }
@@ -351,6 +369,11 @@ pub mod pallet {
 
         if let Some(block_number) = block_number {
             BlockNumbers::<T, I>::insert(&quorum.table, block_number);
+        }
+
+        // check if this oc_table is for a system table and needs special handling/parsing
+        if quorum.table.is_staking_table() {
+            pallet_parsing::Pallet::<T>::parse_staking(quorum.table.clone(), oc_table);
         }
 
         // Emit an event.

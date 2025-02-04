@@ -10093,11 +10093,15 @@ dependencies = [
  "frame-benchmarking 37.0.0",
  "frame-support 37.1.0",
  "frame-system 37.1.0",
+ "hex",
  "native",
  "native-api",
  "on-chain-table",
+ "pallet-balances 38.0.0",
  "pallet-commitments",
+ "pallet-parsing",
  "pallet-permissions",
+ "pallet-staking 37.0.0",
  "pallet-tables",
  "parity-scale-codec",
  "postcard",
@@ -10534,6 +10538,33 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-runtime",
+]
+
+[[package]]
+name = "pallet-parsing"
+version = "0.1.0"
+dependencies = [
+ "arrow",
+ "frame-benchmarking 37.0.0",
+ "frame-election-provider-support 37.0.0",
+ "frame-support 37.1.0",
+ "frame-system 37.1.0",
+ "hex",
+ "on-chain-table",
+ "pallet-balances 38.0.0",
+ "pallet-commitments",
+ "pallet-permissions",
+ "pallet-session 37.0.0",
+ "pallet-staking 37.0.0",
+ "pallet-tables",
+ "pallet-timestamp 36.0.1",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io 38.0.0",
+ "sp-runtime",
+ "sp-staking 34.0.0",
+ "sxt-core",
 ]
 
 [[package]]
@@ -18319,6 +18350,7 @@ dependencies = [
  "pallet-keystore",
  "pallet-multisig 37.0.0",
  "pallet-offences 36.0.0",
+ "pallet-parsing",
  "pallet-permissions",
  "pallet-session 37.0.0",
  "pallet-smartcontracts",

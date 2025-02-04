@@ -44,6 +44,7 @@ pub mod pallet {
         TableVersion,
         UpdateTableList,
     };
+    use sxt_core::ByteString;
 
     use super::*;
 
@@ -426,12 +427,37 @@ pub mod pallet {
 
             Ok(statement_with_metadata)
         }
+
+        /// Create a new table with an empty commitment
+        pub fn insert_table_with_empty_commit(
+            ident: TableIdentifier,
+            statement: CreateStatement,
+            snapshot: SnapshotUrl,
+        ) -> Result<CreateStatement, DispatchError> {
+            let create_table = create_statement_to_sqlparser(statement)
+                .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+            let CreateTableAndCommitmentMetadata {
+                table_with_meta_columns,
+                ..
+            } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_dynamic_dory(
+                create_table,
+            )?;
+
+            let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
+                .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+            Snapshots::<T>::insert(ident, snapshot);
+
+            Ok(statement_with_metadata)
+        }
     }
 
     #[pallet::genesis_config]
     #[derive(frame_support::DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
         tables: Vec<(RawGenesisTable, TableCommitmentBytesPerCommitmentScheme)>,
+        tables_without_commits: Vec<RawGenesisTable>,
         _marker: PhantomData<T>,
     }
 
@@ -477,6 +503,58 @@ pub mod pallet {
                     mode: IndexerMode::Core,
                 },
                 list,
+            );
+
+            let quorum = InsertQuorumSize {
+                public: Some(3),
+                privileged: Some(0),
+            };
+
+            let tables_without_commits: Vec<GenesisTable> = self
+                .tables_without_commits
+                .iter()
+                .map(|table| {
+                    pallet::Pallet::<T>::insert_schema(
+                        table.source_and_mode.clone(),
+                        table.table_identifier.clone(),
+                        table.create_statement.clone(),
+                        quorum,
+                    );
+                    let statement = pallet::Pallet::<T>::insert_table_with_empty_commit(
+                        table.table_identifier.clone(),
+                        table.create_statement.clone(),
+                        table.snapshot_url.clone(),
+                    )
+                    .unwrap();
+                    GenesisTable {
+                        statement: table.create_statement.clone(),
+                        insert_quorum_size: table.insert_quorum_size,
+                        url: table.snapshot_url.clone(),
+                        identifier: table.table_identifier.clone(),
+                        table_uuid: table.table_uuid.clone(),
+                        column_uuids: table.column_uuid_list.clone(),
+                        version: table.table_version,
+                    }
+                })
+                .collect();
+
+            let list_with_no_commits = GenesisTableList {
+                tables: BoundedVec::try_from(tables_without_commits).unwrap(),
+            };
+
+            let contract_byte_string = ByteString::try_from(
+                "0x99b712919F0c2C07ad32f4c3a3742D3C6642d0A2"
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .unwrap();
+
+            GenesisTables::<T>::insert(
+                SourceAndMode {
+                    source: Source::Sepolia,
+                    mode: IndexerMode::SmartContract(contract_byte_string),
+                },
+                list_with_no_commits,
             );
         }
     }

@@ -315,6 +315,7 @@ fn token_properties() -> Properties {
         "tokenSymbol".into(),
         serde_json::Value::String("SxT".into()),
     );
+    map.insert("tokenDecimals".into(), serde_json::Value::Number(18.into()));
 
     map
 }
@@ -454,6 +455,16 @@ fn testnet_genesis(
                     vec![
                     "snapshots/v2/ethereum_core/commitments_snapshot_v2.commits".into(),
                 ]),
+            "tablesWithoutCommits": ddls_to_genesis(vec![
+                    (
+                        "snapshots/v3/sxt_system_staking/ddl_sxt_system_staking.sql".into(),
+                        sepolia_staking(),
+                        "snapshots/v3/sxt_system_staking/url_snapshot.url".into(),
+                        default_quorum_size,
+                        0,
+                        Default::default(),
+                        Default::default(),
+                    )])
         },
     })
 }
@@ -467,6 +478,16 @@ pub fn ethereum_core() -> SourceAndMode {
     SourceAndMode {
         source: Source::Ethereum,
         mode: IndexerMode::Core,
+    }
+}
+
+const SEPOLIA_STAKING_CONTRACT: &str = "0x99b712919F0c2C07ad32f4c3a3742D3C6642d0A2";
+pub fn sepolia_staking() -> SourceAndMode {
+    let contract_byte_string =
+        ByteString::try_from(SEPOLIA_STAKING_CONTRACT.as_bytes().to_vec()).unwrap();
+    SourceAndMode {
+        source: Source::Sepolia,
+        mode: IndexerMode::SmartContract(contract_byte_string),
     }
 }
 

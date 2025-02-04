@@ -1,4 +1,6 @@
 use frame_support::derive_impl;
+use frame_support::pallet_prelude::ConstU32;
+use frame_support::traits::{ConstU128, VariantCountOf};
 use native_api::Api;
 use sp_core::H256;
 use sp_runtime::BuildStorage;
@@ -38,7 +40,6 @@ impl pallet_permissions::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
 }
-
 impl pallet_commitments::Config for Test {}
 
 pub fn new_test_ext() -> sp_io::TestExternalities {

@@ -199,17 +199,6 @@ pub mod pallet {
         }
     }
 
-    #[pallet::genesis_build]
-    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
-        fn build(&self) {
-            assert!(
-                <Validators<T>>::get().is_empty(),
-                "Validators are already initialized!"
-            );
-            <Validators<T>>::put(&self.initial_validators);
-        }
-    }
-
     impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
         fn new_session(_new_index: u32) -> Option<Vec<T::ValidatorId>> {
             Some(Self::validators().into())

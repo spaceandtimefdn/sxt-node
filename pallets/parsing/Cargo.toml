@@ -1,6 +1,6 @@
 [package]
-name = "pallet-indexing"
-description = "FRAME pallet template for defining custom runtime logic. (polkadot v1.15.0)"
+name = "pallet-parsing"
+description = "Substrate pallet for parsing information out of submitted data"
 version = "0.1.0"
 license = "Unlicense"
 authors.workspace = true
@@ -16,34 +16,31 @@ targets = ["x86_64-unknown-linux-gnu"]
 codec = { features = [
 	"derive",
 ], workspace = true }
-commitment-sql.workspace = true
 scale-info = { features = [
 	"derive",
 ], workspace = true }
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
-pallet-commitments.workspace = true
-pallet-permissions.workspace = true
 pallet-tables.workspace = true
-pallet-staking.workspace = true
 pallet-balances.workspace = true
-pallet-parsing.workspace = true
+pallet-commitments.workspace = true
+pallet-staking.workspace = true
+sxt-core = { default-features = false, workspace = true }
+sp-runtime.workspace = true
+on-chain-table = { workspace = true, default-features = false }
 hex.workspace = true
-sxt-core.workspace = true
-sp-runtime = { workspace = true, default-features = false }
-sp-core = { workspace = true, default-features = false }
-sp-std = { workspace = true, default-features = false }
-native-api = { workspace = true, default-features = false}
-postcard = "1.0"
-on-chain-table = { workspace = true, default-features = false}
 
 [dev-dependencies]
-sp-core.workspace = true
-sp-io.workspace = true
-sp-runtime.workspace = true
-native.workspace = true
+sp-core = { default-features = true, workspace = true }
+sp-io = { default-features = true, workspace = true }
+sp-runtime = { default-features = true, workspace = true }
+sp-staking = { default-features = true, workspace = true }
 arrow.workspace = true
+pallet-timestamp.workspace = true
+pallet-session.workspace = true
+pallet-permissions.workspace = true
+frame-election-provider-support.workspace = true
 
 [features]
 default = ["std"]
@@ -53,18 +50,29 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"scale-info/std",
-	"native/std",
-	"native-api/std",
-	"on-chain-table/std",
-	"pallet-commitments/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
 	"pallet-tables/std",
+	"pallet-balances/std",
+	"pallet-commitments/std",
+	"pallet-staking/std",
+	"sxt-core/std",
+	"sp-runtime/std",
+	"on-chain-table/std",
 ]
+
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
+	"sp-runtime/try-runtime",
 ]
+
+[lints]
+workspace = true
