@@ -14,6 +14,7 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
+use sxt_core::ByteString;
 use sxt_core::tables::{
     create_statement,
     table_identifier,
@@ -130,15 +131,8 @@ pub fn devnet_config() -> Result<ChainSpec, String> {
     .with_properties(token_properties())
     .with_genesis_config_patch(testnet_genesis(
         // Initial NPoS authorities
-        vec![
-            authority_keys_from_seed("Bob"),
-            authority_keys_from_seed("Charlie"),
-            authority_keys_from_seed("Dave"),
-        ],
-        vec![
-            get_account_id_from_seed::<sr25519::Public>("Eve"),
-            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-        ],
+        vec![authority_keys_from_seed("Alice")],
+        vec![get_account_id_from_seed::<sr25519::Public>("Bob")],
         // Sudo account
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         // Pre-funded accounts
@@ -440,31 +434,43 @@ fn testnet_genesis(
             "epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG),
         },
         "tables": {
-            "tables": pair_commits(
-                    ddls_to_genesis(vec![
+            // "tables": pair_commits( ddls_to_genesis(vec![]), vec![] ),
+            "tablesWithoutCommits": ddls_to_genesis(vec![
+                    // DdlPath,
+                    //         SourceAndMode,
+                    //         SnapshotPath,
+                    //         InsertQuorumSize,
+                    //         TableVersion,
+                    //         TableUuid,
+                    //         ColumnUuidList,
                     (
+                        "snapshots/v3/sxt_system_staking/ddl_sxt_system_staking.sql".into(),
+                        sepolia_staking(),
+                        "snapshots/v3/sxt_system_staking/url_snapshot_v3.url".into(),
+                        default_quorum_size,
+                        0,
+                        Default::default(),
+                        Default::default(),
+                    ),
+                (
                         "snapshots/v2/ethereum_core/ddl_ethereum_snapshot_v2.sql".into(),
-                        ethereum_core(),
+                        sepolia_staking(),
                         "snapshots/v2/ethereum_core/url_snapshot_v2.url".into(),
                         default_quorum_size,
                         0,
                         Default::default(),
                         Default::default(),
-                    )
-                ]),
-                    vec![
-                    "snapshots/v2/ethereum_core/commitments_snapshot_v2.commits".into(),
-                ]),
-            "tablesWithoutCommits": ddls_to_genesis(vec![
-                    (
-                        "snapshots/v3/sxt_system_staking/ddl_sxt_system_staking.sql".into(),
-                        sepolia_staking(),
-                        "snapshots/v3/sxt_system_staking/url_snapshot.url".into(),
-                        default_quorum_size,
-                        0,
-                        Default::default(),
-                        Default::default(),
-                    )])
+                    ),
+                // (
+                //         "snapshots/v3/ethereum_beacon/ddl_ethereum_beacon_snapshot_v3.sql".into(),
+                //         sepolia_staking(),
+                //         "snapshots/v3/ethereum_beacon/url_snapshot_v3.url".into(),
+                //         default_quorum_size,
+                //         0,
+                //         Default::default(),
+                //         Default::default(),
+                //     ),
+            ])
         },
     })
 }

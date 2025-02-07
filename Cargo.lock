@@ -10097,11 +10097,9 @@ dependencies = [
  "native",
  "native-api",
  "on-chain-table",
- "pallet-balances 38.0.0",
  "pallet-commitments",
- "pallet-parsing",
  "pallet-permissions",
- "pallet-staking 37.0.0",
+ "pallet-system-tables",
  "pallet-tables",
  "parity-scale-codec",
  "postcard",
@@ -10109,7 +10107,6 @@ dependencies = [
  "sp-core",
  "sp-io 38.0.0",
  "sp-runtime",
- "sp-std",
  "sxt-core",
 ]
 
@@ -10538,33 +10535,6 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-runtime",
-]
-
-[[package]]
-name = "pallet-parsing"
-version = "0.1.0"
-dependencies = [
- "arrow",
- "frame-benchmarking 37.0.0",
- "frame-election-provider-support 37.0.0",
- "frame-support 37.1.0",
- "frame-system 37.1.0",
- "hex",
- "on-chain-table",
- "pallet-balances 38.0.0",
- "pallet-commitments",
- "pallet-permissions",
- "pallet-session 37.0.0",
- "pallet-staking 37.0.0",
- "pallet-tables",
- "pallet-timestamp 36.0.1",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io 38.0.0",
- "sp-runtime",
- "sp-staking 34.0.0",
- "sxt-core",
 ]
 
 [[package]]
@@ -11149,6 +11119,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-system-tables"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking 37.0.0",
+ "frame-election-provider-support 37.0.0",
+ "frame-support 37.1.0",
+ "frame-system 37.1.0",
+ "hex",
+ "on-chain-table",
+ "pallet-balances 38.0.0",
+ "pallet-commitments",
+ "pallet-permissions",
+ "pallet-session 37.0.0",
+ "pallet-staking 37.0.0",
+ "pallet-tables",
+ "pallet-validators",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io 38.0.0",
+ "sp-runtime",
+ "sp-staking 34.0.0",
+ "spin 0.9.8",
+ "sxt-core",
+]
+
+[[package]]
 name = "pallet-tables"
 version = "0.1.0"
 dependencies = [
@@ -11403,6 +11400,23 @@ dependencies = [
  "sp-core",
  "sp-io 38.0.0",
  "sp-runtime",
+]
+
+[[package]]
+name = "pallet-validators"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking 37.0.0",
+ "frame-support 37.1.0",
+ "frame-system 37.1.0",
+ "pallet-session 37.0.0",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io 38.0.0",
+ "sp-runtime",
+ "sp-staking 34.0.0",
+ "sp-std",
 ]
 
 [[package]]
@@ -18350,7 +18364,6 @@ dependencies = [
  "pallet-keystore",
  "pallet-multisig 37.0.0",
  "pallet-offences 36.0.0",
- "pallet-parsing",
  "pallet-permissions",
  "pallet-session 37.0.0",
  "pallet-smartcontracts",
@@ -18358,11 +18371,13 @@ dependencies = [
  "pallet-staking-runtime-api",
  "pallet-statement 19.0.0",
  "pallet-sudo 37.0.0",
+ "pallet-system-tables",
  "pallet-tables",
  "pallet-timestamp 36.0.1",
  "pallet-transaction-payment 37.0.1",
  "pallet-transaction-payment-rpc-runtime-api 37.0.0",
  "pallet-utility 37.0.1",
+ "pallet-validators",
  "parity-scale-codec",
  "scale-info",
  "sp-api",

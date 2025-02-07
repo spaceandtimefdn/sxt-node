@@ -58,8 +58,9 @@ pallet-indexing.workspace = true
 pallet-attestation.workspace = true
 pallet-keystore.workspace = true
 pallet-smartcontracts.workspace = true
+pallet-validators.workspace = true
 
-pallet-parsing.workspace = true
+pallet-system-tables.workspace = true
 pallet-staking.workspace = true
 pallet-staking-runtime-api.workspace = true
 pallet-authorship.workspace = true
@@ -96,7 +97,7 @@ std = [
 	"pallet-tables/std",
 	"pallet-permissions/std",
 	"pallet-session/std",
-	"pallet-parsing/std",
+	"pallet-system-tables/std",
 	"sp-std/std",
 	"codec/std",
 	"scale-info/std",

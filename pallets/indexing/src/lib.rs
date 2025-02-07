@@ -68,7 +68,7 @@ pub mod pallet {
         + pallet_permissions::Config
         + pallet_commitments::Config
         + pallet_tables::Config
-        + pallet_parsing::Config
+        + pallet_system_tables::Config
     {
         /// Binding for the runtime event, typically provided by an implementation
         /// in runtime/lib.rs
@@ -373,7 +373,7 @@ pub mod pallet {
 
         // check if this oc_table is for a system table and needs special handling/parsing
         if quorum.table.is_staking_table() {
-            pallet_parsing::Pallet::<T>::parse_staking(quorum.table.clone(), oc_table);
+            pallet_system_tables::Pallet::<T>::process_system_table(quorum.table.clone(), oc_table);
         }
 
         // Emit an event.

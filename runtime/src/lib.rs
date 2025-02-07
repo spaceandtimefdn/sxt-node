@@ -92,11 +92,11 @@ pub use {
     pallet_indexing,
     pallet_keystore,
     pallet_offences,
-    pallet_parsing,
     pallet_permissions,
     pallet_session,
     pallet_smartcontracts,
     pallet_staking,
+    pallet_system_tables,
     pallet_tables,
 };
 
@@ -765,8 +765,13 @@ impl pallet_keystore::Config for Runtime {
     type WeightInfo = pallet_keystore::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_parsing::Config for Runtime {
+impl pallet_system_tables::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+}
+
+impl pallet_validators::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
 }
 
 impl pallet_smartcontracts::Config for Runtime {
@@ -866,7 +871,9 @@ mod runtime {
     #[runtime::pallet_index(106)]
     pub type Smartcontracts = pallet_smartcontracts;
     #[runtime::pallet_index(107)]
-    pub type Parsing = pallet_parsing;
+    pub type SystemTables = pallet_system_tables;
+    #[runtime::pallet_index(108)]
+    pub type Validators = pallet_validators;
 }
 
 /// The address format for describing accounts.

@@ -26,14 +26,11 @@ frame-system.workspace = true
 pallet-commitments.workspace = true
 pallet-permissions.workspace = true
 pallet-tables.workspace = true
-pallet-staking.workspace = true
-pallet-balances.workspace = true
-pallet-parsing.workspace = true
+pallet-system-tables.workspace = true
 hex.workspace = true
 sxt-core.workspace = true
 sp-runtime = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
-sp-std = { workspace = true, default-features = false }
 native-api = { workspace = true, default-features = false}
 postcard = "1.0"
 on-chain-table = { workspace = true, default-features = false}

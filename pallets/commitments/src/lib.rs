@@ -168,30 +168,6 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        /// TODO: docs
-        pub fn process_create_table_and_initiate_commitments_generic(
-            create_table: CreateTableBuilder,
-            schemes: CommitmentSchemeFlags,
-        ) -> Result<CreateTableAndCommitmentMetadata, Error<T>> {
-            let (create_table_and_commitment_metadata, empty_commitments) =
-                process_create_table(create_table, *PUBLIC_SETUPS, &schemes)?;
-
-            let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
-
-            let table_identifier = TableIdentifier::try_from(
-                &create_table_and_commitment_metadata
-                    .table_with_meta_columns
-                    .name,
-            )
-            .expect("Create table identifier already validated by process_create_table");
-
-            let empty_commitments_bytes = empty_commitments.try_into()?;
-
-            handler.create_commitments(table_identifier, empty_commitments_bytes)?;
-
-            Ok(create_table_and_commitment_metadata)
-        }
-
         /// Processes the table definition and initiates commitments for it in storage.
         ///
         /// Returns the original table definition with additional commitment metadata columns.
@@ -201,7 +177,7 @@ pub mod pallet {
             let schemes = DefaultCommitmentSchemes::<T>::get()
                 .expect("default commitment schemes will exist due to genesis config");
 
-            Self::process_create_table_and_initiate_commitments_generic(create_table, schemes)
+            Self::process_create_table_and_initiate_commitments_with_scheme(create_table, schemes)
         }
 
         /// TODO: docs
@@ -213,7 +189,7 @@ pub mod pallet {
                 ipa: false,
             };
 
-            Self::process_create_table_and_initiate_commitments_generic(create_table, scheme)
+            Self::process_create_table_and_initiate_commitments_with_scheme(create_table, scheme)
         }
 
         /// TODO: docs

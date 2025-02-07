@@ -3,7 +3,6 @@ use alloc::vec::Vec;
 use indexmap::map::{IntoIter, Iter};
 use primitive_types::U256;
 use proof_of_sql::base::commitment::CommittableColumn;
-use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql::base::scalar::Scalar;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
@@ -115,8 +114,10 @@ impl OnChainTable {
         OnChainTable(ordered_columns)
     }
 
+    /// Attempts to retrieve the values for a given decimal column name
+    /// Returns None if the provided column does not exist 
     pub fn get_decimal_by_column(&self, column_name: &str) -> Option<&Vec<U256>> {
-        let column_id: Identifier = column_name.parse().ok()?;
+        let column_id: Ident = Ident::from(column_name);
         let column = self.as_map().get(&column_id)?;
         match column {
             OnChainColumn::Decimal75(_, _, values) => Some(values),
@@ -124,8 +125,10 @@ impl OnChainTable {
         }
     }
 
+    /// Attempts to retrieve the values for a given VarChar column name
+    /// Returns None if the provided column does not exist
     pub fn get_varchars_by_column(&self, column_name: &str) -> Option<&Vec<alloc::string::String>> {
-        let column_id: Identifier = column_name.parse().ok()?;
+        let column_id: Ident = Ident::from(column_name);
         let column = self.as_map().get(&column_id)?;
         match column {
             OnChainColumn::VarChar(values) => Some(values),

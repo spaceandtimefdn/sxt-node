@@ -79,31 +79,6 @@ pub mod pallet {
     /// The pallet's dispatchable functions ([`Call`]s).
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Add a new validator.
-        #[pallet::call_index(0)]
-        #[pallet::weight(<T as pallet::Config>::WeightInfo::add_validator())]
-        pub fn add_validator(origin: OriginFor<T>, validator_id: T::ValidatorId) -> DispatchResult {
-            ensure_root(origin)?;
-
-            Self::do_add_validator(validator_id.clone())?;
-
-            Ok(())
-        }
-
-        /// Remove a validator.
-        #[pallet::call_index(1)]
-        #[pallet::weight(<T as pallet::Config>::WeightInfo::remove_validator())]
-        pub fn remove_validator(
-            origin: OriginFor<T>,
-            validator_id: T::ValidatorId,
-        ) -> DispatchResult {
-            ensure_root(origin)?;
-
-            Self::do_remove_validator(validator_id.clone())?;
-
-            Ok(())
-        }
-
         /// Onboard a validator while providing the session keys. Requires Sudo
         #[pallet::call_index(2)]
         #[pallet::weight(<T as pallet::Config>::WeightInfo::remove_validator())]
@@ -141,116 +116,7 @@ pub mod pallet {
                 pallet_session::KeyOwner::<T>::insert((id, key), validator_id.clone());
             }
             NextKeys::<T>::insert(validator_id.clone(), session_keys);
-
-            Self::do_add_validator(validator_id)?;
             Ok(())
         }
-    }
-
-    impl<T: Config> Pallet<T> {
-        fn do_add_validator(validator_id: T::ValidatorId) -> DispatchResult {
-            ensure!(
-                !<Validators<T>>::get().contains(&validator_id),
-                Error::<T>::DuplicateValidatorError
-            );
-
-            let mut v = Validators::<T>::get();
-            ensure!(
-                v.try_push(validator_id.clone()).is_ok(),
-                Error::<T>::ErrorPushingValidatorListError
-            );
-
-            Validators::<T>::put(v);
-
-            Self::deposit_event(Event::ValidatorAdditionInitiated(validator_id.clone()));
-
-            Ok(())
-        }
-
-        fn do_remove_validator(validator_id: T::ValidatorId) -> DispatchResult {
-            let mut validators = <Validators<T>>::get();
-
-            ensure!(
-                validators.len().saturating_sub(1) as u32 >= 3,
-                Error::<T>::TooLowValidatorCountError
-            );
-
-            validators.retain(|v| *v != validator_id);
-
-            <Validators<T>>::put(validators);
-
-            Self::deposit_event(Event::ValidatorRemovalInitiated(validator_id.clone()));
-
-            Ok(())
-        }
-    }
-
-    #[pallet::genesis_config]
-    pub struct GenesisConfig<T: Config> {
-        /// Validators read from the chain spec
-        pub initial_validators: BoundedVec<T::ValidatorId, ConstU32<100>>,
-    }
-
-    impl<T: Config> Default for GenesisConfig<T> {
-        fn default() -> Self {
-            GenesisConfig {
-                initial_validators: BoundedVec::new(),
-            }
-        }
-    }
-
-    impl<T: Config> pallet_session::SessionManager<T::ValidatorId> for Pallet<T> {
-        fn new_session(_new_index: u32) -> Option<Vec<T::ValidatorId>> {
-            Some(Self::validators().into())
-        }
-
-        fn end_session(_end_index: u32) {}
-
-        fn start_session(_start_index: u32) {}
-    }
-
-    impl<T: Config> EstimateNextSessionRotation<BlockNumberFor<T>> for Pallet<T> {
-        fn average_session_length() -> BlockNumberFor<T> {
-            Zero::zero()
-        }
-
-        fn estimate_current_session_progress(
-            _now: BlockNumberFor<T>,
-        ) -> (Option<sp_runtime::Permill>, sp_weights::Weight) {
-            (None, Zero::zero())
-        }
-
-        fn estimate_next_session_rotation(
-            _now: BlockNumberFor<T>,
-        ) -> (Option<BlockNumberFor<T>>, sp_weights::Weight) {
-            (None, Zero::zero())
-        }
-    }
-
-    /// Account Identity operation
-    pub struct IdentityOf<T>(sp_std::marker::PhantomData<T>);
-
-    impl<T: Config> Convert<T::ValidatorId, Option<T::ValidatorId>> for IdentityOf<T> {
-        fn convert(account: T::ValidatorId) -> Option<T::ValidatorId> {
-            Some(account)
-        }
-    }
-
-    impl<T: Config> ValidatorSet<T::ValidatorId> for Pallet<T> {
-        type ValidatorId = T::ValidatorId;
-        type ValidatorIdOf = IdentityOf<T>;
-
-        fn session_index() -> sp_staking::SessionIndex {
-            pallet_session::Pallet::<T>::current_index()
-        }
-
-        fn validators() -> Vec<T::ValidatorId> {
-            pallet_session::Pallet::<T>::validators()
-        }
-    }
-
-    impl<T: Config> ValidatorSetWithIdentification<T::ValidatorId> for Pallet<T> {
-        type Identification = T::ValidatorId;
-        type IdentificationOf = IdentityOf<T>;
     }
 }
