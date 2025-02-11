@@ -28,6 +28,7 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
+    use scale_info::prelude::vec::Vec;
     use sxt_core::attestation::{Attestation, AttestationKey};
     use sxt_core::keystore::EthereumKey;
     use sxt_core::permissions::{AttestationPalletPermission, PermissionLevel};
@@ -171,14 +172,23 @@ pub mod pallet {
                 Attestation::EthereumAttestation {
                     signature,
                     proposed_pub_key: attestor_pub_key,
+                    ref address20,
+                    ref state_root,
+                    block_number,
                     ..
                 } => {
                     let proposed_key = EthereumKey {
                         pub_key: attestor_pub_key,
+                        address20: address20.clone(),
                     };
 
-                    pallet_keystore::Pallet::<T>::verify_ethereum_key(
+                    let state_root_inner = state_root.clone().into_inner();
+                    let msg =
+                        Self::create_ethereum_attestation_message(state_root_inner, block_number);
+
+                    pallet_keystore::Pallet::<T>::verify_ethereum_msg(
                         &who,
+                        &msg,
                         &proposed_key,
                         &signature,
                     )?;
@@ -191,7 +201,7 @@ pub mod pallet {
                     )?;
 
                     attestations_for_block
-                        .try_push(attestation)
+                        .try_push(attestation.clone())
                         .map_err(|_| Error::<T>::MaxAttestationsForBlockError)?;
 
                     Attestations::<T>::insert(block_number, attestations_for_block);
@@ -237,6 +247,17 @@ pub mod pallet {
             );
 
             Ok(())
+        }
+
+        /// Create an ethereum attestation message from the state root and block number
+        pub fn create_ethereum_attestation_message(
+            state_root: impl AsRef<[u8]>,
+            block_number: u32,
+        ) -> Vec<u8> {
+            let mut msg = Vec::new();
+            msg.extend_from_slice(state_root.as_ref());
+            msg.extend_from_slice(&block_number.to_be_bytes());
+            msg
         }
     }
 }

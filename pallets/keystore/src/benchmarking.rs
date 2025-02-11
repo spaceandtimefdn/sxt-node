@@ -54,9 +54,12 @@ mod benchmarks {
         let (private_key, public_key, signature) =
             create_signed_message_and_keypair(caller_encoded, seed);
 
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
         let registration = RegisterExternalAddress::EthereumAddress {
             signature,
             proposed_pub_key: public_key,
+            address20,
         };
 
         #[extrinsic_call]
@@ -76,9 +79,12 @@ mod benchmarks {
         let (private_key, public_key, signature) =
             create_signed_message_and_keypair(caller_encoded, seed);
 
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
         let registration = RegisterExternalAddress::EthereumAddress {
             signature,
             proposed_pub_key: public_key,
+            address20,
         };
 
         assert_ok!(KeystorePallet::<T>::register_key(

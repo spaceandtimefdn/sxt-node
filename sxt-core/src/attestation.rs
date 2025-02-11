@@ -10,8 +10,9 @@ use sha3::digest::core_api::CoreWrapper;
 use sha3::{Digest, Keccak256, Keccak256Core};
 use snafu::{ResultExt, Snafu};
 pub use sp_core::hashing::{blake2_128, blake2_256};
+use sp_core::ConstU32;
 pub use sp_core::{RuntimeDebug, H256};
-use sp_runtime::format;
+use sp_runtime::{format, BoundedVec};
 
 /// Represents an Ethereum-style ECDSA signature, broken into its components.
 ///
@@ -55,6 +56,8 @@ pub enum RegisterExternalAddress {
         signature: EthereumSignature,
         /// The public key in SEC1 format (33 bytes).
         proposed_pub_key: [u8; 33],
+        /// The 20 byte ethereum address
+        address20: Address20,
     },
 }
 
@@ -68,6 +71,8 @@ pub enum AttestationKey {
     EthereumKey {
         /// A `k256` verifying key in SEC1 format (33 bytes).
         pub_key: [u8; 33],
+        /// The 20 byte ethereum address
+        address20: Address20,
     },
 }
 
@@ -89,6 +94,14 @@ pub enum AttestationError {
     /// Error parsing the public key.
     #[snafu(display("Public key parsing error"))]
     PublicKeyError,
+
+    /// The public key was not in the correct format
+    #[snafu(display("Invalid uncompressed public key: must be 65 bytes and start with 0x04"))]
+    InvalidPublicKey,
+
+    /// The ethereum address did not fit into the bounded vector
+    #[snafu(display("Failed to convert Ethereum address to BoundedVec"))]
+    ConversionError,
 }
 
 /// Specialized `Result` type for the attestation module.
@@ -141,6 +154,8 @@ pub fn create_ethereum_attestation_registration(
 ) -> Result<RegisterExternalAddress> {
     let signature = sign_eth_message(private_key, account_id)?;
 
+    let address20 = uncompressed_public_key_to_address(public_key)?;
+
     let public_key: [u8; 33] = public_key
         .try_into()
         .map_err(|_| AttestationError::PublicKeyError)?;
@@ -148,7 +163,29 @@ pub fn create_ethereum_attestation_registration(
     Ok(RegisterExternalAddress::EthereumAddress {
         signature,
         proposed_pub_key: public_key,
+        address20,
     })
+}
+
+/// Convert a uncompressed public key to an Ethereum address.
+///
+/// # Parameters
+/// - `public_key`: A slice of bytes representing the uncompressed public key.
+///
+/// # Returns
+/// - `Address20`: A bounded vector containing the last 20 bytes of the Keccak256 hash of the public key.
+pub fn uncompressed_public_key_to_address(public_key: &[u8]) -> Result<Address20> {
+    let verifying_key = VerifyingKey::from_sec1_bytes(public_key)
+        .map_err(|_| AttestationError::InvalidPublicKey)?;
+
+    let encoded_point = verifying_key.to_encoded_point(false); // Uncompressed format
+    let verifying_key_bytes = encoded_point.as_bytes();
+    let public_key = &verifying_key_bytes[1..]; // Skip the 0x04 prefix
+    let eth_address = Keccak256::digest(public_key).to_vec();
+    let eth_address = &eth_address[12..]; // Take the last 20 bytes
+
+    // Convert to BoundedVec
+    Address20::try_from(eth_address.to_vec()).map_err(|_| AttestationError::ConversionError)
 }
 
 /// Verifies an Ethereum ECDSA signature.
@@ -230,8 +267,11 @@ fn slice_to_scalar(slice: &[u8]) -> Option<[u8; 32]> {
     slice.try_into().ok()
 }
 
+/// The attested state root of the account and commitment merkle trie
+pub type AttestationStateRoot = BoundedVec<u8, ConstU32<64>>;
+
 /// Represents attestations stored on-chain.
-#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum Attestation {
     /// An Ethereum-style attestation.
     EthereumAttestation {
@@ -239,10 +279,19 @@ pub enum Attestation {
         signature: EthereumSignature,
         /// The public key used to sign the attestation.
         proposed_pub_key: [u8; 33],
+        /// The ethereum address for this public key
+        address20: Address20,
         /// The state root included in the attestation.
-        state_root: H256,
+        state_root: AttestationStateRoot,
+        /// The block number that was attested
+        block_number: u32,
+        /// The hash of the block that was attested
+        block_hash: H256,
     },
 }
+
+/// An ethereum 20 byte address
+pub type Address20 = BoundedVec<u8, ConstU32<20>>;
 
 #[cfg(test)]
 mod tests {

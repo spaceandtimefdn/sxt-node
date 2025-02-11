@@ -112,6 +112,7 @@ pub mod pallet {
                 RegisterExternalAddress::EthereumAddress {
                     signature,
                     proposed_pub_key,
+                    address20,
                 } => {
                     let msg = who.encode();
                     verify_eth_signature(&msg, &signature, &proposed_pub_key)
@@ -119,6 +120,7 @@ pub mod pallet {
 
                     let new_key = EthereumKey {
                         pub_key: proposed_pub_key,
+                        address20,
                     };
                     Self::add_ethereum_key(who.clone(), new_key.clone())?;
                     Self::deposit_event(Event::<T>::EthereumKeyRegistered { who, key: new_key });
@@ -245,17 +247,27 @@ pub mod pallet {
             key: &EthereumKey,
             signature: &EthereumSignature,
         ) -> DispatchResult {
+            let msg = who.encode();
+
+            Self::verify_ethereum_msg(who, &msg, key, signature)
+        }
+
+        /// verify an ethereum message by checking its signature
+        pub fn verify_ethereum_msg(
+            who: &T::AccountId,
+            msg: &[u8],
+            key: &EthereumKey,
+            signature: &EthereumSignature,
+        ) -> DispatchResult {
             let keystore = Keys::<T>::get(who).ok_or(Error::<T>::KeyNotFound)?;
 
             let stored_key = keystore.eth_key.ok_or(Error::<T>::KeyNotFound)?;
             let stored_key = stored_key.pub_key;
-            let EthereumKey { pub_key } = key;
+            let EthereumKey { pub_key, .. } = key;
 
             ensure!(stored_key == *pub_key, Error::<T>::KeyMismatch);
 
-            let msg = who.encode();
-
-            verify_eth_signature(&msg, signature, pub_key)
+            verify_eth_signature(msg, signature, pub_key)
                 .map_err(|_| Error::<T>::SignatureVerificationFailed)?;
 
             Ok(())

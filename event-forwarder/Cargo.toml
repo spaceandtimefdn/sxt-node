@@ -1,5 +1,5 @@
 [package]
-name = "watcher"
+name = "event-forwarder"
 version = "0.1.0"
 license.workspace = true
 authors.workspace = true
@@ -8,28 +8,35 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+eth_merkle_tree = "=0.1.1"
 clap = { version = "4.0", features = ["derive", "env"] }
 tokio = { version = "1.0", features = ["full"] }
 subxt = { version = "0.38.0" , features = ["jsonrpsee", "native", "default", "substrate-compat"]}
 subxt-signer = { version = "0.38"}
-thiserror = "2.0.3"
-hex = "0.4.3"
-log = "0.4"
-env_logger = "0.10"
-futures = "0.3.31"
-k256 = "0.13.4"
-sha3 = "0.10.8"
 sxt-core = { workspace = true, features = ["std"]}
+hex = "0.4.3"
 sp-core = { workspace = true, features = ["std"]}
-prometheus = "0.12.0"
-ratatui = "=0.23.0"
-crossterm = "0.28.1"
-snafu = { workspace = true }
 codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
-    "derive", "std",
+    "derive", "std"
 ] }
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
-eth_merkle_tree = "=0.1.1"
+anyhow = "1.0.95"
+k256 = { version = "0.13.4", features = ["ecdsa"] }
+rand_core = { version = "0.6", features = ["std"] }
+sha3.workspace = true
+log = "0.4"
+async-trait = "0.1.86"
+serde_json = { workspace = true, default-features = false, features = ["alloc"] }
+snafu.workspace = true
+env_logger = "0.11.6"
+alloy = { version = "0.11.0", features = [ 
+    "full",
+    "node-bindings",
+    "json-rpc",
+    "rpc-client",
+   ] }
+watcher.workspace = true
+url = "2.5.4"
 
 [lints]
 workspace = true
