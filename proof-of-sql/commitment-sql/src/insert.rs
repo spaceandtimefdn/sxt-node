@@ -148,13 +148,13 @@ impl From<AppendOnChainTableError> for NativeCommitmentError {
 
 struct AppendOnChainTableToTableCommitmentFn<'a, 's>(&'a OnChainTable, PhantomData<&'s ()>);
 
-impl<'a, 's> AppendOnChainTableToTableCommitmentFn<'a, 's> {
+impl<'a> AppendOnChainTableToTableCommitmentFn<'a, '_> {
     fn new(table: &'a OnChainTable) -> Self {
         AppendOnChainTableToTableCommitmentFn(table, PhantomData)
     }
 }
 
-impl<'a, 's> GenericOverCommitmentFn for AppendOnChainTableToTableCommitmentFn<'a, 's> {
+impl<'s> GenericOverCommitmentFn for AppendOnChainTableToTableCommitmentFn<'_, 's> {
     type In = PairType<TableCommitmentType, AssociatedPublicSetupType<'s>>;
     type Out = ResultOkType<TableCommitmentType, AppendOnChainTableError>;
 

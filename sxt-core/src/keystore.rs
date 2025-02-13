@@ -1,13 +1,9 @@
 //! types for pallet keystore
 use codec::{Decode, Encode, MaxEncodedLen};
-use k256::ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey};
 use scale_info::TypeInfo;
-use sha3::digest::core_api::CoreWrapper;
-use sha3::{Digest, Keccak256, Keccak256Core};
-use snafu::{ResultExt, Snafu};
+use sha3::Digest;
 pub use sp_core::hashing::{blake2_128, blake2_256};
 pub use sp_core::{RuntimeDebug, H256};
-use sp_runtime::format;
 
 /// A struct for holding offchain keys that an account id is associated with
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default)]

@@ -47,7 +47,6 @@ impl Display for CheckpointStatus {
 /// the current status of the loading process, and the total time taken
 /// for the operation.
 ///
-
 pub struct Checkpoint {
     /// - `schema_name`: A `String` representing the name of the schema
     ///   associated with this checkpoint.
@@ -109,7 +108,6 @@ impl Checkpoint {
     ///
     /// This function will return a `Status` error if it fails to create the schema,
     /// create the table, or delete previous checkpoints.
-
     pub async fn init_checkpoint(client: &Object) -> Result<(), Status> {
         let query = "
             CREATE SCHEMA IF NOT EXISTS SXTMETA";
@@ -163,7 +161,6 @@ impl Checkpoint {
     /// # Errors
     ///
     /// This function will return a `Status` error if it fails to execute the insert query.
-
     pub async fn insert(&self, client: &Object) -> Result<u64, Status> {
         let query = "
             INSERT INTO SXTMETA.checkpoints (schema_name, table_name, year, month, status, total_time_taken)
@@ -202,7 +199,6 @@ impl Checkpoint {
     /// # Errors
     ///
     /// This function will return a `Status` error if it fails to execute the update query.
-
     pub async fn update_status(
         &self,
         client: &Object, // Changed Object to Client for clarity
@@ -264,7 +260,6 @@ impl Checkpoint {
     /// # Errors
     ///
     /// This function will return a `Status` error if it fails to execute the query.
-
     pub async fn is_completed(
         client: &Object,
         schema_name: &str,

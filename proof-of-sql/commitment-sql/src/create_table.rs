@@ -27,14 +27,14 @@ use crate::validated_create_table::{InvalidCreateTable, ValidatedCreateTable};
 /// `OnChainTable` and offset.
 struct OnChainTableToTableCommitmentFn<'a, 's>(&'a OnChainTable, usize, PhantomData<&'s ()>);
 
-impl<'a, 's> OnChainTableToTableCommitmentFn<'a, 's> {
+impl<'a> OnChainTableToTableCommitmentFn<'a, '_> {
     /// Construct a new [`OnChainTableToTableCommitmentFn`].
     fn new(table: &'a OnChainTable, offset: usize) -> Self {
         OnChainTableToTableCommitmentFn(table, offset, PhantomData)
     }
 }
 
-impl<'a, 's> GenericOverCommitmentFn for OnChainTableToTableCommitmentFn<'a, 's> {
+impl<'s> GenericOverCommitmentFn for OnChainTableToTableCommitmentFn<'_, 's> {
     type In = AssociatedPublicSetupType<'s>;
     type Out = ResultOkType<TableCommitmentType, OutOfScalarBounds>;
 

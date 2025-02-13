@@ -1,12 +1,10 @@
 //! This module provides functionality to process finalized blocks and events in a Substrate-based blockchain.
 //! It includes utilities for spawning tasks, creating clients, and handling events.
 
-use core::ops::Sub;
 use std::sync::Arc;
-use std::time::Duration;
 
 use alloy::network::{Ethereum, EthereumWallet};
-use alloy::primitives::{address, bytes, Address, Uint, B256, U256};
+use alloy::primitives::{address, Address, Uint, B256};
 use alloy::providers::fillers::{
     BlobGasFiller,
     ChainIdFiller,
@@ -20,9 +18,7 @@ use alloy::providers::{ProviderBuilder, RootProvider, WsConnect};
 use alloy::pubsub::PubSubFrontend;
 use alloy::signers::local::PrivateKeySigner;
 use alloy::{contract, sol};
-use arrow::datatypes::ToByteSlice;
 use frame_support::__private::log;
-use k256::elliptic_curve::rand_core::block;
 use sc_client_api::{Backend, BlockchainEvents, Finalizer, StorageProvider};
 use serde_json::json;
 use snafu::prelude::*;
@@ -30,17 +26,14 @@ use snafu::ResultExt;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::traits::SpawnEssentialNamed;
-use sp_core::Encode;
 use subxt::error::RpcError;
 use subxt::ext::futures::StreamExt;
-use subxt::ext::subxt_core::constants::address;
 use subxt::utils::{AccountId32, H256};
 use subxt::{OnlineClient, PolkadotConfig};
 use EventForwarder::EventForwarderInstance;
 
 use crate::sxt_chain_runtime;
 use crate::sxt_chain_runtime::api::attestations::events::BlockAttested;
-use crate::sxt_chain_runtime::api::indexing::events::QuorumReached;
 use crate::sxt_chain_runtime::api::staking::events::Unbonded;
 
 /// Enum representing errors that can occur during the multiplexer process.
@@ -310,8 +303,6 @@ async fn process_block_events(
 
     Ok(attestations)
 }
-
-use std::convert::TryInto;
 
 use crate::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::Attestation::EthereumAttestation;
 

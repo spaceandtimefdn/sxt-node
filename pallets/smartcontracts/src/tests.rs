@@ -1,10 +1,10 @@
-use frame_support::{assert_noop, assert_ok};
+use frame_support::assert_ok;
 use sxt_core::permissions::{PermissionLevel, PermissionList, SmartContractsPalletPermission};
 use sxt_core::smartcontracts::{ContractABI, ContractAddress};
 use sxt_core::tables::Source;
 
-use crate::mock::{new_test_ext, RuntimeEvent, RuntimeOrigin, System, Test, *};
-use crate::{Contracts, Error, Event};
+use crate::mock::{new_test_ext, RuntimeOrigin, Test, *};
+use crate::Contracts;
 
 macro_rules! set_permission {
     ($who: expr) => {

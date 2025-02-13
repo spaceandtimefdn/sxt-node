@@ -1,5 +1,5 @@
 use codec::Encode;
-use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_support::{assert_err, assert_ok};
 use k256::ecdsa::{SigningKey, VerifyingKey};
 use sxt_core::attestation::{sign_eth_message, EthereumSignature, RegisterExternalAddress};
 use sxt_core::keystore::{EthereumKey, UnregisterExternalAddress, UserKeystore};

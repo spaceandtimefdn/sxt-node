@@ -58,7 +58,7 @@ struct TableLoadEstimator<'a> {
     store: &'a Store,
 }
 
-impl<'a> TableLoadEstimator<'a> {
+impl TableLoadEstimator<'_> {
     async fn estimate_size(&self, prefix: &Path) -> Result<usize, anyhow::Error> {
         // List all years (or directories) under the prefix
         let list_result = self.store.list_with_delimiter(Some(prefix)).await?;
@@ -132,7 +132,7 @@ impl<'a> TableLoadEstimator<'a> {
     }
 }
 
-impl<'a> TableLoader<'a> {
+impl TableLoader<'_> {
     // Constructor to create a new DataLoader instance
 
     // Method to process each year directory
@@ -434,7 +434,6 @@ pub async fn estimate_load_time(store: &Store, base_path: String) -> Result<(), 
 /// This function will return an error if any part of the loading process fails,
 /// including database connection issues or data loading failures,
 /// encapsulated in a `anyhow::Error`.
-
 pub async fn load_data_from_azure(store: &Store, base_path: String) -> Result<(), anyhow::Error> {
     let client = create_client_session().await?; // Establish DB connection
     println!("db and store connected");

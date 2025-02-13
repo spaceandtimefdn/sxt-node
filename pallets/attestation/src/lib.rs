@@ -28,13 +28,7 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
-    use sxt_core::attestation::{
-        verify_eth_signature,
-        Attestation,
-        AttestationKey,
-        EthereumSignature,
-        RegisterExternalAddress,
-    };
+    use sxt_core::attestation::{Attestation, AttestationKey};
     use sxt_core::keystore::EthereumKey;
     use sxt_core::permissions::{AttestationPalletPermission, PermissionLevel};
 

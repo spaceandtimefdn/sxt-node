@@ -340,7 +340,7 @@ pub mod pallet {
                 let tables_with_meta_columns = genesis_list
                     .tables
                     .iter()
-                    .map(| GenesisTable { statement, url, identifier, insert_quorum_size, .. }| {
+                    .map(| GenesisTable { statement,  identifier, insert_quorum_size, .. }| {
                         Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), *insert_quorum_size);
                         let mut create_table = create_statement_to_sqlparser(statement.clone())
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
