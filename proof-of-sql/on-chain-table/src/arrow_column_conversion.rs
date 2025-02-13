@@ -15,6 +15,7 @@ use arrow::array::{
     TimestampMillisecondArray,
     TimestampNanosecondArray,
     TimestampSecondArray,
+    UInt8Array,
 };
 use arrow::datatypes::{DataType, TimeUnit};
 use proof_of_sql::base::math::decimal::Precision;
@@ -195,6 +196,7 @@ impl From<OnChainColumn> for ArrayRef {
     fn from(value: OnChainColumn) -> Self {
         match value {
             OnChainColumn::Boolean(col) => Arc::new(BooleanArray::from(col)),
+            OnChainColumn::UnsignedTinyInt(col) => Arc::new(UInt8Array::from(col)),
             OnChainColumn::TinyInt(col) => Arc::new(Int8Array::from(col)),
             OnChainColumn::SmallInt(col) => Arc::new(Int16Array::from(col)),
             OnChainColumn::Int(col) => Arc::new(Int32Array::from(col)),
@@ -350,7 +352,11 @@ mod tests {
             Arc::new(TimestampMillisecondArray::from(data.clone()).with_timezone("+00:00"));
         assert_eq!(
             OnChainColumn::try_from(&array).unwrap(),
-            OnChainColumn::TimestampTZ(PoSQLTimeUnit::Millisecond, Some(PoSQLTimeZone::Utc), data)
+            OnChainColumn::TimestampTZ(
+                PoSQLTimeUnit::Millisecond,
+                Some(PoSQLTimeZone::utc()),
+                data
+            )
         );
 
         let data = vec![4, 5, 6];
@@ -360,7 +366,7 @@ mod tests {
             OnChainColumn::try_from(&array).unwrap(),
             OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Microsecond,
-                Some(PoSQLTimeZone::FixedOffset(3600)),
+                Some(PoSQLTimeZone::new(3600)),
                 data
             )
         );
@@ -372,7 +378,7 @@ mod tests {
             OnChainColumn::try_from(&array).unwrap(),
             OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Nanosecond,
-                Some(PoSQLTimeZone::FixedOffset(-3600)),
+                Some(PoSQLTimeZone::new(-3600)),
                 data
             )
         );
@@ -498,7 +504,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Second,
-                Some(PoSQLTimeZone::Utc),
+                Some(PoSQLTimeZone::utc()),
                 data
             )) == expected
         );
@@ -509,7 +515,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Millisecond,
-                Some(PoSQLTimeZone::Utc),
+                Some(PoSQLTimeZone::utc()),
                 data
             )) == expected
         );
@@ -520,7 +526,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Microsecond,
-                Some(PoSQLTimeZone::FixedOffset(3600)),
+                Some(PoSQLTimeZone::new(3600)),
                 data
             )) == expected,
         );
@@ -531,7 +537,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Nanosecond,
-                Some(PoSQLTimeZone::FixedOffset(-3600)),
+                Some(PoSQLTimeZone::new(-3600)),
                 data
             )) == expected,
         );

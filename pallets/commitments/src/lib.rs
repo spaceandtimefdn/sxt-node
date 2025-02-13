@@ -125,8 +125,8 @@ pub mod pallet {
         InappropriateSnapshotCommitments,
         /// Table must have at least one column.
         CreateTableWithNoColumns,
-        /// Table has invalid identifier.
-        CreateTableWithInvalidIdentifier,
+        /// Table ref has unexpected number of identifiers.
+        CreateTableWithInvalidTableIdentifierCount,
         /// Table has duplicate identifiers.
         CreateTableWithDuplicateIdentifiers,
         /// Table uses reserved metadata prefix.

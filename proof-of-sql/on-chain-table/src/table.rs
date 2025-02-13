@@ -3,9 +3,9 @@ use alloc::vec::Vec;
 use indexmap::map::{IntoIter, Iter};
 use proof_of_sql::base::commitment::CommittableColumn;
 use proof_of_sql::base::scalar::Scalar;
-use proof_of_sql_parser::Identifier;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
+use sqlparser::ast::Ident;
 
 use crate::column::OnChainColumn;
 use crate::map::IndexMap;
@@ -17,7 +17,7 @@ use crate::OutOfScalarBounds;
 ///
 /// Without the `std` feature, this type can be used in `no_std` envs.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct OnChainTable(IndexMap<Identifier, OnChainColumn>);
+pub struct OnChainTable(IndexMap<Ident, OnChainColumn>);
 
 /// Errors that can occur when constructing a [`OnChainTable`].
 #[derive(Debug, Snafu)]
@@ -33,7 +33,7 @@ pub enum OnChainTableError {
 impl OnChainTable {
     /// Create a new [`OnChainTable`] from an iterator.
     pub fn try_from_iter(
-        iter: impl IntoIterator<Item = (Identifier, OnChainColumn)>,
+        iter: impl IntoIterator<Item = (Ident, OnChainColumn)>,
     ) -> Result<OnChainTable, OnChainTableError> {
         let mut peekable_iter = iter.into_iter().peekable();
 
@@ -68,12 +68,12 @@ impl OnChainTable {
     }
 
     /// Returns the internal column map for this table.
-    pub fn as_map(&self) -> &IndexMap<Identifier, OnChainColumn> {
+    pub fn as_map(&self) -> &IndexMap<Ident, OnChainColumn> {
         &self.0
     }
 
     /// Returns a borrowing iterator over all identifier-column pairs.
-    pub fn iter(&self) -> Iter<Identifier, OnChainColumn> {
+    pub fn iter(&self) -> Iter<Ident, OnChainColumn> {
         self.into_iter()
     }
 
@@ -82,7 +82,7 @@ impl OnChainTable {
     /// After the error is handled, this can be supplied to the `proof-of-sql` commitment API.
     pub fn iter_committable<S: Scalar>(
         &self,
-    ) -> impl Iterator<Item = Result<(&Identifier, CommittableColumn), OutOfScalarBounds>> {
+    ) -> impl Iterator<Item = Result<(&Ident, CommittableColumn), OutOfScalarBounds>> {
         self.iter().map(|(id, column)| {
             column
                 .try_to_committable_column::<S>()
@@ -98,7 +98,7 @@ impl OnChainTable {
     /// - Any identifier in the order that doesn't appear in the table is ignored.
     pub fn with_column_order<'a>(
         mut self,
-        order: impl IntoIterator<Item = &'a Identifier>,
+        order: impl IntoIterator<Item = &'a Ident>,
     ) -> OnChainTable {
         let ordered_columns: IndexMap<_, _> = order
             .into_iter()
@@ -117,7 +117,7 @@ impl OnChainTable {
     pub fn max_block_number(&self) -> Option<i64> {
         // All SxT DDLs use BLOCK_NUMBER
         // TODO update this for user defined tables
-        let column_id: Identifier = "BLOCK_NUMBER".parse().ok()?;
+        let column_id = Ident::new("BLOCK_NUMBER");
         let column = self.as_map().get(&column_id)?;
 
         match column {
@@ -129,8 +129,8 @@ impl OnChainTable {
 }
 
 impl IntoIterator for OnChainTable {
-    type Item = (Identifier, OnChainColumn);
-    type IntoIter = IntoIter<Identifier, OnChainColumn>;
+    type Item = (Ident, OnChainColumn);
+    type IntoIter = IntoIter<Ident, OnChainColumn>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -138,8 +138,8 @@ impl IntoIterator for OnChainTable {
 }
 
 impl<'a> IntoIterator for &'a OnChainTable {
-    type Item = (&'a Identifier, &'a OnChainColumn);
-    type IntoIter = Iter<'a, Identifier, OnChainColumn>;
+    type Item = (&'a Ident, &'a OnChainColumn);
+    type IntoIter = Iter<'a, Ident, OnChainColumn>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter()
@@ -162,17 +162,17 @@ mod tests {
     fn we_can_convert_table_to_and_from_iter() {
         let data = [
             (
-                "bigint_col".parse().unwrap(),
+                Ident::new("bigint_col"),
                 OnChainColumn::BigInt(vec![1, 2, 3]),
             ),
             (
-                "varchar_col".parse().unwrap(),
+                Ident::new("varchar_col"),
                 OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
             ),
         ];
 
         let table = OnChainTable::try_from_iter(data.clone()).unwrap();
-        let expected_map = IndexMap::<Identifier, OnChainColumn>::from_iter(data.clone());
+        let expected_map = IndexMap::<Ident, OnChainColumn>::from_iter(data.clone());
         assert_eq!(table.as_map(), &expected_map);
 
         assert_eq!(
@@ -185,7 +185,7 @@ mod tests {
 
     #[test]
     fn we_can_get_table_size() {
-        let data = [("bigint_col".parse().unwrap(), OnChainColumn::BigInt(vec![]))];
+        let data = [(Ident::new("bigint_col"), OnChainColumn::BigInt(vec![]))];
         let table = OnChainTable::try_from_iter(data.clone()).unwrap();
 
         assert_eq!(table.num_columns(), 1);
@@ -193,11 +193,11 @@ mod tests {
 
         let data = [
             (
-                "bigint_col".parse().unwrap(),
+                Ident::new("bigint_col"),
                 OnChainColumn::BigInt(vec![1, 2, 3]),
             ),
             (
-                "varchar_col".parse().unwrap(),
+                Ident::new("varchar_col"),
                 OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
             ),
         ];
@@ -219,11 +219,11 @@ mod tests {
     fn we_cannot_construct_table_with_columns_of_differing_lengths() {
         let data = [
             (
-                "bigint_col".parse().unwrap(),
+                Ident::new("bigint_col"),
                 OnChainColumn::BigInt(vec![1, 2, 3]),
             ),
             (
-                "varchar_col".parse().unwrap(),
+                Ident::new("varchar_col"),
                 OnChainColumn::VarChar(["lorem", "ipsum"].map(String::from).to_vec()),
             ),
         ];
@@ -233,12 +233,9 @@ mod tests {
         ));
 
         let data = [
+            (Ident::new("bigint_col"), OnChainColumn::BigInt(vec![1, 2])),
             (
-                "bigint_col".parse().unwrap(),
-                OnChainColumn::BigInt(vec![1, 2]),
-            ),
-            (
-                "varchar_col".parse().unwrap(),
+                Ident::new("varchar_col"),
                 OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
             ),
         ];
@@ -249,15 +246,15 @@ mod tests {
 
         let data = [
             (
-                "bigint_col".parse().unwrap(),
+                Ident::new("bigint_col"),
                 OnChainColumn::BigInt(vec![1, 2, 3]),
             ),
             (
-                "varchar_col".parse().unwrap(),
+                Ident::new("varchar_col"),
                 OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
             ),
             (
-                "boolean_col".parse().unwrap(),
+                Ident::new("boolean_col"),
                 OnChainColumn::Boolean(vec![true, false]),
             ),
         ];
@@ -268,15 +265,21 @@ mod tests {
     }
 
     fn we_can_iter_table_with_committable_columns<S: Scalar>() {
-        let bigint_id = "bigint_col".parse().unwrap();
+        let bigint_id = Ident::new("bigint_col");
         let bigint_data = vec![-10, 0, 3];
 
-        let varchar_id = "varchar_col".parse().unwrap();
+        let varchar_id = Ident::new("varchar_col");
         let varchar_data = ["lorem", "ipsum", "dolor"].map(String::from).to_vec();
 
         let on_chain_data = [
-            (bigint_id, OnChainColumn::BigInt(bigint_data.clone())),
-            (varchar_id, OnChainColumn::VarChar(varchar_data.clone())),
+            (
+                bigint_id.clone(),
+                OnChainColumn::BigInt(bigint_data.clone()),
+            ),
+            (
+                varchar_id.clone(),
+                OnChainColumn::VarChar(varchar_data.clone()),
+            ),
         ];
         let on_chain_table = OnChainTable::try_from_iter(on_chain_data.clone()).unwrap();
 
@@ -302,17 +305,17 @@ mod tests {
 
     #[test]
     fn we_can_order_columns() {
-        let bigint_id: Identifier = "bigint_col".parse().unwrap();
-        let bigint_entry = (bigint_id, OnChainColumn::BigInt(vec![-10, 0, 3]));
+        let bigint_id = Ident::new("bigint_col");
+        let bigint_entry = (bigint_id.clone(), OnChainColumn::BigInt(vec![-10, 0, 3]));
 
-        let varchar_id: Identifier = "varchar_col".parse().unwrap();
+        let varchar_id = Ident::new("varchar_col");
         let varchar_entry = (
-            varchar_id,
+            varchar_id.clone(),
             OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
         );
 
-        let int_id: Identifier = "int_col".parse().unwrap();
-        let int_entry = (int_id, OnChainColumn::Int(vec![0, 1, 1000]));
+        let int_id = Ident::new("int_col");
+        let int_entry = (int_id.clone(), OnChainColumn::Int(vec![0, 1, 1000]));
 
         let table = OnChainTable::try_from_iter([
             bigint_entry.clone(),
@@ -340,7 +343,7 @@ mod tests {
         assert_eq!(bumped_column_table, expected_bumped_column_table);
 
         let ignored_column_table =
-            bumped_column_table.with_column_order(&["does_not_exist".parse().unwrap()]);
+            bumped_column_table.with_column_order(&[Ident::new("does_not_exist")]);
         let expected_ignored_column_table = OnChainTable::try_from_iter([
             varchar_entry.clone(),
             int_entry.clone(),
@@ -351,7 +354,7 @@ mod tests {
 
         let all_cases_table = ignored_column_table.with_column_order([
             &bigint_id,
-            &"does_not_exist".parse().unwrap(),
+            &Ident::new("does_not_exist"),
             &int_id,
         ]);
         let expected_all_cases_table = OnChainTable::try_from_iter([

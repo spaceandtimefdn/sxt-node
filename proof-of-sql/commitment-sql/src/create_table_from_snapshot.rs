@@ -97,6 +97,7 @@ mod tests {
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;
+    use sqlparser::ast::Ident;
     use sqlparser::dialect::PostgreSqlDialect;
     use sqlparser::parser::Parser;
 
@@ -116,10 +117,10 @@ mod tests {
                 PRIMARY KEY (animal))"
                 .to_string();
 
-            let animals_col_id = "animal".parse().unwrap();
+            let animals_col_id = Ident::new("animal");
             let animals_data = ["cow", "dog", "cat"].map(String::from);
 
-            let population_col_id = "population".parse().unwrap();
+            let population_col_id = Ident::new("population");
             let population_data = [100, 2, 7];
 
             let snapshot_data = OnChainTable::try_from_iter([
@@ -278,10 +279,10 @@ mod tests {
 
         let mut test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
-        let animals_col_id = "animal".parse().unwrap();
+        let animals_col_id = Ident::new("animal");
         let animals_data = ["cow", "dog", "cat"].map(String::from);
 
-        let population_col_id = "population".parse().unwrap();
+        let population_col_id = Ident::new("population");
         let population_data = [100, 2, 7];
 
         test_params.snapshot_data = OnChainTable::try_from_iter([

@@ -54,7 +54,9 @@ impl<T> From<InvalidCreateTable> for Error<T> {
         match error {
             InvalidCreateTable::NoColumns => Error::CreateTableWithNoColumns,
             InvalidCreateTable::UnsupportedColumnType { source } => source.into(),
-            InvalidCreateTable::Identifier { .. } => Error::CreateTableWithInvalidIdentifier,
+            InvalidCreateTable::NumTableIdentifiers { .. } => {
+                Error::CreateTableWithInvalidTableIdentifierCount
+            }
             InvalidCreateTable::DuplicateIdentifiers => Error::CreateTableWithDuplicateIdentifiers,
             InvalidCreateTable::ReservedMetadataPrefix { .. } => {
                 Error::CreateTableWithReservedMetadataPrefix

@@ -22,9 +22,11 @@ use crate::OutOfScalarBounds;
 pub enum OnChainColumn {
     /// Column of bools.
     Boolean(Vec<bool>),
+    /// Column of unsigned 8-bit integers.
+    UnsignedTinyInt(Vec<u8>),
     /// Column of 8-bit integerss.
     TinyInt(Vec<i8>),
-    /// Column of 16-bit integerss.
+    /// Column of 16-bit integers.
     SmallInt(Vec<i16>),
     /// Column of 32-bit integerss.
     Int(Vec<i32>),
@@ -53,6 +55,7 @@ impl OnChainColumn {
     pub fn len(&self) -> usize {
         match self {
             OnChainColumn::Boolean(bools) => bools.len(),
+            OnChainColumn::UnsignedTinyInt(ints) => ints.len(),
             OnChainColumn::TinyInt(ints) => ints.len(),
             OnChainColumn::SmallInt(ints) => ints.len(),
             OnChainColumn::Int(ints) => ints.len(),
@@ -77,6 +80,7 @@ impl OnChainColumn {
         match column_type {
             ColumnType::Boolean => OnChainColumn::Boolean(vec![]),
             ColumnType::VarChar => OnChainColumn::VarChar(vec![]),
+            ColumnType::Uint8 => OnChainColumn::UnsignedTinyInt(vec![]),
             ColumnType::TinyInt => OnChainColumn::TinyInt(vec![]),
             ColumnType::SmallInt => OnChainColumn::SmallInt(vec![]),
             ColumnType::Int => OnChainColumn::Int(vec![]),
@@ -98,6 +102,7 @@ impl OnChainColumn {
     ) -> Result<CommittableColumn, OutOfScalarBounds> {
         match &self {
             OnChainColumn::Boolean(bools) => Ok(CommittableColumn::Boolean(bools)),
+            OnChainColumn::UnsignedTinyInt(ints) => Ok(CommittableColumn::Uint8(ints)),
             OnChainColumn::TinyInt(ints) => Ok(CommittableColumn::TinyInt(ints)),
             OnChainColumn::SmallInt(ints) => Ok(CommittableColumn::SmallInt(ints)),
             OnChainColumn::Int(ints) => Ok(CommittableColumn::Int(ints)),
@@ -120,7 +125,7 @@ impl OnChainColumn {
             OnChainColumn::TimestampTZ(time_unit, timezone, ints) => {
                 Ok(CommittableColumn::TimestampTZ(
                     *time_unit,
-                    timezone.unwrap_or(PoSQLTimeZone::Utc),
+                    timezone.unwrap_or(PoSQLTimeZone::utc()),
                     ints,
                 ))
             }
@@ -143,6 +148,10 @@ mod tests {
         let empty_column = OnChainColumn::Boolean(vec![]);
         assert_eq!(empty_column.len(), 0);
         assert!(empty_column.is_empty());
+
+        let column = OnChainColumn::UnsignedTinyInt(vec![0]);
+        assert_eq!(column.len(), 1);
+        assert!(!column.is_empty());
 
         let column = OnChainColumn::TinyInt(vec![0]);
         assert_eq!(column.len(), 1);
@@ -174,7 +183,7 @@ mod tests {
 
         let column = OnChainColumn::TimestampTZ(
             PoSQLTimeUnit::Second,
-            Some(PoSQLTimeZone::Utc),
+            Some(PoSQLTimeZone::utc()),
             vec![1, 2, 3, 4, 5, 6],
         );
         assert_eq!(column.len(), 6);
@@ -183,6 +192,9 @@ mod tests {
     #[test]
     fn we_can_get_empty_column() {
         let empty_column = OnChainColumn::empty_with_type(ColumnType::Boolean);
+        assert!(empty_column.is_empty());
+
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::Uint8);
         assert!(empty_column.is_empty());
 
         let empty_column = OnChainColumn::empty_with_type(ColumnType::TinyInt);
@@ -205,7 +217,7 @@ mod tests {
 
         let empty_column = OnChainColumn::empty_with_type(ColumnType::TimestampTZ(
             PoSQLTimeUnit::Second,
-            PoSQLTimeZone::Utc,
+            PoSQLTimeZone::utc(),
         ));
         assert!(empty_column.is_empty());
 
@@ -229,6 +241,16 @@ mod tests {
                 .try_to_committable_column::<S>()
                 .unwrap(),
             CommittableColumn::from(&owned_bool_column)
+        );
+
+        let data = vec![10, 0, 20];
+        let on_chain_uint8_column = OnChainColumn::UnsignedTinyInt(data.clone());
+        let owned_uint8_column = OwnedColumn::<S>::Uint8(data);
+        assert_eq!(
+            on_chain_uint8_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_uint8_column)
         );
 
         let data = vec![-10, 0, 20];
@@ -321,11 +343,11 @@ mod tests {
         let data = vec![-10, 0, 20];
         let on_chain_timestamp_column = OnChainColumn::TimestampTZ(
             PoSQLTimeUnit::Nanosecond,
-            Some(PoSQLTimeZone::Utc),
+            Some(PoSQLTimeZone::utc()),
             data.clone(),
         );
         let owned_timestamp_column =
-            OwnedColumn::<S>::TimestampTZ(PoSQLTimeUnit::Nanosecond, PoSQLTimeZone::Utc, data);
+            OwnedColumn::<S>::TimestampTZ(PoSQLTimeUnit::Nanosecond, PoSQLTimeZone::utc(), data);
         assert_eq!(
             on_chain_timestamp_column
                 .try_to_committable_column::<S>()

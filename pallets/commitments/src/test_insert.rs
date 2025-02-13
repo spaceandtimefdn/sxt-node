@@ -8,6 +8,7 @@ use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
 use proof_of_sql_commitment_map::{CommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
 use proof_of_sql_static_setups::PUBLIC_SETUPS;
 use sp_core::U256;
+use sqlparser::ast::Ident;
 use sxt_core::tables::TableIdentifier;
 
 use crate::mock::{new_test_ext, CommitmentsModule, Test};
@@ -27,10 +28,10 @@ impl ProcessInsertTestParams {
             name: b"population".to_vec().try_into().unwrap(),
         };
 
-        let animals_col_id = "animal".parse().unwrap();
+        let animals_col_id = Ident::new("animal");
         let animals_data = ["cow", "dog", "cat"].map(String::from);
 
-        let population_col_id = "population".parse().unwrap();
+        let population_col_id = Ident::new("population");
         let population_data = [100, 2, 7];
 
         let insert_data = OnChainTable::try_from_iter([
@@ -65,8 +66,8 @@ fn we_can_process_insert() {
         ProcessCreateTableTestParams::new_valid().execute().unwrap();
 
         let empty_table = OnChainTable::try_from_iter([
-            ("animal".parse().unwrap(), OnChainColumn::VarChar(vec![])),
-            ("population".parse().unwrap(), OnChainColumn::BigInt(vec![])),
+            (Ident::new("animal"), OnChainColumn::VarChar(vec![])),
+            (Ident::new("population"), OnChainColumn::BigInt(vec![])),
         ])
         .unwrap();
 
@@ -144,11 +145,11 @@ fn we_cannot_process_inserts_for_table_with_out_of_bounds_values() {
         let mut insert_params = ProcessInsertTestParams::new_valid();
         insert_params.insert_data = OnChainTable::try_from_iter([
             (
-                "animal".parse().unwrap(),
+                Ident::new("animal"),
                 OnChainColumn::VarChar(vec!["Water bear".to_string()]),
             ),
             (
-                "population".parse().unwrap(),
+                Ident::new("population"),
                 OnChainColumn::Decimal75(Precision::new(75).unwrap(), 0, vec![U256::MAX / 2]),
             ),
         ])
@@ -169,7 +170,7 @@ fn we_cannot_process_inserts_that_dont_match_table() {
         // missing column
         let mut insert_params = ProcessInsertTestParams::new_valid();
         insert_params.insert_data = OnChainTable::try_from_iter([(
-            "animal".parse().unwrap(),
+            Ident::new("animal"),
             OnChainColumn::VarChar(vec!["cow".to_string()]),
         )])
         .unwrap();
@@ -183,15 +184,12 @@ fn we_cannot_process_inserts_that_dont_match_table() {
         let mut insert_params = ProcessInsertTestParams::new_valid();
         insert_params.insert_data = OnChainTable::try_from_iter([
             (
-                "animal".parse().unwrap(),
+                Ident::new("animal"),
                 OnChainColumn::VarChar(vec!["cow".to_string()]),
             ),
+            (Ident::new("population"), OnChainColumn::BigInt(vec![100])),
             (
-                "population".parse().unwrap(),
-                OnChainColumn::BigInt(vec![100]),
-            ),
-            (
-                "class".parse().unwrap(),
+                Ident::new("class"),
                 OnChainColumn::VarChar(vec!["mammalia".to_string()]),
             ),
         ])
@@ -206,10 +204,10 @@ fn we_cannot_process_inserts_that_dont_match_table() {
         let mut insert_params = ProcessInsertTestParams::new_valid();
         insert_params.insert_data = OnChainTable::try_from_iter([
             (
-                "animal".parse().unwrap(),
+                Ident::new("animal"),
                 OnChainColumn::VarChar(vec!["cow".to_string()]),
             ),
-            ("population".parse().unwrap(), OnChainColumn::Int(vec![100])),
+            (Ident::new("population"), OnChainColumn::Int(vec![100])),
         ])
         .unwrap();
 

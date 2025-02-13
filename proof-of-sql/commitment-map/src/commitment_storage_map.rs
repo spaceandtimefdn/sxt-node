@@ -233,6 +233,7 @@ mod tests {
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;
+    use sqlparser::ast::Ident;
 
     use super::*;
 
@@ -243,11 +244,11 @@ mod tests {
 
         let table = OnChainTable::try_from_iter([
             (
-                "animal".parse().unwrap(),
+                Ident::new("animal"),
                 OnChainColumn::VarChar(["cow", "cat", "dog"].map(String::from).to_vec()),
             ),
             (
-                "population".parse().unwrap(),
+                Ident::new("population"),
                 OnChainColumn::BigInt(vec![75, 7, 2]),
             ),
         ])
@@ -286,8 +287,8 @@ mod tests {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
 
-        let column_names = (0..MaxColsPerTable::get())
-            .map(|col_num| format!("col_{col_num:060}").parse().unwrap());
+        let column_names =
+            (0..MaxColsPerTable::get()).map(|col_num| Ident::new(format!("col_{col_num:060}")));
 
         let columns = (0..MaxColsPerTable::get()).map(|offset| {
             OnChainColumn::Int128(vec![i128::MAX - offset as i128, i128::MIN + offset as i128])
@@ -313,8 +314,8 @@ mod tests {
         let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
         let prover_setup = ProverSetup::from(&public_parameters);
 
-        let column_names = (0..MaxColsPerTable::get() + 1)
-            .map(|col_num| format!("col_{col_num:060}").parse().unwrap());
+        let column_names =
+            (0..MaxColsPerTable::get() + 1).map(|col_num| Ident::new(format!("col_{col_num:060}")));
 
         let columns = core::iter::repeat(OnChainColumn::BigInt(vec![]));
 

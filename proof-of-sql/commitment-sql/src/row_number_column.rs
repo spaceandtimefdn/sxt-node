@@ -46,7 +46,7 @@ pub fn on_chain_table_with_row_number_column(
     ));
 
     OnChainTable::try_from_iter(table.into_iter().chain(core::iter::once((
-        ROW_NUMBER_COLUMN_NAME.parse().unwrap(),
+        Ident::new(ROW_NUMBER_COLUMN_NAME),
         row_number_column,
     ))))
     .expect(
@@ -99,11 +99,11 @@ mod tests {
     fn we_can_transform_on_chain_table_with_row_number_column() {
         let data = [
             (
-                "animal".parse().unwrap(),
+                Ident::new("animal"),
                 OnChainColumn::VarChar(["cow", "dog", "cat"].map(String::from).to_vec()),
             ),
             (
-                "population".parse().unwrap(),
+                Ident::new("population"),
                 OnChainColumn::BigInt(vec![100, 2, 7]),
             ),
         ];
@@ -111,7 +111,7 @@ mod tests {
         let on_chain_table = OnChainTable::try_from_iter(data.clone()).unwrap();
         let expected_from_0 =
             OnChainTable::try_from_iter(data.clone().into_iter().chain(core::iter::once((
-                "META_ROW_NUMBER".parse().unwrap(),
+                Ident::new("META_ROW_NUMBER"),
                 OnChainColumn::BigInt(vec![1, 2, 3]),
             ))))
             .unwrap();
@@ -122,7 +122,7 @@ mod tests {
 
         let expected_from_3 =
             OnChainTable::try_from_iter(data.into_iter().chain(core::iter::once((
-                "META_ROW_NUMBER".parse().unwrap(),
+                Ident::new("META_ROW_NUMBER"),
                 OnChainColumn::BigInt(vec![4, 5, 6]),
             ))))
             .unwrap();
@@ -135,13 +135,13 @@ mod tests {
     #[test]
     fn we_can_transform_empty_on_chain_table_with_row_number_column() {
         let data = [
-            ("animal".parse().unwrap(), OnChainColumn::VarChar(vec![])),
-            ("population".parse().unwrap(), OnChainColumn::BigInt(vec![])),
+            (Ident::new("animal"), OnChainColumn::VarChar(vec![])),
+            (Ident::new("population"), OnChainColumn::BigInt(vec![])),
         ];
 
         let on_chain_table = OnChainTable::try_from_iter(data.clone()).unwrap();
         let expected = OnChainTable::try_from_iter(data.into_iter().chain(core::iter::once((
-            "META_ROW_NUMBER".parse().unwrap(),
+            Ident::new("META_ROW_NUMBER"),
             OnChainColumn::BigInt(vec![]),
         ))))
         .unwrap();

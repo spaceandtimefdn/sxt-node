@@ -130,6 +130,7 @@ mod tests {
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;
+    use sqlparser::ast::Ident;
     use sqlparser::dialect::PostgreSqlDialect;
     use sqlparser::parser::Parser;
 
@@ -182,8 +183,8 @@ mod tests {
         let expected_dory_commitment =
             TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
                 OnChainTable::try_from_iter([
-                    ("animal".parse().unwrap(), OnChainColumn::VarChar(vec![])),
-                    ("population".parse().unwrap(), OnChainColumn::BigInt(vec![])),
+                    (Ident::new("animal"), OnChainColumn::VarChar(vec![])),
+                    (Ident::new("population"), OnChainColumn::BigInt(vec![])),
                 ])
                 .unwrap()
                 .iter_committable::<DoryScalar>()

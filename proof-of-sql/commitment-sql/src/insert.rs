@@ -20,8 +20,8 @@ use proof_of_sql_commitment_map::generic_over_commitment::{
     TableCommitmentType,
 };
 use proof_of_sql_commitment_map::{GenericOverCommitmentFn, PerCommitmentScheme};
-use proof_of_sql_parser::Identifier;
 use snafu::Snafu;
+use sqlparser::ast::Ident;
 use sxt_core::native::NativeCommitmentError;
 use sxt_core::tables::TableIdentifier;
 
@@ -32,7 +32,7 @@ struct GetColumnOrderFn;
 
 impl GenericOverCommitmentFn for GetColumnOrderFn {
     type In = TableCommitmentType;
-    type Out = PairType<TableCommitmentType, ConcreteType<Vec<Identifier>>>;
+    type Out = PairType<TableCommitmentType, ConcreteType<Vec<Ident>>>;
 
     fn call<C: Commitment>(
         &self,
@@ -44,7 +44,7 @@ impl GenericOverCommitmentFn for GetColumnOrderFn {
             .iter()
             // This copy is very sad, but GenericOverCommitmentFn isn't great at handling elided
             // lifetimes at the moment.
-            .map(|(identifier, _)| *identifier)
+            .map(|(identifier, _)| identifier.clone())
             .collect();
 
         (input, column_order)
@@ -173,7 +173,7 @@ impl<'s> GenericOverCommitmentFn for AppendOnChainTableToTableCommitmentFn<'_, '
             .map_err(|append_error| match append_error {
                 AppendTableCommitmentError::AppendColumnCommitments { source: e } => match e {
                     AppendColumnCommitmentsError::Mismatch { source: e } => e,
-                    AppendColumnCommitmentsError::DuplicateIdentifiers { .. } => {
+                    AppendColumnCommitmentsError::DuplicateIdents { .. } => {
                         panic!("OnChainTables cannot have duplicate identifiers");
                     }
                 },
@@ -346,22 +346,22 @@ mod tests {
             name: b"population".to_vec().try_into().unwrap(),
         };
 
-        let animals_col_id = "animals".parse().unwrap();
+        let animals_col_id = Ident::new("animals");
         let animals_data = ["cow", "dog", "cat"].map(String::from);
 
-        let population_col_id = "population".parse().unwrap();
+        let population_col_id = Ident::new("population");
         let population_data = [100, 2, 7];
 
-        let row_number_col_id = "META_ROW_NUMBER".parse().unwrap();
+        let row_number_col_id = Ident::new("META_ROW_NUMBER");
         let row_number_data = [1, 2, 3];
 
         let empty_table = OnChainTable::try_from_iter([
             (
-                animals_col_id,
+                animals_col_id.clone(),
                 OnChainColumn::empty_with_type(ColumnType::VarChar),
             ),
             (
-                population_col_id,
+                population_col_id.clone(),
                 OnChainColumn::empty_with_type(ColumnType::BigInt),
             ),
         ])
@@ -382,11 +382,11 @@ mod tests {
 
         let first_insert = OnChainTable::try_from_iter([
             (
-                animals_col_id,
+                animals_col_id.clone(),
                 OnChainColumn::VarChar(animals_data[0..2].to_vec()),
             ),
             (
-                population_col_id,
+                population_col_id.clone(),
                 OnChainColumn::BigInt(population_data[0..2].to_vec()),
             ),
         ])
@@ -394,15 +394,15 @@ mod tests {
 
         let expected_first_insert_with_meta_columns = OnChainTable::try_from_iter([
             (
-                animals_col_id,
+                animals_col_id.clone(),
                 OnChainColumn::VarChar(animals_data[0..2].to_vec()),
             ),
             (
-                population_col_id,
+                population_col_id.clone(),
                 OnChainColumn::BigInt(population_data[0..2].to_vec()),
             ),
             (
-                row_number_col_id,
+                row_number_col_id.clone(),
                 OnChainColumn::BigInt(row_number_data[0..2].to_vec()),
             ),
         ])
@@ -434,11 +434,11 @@ mod tests {
 
         let second_insert_with_different_column_order = OnChainTable::try_from_iter([
             (
-                population_col_id,
+                population_col_id.clone(),
                 OnChainColumn::BigInt(population_data[2..].to_vec()),
             ),
             (
-                animals_col_id,
+                animals_col_id.clone(),
                 OnChainColumn::VarChar(animals_data[2..].to_vec()),
             ),
         ])
@@ -446,11 +446,11 @@ mod tests {
 
         let second_insert_with_original_column_order = OnChainTable::try_from_iter([
             (
-                animals_col_id,
+                animals_col_id.clone(),
                 OnChainColumn::VarChar(animals_data[2..].to_vec()),
             ),
             (
-                population_col_id,
+                population_col_id.clone(),
                 OnChainColumn::BigInt(population_data[2..].to_vec()),
             ),
         ])
@@ -525,10 +525,10 @@ mod tests {
             name: b"population".to_vec().try_into().unwrap(),
         };
 
-        let animals_col_id = "animals".parse().unwrap();
+        let animals_col_id = Ident::new("animals");
         let animals_data = ["cow", "dog", "cat"].map(String::from);
 
-        let population_col_id = "population".parse().unwrap();
+        let population_col_id = Ident::new("population");
         let population_data = [100, 2, 7];
 
         let insert_data = OnChainTable::try_from_iter([
@@ -569,9 +569,9 @@ mod tests {
             name: b"population".to_vec().try_into().unwrap(),
         };
 
-        let animals_col_id = "animals".parse().unwrap();
+        let animals_col_id = Ident::new("animals");
 
-        let population_col_id = "population".parse().unwrap();
+        let population_col_id = Ident::new("population");
         let population_data = [100, 2, 7];
 
         let empty_table = OnChainTable::try_from_iter([
@@ -580,7 +580,7 @@ mod tests {
                 OnChainColumn::empty_with_type(ColumnType::VarChar),
             ),
             (
-                population_col_id,
+                population_col_id.clone(),
                 OnChainColumn::empty_with_type(ColumnType::BigInt),
             ),
         ])
@@ -633,10 +633,10 @@ mod tests {
             name: b"population".to_vec().try_into().unwrap(),
         };
 
-        let animals_col_id = "animals".parse().unwrap();
+        let animals_col_id = Ident::new("animals");
         let animals_data = ["cow", "dog", "cat"].map(String::from);
 
-        let population_col_id = "population".parse().unwrap();
+        let population_col_id = Ident::new("population");
         let population_data = [100, 2, 7];
 
         let insert_data = OnChainTable::try_from_iter([
@@ -674,10 +674,10 @@ mod tests {
             name: b"population".to_vec().try_into().unwrap(),
         };
 
-        let animals_col_id = "animals".parse().unwrap();
+        let animals_col_id = Ident::new("animals");
         let animals_data = ["water bear"].map(String::from);
 
-        let population_col_id = "population".parse().unwrap();
+        let population_col_id = Ident::new("population");
         let population_data = [U256::MAX / 2];
 
         let insert_data = OnChainTable::try_from_iter([

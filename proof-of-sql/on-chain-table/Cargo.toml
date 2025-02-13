@@ -16,6 +16,7 @@ proof-of-sql.workspace = true
 proof-of-sql-parser.workspace = true
 serde = { workspace = true, features = ["alloc"] }
 snafu.workspace = true
+sqlparser = { workspace = true }
 
 [features]
 std = []

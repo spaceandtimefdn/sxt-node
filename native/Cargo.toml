@@ -24,7 +24,6 @@ tonic = { workspace = true, optional = true }
 arrow = { workspace = true, optional = true, features = ["ipc"]}
 arrow-flight = { workspace = true, optional = true, features = ["flight-sql-experimental"] }
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
-proof-of-sql-parser = { workspace = true, default-features = false}
 proof-of-sql-static-setups = { workspace = true, optional = true }
 futures = { features = ["thread-pool"], workspace = true, optional = true }
 
@@ -32,6 +31,7 @@ sxt-core.workspace = true
 
 [dev-dependencies]
 proof-of-sql = { workspace = true }
+sqlparser.workspace = true
 
 [features]
 default = ["std"]
