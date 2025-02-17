@@ -104,21 +104,18 @@ pub fn sqlparser_data_type_to_proof_of_sql_column_type(
         | DataType::Dec(number_info) => {
             let (precision, scale) =
                 sqlparser_number_info_to_proof_of_sql_precision_and_scale(number_info)?;
-
             Ok(ColumnType::Decimal75(precision, scale))
         }
         DataType::Datetime(precision) => sqlparser_precision_to_proof_of_sql_time_unit(precision)
             .map(|unit| ColumnType::TimestampTZ(unit, PoSQLTimeZone::utc())),
         DataType::Timestamp(precision, _) => {
             let unit = sqlparser_precision_to_proof_of_sql_time_unit(precision)?;
-
             Ok(ColumnType::TimestampTZ(unit, PoSQLTimeZone::utc()))
         }
+        DataType::Binary(_) | DataType::Varbinary(_) | DataType::Blob(_) | DataType::Bytes(_) => {
+            Ok(ColumnType::VarBinary)
+        }
         DataType::Uuid
-        | DataType::Binary(_)
-        | DataType::Varbinary(_)
-        | DataType::Blob(_)
-        | DataType::Bytes(_)
         | DataType::Float(_)
         | DataType::MediumInt(_)
         | DataType::UnsignedInt2(_)
@@ -159,6 +156,29 @@ mod tests {
     use sqlparser::ast::TimezoneInfo;
 
     use super::*;
+
+    #[test]
+    fn we_can_convert_sqlparser_binary_types_to_proof_of_sql() {
+        let types = [
+            DataType::Binary(None),
+            DataType::Varbinary(None),
+            DataType::Blob(None),
+            DataType::Bytes(None),
+        ];
+        for t in types {
+            let col_type = sqlparser_data_type_to_proof_of_sql_column_type(&t).unwrap();
+            assert_eq!(col_type, ColumnType::VarBinary);
+        }
+    }
+
+    #[test]
+    fn we_cannot_convert_sqlparser_bytea() {
+        let t = DataType::Bytea;
+        assert!(matches!(
+            sqlparser_data_type_to_proof_of_sql_column_type(&t),
+            Err(UnsupportedColumnType::DataType { .. })
+        ));
+    }
 
     #[test]
     fn we_can_convert_simple_postgres_types_to_proof_of_sql() {

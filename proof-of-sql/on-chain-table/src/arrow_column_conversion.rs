@@ -3,6 +3,7 @@ use alloc::sync::Arc;
 
 use arrow::array::{
     ArrayRef,
+    BinaryArray,
     BooleanArray,
     Decimal128Array,
     Decimal256Array,
@@ -132,6 +133,15 @@ impl TryFrom<&ArrayRef> for OnChainColumn {
                     .map(|s| s.unwrap().to_string())
                     .collect(),
             )),
+            DataType::Binary => Ok(Self::VarBinary(
+                value
+                    .as_any()
+                    .downcast_ref::<BinaryArray>()
+                    .unwrap()
+                    .iter()
+                    .map(|b| b.unwrap().to_vec())
+                    .collect(),
+            )),
             DataType::Timestamp(time_unit, timezone) => {
                 let (time_unit, timestamps) = match time_unit {
                     TimeUnit::Second => {
@@ -175,7 +185,6 @@ impl TryFrom<&ArrayRef> for OnChainColumn {
                         (PoSQLTimeUnit::Nanosecond, timestamps)
                     }
                 };
-
                 Ok(Self::TimestampTZ(
                     time_unit,
                     timezone
@@ -216,6 +225,9 @@ impl From<OnChainColumn> for ArrayRef {
                 )
             }
             OnChainColumn::VarChar(col) => Arc::new(StringArray::from(col)),
+            OnChainColumn::VarBinary(col) => Arc::new(BinaryArray::from(
+                col.iter().map(|v| v.as_slice()).collect::<Vec<&[u8]>>(),
+            )),
             OnChainColumn::TimestampTZ(time_unit, timezone, col) => match time_unit {
                 PoSQLTimeUnit::Second => Arc::new(
                     TimestampSecondArray::from(col)
@@ -245,6 +257,26 @@ mod tests {
     use primitive_types::U256;
 
     use super::*;
+
+    #[test]
+    fn we_can_convert_binary_array_to_on_chain_column() {
+        let data = vec![vec![0, 1, 2], vec![254, 255], vec![128, 64, 32]];
+        let arrow_data: ArrayRef = Arc::new(BinaryArray::from(
+            data.iter().map(|x| x.as_slice()).collect::<Vec<&[u8]>>(),
+        ));
+        let on_chain = OnChainColumn::try_from(&arrow_data).unwrap();
+        assert_eq!(on_chain, OnChainColumn::VarBinary(data));
+    }
+
+    #[test]
+    fn we_can_convert_on_chain_varbinary_to_arrow() {
+        let data = vec![vec![10, 20, 30], vec![40, 50, 60], vec![70, 80, 90]];
+        let expected: ArrayRef = Arc::new(BinaryArray::from(
+            data.iter().map(|x| x.as_slice()).collect::<Vec<&[u8]>>(),
+        ));
+        let arrow_data = ArrayRef::from(OnChainColumn::VarBinary(data));
+        assert!(arrow_data == expected);
+    }
 
     #[test]
     fn we_can_convert_simple_arrow_arrays_to_on_chain_column() {

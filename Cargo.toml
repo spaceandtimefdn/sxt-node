@@ -23,7 +23,8 @@ members = [
     "proof-of-sql/static-setups",
     "native",
     "native-api",
-    "utils/commit-grouper", "data-compliance-please-deprecate-me",
+    "utils/commit-grouper",
+    "data-compliance-please-deprecate-me",
     "watcher",
     "pallets/attestation",
     "pallets/keystore",
@@ -40,19 +41,19 @@ bigdecimal = { version = "0.4.5", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
 commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
 data-compliance-please-deprecate-me = { path = "./data-compliance-please-deprecate-me" }
-data-loader = { path = "./data-loader", default-features = false}
+data-loader = { path = "./data-loader", default-features = false }
 arrow-flight = { version = "53.0.0", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
 pallet-permissions = { path = "pallets/permissions", default-features = false }
-pallet-attestation ={ path = "pallets/attestation", default-features = false}
-pallet-keystore = { path = "pallets/keystore", default-features = false}
-pallet-smartcontracts = { path = "pallets/smartcontracts", default-features = false}
-sxt-core = { path = "sxt-core", default-features = false}
-pallet-tables = { path = "pallets/tables", default-features = false}
+pallet-attestation = { path = "pallets/attestation", default-features = false }
+pallet-keystore = { path = "pallets/keystore", default-features = false }
+pallet-smartcontracts = { path = "pallets/smartcontracts", default-features = false }
+sxt-core = { path = "sxt-core", default-features = false }
+pallet-tables = { path = "pallets/tables", default-features = false }
 pallet-indexing = { path = "pallets/indexing", default-features = false }
-native = { path = "native", default-features = false}
-native-api = { path = "native-api", default-features = false}
+native = { path = "native", default-features = false }
+native-api = { path = "native-api", default-features = false }
 num-bigint = { version = "0.4", default-features = false }
 clap = { version = "4.5.3" }
 exponential-backoff = { version = "2.0.0", default-features = false }
@@ -68,9 +69,9 @@ lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
 on-chain-table = { path = "./proof-of-sql/on-chain-table/", default-features = false }
 postcard = { version = "1.0.10", default-features = false }
 primitive-types = { version = "0.12.2", default-features = false }
-proof-of-sql = { version = "0.72.7", default-features = false }
+proof-of-sql = { version = "0.73.1", default-features = false }
 proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
-proof-of-sql-parser = { version = "0.72.7", default-features = false }
+proof-of-sql-parser = { version = "0.73.1", default-features = false }
 proof-of-sql-static-setups = { path = "./proof-of-sql/static-setups/" }
 rand = { version = "0.8.5", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
@@ -132,7 +133,9 @@ sp-storage = { version = "21.0.0", default-features = false }
 sp-transaction-pool = { version = "34.0.0", default-features = false }
 sp-version = { version = "37.0.0", default-features = false }
 substrate-wasm-builder = { version = "24.0.0", default-features = false }
-pallet-session = { version = "37.0.0", default-features = false, features = ["historical"] }
+pallet-session = { version = "37.0.0", default-features = false, features = [
+    "historical",
+] }
 
 pallet-staking = { version = "37.0.0", default-features = false }
 pallet-authorship = { version = "37.0.0", default-features = false }
@@ -173,9 +176,14 @@ sc-network-sync = { version = "0.43.0", default-features = false }
 k256 = { version = "0.13.4", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
 hex = { version = "0.4.3", default-features = false }
-alloy = { version = "0.6.4", features = ["full"]}
+alloy = { version = "0.6.4", features = ["full"] }
 glob = "0.3.1"
 
 [workspace.lints]
 rust.missing_docs = "warn"
 clippy.missing_docs_in_private_items = "warn"
+
+[patch.crates-io]
+# patch for sqlparser no_std compatibility with the serde feature enabled.
+# required until sqlparser releases a similar update and proof-of-sql upgrades to it.
+sqlparser = { git = "https://github.com/tlovell-sxt/datafusion-sqlparser-rs.git", rev = "a828cbea22cf19bb6b4596f902bdd6f4d14a00b8" }
