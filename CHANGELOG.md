@@ -1,3 +1,12 @@
+# [0.72.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.71.0...v0.72.0) (2025-02-19)
+
+
+### Features
+
+* add off-the-shelf pallet-multisig to runtime ([43e947a](https://github.com/spaceandtimelabs/sxt-node/commit/43e947a17f73988aaa08c2c2e4787902441eb586))
+
+
+
 # [0.71.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.70.0...v0.71.0) (2025-02-03)
 
 
@@ -34,15 +43,6 @@
 ### Features
 
 * implement display for sqlerror ([f8c9dda](https://github.com/spaceandtimelabs/sxt-node/commit/f8c9dda479c5d3dc0157f0d4169eda05afe23c5b))
-
-
-
-# [0.67.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.66.0...v0.67.0) (2025-01-22)
-
-
-### Features
-
-* add smartcontract pallet ([d799296](https://github.com/spaceandtimelabs/sxt-node/commit/d799296c8267e18dcadfd5324748d8fab64faa0a))
 
 
 
