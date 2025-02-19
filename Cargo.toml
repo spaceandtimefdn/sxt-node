@@ -121,6 +121,7 @@ pallet-aura = { version = "36.0.0", default-features = false }
 pallet-balances = { version = "38.0.0", default-features = false }
 pallet-grandpa = { version = "37.0.0", default-features = false }
 pallet-sudo = { version = "37.0.0", default-features = false }
+pallet-multisig = { version = "37.0.0", default-features = false }
 pallet-timestamp = { version = "36.0.0", default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { version = "37.0.0", default-features = false }
 scale-info = { version = "2.11.1", default-features = false }
