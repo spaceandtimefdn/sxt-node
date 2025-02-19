@@ -51,7 +51,7 @@ pub fn hash_data(data: Vec<String>) -> Result<Vec<String>, MerkleTreeError> {
 ///
 /// # Returns
 /// A `Result` containing the constructed `MerkleTree`, or an error if tree construction fails.
-pub fn build_merkle_tree(data: Vec<String>) -> Result<MerkleTree, MerkleTreeError> {
-    let tree = MerkleTree::new(&data).context(TreeConstructionSnafu)?;
+pub fn build_merkle_tree(data: &Vec<String>) -> Result<MerkleTree, MerkleTreeError> {
+    let tree = MerkleTree::new(data).context(TreeConstructionSnafu)?;
     Ok(tree)
 }

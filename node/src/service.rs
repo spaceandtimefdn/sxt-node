@@ -374,16 +374,6 @@ pub fn new_full_base<
         );
     }
 
-    if let Some(EventForwarderDetails { key, rpc }) = event_forwarder {
-        sxt_core::multiplexer::spawn_multiplexer(
-            "event-multiplexer",
-            &task_manager.spawn_essential_handle(),
-            client.clone(),
-            key,
-            rpc,
-        );
-    }
-
     if role.is_authority() {
         let mut proposer_factory = sc_basic_authorship::ProposerFactory::new(
             task_manager.spawn_handle(),

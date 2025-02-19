@@ -112,6 +112,7 @@ sp-runtime = { version = "39.0.0", default-features = false }
 sp-timestamp = { version = "34.0.0", default-features = false }
 sp-std = { version = "14.0.0", default-features = false }
 subxt = { version = "0.38.0", default-features = false }
+subxt-signer = { version = "0.38"}
 substrate-frame-rpc-system = { version = "38.0.0", default-features = false }
 substrate-build-script-utils = { version = "11.0.0", default-features = false }
 codec = { version = "3.6.12", default-features = false, package = "parity-scale-codec" }
@@ -180,8 +181,17 @@ k256 = { version = "0.13.4", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 spin = "0.9.8"
-alloy = { version = "0.6.4", features = ["full"]}
+alloy = { version = "0.11.0", default-features = false }
 glob = "0.3.1"
+eth_merkle_tree = "=0.1.1"
+anyhow = "1.0.95"
+rand_core = { version = "0.6", default-features = false }
+log = "0.4"
+async-trait = "0.1.86"
+env_logger = "0.11.6"
+url = "2.5.4"
+reqwest = { version = "0.11", default-features = false }
+async-stream = "0.3.6"
 
 [workspace.lints]
 rust.missing_docs = "warn"

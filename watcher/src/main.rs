@@ -351,7 +351,7 @@ impl AttestationClient {
             }
         };
 
-        let tree = match attestation::merkle_tree::build_merkle_tree(hashed_data) {
+        let tree = match attestation::merkle_tree::build_merkle_tree(&hashed_data) {
             Ok(tree) => tree,
             Err(e) => {
                 log::error!("Error constructing Merkle tree: {}", e);

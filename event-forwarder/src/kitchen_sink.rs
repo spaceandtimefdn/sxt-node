@@ -18,6 +18,7 @@ use serde_json::json;
 use snafu::{ResultExt, Snafu};
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
+use subxt_signer::sr25519::Keypair;
 use sxt_core::attestation::EthereumSignature;
 use sxt_core::sxt_chain_runtime::api::attestations::calls::types::attest_block::Attestation;
 use sxt_core::sxt_chain_runtime::api::attestations::events::BlockAttested;
@@ -25,8 +26,10 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::Atte
 use sxt_core::sxt_chain_runtime::api::staking::events::Unbonded;
 use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
 use sxt_core::ByteString;
+use tokio::sync::mpsc;
 use watcher::attestation;
 
+use crate::block_processing;
 use crate::chain_listener::{Block, BlockProcessor, API};
 
 /// Enum representing errors that can occur in attestation processing.
@@ -164,6 +167,13 @@ pub enum KitchenSinkProcessorError {
         /// todo
         source: codec::Error,
     },
+
+    /// Error originating from the block processing module
+    #[snafu(display("BlockProcessingError: {source}"))]
+    BlockProcessingError {
+        /// Source of the error
+        source: block_processing::Error,
+    },
 }
 
 /// A processor that handles attestation and unbonding events.
@@ -171,6 +181,9 @@ pub struct KitchenSinkProcessor {
     anvil: Option<AnvilInstance>,
     provider: Arc<ProviderInstance>,
     address: Address,
+    channel: Option<mpsc::Sender<bool>>,
+    keypair: Keypair,
+    initial_nonce: u64,
 }
 
 impl KitchenSinkProcessor {
@@ -178,61 +191,55 @@ impl KitchenSinkProcessor {
     pub async fn from_existing_deployment(
         provider: Arc<ProviderInstance>,
         address: Address,
+        channel: Option<mpsc::Sender<bool>>,
+        keypair: Keypair,
+        initial_nonce: u64,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self {
             provider,
             address,
             anvil: None,
+            channel,
+            keypair,
+            initial_nonce,
         })
     }
-    // pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
-    //     let anvil = Anvil::new().block_time(1).try_spawn()?;
-    //     info!("Started anvil at {}", anvil.endpoint_url());
-
-    //     // Set up signer from the first default Anvil account (Alice).
-    //     let signer: PrivateKeySigner = anvil.keys()[0].clone().into();
-    //     let wallet = EthereumWallet::from(signer.clone());
-
-    //     // Set up the HTTP provider with the `reqwest` crate.
-    //     let rpc_url = anvil.endpoint_url();
-    //     let provider: Arc<ProviderInstance> =
-    //         Arc::new(ProviderBuilder::new().wallet(wallet).on_http(rpc_url));
-
-    //     let bytes_32 = FixedBytes::<32>::from([0x00; 32]); // 32 bytes filled with 0xAA
-
-    //     let contract = Verifier::deploy(&provider).await?;
-
-    //     info!(
-    //         "Deployed verification contract at address: {}",
-    //         contract.address()
-    //     );
-
-    //     Ok(Self {
-    //         anvil: Some(anvil),
-    //         provider: provider.clone(),
-    //         address: *contract.address(),
-    //     })
-    // }
 
     /// todo
     pub async fn process_attestation(
-        &self,
+        &mut self,
         api: &API,
         attestations: &[BlockAttested],
         parent_block_hash: H256,
+        attested_block_number: u32,
     ) -> Result<(), KitchenSinkProcessorError> {
         let attestation = attestations.first();
         if attestation.is_none() {
             info!("No attestations found for block");
+            let new_nonce = block_processing::mark_block_forwarded(
+                api,
+                attested_block_number,
+                &self.keypair,
+                self.initial_nonce,
+            )
+            .await
+            .context(BlockProcessingSnafu)?;
+            self.initial_nonce = new_nonce;
+            block_processing::send_channel_update(&self.channel).await;
             return Ok(());
         }
         let attestation = attestation.unwrap();
 
-        let attested_block = Self::fetch_attested_block(api, attestation).await?;
+        let attested_block = block_processing::fetch_attested_block(api, attestation)
+            .await
+            .context(BlockProcessingSnafu)?;
         info!("Fetched attested block {}", attestation.block_number);
 
         // Fetch unbonding events
-        let unbondings = Self::fetch_unbonding_events(&attested_block).await?;
+        let unbondings = block_processing::fetch_unbonding_events(&attested_block)
+            .await
+            .context(BlockProcessingSnafu)?;
+
         if unbondings.is_empty() {
             info!(
                 "No unbonding events found in attested block {}",
@@ -251,9 +258,9 @@ impl KitchenSinkProcessor {
                 .await
                 .context(FetchCommitmentsAndAccountsSnafu)?;
 
-        let tree = self
-            .build_merkle_tree(commitments.clone(), accounts.clone())
-            .await?;
+        let tree = block_processing::build_merkle_tree(commitments.clone(), accounts.clone())
+            .await
+            .context(BlockProcessingSnafu)?;
 
         let contract = Arc::new(Verifier::new(self.address, self.provider.clone()));
         let first_account = accounts
@@ -332,64 +339,18 @@ impl KitchenSinkProcessor {
             }
         }
 
+        let new_nonce = block_processing::mark_block_forwarded(
+            api,
+            attested_block_number,
+            &self.keypair,
+            self.initial_nonce,
+        )
+        .await
+        .context(BlockProcessingSnafu)?;
+        self.initial_nonce = new_nonce;
+        block_processing::send_channel_update(&self.channel).await;
+
         Ok(())
-    }
-
-    /// Fetches the block that was attested.
-    async fn fetch_attested_block(
-        api: &API,
-        attestation: &BlockAttested,
-    ) -> Result<Block, KitchenSinkProcessorError> {
-        match &attestation.attestation {
-            EthereumAttestation {
-                block_number,
-                block_hash,
-                ..
-            } => api
-                .blocks()
-                .at(*block_hash)
-                .await
-                .context(FetchAttestedBlockSnafu {
-                    block_number: *block_number,
-                }),
-        }
-    }
-
-    /// Fetches unbonding events from a block.
-    async fn fetch_unbonding_events(
-        block: &Block,
-    ) -> Result<Vec<Unbonded>, KitchenSinkProcessorError> {
-        let mut unbondings = Vec::new();
-
-        let events = block.events().await.context(FetchUnbondingSnafu)?;
-        for event in events.iter().flatten() {
-            if let Ok(Some(unbonding)) = event.as_event::<Unbonded>() {
-                unbondings.push(unbonding);
-            }
-        }
-
-        Ok(unbondings)
-    }
-
-    /// todo
-    async fn build_merkle_tree(
-        &self,
-        commitments: Vec<String>,
-        accounts: Vec<String>,
-    ) -> Result<attestation::merkle_tree::MerkleTree, KitchenSinkProcessorError> {
-        let mut data: Vec<String> = Vec::new();
-        data.extend(commitments);
-        data.extend(accounts);
-
-        let hashed_data = attestation::merkle_tree::hash_data(data).context(HashingDataSnafu)?;
-        let tree = attestation::merkle_tree::build_merkle_tree(hashed_data)
-            .context(ConstructingMerkleTreeSnafu)?;
-
-        if tree.root.is_none() {
-            return Err(KitchenSinkProcessorError::EmptyMerkleRoot);
-        }
-
-        Ok(tree)
     }
 
     /// todo
@@ -433,7 +394,8 @@ impl KitchenSinkProcessor {
 
         let proof = tree.generate_proof(leaf_index);
 
-        convert_proof(proof).map_err(|_| KitchenSinkProcessorError::InvalidProofLength)
+        block_processing::convert_proof(proof)
+            .map_err(|_| KitchenSinkProcessorError::InvalidProofLength)
     }
 
     /// todo
@@ -481,16 +443,12 @@ impl KitchenSinkProcessor {
 #[async_trait]
 impl BlockProcessor for KitchenSinkProcessor {
     /// todo
-    async fn process_block(&self, api: &API, block: Block) {
+    async fn process_block(&mut self, api: &API, block: Block) {
         info!("AttestationProcessor processing block: {}", block.number());
 
         // Fetch attestation events
         let attestations = match fetch_block_attestations(&block).await {
-            Ok(attestations) if !attestations.is_empty() => attestations,
-            Ok(_) => {
-                info!("No attestation events found in block {}", block.number());
-                return;
-            }
+            Ok(attestations) => attestations,
             Err(e) => {
                 error!("Failed to fetch attestation events: {}", e);
                 return;
@@ -505,7 +463,7 @@ impl BlockProcessor for KitchenSinkProcessor {
 
         // Process each attestation
         if let Err(e) = self
-            .process_attestation(api, &attestations, block.hash())
+            .process_attestation(api, &attestations, block.hash(), block.number())
             .await
         {
             error!(
@@ -515,39 +473,6 @@ impl BlockProcessor for KitchenSinkProcessor {
             );
         }
     }
-}
-
-/// Converts a `Vec<String>` containing hex-encoded 32-byte values into `Vec<FixedBytes<32>>`
-fn convert_proof(
-    proof_strings: Vec<String>,
-) -> Result<Vec<FixedBytes<32>>, Box<dyn std::error::Error>> {
-    proof_strings
-        .into_iter()
-        .map(|mut hex_str| {
-            if hex_str.starts_with("0x") {
-                hex_str = hex_str.trim_start_matches("0x").to_string();
-            }
-
-            if hex_str.len() != 64 {
-                error!(
-                    "Invalid proof length: Expected 64 hex chars, got {}",
-                    hex_str.len()
-                );
-                return Err("Invalid proof length".into());
-            }
-
-            let decoded_bytes = hex::decode(&hex_str).inspect_err(|e| {
-                error!("Failed to decode hex string '{}': {}", hex_str, e);
-            })?;
-
-            let fixed_bytes: [u8; 32] = decoded_bytes.try_into().map_err(|_| {
-                error!("Proof entry is not 32 bytes long: {}", hex_str);
-                "Invalid proof length"
-            })?;
-
-            Ok(FixedBytes::<32>::from(fixed_bytes)) // Convert to FixedBytes<32>
-        })
-        .collect()
 }
 
 /// todo

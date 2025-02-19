@@ -18,20 +18,23 @@ use alloy::network::EthereumWallet;
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::sol;
 use async_trait::async_trait;
+use eth_merkle_tree::tree::MerkleTree;
 use eth_merkle_tree::utils::errors::BytesError;
 use eth_merkle_tree::utils::keccak::keccak256;
 use log::{error, info};
 use snafu::{ResultExt, Snafu};
 use sp_core::crypto::AccountId32;
 use sp_core::ByteArray;
-use subxt::utils::H256;
+use subxt_signer::sr25519::Keypair;
 use sxt_core::sxt_chain_runtime;
 use sxt_core::sxt_chain_runtime::api::attestations::events::BlockAttested;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::Attestation::EthereumAttestation;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::EthereumSignature as RuntimeEthereumSignature;
 use sxt_core::sxt_chain_runtime::api::staking::events::Unbonded;
+use tokio::sync::mpsc;
 use watcher::attestation;
 
+use crate::block_processing;
 use crate::chain_listener::{Block, BlockProcessor, API};
 
 sol!(
@@ -65,10 +68,40 @@ pub type ProviderInstance = alloy::providers::fillers::FillProvider<
     alloy::network::Ethereum,
 >;
 
+/// The concrete type of the event forwarder contract with default fillers
+pub type EventForwarderInstance = EventForwarder::EventForwarderInstance<
+    (),
+    Arc<
+        alloy::providers::fillers::FillProvider<
+            alloy::providers::fillers::JoinFill<
+                alloy::providers::fillers::JoinFill<
+                    alloy::providers::Identity,
+                    alloy::providers::fillers::JoinFill<
+                        alloy::providers::fillers::GasFiller,
+                        alloy::providers::fillers::JoinFill<
+                            alloy::providers::fillers::BlobGasFiller,
+                            alloy::providers::fillers::JoinFill<
+                                alloy::providers::fillers::NonceFiller,
+                                alloy::providers::fillers::ChainIdFiller,
+                            >,
+                        >,
+                    >,
+                >,
+                alloy::providers::fillers::WalletFiller<EthereumWallet>,
+            >,
+            alloy::providers::RootProvider,
+            alloy::network::Ethereum,
+        >,
+    >,
+>;
+
 /// A processor that listens for blockchain events and interacts with the `EventForwarder` contract.
 pub struct EventForwarderProcessor {
     provider: Arc<ProviderInstance>,
     address: Address,
+    keypair: Keypair,
+    channel: Option<mpsc::Sender<bool>>,
+    initial_nonce: u64,
 }
 
 impl EventForwarderProcessor {
@@ -80,29 +113,20 @@ impl EventForwarderProcessor {
     ///
     /// # Returns
     /// A new instance of `EventForwarderProcessor`.
-    pub fn new(provider: Arc<ProviderInstance>, address: Address) -> Self {
-        Self { provider, address }
-    }
-
-    /// Fetches attestation events from a given block.
-    ///
-    /// # Parameters
-    /// - `block`: The block from which to fetch attestations.
-    ///
-    /// # Returns
-    /// - `Ok(Vec<BlockAttested>)` if attestation events were successfully retrieved.
-    /// - `Err(Error::FetchAttestation)` if an error occurs while fetching events.
-    async fn fetch_block_attestations(&self, block: &Block) -> Result<Vec<BlockAttested>, Error> {
-        let mut attestations = Vec::new();
-
-        let events = block.events().await.context(FetchAttestationSnafu)?;
-        for event in events.iter().flatten() {
-            if let Ok(Some(attestation)) = event.as_event::<BlockAttested>() {
-                attestations.push(attestation);
-            }
+    pub fn new(
+        provider: Arc<ProviderInstance>,
+        address: Address,
+        keypair: Keypair,
+        channel: Option<mpsc::Sender<bool>>,
+        initial_nonce: u64,
+    ) -> Self {
+        Self {
+            provider,
+            address,
+            keypair,
+            channel,
+            initial_nonce,
         }
-
-        Ok(attestations)
     }
 
     /// Processes attestation events and forwards staking-related data to the Ethereum contract.
@@ -116,225 +140,65 @@ impl EventForwarderProcessor {
     /// - `Ok(())` if processing is successful.
     /// - `Err(Error::BlockchainProcessing)` if an error occurs.
     pub async fn process_attestation(
-        &self,
+        &mut self,
         api: &API,
         attestations: &[BlockAttested],
-        parent_block_hash: H256,
+        attested_block_number: u32,
     ) -> Result<(), Error> {
         let contract = EventForwarder::new(self.address, self.provider.clone());
 
-        let attestation = attestations.first();
-        if attestation.is_none() {
-            info!("No attestations found for block");
+        let Some(attestation) = attestations.first() else {
+            info!("No attestations found for this block");
+            self.update_progress(api, attested_block_number).await?;
             return Ok(());
-        }
-        let attestation = attestation.unwrap();
+        };
 
-        let attested_block = Self::fetch_attested_block(api, attestation).await?;
+        let attested_block = block_processing::fetch_attested_block(api, attestation)
+            .await
+            .context(BlockProcessingSnafu)?;
         info!("Fetched attested block {}", attestation.block_number);
 
-        // Fetch unbonding events
-        let unbondings = Self::fetch_unbonding_events(&attested_block).await?;
+        let unbondings = block_processing::fetch_unbonding_events(&attested_block)
+            .await
+            .context(BlockProcessingSnafu)?;
+
         if unbondings.is_empty() {
             info!(
                 "No unbonding events found in attested block {}",
                 attestation.block_number
             );
         } else {
-            info!(
-                "Found {} unbonding event(s) in attested block {}",
-                unbondings.len(),
-                attestation.block_number
-            );
-
-            let (commitments, accounts) =
-                attestation::fetch::commitments_and_accounts(api, attested_block.hash())
-                    .await
-                    .context(FetchCommitmentsAndAccountsSnafu)?;
-
-            let tree = self
-                .build_merkle_tree(commitments.clone(), accounts.clone())
-                .await?;
-
-            let state_root = tree
-                .root
-                .as_ref()
-                .ok_or(Error::EmptyMerkleRoot)?
-                .data
-                .clone();
-            let state_root =
-                hex::decode(state_root.clone()).context(DecodeStateRootSnafu { state_root })?;
-            let state_root = FixedBytes::<32>::from_slice(&state_root);
-
-            // Collect signature components into arrays
-            let mut r_values: Vec<FixedBytes<32>> = Vec::new();
-            let mut s_values: Vec<FixedBytes<32>> = Vec::new();
-            let mut v_values: Vec<u8> = Vec::new();
-            let mut expected_addresses: Vec<Address> = Vec::new();
-
-            for attestation in attestations.iter() {
-                let EthereumAttestation {
-                    signature,
-                    address20,
-                    ..
-                } = &attestation.attestation;
-
-                let RuntimeEthereumSignature { r, s, v } = signature;
-
-                let v = if *v == 0 { 27 } else { 28 };
-
-                let r = FixedBytes::<32>::from_slice(r);
-                let s = FixedBytes::<32>::from_slice(s);
-
-                let address = Address::from_slice(&address20.0);
-
-                // Append the extracted values into arrays
-                r_values.push(r);
-                s_values.push(s);
-                v_values.push(v);
-                expected_addresses.push(address);
-            }
-
-            // Process unstaking for each unbonded stash account
-            for Unbonded { stash, .. } in unbondings.iter() {
-                let balance_query = sxt_chain_runtime::api::storage().system().account(stash);
-                let balance = api
-                    .storage()
-                    .at(attested_block.hash())
-                    .fetch(&balance_query)
-                    .await
-                    .context(FetchBalanceSnafu {
-                        account_id: stash.clone(),
-                    })?
-                    .ok_or(Error::NoBalanceError {
-                        account_id: stash.clone(),
-                    })?;
-                let free_balance = balance.data.free;
-
-                let account_id = sp_core::crypto::AccountId32::from_slice(&stash.0)
-                    .expect("should always be convertible");
-
-                let encoded_leaf = watcher::attestation::fetch::encode_account_leaf(
-                    account_id.clone(),
-                    free_balance,
-                );
-                let proof = self.generate_proof(&tree, &encoded_leaf)?;
-
-                let account_id = FixedBytes::<32>::from_slice(account_id.as_slice());
-
-                // Call processUnstake with collected arrays
-                match contract
-                    .processUnstake(
-                        account_id,
-                        free_balance,
-                        attestation.block_number,
-                        state_root,
-                        proof,
-                        r_values.clone(),
-                        s_values.clone(),
-                        v_values.clone(),
-                        expected_addresses.clone(),
-                        U256::from(1),
-                    )
-                    .send()
-                    .await
-                {
-                    Ok(tx) => {
-                        info!("processUnstake tx sent: {}", tx.tx_hash());
-                    }
-                    Err(e) => {
-                        error!("Failed to send transaction: {}", e);
-                    }
-                }
-            }
+            process_unbondings(api, &contract, attestations, &unbondings, &attested_block).await?;
         }
+
+        self.update_progress(api, attested_block_number).await?;
 
         Ok(())
     }
 
-    /// Fetches the block that was attested.
-    async fn fetch_attested_block(api: &API, attestation: &BlockAttested) -> Result<Block, Error> {
-        match &attestation.attestation {
-            EthereumAttestation {
-                block_number,
-                block_hash,
-                ..
-            } => api
-                .blocks()
-                .at(*block_hash)
-                .await
-                .context(FetchAttestedBlockSnafu {
-                    block_number: *block_number,
-                }),
-        }
-    }
-
-    /// Fetches unbonding events from a block.
-    async fn fetch_unbonding_events(block: &Block) -> Result<Vec<Unbonded>, Error> {
-        let mut unbondings = Vec::new();
-
-        let events = block.events().await.context(FetchUnbondingSnafu)?;
-        for event in events.iter().flatten() {
-            if let Ok(Some(unbonding)) = event.as_event::<Unbonded>() {
-                unbondings.push(unbonding);
-            }
-        }
-
-        Ok(unbondings)
-    }
-
-    /// create the merkle tree
-    async fn build_merkle_tree(
-        &self,
-        commitments: Vec<String>,
-        accounts: Vec<String>,
-    ) -> Result<attestation::merkle_tree::MerkleTree, Error> {
-        let mut data: Vec<String> = Vec::new();
-        data.extend(commitments);
-        data.extend(accounts);
-
-        let hashed_data = attestation::merkle_tree::hash_data(data).context(HashingDataSnafu)?;
-        let tree = attestation::merkle_tree::build_merkle_tree(hashed_data)
-            .context(ConstructingMerkleTreeSnafu)?;
-
-        if tree.root.is_none() {
-            return Err(Error::EmptyMerkleRoot);
-        }
-
-        Ok(tree)
-    }
-
-    /// generate a proof from the tree
-    fn generate_proof(
-        &self,
-        tree: &attestation::merkle_tree::MerkleTree,
-        account_hex: &str,
-    ) -> Result<Vec<FixedBytes<32>>, Error> {
-        let account_leaf = keccak256(account_hex).context(KeccakSnafu)?;
-        let account_leaf = keccak256(&account_leaf).context(KeccakSnafu)?;
-
-        let leaf_index = tree
-            .locate_leaf(&account_leaf)
-            .ok_or(Error::LocateLeafError)?;
-
-        let proof = tree.generate_proof(leaf_index);
-
-        convert_proof(proof).map_err(|_| Error::InvalidProofLength)
+    async fn update_progress(&mut self, api: &API, block_number: u32) -> Result<(), Error> {
+        let new_nonce = block_processing::mark_block_forwarded(
+            api,
+            block_number,
+            &self.keypair,
+            self.initial_nonce,
+        )
+        .await
+        .context(BlockProcessingSnafu)?;
+        self.initial_nonce = new_nonce;
+        block_processing::send_channel_update(&self.channel).await;
+        Ok(())
     }
 }
 
 #[async_trait]
 impl BlockProcessor for EventForwarderProcessor {
-    async fn process_block(&self, api: &API, block: Block) {
+    async fn process_block(&mut self, api: &API, block: Block) {
         info!("AttestationProcessor processing block: {}", block.number());
 
         // Fetch attestation events
-        let attestations = match self.fetch_block_attestations(&block).await {
-            Ok(attestations) if !attestations.is_empty() => attestations,
-            Ok(_) => {
-                info!("No attestation events found in block {}", block.number());
-                return;
-            }
+        let attestations = match block_processing::fetch_block_attestations(&block).await {
+            Ok(attestations) => attestations,
             Err(e) => {
                 error!("Failed to fetch attestation events: {}", e);
                 return;
@@ -349,7 +213,7 @@ impl BlockProcessor for EventForwarderProcessor {
 
         // Process each attestation
         if let Err(e) = self
-            .process_attestation(api, &attestations, block.hash())
+            .process_attestation(api, &attestations, block.number())
             .await
         {
             error!(
@@ -359,6 +223,176 @@ impl BlockProcessor for EventForwarderProcessor {
             );
         }
     }
+}
+
+/// generate a proof from the tree
+fn generate_proof(
+    tree: &attestation::merkle_tree::MerkleTree,
+    account_hex: &str,
+) -> Result<Vec<FixedBytes<32>>, Error> {
+    let account_leaf = keccak256(account_hex).context(KeccakSnafu)?;
+    let account_leaf = keccak256(&account_leaf).context(KeccakSnafu)?;
+
+    let leaf_index = tree
+        .locate_leaf(&account_leaf)
+        .ok_or(Error::LocateLeafError)?;
+
+    let proof = tree.generate_proof(leaf_index);
+
+    block_processing::convert_proof(proof).map_err(|_| Error::InvalidProofLength)
+}
+
+async fn process_unbondings(
+    api: &API,
+    contract: &EventForwarderInstance,
+    attestations: &[BlockAttested],
+    unbondings: &[Unbonded],
+    attested_block: &Block,
+) -> Result<(), Error> {
+    let first_attestation = attestations.first().unwrap();
+
+    info!(
+        "Found {} unbonding event(s) in attested block {}",
+        unbondings.len(),
+        first_attestation.block_number
+    );
+
+    let (commitments, accounts) =
+        attestation::fetch::commitments_and_accounts(api, attested_block.hash())
+            .await
+            .context(FetchCommitmentsAndAccountsSnafu)?;
+
+    let tree = block_processing::build_merkle_tree(commitments.clone(), accounts.clone())
+        .await
+        .context(BlockProcessingSnafu)?;
+
+    let state_root = extract_state_root(&tree)?;
+
+    let (r_values, s_values, v_values, expected_addresses) = extract_signature_data(attestations);
+
+    for Unbonded { stash, .. } in unbondings.iter() {
+        process_unstake(
+            api,
+            contract,
+            first_attestation,
+            stash,
+            &tree,
+            &state_root,
+            &r_values,
+            &s_values,
+            &v_values,
+            &expected_addresses,
+            attested_block,
+        )
+        .await?;
+    }
+
+    Ok(())
+}
+
+fn extract_state_root(tree: &MerkleTree) -> Result<FixedBytes<32>, Error> {
+    let state_root = tree
+        .root
+        .as_ref()
+        .ok_or(Error::EmptyMerkleRoot)?
+        .data
+        .clone();
+
+    let decoded_root =
+        hex::decode(state_root.clone()).context(DecodeStateRootSnafu { state_root })?;
+
+    Ok(FixedBytes::<32>::from_slice(&decoded_root))
+}
+
+fn extract_signature_data(
+    attestations: &[BlockAttested],
+) -> (
+    Vec<FixedBytes<32>>,
+    Vec<FixedBytes<32>>,
+    Vec<u8>,
+    Vec<Address>,
+) {
+    let mut r_values = Vec::new();
+    let mut s_values = Vec::new();
+    let mut v_values = Vec::new();
+    let mut expected_addresses = Vec::new();
+
+    for attestation in attestations.iter() {
+        let EthereumAttestation {
+            signature,
+            address20,
+            ..
+        } = &attestation.attestation;
+
+        let RuntimeEthereumSignature { r, s, v } = signature;
+        let v = if *v == 0 { 27 } else { 28 };
+
+        r_values.push(FixedBytes::<32>::from_slice(r));
+        s_values.push(FixedBytes::<32>::from_slice(s));
+        v_values.push(v);
+        expected_addresses.push(Address::from_slice(&address20.0));
+    }
+
+    (r_values, s_values, v_values, expected_addresses)
+}
+
+#[allow(clippy::too_many_arguments)]
+/// Will likely get changed once interface becomes more concrete and we can start using solidity structs
+async fn process_unstake(
+    api: &API,
+    contract: &EventForwarderInstance,
+    attestation: &BlockAttested,
+    stash: &subxt::utils::AccountId32,
+    tree: &MerkleTree,
+    state_root: &FixedBytes<32>,
+    r_values: &[FixedBytes<32>],
+    s_values: &[FixedBytes<32>],
+    v_values: &[u8],
+    expected_addresses: &[Address],
+    attested_block: &Block,
+) -> Result<(), Error> {
+    let balance_query = sxt_chain_runtime::api::storage().system().account(stash);
+    let balance = api
+        .storage()
+        .at(attested_block.hash())
+        .fetch(&balance_query)
+        .await
+        .context(FetchBalanceSnafu {
+            account_id: stash.clone(),
+        })?
+        .ok_or(Error::NoBalanceError {
+            account_id: stash.clone(),
+        })?;
+
+    let free_balance = balance.data.free;
+
+    let account_id = FixedBytes::<32>::from_slice(stash.0.as_slice());
+    let stash = sp_core::crypto::AccountId32::from_slice(&stash.0).expect("should always work");
+    let encoded_leaf =
+        watcher::attestation::fetch::encode_account_leaf(stash.clone(), free_balance);
+    let proof = generate_proof(tree, &encoded_leaf)?;
+
+    match contract
+        .processUnstake(
+            account_id,
+            free_balance,
+            attestation.block_number,
+            *state_root,
+            proof,
+            r_values.to_vec(),
+            s_values.to_vec(),
+            v_values.to_vec(),
+            expected_addresses.to_vec(),
+            U256::from(1),
+        )
+        .send()
+        .await
+    {
+        Ok(tx) => info!("processUnstake tx sent: {}", tx.tx_hash()),
+        Err(e) => error!("Failed to send transaction: {}", e),
+    }
+
+    Ok(())
 }
 
 /// Defines possible errors encountered while processing blockchain events and interacting with Ethereum.
@@ -514,36 +548,18 @@ pub enum Error {
         /// The underlying decoding error.
         source: hex::FromHexError,
     },
-}
 
-fn convert_proof(
-    proof_strings: Vec<String>,
-) -> Result<Vec<FixedBytes<32>>, Box<dyn std::error::Error>> {
-    proof_strings
-        .into_iter()
-        .map(|mut hex_str| {
-            if hex_str.starts_with("0x") {
-                hex_str = hex_str.trim_start_matches("0x").to_string();
-            }
+    /// Error updating the chain's forwarded block counter
+    #[snafu(display("Could note submit block forwarded tx to chain: {source}"))]
+    BlockForwardingError {
+        /// source subxt error
+        source: subxt::error::Error,
+    },
 
-            if hex_str.len() != 64 {
-                error!(
-                    "Invalid proof length: Expected 64 hex chars, got {}",
-                    hex_str.len()
-                );
-                return Err("Invalid proof length".into());
-            }
-
-            let decoded_bytes = hex::decode(&hex_str).inspect_err(|e| {
-                error!("Failed to decode hex string '{}': {}", hex_str, e);
-            })?;
-
-            let fixed_bytes: [u8; 32] = decoded_bytes.try_into().map_err(|_| {
-                error!("Proof entry is not 32 bytes long: {}", hex_str);
-                "Invalid proof length"
-            })?;
-
-            Ok(FixedBytes::<32>::from(fixed_bytes)) // Convert to FixedBytes<32>
-        })
-        .collect()
+    /// An error originating in the block_processing.rs module
+    #[snafu(display("BlockProcessingError: {source}"))]
+    BlockProcessingError {
+        /// The source of the error
+        source: block_processing::Error,
+    },
 }

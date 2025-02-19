@@ -132,6 +132,9 @@ pub enum IndexingPalletPermission {
 pub enum AttestationPalletPermission {
     /// The permission to have attestations accepted from your signed account id
     AttestBlock,
+
+    /// The permission to mark an attested block as forwarded to the EVM layer
+    ForwardAttestedBlock,
 }
 
 /// PErmissions for the pallet-smartcontracts

@@ -25,7 +25,7 @@ pub use weights::*;
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::dispatch::DispatchResult;
-    use frame_support::pallet_prelude::*;
+    use frame_support::pallet_prelude::{OptionQuery, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
     use scale_info::prelude::vec::Vec;
@@ -98,6 +98,10 @@ pub mod pallet {
         BoundedVec<Attestation, ConstU32<64>>,
         ValueQuery,
     >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn last_forwarded_block)]
+    pub type LastForwardedBlock<T: Config> = StorageValue<_, u32, OptionQuery>;
 
     /// Errors that may occur in this pallet.
     #[pallet::error]
@@ -213,6 +217,52 @@ pub mod pallet {
                     });
                 }
             }
+
+            Ok(())
+        }
+
+        /// Marks a block as forwarded on-chain.
+        ///
+        /// This function allows authorized accounts to mark a specific block as "forwarded."
+        /// It updates the `LastForwardedBlock` storage entry with the given block number.
+        ///
+        /// # Arguments
+        ///
+        /// * `origin` - The caller of the function, which must have the `ForwardAttestedBlock`
+        ///   permission within the attestation pallet.
+        /// * `block_number` - The block number that is being marked as forwarded.
+        ///
+        /// # Permissions
+        ///
+        /// The caller must have one of the following permissions:
+        /// * Root access (`ensure_root`)
+        /// * Explicit permission to forward attested blocks (`ForwardAttestedBlock`).
+        ///
+        /// # Storage Changes
+        ///
+        /// * Updates `LastForwardedBlock` to store the provided `block_number`.
+        ///
+        /// # Errors
+        ///
+        /// * Returns an error if the caller lacks the necessary permissions.
+        ///
+        /// # Emits
+        ///
+        /// This function does **not** emit an event upon execution.
+        #[pallet::call_index(2)]
+        #[pallet::weight(<T as Config>::WeightInfo::attest_block())]
+        pub fn mark_block_forwarded(
+            origin: OriginFor<T>,
+            block_number: BlockNumber,
+        ) -> DispatchResult {
+            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin,
+                &PermissionLevel::AttestationPallet(
+                    AttestationPalletPermission::ForwardAttestedBlock,
+                ),
+            )?;
+
+            LastForwardedBlock::<T>::set(Some(block_number));
 
             Ok(())
         }
