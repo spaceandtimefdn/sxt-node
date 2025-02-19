@@ -403,6 +403,23 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
+    // One storage item; key size is 32; value is size 4+4+16+32 bytes = 56 bytes.
+    pub const DepositBase: Balance = deposit(1, 88);
+    // Additional storage item size of 32 bytes.
+    pub const DepositFactor: Balance = deposit(0, 32);
+}
+
+impl pallet_multisig::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type Currency = Balances;
+    type DepositBase = DepositBase;
+    type DepositFactor = DepositFactor;
+    type MaxSignatories = ConstU32<100>;
+    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
     pub EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64;
     pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK;
     pub ReportLongevity: u64 =
@@ -828,6 +845,9 @@ mod runtime {
     #[runtime::pallet_index(26)]
     pub type Historical = pallet_session::historical::Pallet<Runtime>;
 
+    #[runtime::pallet_index(27)]
+    pub type Multisig = pallet_multisig::Pallet<Runtime>;
+
     #[runtime::pallet_index(52)]
     pub type VoterList = pallet_bags_list::Pallet<Runtime, Instance1>;
 
@@ -902,10 +922,10 @@ mod benches {
         [pallet_im_online, ImOnline]
         [pallet_staking, Staking]
         [pallet_sudo, Sudo]
+        [pallet_multisig, Multisig]
         [frame_system, SystemBench::<Runtime>]
         [pallet_timestamp, Timestamp]
         [pallet_utility, Utility]
-        [pallet_sudo, Sudo]
         [pallet_permissions, Permissions]
         [pallet_indexing, Indexing]
         [pallet_attestation, Attestations]

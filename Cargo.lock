@@ -10076,6 +10076,22 @@ dependencies = [
 
 [[package]]
 name = "pallet-multisig"
+version = "37.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b836d56979a4cd33b68bca09ea34bd0eb524fad8711cb6471ec84a5c3318ea6f"
+dependencies = [
+ "frame-benchmarking 37.0.0",
+ "frame-support 37.1.0",
+ "frame-system 37.1.0",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io 38.0.0",
+ "sp-runtime",
+]
+
+[[package]]
+name = "pallet-multisig"
 version = "38.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e5099c9a4442efcc1568d88ca1d22d624e81ab96358f99f616c67fbd82532d2"
@@ -12049,7 +12065,7 @@ dependencies = [
  "pallet-migrations",
  "pallet-mixnet",
  "pallet-mmr",
- "pallet-multisig",
+ "pallet-multisig 38.0.0",
  "pallet-nft-fractionalization",
  "pallet-nfts",
  "pallet-nfts-runtime-api",
@@ -18088,6 +18104,7 @@ dependencies = [
  "pallet-indexing",
  "pallet-indices 37.0.0",
  "pallet-keystore",
+ "pallet-multisig 37.0.0",
  "pallet-offences 36.0.0",
  "pallet-permissions",
  "pallet-session 37.0.0",
