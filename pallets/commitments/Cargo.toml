@@ -27,7 +27,7 @@ native-api.workspace = true
 on-chain-table.workspace = true
 proof-of-sql.workspace = true
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
-proof-of-sql-static-setups.workspace = true
+proof-of-sql-static-setups = { workspace = true, features = ["nu_1"] }
 sqlparser.workspace = true
 sxt-core.workspace = true
 
