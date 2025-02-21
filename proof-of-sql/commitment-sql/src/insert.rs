@@ -353,7 +353,7 @@ mod tests {
         let population_data = [100, 2, 7];
 
         let row_number_col_id = Ident::new("META_ROW_NUMBER");
-        let row_number_data = [1, 2, 3];
+        let row_number_data = [0, 1, 2];
 
         let empty_table = OnChainTable::try_from_iter([
             (
