@@ -11,16 +11,13 @@ use sp_consensus_babe::AuthorityId as BabeId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use sp_runtime::MultiAddress::Raw;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
-use sqlparser::test_utils::table;
 use sxt_core::tables::{
     create_statement,
     table_identifier,
     ColumnUuidList,
-    CreateStatement,
     IndexerMode,
     InsertQuorumSize,
     RawGenesisTable,
@@ -31,7 +28,6 @@ use sxt_core::tables::{
     TableUuid,
     TableVersion,
 };
-use sxt_core::ByteString;
 use sxt_runtime::opaque::SessionKeys;
 use sxt_runtime::{
     AccountId,

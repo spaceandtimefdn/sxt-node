@@ -16,7 +16,6 @@ use sc_client_api::{Backend, BlockchainEvents, Finalizer, StorageKey, StoragePro
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::traits::SpawnEssentialNamed;
-use sp_core::H256;
 use sp_runtime::traits::Header;
 use sp_runtime_interface::sp_wasm_interface::anyhow;
 use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;

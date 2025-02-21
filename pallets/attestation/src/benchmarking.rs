@@ -9,8 +9,8 @@ use crate::Pallet as AttestationPallet;
 #[benchmarks]
 mod benchmarks {
     use codec::Encode;
-    use frame_support::{assert_err, assert_noop, assert_ok, BoundedVec};
-    use k256::ecdsa::{SigningKey, VerifyingKey};
+    use frame_support::assert_ok;
+    use k256::ecdsa::SigningKey;
     use pallet_keystore::Pallet as Keystore;
     use pallet_permissions::Pallet as Permissions;
     use sha3::digest::generic_array::GenericArray;

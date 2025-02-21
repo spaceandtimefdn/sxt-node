@@ -4,6 +4,7 @@ use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
 use proof_of_sql_commitment_map::{CommitmentScheme, CommitmentSchemeFlags, TableCommitmentBytes};
 use proof_of_sql_static_setups::PUBLIC_SETUPS;
+use sqlparser::ast::Ident;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 use sxt_core::tables::TableIdentifier;
@@ -51,8 +52,8 @@ fn we_can_process_create_table() {
         let test_params = ProcessCreateTableTestParams::new_valid();
 
         let empty_table = OnChainTable::try_from_iter([
-            ("animal".parse().unwrap(), OnChainColumn::VarChar(vec![])),
-            ("population".parse().unwrap(), OnChainColumn::BigInt(vec![])),
+            (Ident::new("animal"), OnChainColumn::VarChar(vec![])),
+            (Ident::new("population"), OnChainColumn::BigInt(vec![])),
         ])
         .unwrap();
 

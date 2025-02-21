@@ -308,7 +308,6 @@ pub fn extract_schema_and_table(path: &Path) -> Result<(String, String), anyhow:
 /// - The query execution fails.
 /// - The provided schema or table names are invalid or non-existent.
 ///
-
 pub async fn get_table_columns_and_types(
     client: &Object,
     schema_name: &str,

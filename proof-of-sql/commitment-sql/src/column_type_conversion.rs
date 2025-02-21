@@ -81,6 +81,7 @@ pub fn sqlparser_data_type_to_proof_of_sql_column_type(
 ) -> Result<ColumnType, UnsupportedColumnType> {
     match sqlparser_type {
         DataType::Bool | DataType::Boolean => Ok(ColumnType::Boolean),
+        DataType::UnsignedTinyInt(_) => Ok(ColumnType::Uint8),
         DataType::TinyInt(_) => Ok(ColumnType::TinyInt),
         DataType::Int2(_) | DataType::SmallInt(_) => Ok(ColumnType::SmallInt),
         DataType::Int(_) | DataType::Int4(_) | DataType::Integer(_) => Ok(ColumnType::Int),
@@ -103,24 +104,20 @@ pub fn sqlparser_data_type_to_proof_of_sql_column_type(
         | DataType::Dec(number_info) => {
             let (precision, scale) =
                 sqlparser_number_info_to_proof_of_sql_precision_and_scale(number_info)?;
-
             Ok(ColumnType::Decimal75(precision, scale))
         }
         DataType::Datetime(precision) => sqlparser_precision_to_proof_of_sql_time_unit(precision)
-            .map(|unit| ColumnType::TimestampTZ(unit, PoSQLTimeZone::Utc)),
+            .map(|unit| ColumnType::TimestampTZ(unit, PoSQLTimeZone::utc())),
         DataType::Timestamp(precision, _) => {
             let unit = sqlparser_precision_to_proof_of_sql_time_unit(precision)?;
-
-            Ok(ColumnType::TimestampTZ(unit, PoSQLTimeZone::Utc))
+            Ok(ColumnType::TimestampTZ(unit, PoSQLTimeZone::utc()))
+        }
+        DataType::Binary(_) | DataType::Varbinary(_) | DataType::Blob(_) | DataType::Bytes(_) => {
+            Ok(ColumnType::VarBinary)
         }
         DataType::Uuid
-        | DataType::Binary(_)
-        | DataType::Varbinary(_)
-        | DataType::Blob(_)
-        | DataType::Bytes(_)
         | DataType::Float(_)
         | DataType::MediumInt(_)
-        | DataType::UnsignedTinyInt(_)
         | DataType::UnsignedInt2(_)
         | DataType::UnsignedSmallInt(_)
         | DataType::UnsignedMediumInt(_)
@@ -159,6 +156,29 @@ mod tests {
     use sqlparser::ast::TimezoneInfo;
 
     use super::*;
+
+    #[test]
+    fn we_can_convert_sqlparser_binary_types_to_proof_of_sql() {
+        let types = [
+            DataType::Binary(None),
+            DataType::Varbinary(None),
+            DataType::Blob(None),
+            DataType::Bytes(None),
+        ];
+        for t in types {
+            let col_type = sqlparser_data_type_to_proof_of_sql_column_type(&t).unwrap();
+            assert_eq!(col_type, ColumnType::VarBinary);
+        }
+    }
+
+    #[test]
+    fn we_cannot_convert_sqlparser_bytea() {
+        let t = DataType::Bytea;
+        assert!(matches!(
+            sqlparser_data_type_to_proof_of_sql_column_type(&t),
+            Err(UnsupportedColumnType::DataType { .. })
+        ));
+    }
 
     #[test]
     fn we_can_convert_simple_postgres_types_to_proof_of_sql() {
@@ -231,37 +251,37 @@ mod tests {
         let microsecond_timestamp = DataType::Timestamp(Some(6), TimezoneInfo::WithTimeZone);
         assert_eq!(
             sqlparser_data_type_to_proof_of_sql_column_type(&microsecond_timestamp).unwrap(),
-            ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::Utc)
+            ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::utc())
         );
 
         let millisecond_timestamp = DataType::Timestamp(Some(3), TimezoneInfo::Tz);
         assert_eq!(
             sqlparser_data_type_to_proof_of_sql_column_type(&millisecond_timestamp).unwrap(),
-            ColumnType::TimestampTZ(PoSQLTimeUnit::Millisecond, PoSQLTimeZone::Utc)
+            ColumnType::TimestampTZ(PoSQLTimeUnit::Millisecond, PoSQLTimeZone::utc())
         );
 
         let second_timestamp = DataType::Timestamp(Some(0), TimezoneInfo::WithTimeZone);
         assert_eq!(
             sqlparser_data_type_to_proof_of_sql_column_type(&second_timestamp).unwrap(),
-            ColumnType::TimestampTZ(PoSQLTimeUnit::Second, PoSQLTimeZone::Utc)
+            ColumnType::TimestampTZ(PoSQLTimeUnit::Second, PoSQLTimeZone::utc())
         );
 
         let default_timestamp = DataType::Timestamp(None, TimezoneInfo::Tz);
         assert_eq!(
             sqlparser_data_type_to_proof_of_sql_column_type(&default_timestamp).unwrap(),
-            ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::Utc)
+            ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::utc())
         );
 
         let none_timezone_timestamp = DataType::Timestamp(None, TimezoneInfo::None);
         assert_eq!(
             sqlparser_data_type_to_proof_of_sql_column_type(&none_timezone_timestamp).unwrap(),
-            ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::Utc)
+            ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::utc())
         );
 
         let no_timezone_timestamp = DataType::Timestamp(None, TimezoneInfo::WithoutTimeZone);
         assert_eq!(
             sqlparser_data_type_to_proof_of_sql_column_type(&no_timezone_timestamp).unwrap(),
-            ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::Utc)
+            ColumnType::TimestampTZ(PoSQLTimeUnit::Microsecond, PoSQLTimeZone::utc())
         );
     }
 

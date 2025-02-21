@@ -1,11 +1,8 @@
-use alloc::string::ToString;
-
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::database::{ColumnType, TableRef};
-use proof_of_sql_parser::{Identifier, ParseError};
 use snafu::Snafu;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
-use sqlparser::ast::{ColumnDef, ColumnOptionDef};
+use sqlparser::ast::{ColumnDef, ColumnOptionDef, Ident};
 
 use crate::column_options::{validate_column_options, InvalidColumnOptions};
 use crate::column_type_conversion::{
@@ -27,11 +24,11 @@ pub enum InvalidCreateTable {
         /// Source unsupported column type error.
         source: UnsupportedColumnType,
     },
-    /// Table has invalid identifier
-    #[snafu(display("table has invalid identifier: {source}"), context(false))]
-    Identifier {
-        /// Source parse error.
-        source: ParseError,
+    /// Table ref has unexpected number of idents.
+    #[snafu(display("expected table ref with 2 identifiers, found {num_identifiers}"))]
+    NumTableIdentifiers {
+        /// The actual number of identifiers defined.
+        num_identifiers: usize,
     },
     /// Table has duplicate identifiers.
     #[snafu(display("table has duplicate identifiers"))]
@@ -67,7 +64,7 @@ pub struct ValidatedCreateTable<'a> {
     ///
     /// Validation of the column types and identifiers performs the conversion to these types.
     /// Storing it here is essentially caching - users can avoid performing that logic twice.
-    proof_of_sql_schema: IndexMap<Identifier, ColumnType>,
+    proof_of_sql_schema: IndexMap<&'a Ident, ColumnType>,
 }
 
 impl<'a> ValidatedCreateTable<'a> {
@@ -82,7 +79,14 @@ impl<'a> ValidatedCreateTable<'a> {
                 validate_column_options(options.iter().map(|ColumnOptionDef { option, .. }| option))
             })?;
 
-        let proof_of_sql_table_identifier = table.name.to_string().parse()?;
+        let [schema_id, table_id] = table.name.0.as_slice() else {
+            Err(InvalidCreateTable::NumTableIdentifiers {
+                num_identifiers: table.name.0.len(),
+            })?
+        };
+
+        let proof_of_sql_table_identifier =
+            TableRef::from_idents(Some(schema_id.clone()), table_id.clone());
 
         let proof_of_sql_schema = table
             .columns
@@ -92,8 +96,7 @@ impl<'a> ValidatedCreateTable<'a> {
                      name, data_type, ..
                  }| {
                     let column_type = sqlparser_data_type_to_proof_of_sql_column_type(data_type)?;
-                    let column_name = name.value.parse()?;
-                    Ok((column_name, column_type))
+                    Ok((name, column_type))
                 },
             )
             .collect::<Result<IndexMap<_, _>, InvalidCreateTable>>()?;
@@ -124,7 +127,7 @@ impl<'a> ValidatedCreateTable<'a> {
     }
 
     /// Immutable accessor to the cached proof-of-sql schema.
-    pub fn proof_of_sql_schema(&self) -> &IndexMap<Identifier, ColumnType> {
+    pub fn proof_of_sql_schema(&self) -> &IndexMap<&Ident, ColumnType> {
         &self.proof_of_sql_schema
     }
 
@@ -137,7 +140,7 @@ impl<'a> ValidatedCreateTable<'a> {
 impl<'a> From<ValidatedCreateTable<'a>> for OnChainTable {
     fn from(value: ValidatedCreateTable<'a>) -> Self {
         OnChainTable::try_from_iter(value.proof_of_sql_schema.into_iter().map(
-            |(identifier, column_type)| (identifier, OnChainColumn::empty_with_type(column_type)),
+            |(identifier, column_type)| (identifier.clone(), OnChainColumn::empty_with_type(column_type)),
         )).expect("ValidatedCreateTable is guaranteed to have at least one column and that all columns have the same length")
     }
 }
@@ -178,8 +181,8 @@ mod tests {
         assert_eq!(
             validated_create_table.proof_of_sql_schema(),
             &IndexMap::from_iter([
-                ("animal".parse().unwrap(), ColumnType::VarChar),
-                ("population".parse().unwrap(), ColumnType::BigInt)
+                (&Ident::new("animal"), ColumnType::VarChar),
+                (&Ident::new("population"), ColumnType::BigInt)
             ])
         );
     }
@@ -237,7 +240,7 @@ mod tests {
             .unwrap();
         assert!(matches!(
             ValidatedCreateTable::validate(&create_table),
-            Err(InvalidCreateTable::Identifier { .. })
+            Err(InvalidCreateTable::NumTableIdentifiers { .. })
         ));
     }
 
@@ -321,8 +324,8 @@ mod tests {
             .into_empty_table();
 
         let expected = OnChainTable::try_from_iter([
-            ("animal".parse().unwrap(), OnChainColumn::VarChar(vec![])),
-            ("population".parse().unwrap(), OnChainColumn::BigInt(vec![])),
+            (Ident::new("animal"), OnChainColumn::VarChar(vec![])),
+            (Ident::new("population"), OnChainColumn::BigInt(vec![])),
         ])
         .unwrap();
 

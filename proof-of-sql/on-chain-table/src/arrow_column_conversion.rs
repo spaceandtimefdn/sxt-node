@@ -3,6 +3,7 @@ use alloc::sync::Arc;
 
 use arrow::array::{
     ArrayRef,
+    BinaryArray,
     BooleanArray,
     Decimal128Array,
     Decimal256Array,
@@ -15,6 +16,7 @@ use arrow::array::{
     TimestampMillisecondArray,
     TimestampNanosecondArray,
     TimestampSecondArray,
+    UInt8Array,
 };
 use arrow::datatypes::{DataType, TimeUnit};
 use proof_of_sql::base::math::decimal::Precision;
@@ -131,6 +133,15 @@ impl TryFrom<&ArrayRef> for OnChainColumn {
                     .map(|s| s.unwrap().to_string())
                     .collect(),
             )),
+            DataType::Binary => Ok(Self::VarBinary(
+                value
+                    .as_any()
+                    .downcast_ref::<BinaryArray>()
+                    .unwrap()
+                    .iter()
+                    .map(|b| b.unwrap().to_vec())
+                    .collect(),
+            )),
             DataType::Timestamp(time_unit, timezone) => {
                 let (time_unit, timestamps) = match time_unit {
                     TimeUnit::Second => {
@@ -174,7 +185,6 @@ impl TryFrom<&ArrayRef> for OnChainColumn {
                         (PoSQLTimeUnit::Nanosecond, timestamps)
                     }
                 };
-
                 Ok(Self::TimestampTZ(
                     time_unit,
                     timezone
@@ -195,6 +205,7 @@ impl From<OnChainColumn> for ArrayRef {
     fn from(value: OnChainColumn) -> Self {
         match value {
             OnChainColumn::Boolean(col) => Arc::new(BooleanArray::from(col)),
+            OnChainColumn::UnsignedTinyInt(col) => Arc::new(UInt8Array::from(col)),
             OnChainColumn::TinyInt(col) => Arc::new(Int8Array::from(col)),
             OnChainColumn::SmallInt(col) => Arc::new(Int16Array::from(col)),
             OnChainColumn::Int(col) => Arc::new(Int32Array::from(col)),
@@ -214,6 +225,9 @@ impl From<OnChainColumn> for ArrayRef {
                 )
             }
             OnChainColumn::VarChar(col) => Arc::new(StringArray::from(col)),
+            OnChainColumn::VarBinary(col) => Arc::new(BinaryArray::from(
+                col.iter().map(|v| v.as_slice()).collect::<Vec<&[u8]>>(),
+            )),
             OnChainColumn::TimestampTZ(time_unit, timezone, col) => match time_unit {
                 PoSQLTimeUnit::Second => Arc::new(
                     TimestampSecondArray::from(col)
@@ -243,6 +257,26 @@ mod tests {
     use primitive_types::U256;
 
     use super::*;
+
+    #[test]
+    fn we_can_convert_binary_array_to_on_chain_column() {
+        let data = vec![vec![0, 1, 2], vec![254, 255], vec![128, 64, 32]];
+        let arrow_data: ArrayRef = Arc::new(BinaryArray::from(
+            data.iter().map(|x| x.as_slice()).collect::<Vec<&[u8]>>(),
+        ));
+        let on_chain = OnChainColumn::try_from(&arrow_data).unwrap();
+        assert_eq!(on_chain, OnChainColumn::VarBinary(data));
+    }
+
+    #[test]
+    fn we_can_convert_on_chain_varbinary_to_arrow() {
+        let data = vec![vec![10, 20, 30], vec![40, 50, 60], vec![70, 80, 90]];
+        let expected: ArrayRef = Arc::new(BinaryArray::from(
+            data.iter().map(|x| x.as_slice()).collect::<Vec<&[u8]>>(),
+        ));
+        let arrow_data = ArrayRef::from(OnChainColumn::VarBinary(data));
+        assert!(arrow_data == expected);
+    }
 
     #[test]
     fn we_can_convert_simple_arrow_arrays_to_on_chain_column() {
@@ -350,7 +384,11 @@ mod tests {
             Arc::new(TimestampMillisecondArray::from(data.clone()).with_timezone("+00:00"));
         assert_eq!(
             OnChainColumn::try_from(&array).unwrap(),
-            OnChainColumn::TimestampTZ(PoSQLTimeUnit::Millisecond, Some(PoSQLTimeZone::Utc), data)
+            OnChainColumn::TimestampTZ(
+                PoSQLTimeUnit::Millisecond,
+                Some(PoSQLTimeZone::utc()),
+                data
+            )
         );
 
         let data = vec![4, 5, 6];
@@ -360,7 +398,7 @@ mod tests {
             OnChainColumn::try_from(&array).unwrap(),
             OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Microsecond,
-                Some(PoSQLTimeZone::FixedOffset(3600)),
+                Some(PoSQLTimeZone::new(3600)),
                 data
             )
         );
@@ -372,7 +410,7 @@ mod tests {
             OnChainColumn::try_from(&array).unwrap(),
             OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Nanosecond,
-                Some(PoSQLTimeZone::FixedOffset(-3600)),
+                Some(PoSQLTimeZone::new(-3600)),
                 data
             )
         );
@@ -498,7 +536,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Second,
-                Some(PoSQLTimeZone::Utc),
+                Some(PoSQLTimeZone::utc()),
                 data
             )) == expected
         );
@@ -509,7 +547,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Millisecond,
-                Some(PoSQLTimeZone::Utc),
+                Some(PoSQLTimeZone::utc()),
                 data
             )) == expected
         );
@@ -520,7 +558,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Microsecond,
-                Some(PoSQLTimeZone::FixedOffset(3600)),
+                Some(PoSQLTimeZone::new(3600)),
                 data
             )) == expected,
         );
@@ -531,7 +569,7 @@ mod tests {
         assert!(
             ArrayRef::from(OnChainColumn::TimestampTZ(
                 PoSQLTimeUnit::Nanosecond,
-                Some(PoSQLTimeZone::FixedOffset(-3600)),
+                Some(PoSQLTimeZone::new(-3600)),
                 data
             )) == expected,
         );

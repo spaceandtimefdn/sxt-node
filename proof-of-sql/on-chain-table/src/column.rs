@@ -6,7 +6,7 @@ use primitive_types::U256;
 use proof_of_sql::base::commitment::CommittableColumn;
 use proof_of_sql::base::database::ColumnType;
 use proof_of_sql::base::math::decimal::Precision;
-use proof_of_sql::base::scalar::Scalar;
+use proof_of_sql::base::scalar::{Scalar, ScalarExt};
 use proof_of_sql_parser::posql_time::{PoSQLTimeUnit, PoSQLTimeZone};
 use serde::{Deserialize, Serialize};
 
@@ -22,9 +22,11 @@ use crate::OutOfScalarBounds;
 pub enum OnChainColumn {
     /// Column of bools.
     Boolean(Vec<bool>),
+    /// Column of unsigned 8-bit integers.
+    UnsignedTinyInt(Vec<u8>),
     /// Column of 8-bit integerss.
     TinyInt(Vec<i8>),
-    /// Column of 16-bit integerss.
+    /// Column of 16-bit integers.
     SmallInt(Vec<i16>),
     /// Column of 32-bit integerss.
     Int(Vec<i32>),
@@ -46,6 +48,8 @@ pub enum OnChainColumn {
     Decimal75(Precision, i8, Vec<U256>),
     /// Column of timestamps, all sharing a time unit/zone.
     TimestampTZ(PoSQLTimeUnit, Option<PoSQLTimeZone>, Vec<i64>),
+    /// Variable length binary columns
+    VarBinary(Vec<Vec<u8>>),
 }
 
 impl OnChainColumn {
@@ -53,12 +57,14 @@ impl OnChainColumn {
     pub fn len(&self) -> usize {
         match self {
             OnChainColumn::Boolean(bools) => bools.len(),
+            OnChainColumn::UnsignedTinyInt(ints) => ints.len(),
             OnChainColumn::TinyInt(ints) => ints.len(),
             OnChainColumn::SmallInt(ints) => ints.len(),
             OnChainColumn::Int(ints) => ints.len(),
             OnChainColumn::BigInt(ints) => ints.len(),
             OnChainColumn::Int128(ints) => ints.len(),
             OnChainColumn::VarChar(strings) => strings.len(),
+            OnChainColumn::VarBinary(words) => words.len(),
             OnChainColumn::Decimal75(.., ints) => ints.len(),
             OnChainColumn::TimestampTZ(.., ints) => ints.len(),
         }
@@ -77,6 +83,8 @@ impl OnChainColumn {
         match column_type {
             ColumnType::Boolean => OnChainColumn::Boolean(vec![]),
             ColumnType::VarChar => OnChainColumn::VarChar(vec![]),
+            ColumnType::VarBinary => OnChainColumn::VarBinary(vec![]),
+            ColumnType::Uint8 => OnChainColumn::UnsignedTinyInt(vec![]),
             ColumnType::TinyInt => OnChainColumn::TinyInt(vec![]),
             ColumnType::SmallInt => OnChainColumn::SmallInt(vec![]),
             ColumnType::Int => OnChainColumn::Int(vec![]),
@@ -98,6 +106,7 @@ impl OnChainColumn {
     ) -> Result<CommittableColumn, OutOfScalarBounds> {
         match &self {
             OnChainColumn::Boolean(bools) => Ok(CommittableColumn::Boolean(bools)),
+            OnChainColumn::UnsignedTinyInt(ints) => Ok(CommittableColumn::Uint8(ints)),
             OnChainColumn::TinyInt(ints) => Ok(CommittableColumn::TinyInt(ints)),
             OnChainColumn::SmallInt(ints) => Ok(CommittableColumn::SmallInt(ints)),
             OnChainColumn::Int(ints) => Ok(CommittableColumn::Int(ints)),
@@ -110,6 +119,7 @@ impl OnChainColumn {
                     .map(Into::<[u64; 4]>::into)
                     .collect(),
             )),
+
             OnChainColumn::Decimal75(precision, scale, ints) => Ok(CommittableColumn::Decimal75(
                 *precision,
                 *scale,
@@ -120,10 +130,17 @@ impl OnChainColumn {
             OnChainColumn::TimestampTZ(time_unit, timezone, ints) => {
                 Ok(CommittableColumn::TimestampTZ(
                     *time_unit,
-                    timezone.unwrap_or(PoSQLTimeZone::Utc),
+                    timezone.unwrap_or(PoSQLTimeZone::utc()),
                     ints,
                 ))
             }
+            OnChainColumn::VarBinary(bytes) => Ok(CommittableColumn::VarBinary(
+                bytes
+                    .iter()
+                    .map(|b| S::from_byte_slice_via_hash(b))
+                    .map(Into::<[u64; 4]>::into)
+                    .collect(),
+            )),
         }
     }
 }
@@ -139,10 +156,42 @@ mod tests {
     use super::*;
 
     #[test]
+    fn we_can_convert_on_chain_varbinary_column_to_dory_committable_column() {
+        let data = vec![vec![0u8, 1, 2, 3], vec![10, 20, 30, 40]];
+        let column = OnChainColumn::VarBinary(data.clone());
+        let committable = column.try_to_committable_column::<DoryScalar>().unwrap();
+        let expected = CommittableColumn::VarBinary(
+            data.into_iter()
+                .map(|bytes| DoryScalar::from_byte_slice_via_hash(&bytes).into())
+                .collect(),
+        );
+        assert_eq!(committable, expected);
+    }
+
+    #[test]
+    fn we_can_convert_on_chain_varbinary_column_to_ipa_committable_column() {
+        let data = vec![vec![5u8, 6, 7], vec![100, 101]];
+        let column = OnChainColumn::VarBinary(data.clone());
+        let committable = column
+            .try_to_committable_column::<Curve25519Scalar>()
+            .unwrap();
+        let expected = CommittableColumn::VarBinary(
+            data.into_iter()
+                .map(|bytes| Curve25519Scalar::from_byte_slice_via_hash(&bytes).into())
+                .collect(),
+        );
+        assert_eq!(committable, expected);
+    }
+
+    #[test]
     fn we_can_get_column_length() {
         let empty_column = OnChainColumn::Boolean(vec![]);
         assert_eq!(empty_column.len(), 0);
         assert!(empty_column.is_empty());
+
+        let column = OnChainColumn::UnsignedTinyInt(vec![0]);
+        assert_eq!(column.len(), 1);
+        assert!(!column.is_empty());
 
         let column = OnChainColumn::TinyInt(vec![0]);
         assert_eq!(column.len(), 1);
@@ -174,7 +223,7 @@ mod tests {
 
         let column = OnChainColumn::TimestampTZ(
             PoSQLTimeUnit::Second,
-            Some(PoSQLTimeZone::Utc),
+            Some(PoSQLTimeZone::utc()),
             vec![1, 2, 3, 4, 5, 6],
         );
         assert_eq!(column.len(), 6);
@@ -183,6 +232,9 @@ mod tests {
     #[test]
     fn we_can_get_empty_column() {
         let empty_column = OnChainColumn::empty_with_type(ColumnType::Boolean);
+        assert!(empty_column.is_empty());
+
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::Uint8);
         assert!(empty_column.is_empty());
 
         let empty_column = OnChainColumn::empty_with_type(ColumnType::TinyInt);
@@ -203,9 +255,12 @@ mod tests {
         let empty_column = OnChainColumn::empty_with_type(ColumnType::VarChar);
         assert!(empty_column.is_empty());
 
+        let empty_column = OnChainColumn::empty_with_type(ColumnType::VarBinary);
+        assert!(empty_column.is_empty());
+
         let empty_column = OnChainColumn::empty_with_type(ColumnType::TimestampTZ(
             PoSQLTimeUnit::Second,
-            PoSQLTimeZone::Utc,
+            PoSQLTimeZone::utc(),
         ));
         assert!(empty_column.is_empty());
 
@@ -229,6 +284,16 @@ mod tests {
                 .try_to_committable_column::<S>()
                 .unwrap(),
             CommittableColumn::from(&owned_bool_column)
+        );
+
+        let data = vec![10, 0, 20];
+        let on_chain_uint8_column = OnChainColumn::UnsignedTinyInt(data.clone());
+        let owned_uint8_column = OwnedColumn::<S>::Uint8(data);
+        assert_eq!(
+            on_chain_uint8_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_uint8_column)
         );
 
         let data = vec![-10, 0, 20];
@@ -301,6 +366,16 @@ mod tests {
             CommittableColumn::from(&owned_varchar_column)
         );
 
+        let data = [b"lorem", b"ipsum", b"dolor"].map(Vec::from).to_vec();
+        let on_chain_varbinary_column = OnChainColumn::VarBinary(data.clone());
+        let owned_varbinary_column = OwnedColumn::<S>::VarBinary(data);
+        assert_eq!(
+            on_chain_varbinary_column
+                .try_to_committable_column::<S>()
+                .unwrap(),
+            CommittableColumn::from(&owned_varbinary_column)
+        );
+
         let on_chain_decimal_column = OnChainColumn::Decimal75(
             Precision::new(38).unwrap(),
             10,
@@ -321,11 +396,11 @@ mod tests {
         let data = vec![-10, 0, 20];
         let on_chain_timestamp_column = OnChainColumn::TimestampTZ(
             PoSQLTimeUnit::Nanosecond,
-            Some(PoSQLTimeZone::Utc),
+            Some(PoSQLTimeZone::utc()),
             data.clone(),
         );
         let owned_timestamp_column =
-            OwnedColumn::<S>::TimestampTZ(PoSQLTimeUnit::Nanosecond, PoSQLTimeZone::Utc, data);
+            OwnedColumn::<S>::TimestampTZ(PoSQLTimeUnit::Nanosecond, PoSQLTimeZone::utc(), data);
         assert_eq!(
             on_chain_timestamp_column
                 .try_to_committable_column::<S>()

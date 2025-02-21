@@ -29,7 +29,7 @@ pub mod pallet {
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
     use sxt_core::attestation::{verify_eth_signature, EthereumSignature, RegisterExternalAddress};
-    use sxt_core::keystore::{EthereumKey, KeyType, UnregisterExternalAddress, UserKeystore};
+    use sxt_core::keystore::{EthereumKey, UnregisterExternalAddress, UserKeystore};
 
     use crate::weights::WeightInfo;
 

@@ -1,13 +1,12 @@
 //! todo
 use std::fs::File;
 use std::io::{self, Read};
-use std::process::exit;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use ::sxt_core::attestation::sign_eth_message;
 use clap::{Parser, Subcommand};
-use crossterm::event::{self, read, Event, KeyCode};
+use crossterm::event::{read, Event, KeyCode};
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use env_logger::Env;
@@ -18,9 +17,9 @@ use prometheus::core::{Atomic, AtomicU64};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Style};
-use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use ratatui::widgets::{Block, Borders, List, ListItem};
 use ratatui::Terminal;
-use runtime::api::runtime_types::sxt_core::attestation::{self, Attestation};
+use runtime::api::runtime_types::sxt_core::attestation::Attestation;
 use sha3::digest::generic_array::GenericArray;
 use subxt::blocks::Block as BlockT;
 use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;

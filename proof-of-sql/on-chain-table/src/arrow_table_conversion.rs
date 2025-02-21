@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
 
 use arrow::array::RecordBatch;
-use proof_of_sql_parser::ParseError;
 use snafu::Snafu;
+use sqlparser::ast::Ident;
 
 use crate::map::IndexSet;
 use crate::{ArrowToOnChainColumnError, OnChainColumn, OnChainTable};
@@ -17,12 +17,6 @@ pub enum ArrowToOnChainTableError {
         error: ArrowToOnChainColumnError,
     },
     /// Failed to parse column identifier.
-    #[snafu(display("failed to parse column identifier: {error}"))]
-    Identifier {
-        /// Error encountered by parser
-        error: ParseError,
-    },
-    /// Failed to parse column identifier.
     #[snafu(display("encountered duplicate column identifier in RecordBatch"))]
     DuplicateIdentifier,
 }
@@ -30,12 +24,6 @@ pub enum ArrowToOnChainTableError {
 impl From<ArrowToOnChainColumnError> for ArrowToOnChainTableError {
     fn from(error: ArrowToOnChainColumnError) -> Self {
         ArrowToOnChainTableError::Column { error }
-    }
-}
-
-impl From<ParseError> for ArrowToOnChainTableError {
-    fn from(error: ParseError) -> Self {
-        ArrowToOnChainTableError::Identifier { error }
     }
 }
 
@@ -52,8 +40,8 @@ impl TryFrom<RecordBatch> for OnChainTable {
             .schema()
             .fields()
             .into_iter()
-            .map(|field| field.name().parse())
-            .collect::<Result<IndexSet<_>, _>>()?;
+            .map(|field| Ident::new(field.name()))
+            .collect::<IndexSet<_>>();
 
         if columns.len() != identifiers.len() {
             return Err(ArrowToOnChainTableError::DuplicateIdentifier);
@@ -69,7 +57,7 @@ impl From<OnChainTable> for RecordBatch {
         RecordBatch::try_from_iter(
             value
                 .into_iter()
-                .map(|(identifier, column)| (identifier, column.into())),
+                .map(|(identifier, column)| (identifier.value, column.into())),
         )
         .expect("OnChainTable type guarantees all expectations of RecordBatches")
     }
@@ -86,19 +74,19 @@ mod tests {
 
     #[test]
     fn we_can_convert_table_to_and_from_record_batch() {
-        let bigint_col_id = "bigint_col".parse().unwrap();
+        let bigint_col_id = Ident::new("bigint_col");
         let bigint_col_data = vec![1, 2, 3];
         let bigint_col_array: ArrayRef = Arc::new(Int64Array::from(bigint_col_data.clone()));
         let bigint_col_column = OnChainColumn::BigInt(bigint_col_data);
 
-        let varchar_col_id = "varchar_col".parse().unwrap();
+        let varchar_col_id = Ident::new("varchar_col");
         let varchar_col_data = ["lorem", "ipsum", "dolor"].map(String::from).to_vec();
         let varchar_col_array: ArrayRef = Arc::new(StringArray::from(varchar_col_data.clone()));
         let varchar_col_column = OnChainColumn::VarChar(varchar_col_data);
 
         let record_batch = RecordBatch::try_from_iter([
-            (bigint_col_id, bigint_col_array),
-            (varchar_col_id, varchar_col_array),
+            (&bigint_col_id.value, bigint_col_array),
+            (&varchar_col_id.value, varchar_col_array),
         ])
         .unwrap();
         let table = OnChainTable::try_from_iter([
@@ -121,19 +109,6 @@ mod tests {
         assert!(matches!(
             OnChainTable::try_from(record_batch),
             Err(ArrowToOnChainTableError::Column { .. })
-        ));
-    }
-
-    #[test]
-    fn we_cannot_convert_table_from_batch_with_malformed_identifier() {
-        let bigint_col_id = "bad.id";
-        let bigint_col_data = vec![1, 2, 3];
-        let bigint_col_array: ArrayRef = Arc::new(Int64Array::from(bigint_col_data.clone()));
-
-        let record_batch = RecordBatch::try_from_iter([(bigint_col_id, bigint_col_array)]).unwrap();
-        assert!(matches!(
-            OnChainTable::try_from(record_batch),
-            Err(ArrowToOnChainTableError::Identifier { .. })
         ));
     }
 

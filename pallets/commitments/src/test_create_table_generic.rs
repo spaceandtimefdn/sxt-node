@@ -45,7 +45,7 @@ pub fn we_cannot_process_invalid_create_table<TestParams: CreateTableApiTestPara
 
         assert_noop!(
             test_params.execute(),
-            Error::<Test>::CreateTableWithInvalidIdentifier,
+            Error::<Test>::CreateTableWithInvalidTableIdentifierCount,
         );
 
         // duplicate identifier

@@ -246,7 +246,7 @@ pub enum Attestation {
 
 #[cfg(test)]
 mod tests {
-    use frame_support::{assert_err, assert_ok};
+    use frame_support::assert_ok;
     use k256::elliptic_curve::rand_core::OsRng;
 
     use super::*;

@@ -9,8 +9,8 @@ use crate::Pallet as KeystorePallet;
 #[benchmarks]
 mod benchmarks {
     use codec::Encode;
-    use frame_support::{assert_noop, assert_ok};
-    use k256::ecdsa::{SigningKey, VerifyingKey};
+    use frame_support::assert_ok;
+    use k256::ecdsa::SigningKey;
     use scale_info::prelude::vec::Vec;
     use sha3::digest::generic_array::GenericArray;
     use sxt_core::attestation::{

@@ -160,6 +160,7 @@ mod tests {
     use proof_of_sql_commitment_map::TableCommitmentBytes;
     use sp_core::U256;
     use sp_runtime::BoundedVec;
+    use sqlparser::ast::Ident;
     use sxt_core::tables::create_statement;
 
     use super::*;
@@ -236,7 +237,7 @@ mod tests {
 
         let expected_on_chain_table = OnChainTable::try_from_iter([
             (
-                "iD".parse().unwrap(),
+                Ident::new("iD"),
                 OnChainColumn::VarChar(
                     ["lorem", "ipsum", "", "dolor"]
                         .map(ToString::to_string)
@@ -244,7 +245,7 @@ mod tests {
                 ),
             ),
             (
-                "pRIce".parse().unwrap(),
+                Ident::new("pRIce"),
                 OnChainColumn::Decimal75(Precision::new(75).unwrap(), 0, vec![U256::zero(), U256::zero(), U256::MAX - U256::from(999), U256::from_str_radix("896044618658097711785492504343953926634992332820282019728792003956564819967", 10).unwrap()])
             ),
         ]).unwrap();
@@ -290,19 +291,19 @@ mod tests {
     }
 
     fn sample_empty_and_populated_on_chain_table() -> (OnChainTable, OnChainTable) {
-        let animals_col_id = "animals".parse().unwrap();
+        let animals_col_id = Ident::new("animals");
         let animals_data = ["cow", "dog", "cat"].map(String::from);
 
-        let population_col_id = "population".parse().unwrap();
+        let population_col_id = Ident::new("population");
         let population_data = [100, 2, 7];
 
         let empty_table = OnChainTable::try_from_iter([
             (
-                animals_col_id,
+                animals_col_id.clone(),
                 OnChainColumn::empty_with_type(ColumnType::VarChar),
             ),
             (
-                population_col_id,
+                population_col_id.clone(),
                 OnChainColumn::empty_with_type(ColumnType::BigInt),
             ),
         ])

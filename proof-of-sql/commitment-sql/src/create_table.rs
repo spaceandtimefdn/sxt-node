@@ -27,14 +27,14 @@ use crate::validated_create_table::{InvalidCreateTable, ValidatedCreateTable};
 /// `OnChainTable` and offset.
 struct OnChainTableToTableCommitmentFn<'a, 's>(&'a OnChainTable, usize, PhantomData<&'s ()>);
 
-impl<'a, 's> OnChainTableToTableCommitmentFn<'a, 's> {
+impl<'a> OnChainTableToTableCommitmentFn<'a, '_> {
     /// Construct a new [`OnChainTableToTableCommitmentFn`].
     fn new(table: &'a OnChainTable, offset: usize) -> Self {
         OnChainTableToTableCommitmentFn(table, offset, PhantomData)
     }
 }
 
-impl<'a, 's> GenericOverCommitmentFn for OnChainTableToTableCommitmentFn<'a, 's> {
+impl<'s> GenericOverCommitmentFn for OnChainTableToTableCommitmentFn<'_, 's> {
     type In = AssociatedPublicSetupType<'s>;
     type Out = ResultOkType<TableCommitmentType, OutOfScalarBounds>;
 
@@ -130,6 +130,7 @@ mod tests {
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;
+    use sqlparser::ast::Ident;
     use sqlparser::dialect::PostgreSqlDialect;
     use sqlparser::parser::Parser;
 
@@ -182,8 +183,8 @@ mod tests {
         let expected_dory_commitment =
             TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
                 OnChainTable::try_from_iter([
-                    ("animal".parse().unwrap(), OnChainColumn::VarChar(vec![])),
-                    ("population".parse().unwrap(), OnChainColumn::BigInt(vec![])),
+                    (Ident::new("animal"), OnChainColumn::VarChar(vec![])),
+                    (Ident::new("population"), OnChainColumn::BigInt(vec![])),
                 ])
                 .unwrap()
                 .iter_committable::<DoryScalar>()

@@ -13,9 +13,7 @@ use alloc::vec::Vec;
 use frame_election_provider_support::{generate_solution_type, onchain, SequentialPhragmen};
 use frame_support::dispatch::DispatchClass;
 use frame_support::genesis_builder_helper::{build_state, get_preset};
-use frame_support::traits::fungible::NativeFromLeft;
-use frame_support::traits::tokens::imbalance::ResolveAssetTo;
-use frame_support::traits::{AsEnsureOriginWithArg, EitherOf, OnUnbalanced, VariantCountOf};
+use frame_support::traits::VariantCountOf;
 pub use frame_support::traits::{
     ConstBool,
     ConstU128,
@@ -37,20 +35,13 @@ use frame_support::weights::ConstantMultiplier;
 pub use frame_support::weights::{IdentityFee, Weight};
 pub use frame_support::{construct_runtime, derive_impl, parameter_types, StorageValue};
 pub use frame_system::Call as SystemCall;
-use frame_system::{EnsureRoot, EnsureSigned};
-use pallet_bags_list::Instance1;
+use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
 use pallet_election_provider_multi_phase::GeometricDepositBase;
 use pallet_grandpa::AuthorityId as GrandpaId;
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 pub use pallet_timestamp::Call as TimestampCall;
-use pallet_transaction_payment::{
-    ConstFeeMultiplier,
-    CurrencyAdapter,
-    FungibleAdapter,
-    Multiplier,
-    TargetedFeeAdjustment,
-};
+use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
 use sp_api::impl_runtime_apis;
 use sp_arithmetic::traits::UniqueSaturatedInto;
 use sp_consensus_babe::AuthorityId as BabeId;

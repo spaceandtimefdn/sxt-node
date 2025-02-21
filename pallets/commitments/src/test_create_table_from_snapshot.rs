@@ -10,6 +10,7 @@ use proof_of_sql_commitment_map::{
     TableCommitmentBytesPerCommitmentScheme,
 };
 use proof_of_sql_static_setups::PUBLIC_SETUPS;
+use sqlparser::ast::Ident;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 use sxt_core::tables::TableIdentifier;
@@ -31,10 +32,10 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
             PRIMARY KEY (animal))"
             .to_string();
 
-        let animals_col_id = "animal".parse().unwrap();
+        let animals_col_id = Ident::new("animal");
         let animals_data = ["cow", "dog", "cat"].map(String::from);
 
-        let population_col_id = "population".parse().unwrap();
+        let population_col_id = Ident::new("population");
         let population_data = [100, 2, 7];
 
         let snapshot_data = OnChainTable::try_from_iter([

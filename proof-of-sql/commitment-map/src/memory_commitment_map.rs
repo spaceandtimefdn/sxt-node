@@ -136,12 +136,12 @@ mod tests {
 
         let commitment_map = MemoryCommitmentMap {
             ipa_map: HashMap::from_iter([
-                (ipa_ref, ipa_ref_ipa_commitment),
-                (all_ref, all_ref_ipa_commitment),
+                (ipa_ref.clone(), ipa_ref_ipa_commitment),
+                (all_ref.clone(), all_ref_ipa_commitment),
             ]),
             dory_map: HashMap::from_iter([
-                (dory_ref, dory_ref_dory_commitment),
-                (all_ref, all_ref_dory_commitment),
+                (dory_ref.clone(), dory_ref_dory_commitment),
+                (all_ref.clone(), all_ref_dory_commitment),
             ]),
         };
 
@@ -244,7 +244,7 @@ mod tests {
 
         commitment_map
             .create_commitments(
-                ipa_ref,
+                ipa_ref.clone(),
                 PerCommitmentScheme {
                     ipa: Some(ipa_commitment),
                     dynamic_dory: None,
@@ -253,7 +253,7 @@ mod tests {
             .unwrap();
         commitment_map
             .create_commitments(
-                dory_ref,
+                dory_ref.clone(),
                 PerCommitmentScheme {
                     ipa: None,
                     dynamic_dory: Some(dory_commitment),
@@ -262,7 +262,7 @@ mod tests {
             .unwrap();
         commitment_map
             .create_commitments(
-                all_ref,
+                all_ref.clone(),
                 PerCommitmentScheme {
                     ipa: Some(ipa_commitment),
                     dynamic_dory: Some(dory_commitment),
@@ -272,7 +272,7 @@ mod tests {
 
         assert_eq!(
             commitment_map.ipa_map,
-            HashMap::from_iter([(ipa_ref, ipa_commitment), (all_ref, ipa_commitment)])
+            HashMap::from_iter([(ipa_ref, ipa_commitment), (all_ref.clone(), ipa_commitment)])
         );
         assert_eq!(
             commitment_map.dory_map,
@@ -289,12 +289,12 @@ mod tests {
         let dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(20);
 
         assert!(matches!(
-            commitment_map.create_commitments(refs.ipa_ref, PerCommitmentScheme::default()),
+            commitment_map.create_commitments(refs.ipa_ref.clone(), PerCommitmentScheme::default()),
             Err(KeyExistsError { .. })
         ));
         assert!(matches!(
             commitment_map.create_commitments(
-                refs.ipa_ref,
+                refs.ipa_ref.clone(),
                 PerCommitmentScheme {
                     ipa: Some(ipa_commitment),
                     dynamic_dory: None
@@ -304,7 +304,7 @@ mod tests {
         ));
         assert!(matches!(
             commitment_map.create_commitments(
-                refs.ipa_ref,
+                refs.ipa_ref.clone(),
                 PerCommitmentScheme {
                     ipa: None,
                     dynamic_dory: Some(dory_commitment),
@@ -359,7 +359,7 @@ mod tests {
         );
         commitment_map
             .update_commitments(
-                refs.ipa_ref,
+                refs.ipa_ref.clone(),
                 PerCommitmentScheme {
                     ipa: Some(new_ipa_commitment),
                     dynamic_dory: None,
@@ -377,7 +377,7 @@ mod tests {
         );
         commitment_map
             .update_commitments(
-                refs.dory_ref,
+                refs.dory_ref.clone(),
                 PerCommitmentScheme {
                     ipa: None,
                     dynamic_dory: Some(new_dory_commitment),
@@ -399,7 +399,7 @@ mod tests {
         );
         commitment_map
             .update_commitments(
-                refs.all_ref,
+                refs.all_ref.clone(),
                 PerCommitmentScheme {
                     ipa: Some(new_ipa_commitment),
                     dynamic_dory: Some(new_dory_commitment),
@@ -426,7 +426,7 @@ mod tests {
 
         let no_commitments = PerCommitmentScheme::default();
         assert!(matches!(
-            commitment_map.update_commitments(refs.ipa_ref, no_commitments),
+            commitment_map.update_commitments(refs.ipa_ref.clone(), no_commitments),
             Err(CommitmentSchemesMismatchError { .. })
         ));
 
@@ -435,7 +435,7 @@ mod tests {
             dynamic_dory: Some(new_dory_commitment),
         };
         assert!(matches!(
-            commitment_map.update_commitments(refs.ipa_ref, dory_commitments),
+            commitment_map.update_commitments(refs.ipa_ref.clone(), dory_commitments),
             Err(CommitmentSchemesMismatchError { .. })
         ));
 

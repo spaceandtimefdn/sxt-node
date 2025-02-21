@@ -28,10 +28,10 @@ try-runtime = []
 [dev-dependencies]
 rand_chacha.workspace = true
 proof-of-sql = { workspace = true, features = ["test"] }
-proof-of-sql-parser = { workspace = true }
 rand.workspace = true
 on-chain-table = { workspace = true }
 sxt-core = { workspace = true, features = ["std"] }
+sqlparser = { workspace = true }
 
 [lints]
 workspace = true
