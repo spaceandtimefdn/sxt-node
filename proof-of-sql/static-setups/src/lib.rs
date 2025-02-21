@@ -9,14 +9,14 @@ use proof_of_sql_commitment_map::PerCommitmentScheme;
 /// Ark-serialized bytes of proof-of-sql public parameters, generated with...
 /// - nu of 1
 /// - ChaCha20Rng with seed "SpaceAndTime"
-#[cfg(all(feature = "nu_1", not(feature = "nu_14")))]
+#[cfg(all(feature = "nu_1", not(feature = "nu_15")))]
 const PUBLIC_PARAMETERS_BYTES: &[u8; 1064] = include_bytes!("../public_parameters_nu_1");
 
 /// Ark-serialized bytes of proof-of-sql public parameters, generated with...
-/// - nu of 14
+/// - nu of 15
 /// - ChaCha20Rng with seed "SpaceAndTime"
-#[cfg(feature = "nu_14")]
-const PUBLIC_PARAMETERS_BYTES: &[u8; 4719080] = include_bytes!("../public_parameters_nu_14");
+#[cfg(feature = "nu_15")]
+const PUBLIC_PARAMETERS_BYTES: &[u8; 9437672] = include_bytes!("../public_parameters_nu_15");
 
 lazy_static::lazy_static! {
     /// Proof-of-sql PublicParameters, built from [`PUBLIC_PARAMETERS_BYTES`].
