@@ -1,3 +1,12 @@
+## [0.73.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.73.0...v0.73.1) (2025-02-22)
+
+
+### Bug Fixes
+
+* 0-index META_ROW_NUMBER column ([e04442b](https://github.com/spaceandtimelabs/sxt-node/commit/e04442b9f2066f645085ba491efd90947b442fde))
+
+
+
 # [0.73.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.72.0...v0.73.0) (2025-02-21)
 
 
@@ -34,15 +43,6 @@
 * define machinery supporting table-defined privileged quorum ([66673f6](https://github.com/spaceandtimelabs/sxt-node/commit/66673f6f86ec7bb270d0eed171211477c9076158))
 * handle submissions for both quorum scopes in pallet-indexing ([792b712](https://github.com/spaceandtimelabs/sxt-node/commit/792b712900f8d096115d470bff6305821be58408))
 * parameterize table definitions with InsertQuorumSize ([8b3f3c7](https://github.com/spaceandtimelabs/sxt-node/commit/8b3f3c7540c5417c0ea242df5370622d7152a66a))
-
-
-
-# [0.69.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.68.0...v0.69.0) (2025-01-27)
-
-
-### Features
-
-* add proxy permission so mothership can add indexers ([1c8f1f0](https://github.com/spaceandtimelabs/sxt-node/commit/1c8f1f0d4327048f3e0fa8a0b33dd0af0f459506))
 
 
 
