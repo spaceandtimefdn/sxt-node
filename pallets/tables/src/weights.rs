@@ -48,6 +48,9 @@ pub trait WeightInfo {
 
 	/// Weight for create_empty_genesis_tables
 	fn create_empty_genesis_tables() -> Weight;
+
+	/// Weight for create_namespace
+	fn create_namespace() -> Weight;
 }
 
 /// TODO: add docs
@@ -73,6 +76,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn create_empty_genesis_tables() -> Weight {
 		Weight::from_parts(0,0)
 	}
+
+	fn create_namespace() -> Weight {
+		Weight::from_parts(0,0)
+	}
 }
 
 // For backwards compatibility and tests
@@ -94,6 +101,10 @@ impl WeightInfo for () {
 	}
 
 	fn create_empty_genesis_tables() -> Weight {
+		Weight::from_parts(0,0)
+	}
+
+	fn create_namespace() -> Weight {
 		Weight::from_parts(0,0)
 	}
 }

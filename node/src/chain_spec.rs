@@ -549,6 +549,7 @@ pub fn pair_commits(input: DdlList, paths: Vec<String>) -> CreateTableList {
                     insert_quorum_size: table.insert_quorum_size,
                     table_version: table.table_version,
                     table_uuid: table.table_uuid,
+                    namespace_uuid: Default::default(),
                     column_uuid_list: table.column_uuid_list,
                 };
                 output.push((entry, commit.1.clone()));
@@ -605,6 +606,7 @@ pub fn ddl_to_tables(
                     insert_quorum_size: quorum,
                     table_version: version,
                     table_uuid: uuid.clone(),
+                    namespace_uuid: Default::default(),
                     column_uuid_list: column_uuids.clone(),
                 })
             }

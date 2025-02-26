@@ -15,6 +15,8 @@ pub use weights::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
+    use core::str::{from_utf8, Utf8Error};
+
     use commitment_sql::CreateTableAndCommitmentMetadata;
     use frame_support::dispatch::DispatchResult;
     use frame_support::pallet_prelude::{StorageDoubleMap, ValueQuery, *};
@@ -25,7 +27,10 @@ pub mod pallet {
     use sxt_core::permissions::*;
     use sxt_core::tables::{
         create_statement_to_sqlparser,
+        extract_schema_uuid,
         sqlparser_to_create_statement,
+        uuids_from_create_statement,
+        uuids_from_sqlparser,
         ColumnUuidList,
         CreateStatement,
         GenesisTable,
@@ -64,6 +69,16 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
+        /// The namespace for a schema has been created
+        NamespaceCreated {
+            /// The create statement for the namespace/schema
+            create_schema: CreateStatement,
+            /// The version of the namespace
+            version: TableVersion,
+            /// The uuid of the namespace
+            namespace_uuid: TableUuid,
+        },
+
         /// The schema for a table has been updated
         SchemaUpdated(SourceAndMode, UpdateTableList),
 
@@ -86,6 +101,19 @@ pub mod pallet {
         Blake2_128Concat,
         TableVersion,
         ColumnUuidList,
+        ValueQuery,
+    >;
+
+    /// A Map of Namespace/Schema UUID by Namespace and Version
+    #[pallet::storage]
+    #[pallet::getter(fn namespace_versions)]
+    pub type NamespaceVersions<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        TableNamespace,
+        Blake2_128Concat,
+        TableVersion,
+        TableUuid,
         ValueQuery,
     >;
 
@@ -213,6 +241,10 @@ pub mod pallet {
             )?;
 
             let tables_with_meta_columns = tables.into_iter().map(|(identifier, statement, insert_quorum_size)| {
+                    let (table_uuid, column_uuids) = uuids_from_create_statement(statement.clone());
+
+                    Self::insert_table_uuid(identifier.clone(), 0, table_uuid, column_uuids)?;
+
                     Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), insert_quorum_size);
 
                     let create_table = create_statement_to_sqlparser(statement)
@@ -341,10 +373,14 @@ pub mod pallet {
                 let tables_with_meta_columns = genesis_list
                     .tables
                     .iter()
-                    .map(| GenesisTable { statement,  identifier, insert_quorum_size, .. }| {
+                    .map(| GenesisTable { statement,  identifier, insert_quorum_size, version, ..}| {
                         Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), *insert_quorum_size);
                         let mut create_table = create_statement_to_sqlparser(statement.clone())
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+                        // Get the UUIDs for the namespace, table, and columns from the create_table
+                        let (table_uuid, column_uuids) = uuids_from_sqlparser(create_table.clone());
+                        Self::insert_table_uuid(identifier.clone(), *version, table_uuid, column_uuids)?;
 
                         let index = create_table.columns.iter().position(|x| *x == commitment_sql::row_number_column_def()).expect("must have");
                         create_table.columns.remove(index);
@@ -365,11 +401,62 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// Used to create a new namespace/schema on chain. Stores the associated UUID and emits
+        /// an event containing the CREATE statement
+        #[pallet::call_index(4)]
+        #[pallet::weight(<T as Config>::WeightInfo::create_namespace())]
+        pub fn create_namespace(
+            origin: OriginFor<T>,
+            schema_name: ByteString,
+            version: TableVersion,
+            create_statement: CreateStatement,
+        ) -> DispatchResult {
+            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin,
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            )?;
+            let raw_sql =
+                from_utf8(&create_statement).map_err(|_| Error::<T>::CreateStatementParseError)?;
+            let generated_uuid = "someuuid"; // TODO generate this
+
+            let namespace_uuid = TableUuid::try_from(
+                extract_schema_uuid(raw_sql)
+                    .unwrap_or(generated_uuid)
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .unwrap();
+            Self::insert_namespace_uuid(schema_name, version, namespace_uuid.clone())?;
+
+            Self::deposit_event(Event::<T>::NamespaceCreated {
+                create_schema: create_statement,
+                version,
+                namespace_uuid,
+            });
+            Ok(())
+        }
     }
 
     impl<T: Config> Pallet<T> {
+        /// Insert a given Namespace's UUID along with the corresponding version
+        pub fn insert_namespace_uuid(
+            namespace_name: TableNamespace,
+            version: u16,
+            namespace_uuid: TableUuid,
+        ) -> Result<(), DispatchError> {
+            if NamespaceVersions::<T>::contains_key(&namespace_name, version) {
+                // Error, this version has already been assigned a UUID
+                return Err(Error::<T>::VersionAlreadyExists.into());
+            }
+
+            NamespaceVersions::<T>::set(&namespace_name, version, namespace_uuid);
+
+            Ok(())
+        }
+
         /// Add a UUID for this table
-        pub fn insert_uuid(
+        pub fn insert_table_uuid(
             ident: TableIdentifier,
             version: u16,
             uuid: TableUuid,
@@ -468,6 +555,17 @@ pub mod pallet {
                 .tables
                 .iter()
                 .map(|(table, commitments)| {
+                    // Insert the table IDs
+                    let (table_uuid, column_uuids) =
+                        uuids_from_create_statement(table.create_statement.clone());
+                    pallet::Pallet::<T>::insert_table_uuid(
+                        table.table_identifier.clone(),
+                        table.table_version,
+                        table_uuid,
+                        column_uuids,
+                    );
+
+                    // Insert the table schemas
                     pallet::Pallet::<T>::insert_schema(
                         table.source_and_mode.clone(),
                         table.table_identifier.clone(),
@@ -486,8 +584,7 @@ pub mod pallet {
                         insert_quorum_size: table.insert_quorum_size,
                         url: table.snapshot_url.clone(),
                         identifier: table.table_identifier.clone(),
-                        table_uuid: table.table_uuid.clone(),
-                        column_uuids: table.column_uuid_list.clone(),
+                        namespace_uuid: table.namespace_uuid.clone(),
                         version: table.table_version,
                     }
                 })
@@ -514,6 +611,16 @@ pub mod pallet {
                 .tables_without_commits
                 .iter()
                 .map(|table| {
+                    // Insert the table IDs
+                    let (table_uuid, column_uuids) =
+                        uuids_from_create_statement(table.create_statement.clone());
+                    pallet::Pallet::<T>::insert_table_uuid(
+                        table.table_identifier.clone(),
+                        table.table_version,
+                        table_uuid,
+                        column_uuids,
+                    );
+
                     pallet::Pallet::<T>::insert_schema(
                         table.source_and_mode.clone(),
                         table.table_identifier.clone(),
@@ -526,13 +633,13 @@ pub mod pallet {
                         table.snapshot_url.clone(),
                     )
                     .unwrap();
+
                     GenesisTable {
                         statement: table.create_statement.clone(),
                         insert_quorum_size: table.insert_quorum_size,
                         url: table.snapshot_url.clone(),
                         identifier: table.table_identifier.clone(),
-                        table_uuid: table.table_uuid.clone(),
-                        column_uuids: table.column_uuid_list.clone(),
+                        namespace_uuid: table.namespace_uuid.clone(),
                         version: table.table_version,
                     }
                 })
