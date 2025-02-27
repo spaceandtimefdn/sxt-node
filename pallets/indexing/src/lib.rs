@@ -122,7 +122,10 @@ pub mod pallet {
             /// The finalized raw data in postcard serialized OnChainTable bytes
             data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
         },
+        /// Emitted when a system meta table should insert new rows due to some on-chain
+        /// action
         SystemTableUpdate {
+            /// The postcard serialized OnChainTable bytes for the system table insert
             data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
         },
     }

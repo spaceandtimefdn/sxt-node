@@ -27,7 +27,6 @@ pallet-balances.workspace = true
 pallet-commitments.workspace = true
 pallet-staking.workspace = true
 pallet-session.workspace = true
-pallet-validators.workspace = true
 pallet-permissions.workspace = true
 sxt-core = { default-features = false, workspace = true }
 sp-runtime.workspace = true
@@ -57,7 +56,6 @@ std = [
 	"pallet-tables/std",
 	"pallet-balances/std",
 	"pallet-commitments/std",
-	"pallet-validators/std",
 	"pallet-staking/std",
 	"sxt-core/std",
 	"sp-runtime/std",

@@ -401,12 +401,14 @@ mod tests {
     }
     #[test]
     fn get_decimal_with_valid_params_works() {
-        let data = [
-            (
-                Ident::new("price"),
-                OnChainColumn::Decimal75(Precision::new(18).unwrap(), 2, vec![U256::from(100), U256::from(200)]),
+        let data = [(
+            Ident::new("price"),
+            OnChainColumn::Decimal75(
+                Precision::new(18).unwrap(),
+                2,
+                vec![U256::from(100), U256::from(200)],
             ),
-        ];
+        )];
         let table = OnChainTable::try_from_iter(data.clone()).unwrap();
 
         let result = table.get_decimal_by_column("price");
@@ -416,19 +418,21 @@ mod tests {
 
     #[test]
     fn get_decimal_with_missing_column_is_none() {
-        let table = OnChainTable::try_from_iter([]).unwrap_or_else(|_| panic!("Failed to create table"));
+        let data = [(
+            Ident::new("name"),
+            OnChainColumn::VarChar(vec!["Alice".to_string(), "Bob".to_string()]),
+        )];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
         let result = table.get_decimal_by_column("missing_column");
         assert!(result.is_none());
     }
 
     #[test]
     fn get_decimal_with_wrong_type_is_none() {
-        let data = [
-            (
-                Ident::new("name"),
-                OnChainColumn::VarChar(vec!["Alice".to_string(), "Bob".to_string()]),
-            ),
-        ];
+        let data = [(
+            Ident::new("name"),
+            OnChainColumn::VarChar(vec!["Alice".to_string(), "Bob".to_string()]),
+        )];
         let table = OnChainTable::try_from_iter(data.clone()).unwrap();
 
         let result = table.get_decimal_by_column("name");
@@ -437,34 +441,41 @@ mod tests {
 
     #[test]
     fn get_varchar_with_valid_params_works() {
-        let data = [
-            (
-                Ident::new("name"),
-                OnChainColumn::VarChar(vec!["Alice".to_string(), "Bob".to_string()]),
-            ),
-        ];
+        let data = [(
+            Ident::new("name"),
+            OnChainColumn::VarChar(vec!["Alice".to_string(), "Bob".to_string()]),
+        )];
         let table = OnChainTable::try_from_iter(data.clone()).unwrap();
 
         let result = table.get_varchars_by_column("name");
         assert!(result.is_some());
-        assert_eq!(result.unwrap(), &vec!["Alice".to_string(), "Bob".to_string()]);
+        assert_eq!(
+            result.unwrap(),
+            &vec!["Alice".to_string(), "Bob".to_string()]
+        );
     }
 
     #[test]
     fn get_varchar_with_missing_column_is_none() {
-        let table = OnChainTable::try_from_iter([]).unwrap();
+        let data = [(
+            Ident::new("name"),
+            OnChainColumn::VarChar(vec!["Alice".to_string(), "Bob".to_string()]),
+        )];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
         let result = table.get_varchars_by_column("missing_column");
         assert!(result.is_none());
     }
 
     #[test]
     fn get_varchar_with_wrong_type_is_none() {
-        let data = [
-            (
-                Ident::new("price"),
-                OnChainColumn::Decimal75(Precision::new(18).unwrap(), 2, vec![U256::from(100), U256::from(200)]),
+        let data = [(
+            Ident::new("price"),
+            OnChainColumn::Decimal75(
+                Precision::new(18).unwrap(),
+                2,
+                vec![U256::from(100), U256::from(200)],
             ),
-        ];
+        )];
         let table = OnChainTable::try_from_iter(data.clone()).unwrap();
 
         let result = table.get_varchars_by_column("price");

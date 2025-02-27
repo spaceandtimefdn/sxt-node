@@ -10091,16 +10091,22 @@ dependencies = [
  "arrow",
  "commitment-sql",
  "frame-benchmarking 37.0.0",
+ "frame-election-provider-support 37.0.0",
  "frame-support 37.1.0",
  "frame-system 37.1.0",
  "hex",
  "native",
  "native-api",
  "on-chain-table",
+ "pallet-balances 38.0.0",
  "pallet-commitments",
  "pallet-permissions",
+ "pallet-session 37.0.0",
+ "pallet-staking 37.0.0",
+ "pallet-staking-reward-curve",
  "pallet-system-tables",
  "pallet-tables",
+ "pallet-timestamp 36.0.1",
  "parity-scale-codec",
  "postcard",
  "scale-info",
@@ -11013,6 +11019,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-staking-reward-curve"
+version = "12.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db5e6b1d8ee9d3f6894c5abd8c3e17737ed738c9854f87bfd16239741b7f4d5d"
+dependencies = [
+ "proc-macro-crate 3.2.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.96",
+]
+
+[[package]]
 name = "pallet-staking-reward-fn"
 version = "22.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11399,23 +11417,6 @@ dependencies = [
  "sp-core",
  "sp-io 38.0.0",
  "sp-runtime",
-]
-
-[[package]]
-name = "pallet-validators"
-version = "0.1.0"
-dependencies = [
- "frame-benchmarking 37.0.0",
- "frame-support 37.1.0",
- "frame-system 37.1.0",
- "pallet-session 37.0.0",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io 38.0.0",
- "sp-runtime",
- "sp-staking 34.0.0",
- "sp-std",
 ]
 
 [[package]]
@@ -18376,7 +18377,6 @@ dependencies = [
  "pallet-transaction-payment 37.0.1",
  "pallet-transaction-payment-rpc-runtime-api 37.0.0",
  "pallet-utility 37.0.1",
- "pallet-validators",
  "parity-scale-codec",
  "scale-info",
  "sp-api",

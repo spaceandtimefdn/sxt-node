@@ -14,7 +14,6 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
-use sxt_core::ByteString;
 use sxt_core::tables::{
     create_statement,
     table_identifier,
@@ -29,6 +28,7 @@ use sxt_core::tables::{
     TableUuid,
     TableVersion,
 };
+use sxt_core::ByteString;
 use sxt_runtime::opaque::SessionKeys;
 use sxt_runtime::{
     AccountId,

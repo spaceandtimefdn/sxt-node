@@ -45,7 +45,6 @@ pub mod pallet {
         + pallet_session::Config
         + pallet_staking::Config
         + pallet_balances::Config
-        + pallet_validators::Config
     {
         /// The overarching runtime event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -117,9 +116,9 @@ pub mod pallet {
                 Some(SystemFieldValue::Decimal(amount)),
             ) = (row.get("STAKER"), row.get("NODES"), row.get("AMOUNT"))
             {
-                let staker_id = eth_address_to_substrate_account_id::<T>(staker)?;
+                let staker_id = sxt_core::utils::eth_address_to_substrate_account_id::<T>(staker)?;
                 let staker_signer = RawOrigin::Signed(staker_id.clone());
-                let nominations = string_to_address_list::<T>(nodes.clone());
+                let nominations = sxt_core::utils::string_to_address_list::<T>(nodes.clone());
                 let amount = amount.min(&U256::from(u128::MAX)).low_u128();
                 // Increase the account balance by the new stake
                 let balance: u128 =
@@ -161,8 +160,9 @@ pub mod pallet {
                 Some(SystemFieldValue::Varchar(nodes)),
             ) = (row.get("NOMINATOR"), row.get("NODES"))
             {
-                let nominator_id = eth_address_to_substrate_account_id::<T>(nominator)?;
-                let nominations = string_to_address_list::<T>(nodes.clone());
+                let nominator_id =
+                    sxt_core::utils::eth_address_to_substrate_account_id::<T>(nominator)?;
+                let nominations = sxt_core::utils::string_to_address_list::<T>(nodes.clone());
                 let nominator_signer: OriginFor<T> = RawOrigin::Signed(nominator_id).into();
                 pallet_staking::Pallet::<T>::nominate(nominator_signer, nominations.clone())?;
             }
@@ -175,7 +175,7 @@ pub mod pallet {
     pub fn process_unstake_initiated<T: Config>(request: SystemRequest) -> DispatchResult {
         let _ = request.rows().map(|row| -> DispatchResult {
             if let Some(SystemFieldValue::Varchar(staker)) = row.get("STAKER") {
-                let staker_id = eth_address_to_substrate_account_id::<T>(staker)?;
+                let staker_id = sxt_core::utils::eth_address_to_substrate_account_id::<T>(staker)?;
                 let staker_signer: OriginFor<T> = RawOrigin::Signed(staker_id.clone()).into();
 
                 let raw_balance: u128 =
@@ -194,7 +194,7 @@ pub mod pallet {
     pub fn process_unstake_cancelled<T: Config>(request: SystemRequest) -> DispatchResult {
         let _ = request.rows().map(|row| -> DispatchResult {
             if let Some(SystemFieldValue::Varchar(staker)) = row.get("STAKER") {
-                let staker_id = eth_address_to_substrate_account_id::<T>(staker)?;
+                let staker_id = sxt_core::utils::eth_address_to_substrate_account_id::<T>(staker)?;
                 let staker_signer: OriginFor<T> = RawOrigin::Signed(staker_id.clone()).into();
 
                 let raw_balance: u128 =
@@ -208,44 +208,5 @@ pub mod pallet {
             Ok(())
         });
         Ok(())
-    }
-
-    pub fn string_to_address_list<T: frame_system::Config>(
-        address_list: String,
-    ) -> Vec<<T::Lookup as StaticLookup>::Source> {
-        address_list
-            .split(',')
-            .filter_map(|s| {
-                Some(<T as frame_system::Config>::Lookup::unlookup(
-                    eth_address_to_substrate_account_id::<T>(s.trim()).ok()?,
-                ))
-            })
-            .collect()
-    }
-
-    /// This function takes a Ethereum Wallet Address and transforms it into a Substrate
-    /// compatible AccountId
-    pub fn eth_address_to_substrate_account_id<T: frame_system::Config>(
-        eth_addr_hex: &str,
-    ) -> Result<T::AccountId, DispatchError> {
-        // Strip optional "0x" prefix, decode the remaining hex.
-        let hex_str = eth_addr_hex.trim_start_matches("0x");
-        let raw_addr = <[u8; 20]>::from_hex(hex_str).map_err(|_| "Invalid hex address")?;
-
-        // Pad a 32-byte array with zeros on the left, copy the 20 bytes at the end.
-        let mut data = [0u8; 32];
-        data[12..32].copy_from_slice(&raw_addr);
-        convert_account_id::<T>(sp_runtime::AccountId32::from(data))
-    }
-
-    pub fn convert_account_id<T: frame_system::Config>(
-        account_id32: AccountId32,
-    ) -> Result<T::AccountId, DispatchError>
-    where
-        T::AccountId: Decode,
-    {
-        // Use fully qualified syntax to decode `AccountId32` into `T::AccountId`
-        T::AccountId::decode(&mut <AccountId32 as AsRef<[u8]>>::as_ref(&account_id32))
-            .map_err(|_| DispatchError::Other("Failed to decode AccountId32 into T::AccountId"))
     }
 }

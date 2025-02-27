@@ -146,10 +146,7 @@ fn parse_request_with_template(oc_table: OnChainTable, template: &SystemRequest)
                 .map(|data| SystemTableField {
                     name: f.name.clone(),
                     value_type: Decimal,
-                    values: data
-                        .iter()
-                        .map(|v| SystemFieldValue::Decimal(v.clone()))
-                        .collect(),
+                    values: data.iter().map(|v| SystemFieldValue::Decimal(*v)).collect(),
                 }),
         })
         .collect();
