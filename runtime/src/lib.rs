@@ -769,11 +769,6 @@ impl pallet_system_tables::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
-impl pallet_validators::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
-}
-
 impl pallet_smartcontracts::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_smartcontracts::weights::SubstrateWeight<Runtime>;
@@ -872,8 +867,6 @@ mod runtime {
     pub type Smartcontracts = pallet_smartcontracts;
     #[runtime::pallet_index(107)]
     pub type SystemTables = pallet_system_tables;
-    #[runtime::pallet_index(108)]
-    pub type Validators = pallet_validators;
 }
 
 /// The address format for describing accounts.

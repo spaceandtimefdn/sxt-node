@@ -58,7 +58,6 @@ pallet-indexing.workspace = true
 pallet-attestation.workspace = true
 pallet-keystore.workspace = true
 pallet-smartcontracts.workspace = true
-pallet-validators.workspace = true
 
 pallet-system-tables.workspace = true
 pallet-staking.workspace = true
