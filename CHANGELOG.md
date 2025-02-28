@@ -1,3 +1,16 @@
+# [0.74.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.73.1...v0.74.0) (2025-02-28)
+
+
+### Features
+
+* Add support for parsing Staking updates from Smart Contract ([14d0579](https://github.com/spaceandtimelabs/sxt-node/commit/14d0579ca79d64ec632989a5f03755d9130e865a))
+* implement session and system_tables configs on indexing mock ([88fd27d](https://github.com/spaceandtimelabs/sxt-node/commit/88fd27d8a957bed29b6aef4290bb99d18f5e6a70))
+* Remove validators pallet ([01052dd](https://github.com/spaceandtimelabs/sxt-node/commit/01052dde614c085f2d619db5a5885bc4e907b26a))
+* Update devnet spec with only Alice as validator ([9efa6cc](https://github.com/spaceandtimelabs/sxt-node/commit/9efa6ccb064a41fe03e4ef88a71f3ce3ee3675ae))
+* Update Ethereum Core SQL and chainspec ([18e9703](https://github.com/spaceandtimelabs/sxt-node/commit/18e970363ef7b3f0840d05d13dadccd016a988f6))
+
+
+
 ## [0.73.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.73.0...v0.73.1) (2025-02-22)
 
 
@@ -32,17 +45,6 @@
 
 * Add support for Table and Column UUIDs including schema versions ([63a2b24](https://github.com/spaceandtimelabs/sxt-node/commit/63a2b24d30bbf299f37854fbc095337e5ee32f60))
 * Build new chainspecs for devnet and testnet ([5668052](https://github.com/spaceandtimelabs/sxt-node/commit/566805260873bd9a9d770bb7a86e149cda514380))
-
-
-
-# [0.70.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.69.0...v0.70.0) (2025-01-28)
-
-
-### Features
-
-* define machinery supporting table-defined privileged quorum ([66673f6](https://github.com/spaceandtimelabs/sxt-node/commit/66673f6f86ec7bb270d0eed171211477c9076158))
-* handle submissions for both quorum scopes in pallet-indexing ([792b712](https://github.com/spaceandtimelabs/sxt-node/commit/792b712900f8d096115d470bff6305821be58408))
-* parameterize table definitions with InsertQuorumSize ([8b3f3c7](https://github.com/spaceandtimelabs/sxt-node/commit/8b3f3c7540c5417c0ea242df5370622d7152a66a))
 
 
 
