@@ -45,7 +45,7 @@ use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
 use sp_api::impl_runtime_apis;
 use sp_arithmetic::traits::UniqueSaturatedInto;
 use sp_consensus_babe::AuthorityId as BabeId;
-use sp_core::crypto::KeyTypeId;
+use sp_core::crypto::{AccountId32, KeyTypeId};
 use sp_core::OpaqueMetadata;
 use sp_runtime::traits::{
     AccountIdLookup,
@@ -96,6 +96,7 @@ pub use {
     pallet_session,
     pallet_smartcontracts,
     pallet_staking,
+    pallet_system_tables,
     pallet_tables,
 };
 
@@ -764,6 +765,10 @@ impl pallet_keystore::Config for Runtime {
     type WeightInfo = pallet_keystore::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_system_tables::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+}
+
 impl pallet_smartcontracts::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_smartcontracts::weights::SubstrateWeight<Runtime>;
@@ -860,6 +865,8 @@ mod runtime {
     pub type Keystore = pallet_keystore;
     #[runtime::pallet_index(106)]
     pub type Smartcontracts = pallet_smartcontracts;
+    #[runtime::pallet_index(107)]
+    pub type SystemTables = pallet_system_tables;
 }
 
 /// The address format for describing accounts.

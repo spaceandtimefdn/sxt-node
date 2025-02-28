@@ -26,15 +26,22 @@ frame-system.workspace = true
 pallet-commitments.workspace = true
 pallet-permissions.workspace = true
 pallet-tables.workspace = true
+pallet-system-tables.workspace = true
+pallet-session.workspace = true
+hex.workspace = true
 sxt-core.workspace = true
 sp-runtime = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
-sp-std = { workspace = true, default-features = false }
 native-api = { workspace = true, default-features = false}
 postcard = "1.0"
 on-chain-table = { workspace = true, default-features = false}
 
 [dev-dependencies]
+frame-election-provider-support.workspace = true
+pallet-staking-reward-curve.workspace = true
+pallet-timestamp.workspace = true
+pallet-balances.workspace = true
+pallet-staking.workspace = true
 sp-core.workspace = true
 sp-io.workspace = true
 sp-runtime.workspace = true
@@ -54,6 +61,9 @@ std = [
 	"on-chain-table/std",
 	"pallet-commitments/std",
 	"pallet-tables/std",
+	"pallet-session/std",
+	"pallet-balances/std",
+	"pallet-staking/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

@@ -50,6 +50,9 @@ pub enum Source {
     #[default]
     Ethereum,
 
+    /// Ethereum Testnet
+    Sepolia,
+
     /// Bitcoin mainnet
     Bitcoin,
 
@@ -223,6 +226,24 @@ pub struct TableIdentifier {
     pub name: TableName,
     /// TODO: add docs
     pub namespace: TableNamespace,
+}
+impl TableIdentifier {
+    /// Check to see if the namespace for the table denotes it as a Staking table
+    /// important to the system.
+    pub fn is_staking_table(&self) -> bool {
+        let system_staking: TableNamespace =
+            TableNamespace::try_from("SXT_SYSTEM_STAKING".as_bytes().to_vec()).unwrap();
+        self.namespace == system_staking
+    }
+
+    /// Optimistically create a Table Identifier from a given name and namespace. If the
+    /// provided str is too long for the destination, this will panic
+    pub fn from_str_unchecked(name: &str, namespace: &str) -> Self {
+        TableIdentifier {
+            name: TableName::try_from(name.as_bytes().to_vec()).unwrap(),
+            namespace: TableNamespace::try_from(namespace.as_bytes().to_vec()).unwrap(),
+        }
+    }
 }
 
 /// A list of UUIDs associated with the columns of a table

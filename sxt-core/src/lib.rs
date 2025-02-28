@@ -47,3 +47,6 @@ pub mod multiplexer;
 
 /// Types needed for pallet-smartcontracts
 pub mod smartcontracts;
+
+/// Utility functions for handling Runtime types
+pub mod utils;

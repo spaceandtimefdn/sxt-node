@@ -177,8 +177,28 @@ pub mod pallet {
             let schemes = DefaultCommitmentSchemes::<T>::get()
                 .expect("default commitment schemes will exist due to genesis config");
 
+            Self::process_create_table_and_initiate_commitments_with_scheme(create_table, schemes)
+        }
+
+        /// TODO: docs
+        pub fn process_create_table_and_initiate_commitments_with_dynamic_dory(
+            create_table: CreateTableBuilder,
+        ) -> Result<CreateTableAndCommitmentMetadata, Error<T>> {
+            let scheme = CommitmentSchemeFlags {
+                dynamic_dory: true,
+                ipa: false,
+            };
+
+            Self::process_create_table_and_initiate_commitments_with_scheme(create_table, scheme)
+        }
+
+        /// TODO: docs
+        pub fn process_create_table_and_initiate_commitments_with_scheme(
+            create_table: CreateTableBuilder,
+            scheme: CommitmentSchemeFlags,
+        ) -> Result<CreateTableAndCommitmentMetadata, Error<T>> {
             let (create_table_and_commitment_metadata, empty_commitments) =
-                process_create_table(create_table, *PUBLIC_SETUPS, &schemes)?;
+                process_create_table(create_table, *PUBLIC_SETUPS, &scheme)?;
 
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 

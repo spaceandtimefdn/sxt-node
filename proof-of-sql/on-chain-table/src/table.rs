@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 
 use indexmap::map::{IntoIter, Iter};
+use primitive_types::U256;
 use proof_of_sql::base::commitment::CommittableColumn;
 use proof_of_sql::base::scalar::Scalar;
 use serde::{Deserialize, Serialize};
@@ -113,6 +114,28 @@ impl OnChainTable {
         OnChainTable(ordered_columns)
     }
 
+    /// Attempts to retrieve the values for a given decimal column name
+    /// Returns None if the provided column does not exist
+    pub fn get_decimal_by_column(&self, column_name: &str) -> Option<&Vec<U256>> {
+        let column_id: Ident = Ident::from(column_name);
+        let column = self.as_map().get(&column_id)?;
+        match column {
+            OnChainColumn::Decimal75(_, _, values) => Some(values),
+            _ => None,
+        }
+    }
+
+    /// Attempts to retrieve the values for a given VarChar column name
+    /// Returns None if the provided column does not exist
+    pub fn get_varchars_by_column(&self, column_name: &str) -> Option<&Vec<alloc::string::String>> {
+        let column_id: Ident = Ident::from(column_name);
+        let column = self.as_map().get(&column_id)?;
+        match column {
+            OnChainColumn::VarChar(values) => Some(values),
+            _ => None,
+        }
+    }
+
     /// Get the maximum block number contained in this on chain table
     pub fn max_block_number(&self) -> Option<i64> {
         // All SxT DDLs use BLOCK_NUMBER
@@ -153,6 +176,7 @@ mod tests {
     use alloc::vec::Vec;
 
     use proof_of_sql::base::database::{OwnedColumn, OwnedTable};
+    use proof_of_sql::base::math::decimal::Precision;
     use proof_of_sql::base::scalar::Curve25519Scalar;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
 
@@ -374,5 +398,87 @@ mod tests {
     #[test]
     fn we_can_iter_table_with_ipa_committable_columns() {
         we_can_iter_table_with_committable_columns::<Curve25519Scalar>()
+    }
+    #[test]
+    fn get_decimal_with_valid_params_works() {
+        let data = [(
+            Ident::new("price"),
+            OnChainColumn::Decimal75(
+                Precision::new(18).unwrap(),
+                2,
+                vec![U256::from(100), U256::from(200)],
+            ),
+        )];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
+
+        let result = table.get_decimal_by_column("price");
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), &vec![U256::from(100), U256::from(200)]);
+    }
+
+    #[test]
+    fn get_decimal_with_missing_column_is_none() {
+        let data = [(
+            Ident::new("name"),
+            OnChainColumn::VarChar(vec!["Alice".to_string(), "Bob".to_string()]),
+        )];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
+        let result = table.get_decimal_by_column("missing_column");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn get_decimal_with_wrong_type_is_none() {
+        let data = [(
+            Ident::new("name"),
+            OnChainColumn::VarChar(vec!["Alice".to_string(), "Bob".to_string()]),
+        )];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
+
+        let result = table.get_decimal_by_column("name");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn get_varchar_with_valid_params_works() {
+        let data = [(
+            Ident::new("name"),
+            OnChainColumn::VarChar(vec!["Alice".to_string(), "Bob".to_string()]),
+        )];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
+
+        let result = table.get_varchars_by_column("name");
+        assert!(result.is_some());
+        assert_eq!(
+            result.unwrap(),
+            &vec!["Alice".to_string(), "Bob".to_string()]
+        );
+    }
+
+    #[test]
+    fn get_varchar_with_missing_column_is_none() {
+        let data = [(
+            Ident::new("name"),
+            OnChainColumn::VarChar(vec!["Alice".to_string(), "Bob".to_string()]),
+        )];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
+        let result = table.get_varchars_by_column("missing_column");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn get_varchar_with_wrong_type_is_none() {
+        let data = [(
+            Ident::new("price"),
+            OnChainColumn::Decimal75(
+                Precision::new(18).unwrap(),
+                2,
+                vec![U256::from(100), U256::from(200)],
+            ),
+        )];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
+
+        let result = table.get_varchars_by_column("price");
+        assert!(result.is_none());
     }
 }
