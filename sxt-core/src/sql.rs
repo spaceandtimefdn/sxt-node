@@ -254,7 +254,10 @@ async fn process_block(
         } else if let Some(e) = event.as_event::<SchemaUpdated>().unwrap() {
             log::info!("FlightSQL: Processing Table Creation");
             let raw_list: Vec<BoundedVec<u8>> =
-                e.1 .0.into_iter().map(|(_, statement)| statement).collect();
+                e.1 .0
+                    .into_iter()
+                    .map(|(_, statement, quorum_size)| statement)
+                    .collect();
             let list: Vec<&str> = raw_list
                 .iter()
                 .filter_map(|data| match from_utf8(data.0.as_slice()) {
@@ -277,12 +280,12 @@ async fn process_block(
         } else if let Some(e) = event.as_event::<TablesCreatedWithCommitments>().unwrap() {
             // TODO eventually parallelize this by wrapping the client in an Arc Mutex or similar
             log::info!("FlightSQL: Processing Table Creation With Snapshot");
-            for (id, sql, c, base_path) in e.table_list.0 {
-                let sql = from_utf8(sql.0.as_slice())
+            for request in e.table_list.0 {
+                let sql = from_utf8(request.ddl.0.as_slice())
                     .expect("Genesis tables must have valid sql statements");
-                let base_path = from_utf8(base_path.0.as_slice())
+                let base_path = from_utf8(request.snapshot_url.0.as_slice())
                     .expect("Genesis table must have valid snapshot paths");
-                let namespace = from_utf8(id.namespace.0.as_slice())
+                let namespace = from_utf8(request.table_name.namespace.0.as_slice())
                     .expect("Genesis tables must have valid namespace")
                     .to_uppercase();
                 log::info!(
