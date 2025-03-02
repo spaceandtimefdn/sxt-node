@@ -1,3 +1,13 @@
+# [0.75.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.74.0...v0.75.0) (2025-03-02)
+
+
+### Features
+
+* Update the devnet chainspec ([01f92a1](https://github.com/spaceandtimelabs/sxt-node/commit/01f92a1c4025df1428fd5c99995e630247dd507b))
+* Update the sxt_chain_runtime generated file ([17ed645](https://github.com/spaceandtimelabs/sxt-node/commit/17ed645924c43dc666066cc53ec4ef9fb8fc12e5))
+
+
+
 # [0.74.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.73.1...v0.74.0) (2025-02-28)
 
 
@@ -35,16 +45,6 @@
 ### Features
 
 * add off-the-shelf pallet-multisig to runtime ([43e947a](https://github.com/spaceandtimelabs/sxt-node/commit/43e947a17f73988aaa08c2c2e4787902441eb586))
-
-
-
-# [0.71.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.70.0...v0.71.0) (2025-02-03)
-
-
-### Features
-
-* Add support for Table and Column UUIDs including schema versions ([63a2b24](https://github.com/spaceandtimelabs/sxt-node/commit/63a2b24d30bbf299f37854fbc095337e5ee32f60))
-* Build new chainspecs for devnet and testnet ([5668052](https://github.com/spaceandtimelabs/sxt-node/commit/566805260873bd9a9d770bb7a86e149cda514380))
 
 
 
