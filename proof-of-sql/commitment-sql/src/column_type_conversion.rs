@@ -112,9 +112,11 @@ pub fn sqlparser_data_type_to_proof_of_sql_column_type(
             let unit = sqlparser_precision_to_proof_of_sql_time_unit(precision)?;
             Ok(ColumnType::TimestampTZ(unit, PoSQLTimeZone::utc()))
         }
-        DataType::Binary(_) | DataType::Varbinary(_) | DataType::Blob(_) | DataType::Bytes(_) => {
-            Ok(ColumnType::VarBinary)
-        }
+        DataType::Binary(_)
+        | DataType::Varbinary(_)
+        | DataType::Blob(_)
+        | DataType::Bytes(_)
+        | DataType::Bytea => Ok(ColumnType::VarBinary),
         DataType::Uuid
         | DataType::Float(_)
         | DataType::MediumInt(_)
@@ -138,7 +140,6 @@ pub fn sqlparser_data_type_to_proof_of_sql_column_type(
         | DataType::JSON
         | DataType::JSONB
         | DataType::Regclass
-        | DataType::Bytea
         | DataType::Custom(..)
         | DataType::Array(_)
         | DataType::Enum(_)
@@ -164,20 +165,12 @@ mod tests {
             DataType::Varbinary(None),
             DataType::Blob(None),
             DataType::Bytes(None),
+            DataType::Bytea,
         ];
         for t in types {
             let col_type = sqlparser_data_type_to_proof_of_sql_column_type(&t).unwrap();
             assert_eq!(col_type, ColumnType::VarBinary);
         }
-    }
-
-    #[test]
-    fn we_cannot_convert_sqlparser_bytea() {
-        let t = DataType::Bytea;
-        assert!(matches!(
-            sqlparser_data_type_to_proof_of_sql_column_type(&t),
-            Err(UnsupportedColumnType::DataType { .. })
-        ));
     }
 
     #[test]
