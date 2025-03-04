@@ -37,13 +37,13 @@ resolver = "2"
 tokio = { version = "1.41.0", default-features = false }
 ahash = { version = "0.8.11", default-features = false }
 ark-serialize = { version = "0.5.0", default-features = false }
-arrow = { version = "53.0.0", default-features = false }
+arrow = { version = "54.2.1", default-features = false }
 bigdecimal = { version = "0.4.5", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
 commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
 data-compliance-please-deprecate-me = { path = "./data-compliance-please-deprecate-me" }
 data-loader = { path = "./data-loader", default-features = false }
-arrow-flight = { version = "53.0.0", default-features = false }
+arrow-flight = { version = "54.2.1", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
 pallet-permissions = { path = "pallets/permissions", default-features = false }
