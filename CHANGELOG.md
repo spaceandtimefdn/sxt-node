@@ -1,3 +1,7 @@
+## [0.75.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.75.0...v0.75.1) (2025-03-04)
+
+
+
 # [0.75.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.74.0...v0.75.0) (2025-03-02)
 
 
@@ -36,15 +40,6 @@
 ### Features
 
 * upgrade proof-of-sql to 0.73.1 ([1063d05](https://github.com/spaceandtimelabs/sxt-node/commit/1063d051dfbd8de7a9bf1f25d4d8e4f1705366b1))
-
-
-
-# [0.72.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.71.0...v0.72.0) (2025-02-19)
-
-
-### Features
-
-* add off-the-shelf pallet-multisig to runtime ([43e947a](https://github.com/spaceandtimelabs/sxt-node/commit/43e947a17f73988aaa08c2c2e4787902441eb586))
 
 
 
