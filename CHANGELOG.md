@@ -1,3 +1,12 @@
+## [0.76.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.76.0...v0.76.1) (2025-03-05)
+
+
+### Bug Fixes
+
+* bump arrow packages ([7ff3d8c](https://github.com/spaceandtimelabs/sxt-node/commit/7ff3d8c0d3b80a7857d44515842688d6f03bbcc7))
+
+
+
 # [0.76.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.75.1...v0.76.0) (2025-03-05)
 
 
@@ -32,15 +41,6 @@
 * Remove validators pallet ([01052dd](https://github.com/spaceandtimelabs/sxt-node/commit/01052dde614c085f2d619db5a5885bc4e907b26a))
 * Update devnet spec with only Alice as validator ([9efa6cc](https://github.com/spaceandtimelabs/sxt-node/commit/9efa6ccb064a41fe03e4ef88a71f3ce3ee3675ae))
 * Update Ethereum Core SQL and chainspec ([18e9703](https://github.com/spaceandtimelabs/sxt-node/commit/18e970363ef7b3f0840d05d13dadccd016a988f6))
-
-
-
-## [0.73.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.73.0...v0.73.1) (2025-02-22)
-
-
-### Bug Fixes
-
-* 0-index META_ROW_NUMBER column ([e04442b](https://github.com/spaceandtimelabs/sxt-node/commit/e04442b9f2066f645085ba491efd90947b442fde))
 
 
 
