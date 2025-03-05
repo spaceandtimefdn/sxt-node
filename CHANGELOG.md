@@ -1,3 +1,13 @@
+# [0.76.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.75.1...v0.76.0) (2025-03-05)
+
+
+### Features
+
+* alias ByteA for postgres compatibility ([9396179](https://github.com/spaceandtimelabs/sxt-node/commit/9396179094d6e98b59ba12b55e0b24529141edce))
+* increment spec version to 106 ([d0935a6](https://github.com/spaceandtimelabs/sxt-node/commit/d0935a6fd9229a5ba2e18c11e5422109abf06851))
+
+
+
 ## [0.75.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.75.0...v0.75.1) (2025-03-04)
 
 
@@ -31,15 +41,6 @@
 ### Bug Fixes
 
 * 0-index META_ROW_NUMBER column ([e04442b](https://github.com/spaceandtimelabs/sxt-node/commit/e04442b9f2066f645085ba491efd90947b442fde))
-
-
-
-# [0.73.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.72.0...v0.73.0) (2025-02-21)
-
-
-### Features
-
-* upgrade proof-of-sql to 0.73.1 ([1063d05](https://github.com/spaceandtimelabs/sxt-node/commit/1063d051dfbd8de7a9bf1f25d4d8e4f1705366b1))
 
 
 
