@@ -10,12 +10,22 @@ edition.workspace = true
 [dependencies]
 ark-serialize.workspace = true
 lazy_static.workspace = true
+hex = { workspace = true, optional = true, features = ["std"] }
 proof-of-sql.workspace = true
 proof-of-sql-commitment-map.workspace = true
+url = { workspace = true, optional = true }
+clap = { workspace = true, optional = true, features = ["env", "derive"] }
+reqwest = { workspace = true, optional = true, features = ["default"] }
+sha2 = { workspace = true, optional = true, features = ["std"] }
+snafu = { workspace = true, optional = true, features = ["std"] }
+tokio = { workspace = true, optional = true, features = ["fs", "macros"] }
 
 [features]
+default = ["io"]
+std = []
 nu_1 = []
 nu_15 = []
+io = ["std", "dep:clap", "dep:url", "dep:hex", "dep:reqwest", "dep:sha2", "dep:snafu", "dep:tokio"]
 
 [lints]
 workspace = true
