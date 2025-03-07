@@ -265,7 +265,7 @@ pub fn new_full_base<
     let (block_import, grandpa_link, babe_link) = import_setup;
 
     let is_dev_mode = config.dev_key_seed.is_some();
-    let role = config.role.clone();
+    let role = config.role;
     let force_authoring = config.force_authoring;
     let backoff_authoring_blocks: Option<()> = None;
     let name = config.network.node_name.clone();
@@ -325,7 +325,7 @@ pub fn new_full_base<
             metrics,
         })?;
 
-    let role = config.role.clone();
+    let role = config.role;
 
     if config.offchain_worker.enabled {
         task_manager.spawn_handle().spawn(
@@ -457,7 +457,7 @@ pub fn new_full_base<
             name: Some(name),
             observer_enabled: false,
             keystore,
-            local_role: role.clone(),
+            local_role: role,
             telemetry: telemetry.as_ref().map(|x| x.handle()),
             protocol_name: grandpa_protocol_name,
         };
