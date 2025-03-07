@@ -8,7 +8,7 @@ use futures::FutureExt;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_grandpa::SharedVoterState;
 use sc_service::error::Error as ServiceError;
-use sc_service::{Configuration, TaskManager, WarpSyncParams};
+use sc_service::{Configuration, TaskManager, WarpSyncConfig};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sxt_runtime::opaque::Block;
@@ -80,7 +80,7 @@ pub fn new_partial(
         sp_io::SubstrateHostFunctions,
         sp_statement_store::runtime_api::HostFunctions,
         native::interface::HostFunctions,
-    )>(config);
+    )>(&config.executor);
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
             config,
@@ -109,7 +109,7 @@ pub fn new_partial(
     let (grandpa_block_import, grandpa_link) = sc_consensus_grandpa::block_import(
         client.clone(),
         GRANDPA_JUSTIFICATION_PERIOD,
-        &(client.clone() as Arc<_>),
+        &client,
         select_chain.clone(),
         telemetry.as_ref().map(|x| x.handle()),
     )?;
@@ -276,7 +276,7 @@ pub fn new_full_base<
         Block,
         <Block as sp_runtime::traits::Block>::Hash,
         N,
-    >::new(&config.network);
+    >::new(&config.network, prometheus_registry.clone());
     let metrics = N::register_notification_metrics(config.prometheus_registry());
 
     let genesis_hash = &client
@@ -320,7 +320,7 @@ pub fn new_full_base<
             spawn_handle: task_manager.spawn_handle(),
             import_queue,
             block_announce_validator_builder: None,
-            warp_sync_params: Some(WarpSyncParams::WithProvider(warp_sync)),
+            warp_sync_config: Some(WarpSyncConfig::WithProvider(warp_sync)),
             block_relay: None,
             metrics,
         })?;
@@ -348,13 +348,26 @@ pub fn new_full_base<
         );
     }
 
+    let rpc_extensions_builder = {
+        let client = client.clone();
+        let pool = transaction_pool.clone();
+
+        Box::new(move |_| {
+            let deps = crate::rpc::FullDeps {
+                client: client.clone(),
+                pool: pool.clone(),
+            };
+            crate::rpc::create_full(deps).map_err(Into::into)
+        })
+    };
+
     let rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         config,
         backend: backend.clone(),
         client: client.clone(),
         keystore: keystore_container.keystore(),
         network: network.clone(),
-        rpc_builder: Box::new(rpc_builder),
+        rpc_builder: rpc_extensions_builder,
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         system_rpc_tx,
@@ -379,7 +392,7 @@ pub fn new_full_base<
             task_manager.spawn_handle(),
             client.clone(),
             transaction_pool.clone(),
-            prometheus_registry.as_ref(),
+            prometheus_registry.clone().as_ref(),
             telemetry.as_ref().map(|x| x.handle()),
         );
 
