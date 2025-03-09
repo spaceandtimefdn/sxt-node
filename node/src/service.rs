@@ -4,28 +4,41 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
-use futures::FutureExt;
+use codec::Encode;
+use futures::prelude::*;
 use sc_client_api::{Backend, BlockBackend};
-use sc_consensus_grandpa::SharedVoterState;
+use sc_consensus_babe::{self, SlotProportion};
+use sc_network::event::Event;
+use sc_network::service::traits::NetworkService;
+use sc_network::{NetworkBackend, NetworkEventStream};
+use sc_network_sync::strategy::warp::WarpSyncConfig;
+use sc_network_sync::SyncingService;
+use sc_rpc::chain::ChainApiClient;
+use sc_service::config::Configuration;
 use sc_service::error::Error as ServiceError;
-use sc_service::{Configuration, TaskManager, WarpSyncConfig};
+use sc_service::{RpcHandlers, TaskManager};
+use sc_statement_store::Store as StatementStore;
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
+use sp_api::ProvideRuntimeApi;
+use sp_core::crypto::Pair;
+use sp_runtime::traits::Block as BlockT;
+use sp_runtime::{generic, SaturatedConversion};
 use sxt_runtime::opaque::Block;
 use sxt_runtime::{self, RuntimeApi};
 
-use crate::cli::EventForwarderDetails;
+use crate::cli::{Cli, EventForwarderDetails};
+
+pub type HostFunctions = (
+    sp_io::SubstrateHostFunctions,
+    sp_statement_store::runtime_api::HostFunctions,
+    native::interface::HostFunctions,
+);
+
+pub type RuntimeExecutor = sc_executor::WasmExecutor<HostFunctions>;
 
 /// Full client
-pub(crate) type FullClient = sc_service::TFullClient<
-    Block,
-    RuntimeApi,
-    sc_executor::WasmExecutor<(
-        sp_io::SubstrateHostFunctions,
-        sp_statement_store::runtime_api::HostFunctions,
-        native::interface::HostFunctions,
-    )>,
->;
+pub(crate) type FullClient = sc_service::TFullClient<Block, RuntimeApi, RuntimeExecutor>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 type FullGrandpaBlockImport =
@@ -50,7 +63,6 @@ pub fn new_partial(
         sc_transaction_pool::FullPool<Block, FullClient>,
         (
             impl Fn(
-                sc_rpc_api::DenyUnsafe,
                 sc_rpc::SubscriptionTaskExecutor,
             ) -> Result<jsonrpsee::RpcModule<()>, sc_service::Error>,
             (
@@ -58,7 +70,7 @@ pub fn new_partial(
                 sc_consensus_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
                 sc_consensus_babe::BabeLink<Block>,
             ),
-            SharedVoterState,
+            sc_consensus_grandpa::SharedVoterState,
             Option<Telemetry>,
             Arc<sc_statement_store::Store>,
         ),
@@ -76,11 +88,7 @@ pub fn new_partial(
         })
         .transpose()?;
 
-    let executor = sc_service::new_wasm_executor::<(
-        sp_io::SubstrateHostFunctions,
-        sp_statement_store::runtime_api::HostFunctions,
-        native::interface::HostFunctions,
-    )>(&config.executor);
+    let executor = sc_service::new_wasm_executor::<HostFunctions>(&config.executor);
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
             config,
@@ -181,13 +189,12 @@ pub fn new_partial(
         let rpc_backend = backend.clone();
         let rpc_statement_store = statement_store.clone();
         let rpc_extensions_builder =
-            move |deny_unsafe, subscription_executor: node_rpc::SubscriptionTaskExecutor| {
+            move |subscription_executor: node_rpc::SubscriptionTaskExecutor| {
                 let deps = node_rpc::FullDeps {
                     client: client.clone(),
                     pool: pool.clone(),
                     select_chain: select_chain.clone(),
                     chain_spec: chain_spec.cloned_box(),
-                    deny_unsafe,
                     babe: node_rpc::BabeDeps {
                         keystore: keystore.clone(),
                         babe_worker_handle: babe_worker_handle.clone(),
@@ -243,14 +250,20 @@ pub struct NewFullBase {
     pub rpc_handlers: sc_service::RpcHandlers,
 }
 
-/// Builds a new service for a full client.
-pub fn new_full_base<
-    N: sc_network::NetworkBackend<Block, <Block as sp_runtime::traits::Block>::Hash>,
->(
+/// Creates a full service from the configuration.
+pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
     config: Configuration,
     with_db: bool,
-    event_forwarder: Option<EventForwarderDetails>,
 ) -> Result<NewFullBase, ServiceError> {
+    let role = config.role;
+    let force_authoring = config.force_authoring;
+    let backoff_authoring_blocks =
+        Some(sc_consensus_slots::BackoffAuthoringOnFinalizedHeadLagging::default());
+    let name = config.network.node_name.clone();
+    let enable_grandpa = !config.disable_grandpa;
+    let prometheus_registry = config.prometheus_registry().cloned();
+    let enable_offchain_worker = config.offchain_worker.enabled;
+
     let sc_service::PartialComponents {
         client,
         backend,
@@ -262,30 +275,28 @@ pub fn new_full_base<
         other: (rpc_builder, import_setup, rpc_setup, mut telemetry, statement_store),
     } = new_partial(&config)?;
 
-    let (block_import, grandpa_link, babe_link) = import_setup;
+    let metrics = N::register_notification_metrics(
+        config.prometheus_config.as_ref().map(|cfg| &cfg.registry),
+    );
+    let shared_voter_state = rpc_setup;
+    let auth_disc_publish_non_global_ips = config.network.allow_non_globals_in_dht;
+    let auth_disc_public_addresses = config.network.public_addresses.clone();
 
-    let is_dev_mode = config.dev_key_seed.is_some();
-    let role = config.role;
-    let force_authoring = config.force_authoring;
-    let backoff_authoring_blocks: Option<()> = None;
-    let name = config.network.node_name.clone();
-    let enable_grandpa = !config.disable_grandpa;
-    let prometheus_registry = config.prometheus_registry().cloned();
+    let mut net_config = sc_network::config::FullNetworkConfiguration::<_, _, N>::new(
+        &config.network,
+        config
+            .prometheus_config
+            .as_ref()
+            .map(|cfg| cfg.registry.clone()),
+    );
 
-    let mut net_config = sc_network::config::FullNetworkConfiguration::<
-        Block,
-        <Block as sp_runtime::traits::Block>::Hash,
-        N,
-    >::new(&config.network, prometheus_registry.clone());
-    let metrics = N::register_notification_metrics(config.prometheus_registry());
-
-    let genesis_hash = &client
+    let genesis_hash = client
         .block_hash(0)
         .ok()
         .flatten()
         .expect("Genesis block exists; qed");
-
     let peer_store_handle = net_config.peer_store_handle();
+
     let grandpa_protocol_name =
         sc_consensus_grandpa::protocol_standard_name(&genesis_hash, &config.chain_spec);
     let (grandpa_protocol_config, grandpa_notification_service) =
@@ -307,7 +318,7 @@ pub fn new_full_base<
 
     let warp_sync = Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
         backend.clone(),
-        grandpa_link.shared_authority_set().clone(),
+        import_setup.1.shared_authority_set().clone(),
         Vec::default(),
     ));
 
@@ -325,49 +336,13 @@ pub fn new_full_base<
             metrics,
         })?;
 
-    let role = config.role;
-
-    if config.offchain_worker.enabled {
-        task_manager.spawn_handle().spawn(
-            "offchain-workers-runner",
-            "offchain-worker",
-            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
-                runtime_api_provider: client.clone(),
-                is_validator: role.is_authority(),
-                keystore: Some(keystore_container.keystore()),
-                offchain_db: backend.offchain_storage(),
-                transaction_pool: Some(OffchainTransactionPoolFactory::new(
-                    transaction_pool.clone(),
-                )),
-                network_provider: Arc::new(network.clone()),
-                enable_http_requests: true,
-                custom_extensions: |_| vec![],
-            })
-            .run(client.clone(), task_manager.spawn_handle())
-            .boxed(),
-        );
-    }
-
-    let rpc_extensions_builder = {
-        let client = client.clone();
-        let pool = transaction_pool.clone();
-
-        Box::new(move |_| {
-            let deps = crate::rpc::FullDeps {
-                client: client.clone(),
-                pool: pool.clone(),
-            };
-            crate::rpc::create_full(deps).map_err(Into::into)
-        })
-    };
-
     let rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         config,
         backend: backend.clone(),
         client: client.clone(),
         keystore: keystore_container.keystore(),
         network: network.clone(),
-        rpc_builder: rpc_extensions_builder,
+        rpc_builder: Box::new(rpc_builder),
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         system_rpc_tx,
@@ -376,39 +351,24 @@ pub fn new_full_base<
         telemetry: telemetry.as_mut(),
     })?;
 
-    // Only run the flightsql client if the --with-db flag is enabled on the node binary
-    // This saves a significant amount of storage on nodes that only need rpc functionality and
-    // validators that only want to participate in consensus
-    if with_db {
-        sxt_core::sql::spawn_flightsql_tasks::<FullClient, Block, FullBackend>(
-            "flightsql-task",
-            &task_manager.spawn_essential_handle(),
-            client.clone(),
-        );
-    }
+    let (block_import, grandpa_link, babe_link) = import_setup;
 
-    if role.is_authority() {
-        let mut proposer_factory = sc_basic_authorship::ProposerFactory::new(
+    if let sc_service::config::Role::Authority { .. } = &role {
+        let proposer = sc_basic_authorship::ProposerFactory::new(
             task_manager.spawn_handle(),
             client.clone(),
             transaction_pool.clone(),
-            prometheus_registry.clone().as_ref(),
+            prometheus_registry.as_ref(),
             telemetry.as_ref().map(|x| x.handle()),
         );
 
-        // Set the proposer to a maximum of 15 Mebibytes
-        proposer_factory.set_default_block_size_limit(sxt_runtime::MAX_BLOCK_SIZE as usize);
-
         let client_clone = client.clone();
         let slot_duration = babe_link.config().slot_duration();
-
-        let select_chain = select_chain.clone();
-        let keystore = keystore_container.keystore();
         let babe_config = sc_consensus_babe::BabeParams {
-            keystore,
+            keystore: keystore_container.keystore(),
             client: client.clone(),
             select_chain,
-            env: proposer_factory,
+            env: proposer,
             block_import,
             sync_oracle: sync_service.clone(),
             justification_sync_link: sync_service.clone(),
@@ -416,24 +376,30 @@ pub fn new_full_base<
                 let client_clone = client_clone.clone();
                 async move {
                     let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-                    let slot = sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(*timestamp, slot_duration,);
+
+                    let slot =
+						sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+							*timestamp,
+							slot_duration,
+						);
+
                     let storage_proof =
                         sp_transaction_storage_proof::registration::new_data_provider(
                             &*client_clone,
                             &parent,
                         )?;
+
                     Ok((slot, timestamp, storage_proof))
                 }
             },
             force_authoring,
             backoff_authoring_blocks,
             babe_link,
-            block_proposal_slot_portion: sc_consensus_babe::SlotProportion::new(0.5),
+            block_proposal_slot_portion: SlotProportion::new(0.5),
             max_block_proposal_slot_portion: None,
             telemetry: telemetry.as_ref().map(|x| x.handle()),
         };
 
-        // Start the babe task with the configuration, tying everything together
         let babe = sc_consensus_babe::start_babe(babe_config)?;
         task_manager.spawn_essential_handle().spawn_blocking(
             "babe-proposer",
@@ -442,42 +408,85 @@ pub fn new_full_base<
         );
     }
 
+    // Spawn authority discovery module.
+    if role.is_authority() {
+        let authority_discovery_role =
+            sc_authority_discovery::Role::PublishAndDiscover(keystore_container.keystore());
+        let dht_event_stream =
+            network
+                .event_stream("authority-discovery")
+                .filter_map(|e| async move {
+                    match e {
+                        Event::Dht(e) => Some(e),
+                        _ => None,
+                    }
+                });
+        let (authority_discovery_worker, _service) =
+            sc_authority_discovery::new_worker_and_service_with_config(
+                sc_authority_discovery::WorkerConfig {
+                    publish_non_global_ips: auth_disc_publish_non_global_ips,
+                    public_addresses: auth_disc_public_addresses,
+                    ..Default::default()
+                },
+                client.clone(),
+                Arc::new(network.clone()),
+                Box::pin(dht_event_stream),
+                authority_discovery_role,
+                prometheus_registry.clone(),
+            );
+
+        task_manager.spawn_handle().spawn(
+            "authority-discovery-worker",
+            Some("networking"),
+            authority_discovery_worker.run(),
+        );
+    }
+
+    if with_db {
+        sxt_core::sql::spawn_flightsql_tasks::<FullClient, Block, FullBackend>(
+            "flightsql-task",
+            &task_manager.spawn_essential_handle(),
+            client.clone(),
+        );
+    }
+
+    // if the node isn't actively participating in consensus then it doesn't
+    // need a keystore, regardless of which protocol we use below.
+    let keystore = if role.is_authority() {
+        Some(keystore_container.keystore())
+    } else {
+        None
+    };
+
+    let grandpa_config = sc_consensus_grandpa::Config {
+        // FIXME #1578 make this available through chainspec
+        gossip_duration: std::time::Duration::from_millis(333),
+        justification_generation_period: GRANDPA_JUSTIFICATION_PERIOD,
+        name: Some(name),
+        observer_enabled: false,
+        keystore,
+        local_role: role,
+        telemetry: telemetry.as_ref().map(|x| x.handle()),
+        protocol_name: grandpa_protocol_name,
+    };
+
     if enable_grandpa {
-        // if the node isn't actively participating in consensus then it doesn't
-        // need a keystore, regardless of which protocol we use below.
-        let keystore = if role.is_authority() {
-            Some(keystore_container.keystore())
-        } else {
-            None
-        };
-
-        let grandpa_config = sc_consensus_grandpa::Config {
-            gossip_duration: Duration::from_millis(333),
-            justification_generation_period: GRANDPA_JUSTIFICATION_PERIOD,
-            name: Some(name),
-            observer_enabled: false,
-            keystore,
-            local_role: role,
-            telemetry: telemetry.as_ref().map(|x| x.handle()),
-            protocol_name: grandpa_protocol_name,
-        };
-
         // start the full GRANDPA voter
         // NOTE: non-authorities could run the GRANDPA observer protocol, but at
         // this point the full voter should provide better guarantees of block
         // and vote data availability than the observer. The observer has not
         // been tested extensively yet and having most nodes in a network run it
         // could lead to finality stalls.
-        let grandpa_config = sc_consensus_grandpa::GrandpaParams {
+        let grandpa_params = sc_consensus_grandpa::GrandpaParams {
             config: grandpa_config,
             link: grandpa_link,
             network: network.clone(),
             sync: Arc::new(sync_service.clone()),
             notification_service: grandpa_notification_service,
+            telemetry: telemetry.as_ref().map(|x| x.handle()),
             voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
             prometheus_registry: prometheus_registry.clone(),
-            shared_voter_state: SharedVoterState::empty(),
-            telemetry: telemetry.as_ref().map(|x| x.handle()),
+            shared_voter_state,
             offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool.clone()),
         };
 
@@ -486,12 +495,54 @@ pub fn new_full_base<
         task_manager.spawn_essential_handle().spawn_blocking(
             "grandpa-voter",
             None,
-            sc_consensus_grandpa::run_grandpa_voter(grandpa_config)?,
+            sc_consensus_grandpa::run_grandpa_voter(grandpa_params)?,
+        );
+    }
+
+    // Spawn statement protocol worker
+    let statement_protocol_executor = {
+        let spawn_handle = task_manager.spawn_handle();
+        Box::new(move |fut| {
+            spawn_handle.spawn("network-statement-validator", Some("networking"), fut);
+        })
+    };
+    let statement_handler = statement_handler_proto.build(
+        network.clone(),
+        sync_service.clone(),
+        statement_store.clone(),
+        prometheus_registry.as_ref(),
+        statement_protocol_executor,
+    )?;
+    task_manager.spawn_handle().spawn(
+        "network-statement-handler",
+        Some("networking"),
+        statement_handler.run(),
+    );
+
+    if enable_offchain_worker {
+        task_manager.spawn_handle().spawn(
+            "offchain-workers-runner",
+            "offchain-work",
+            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+                runtime_api_provider: client.clone(),
+                keystore: Some(keystore_container.keystore()),
+                offchain_db: backend.offchain_storage(),
+                transaction_pool: Some(OffchainTransactionPoolFactory::new(
+                    transaction_pool.clone(),
+                )),
+                network_provider: Arc::new(network.clone()),
+                is_validator: role.is_authority(),
+                enable_http_requests: true,
+                custom_extensions: move |_| {
+                    vec![Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>]
+                },
+            })
+            .run(client.clone(), task_manager.spawn_handle())
+            .boxed(),
         );
     }
 
     network_starter.start_network();
-
     Ok(NewFullBase {
         task_manager,
         client,
@@ -503,31 +554,31 @@ pub fn new_full_base<
 }
 
 /// Builds a new service for a full client.
-pub fn new_full(
-    config: Configuration,
-    with_db: bool,
-    event_forwarder_details: Option<EventForwarderDetails>,
-) -> Result<TaskManager, ServiceError> {
+pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceError> {
     let database_path = config.database.path().map(Path::to_path_buf);
+    let with_db = cli.with_db;
 
     let task_manager = match config.network.network_backend {
         sc_network::config::NetworkBackendType::Libp2p => {
-            new_full_base::<sc_network::NetworkWorker<_, _>>(
-                config,
-                with_db,
-                event_forwarder_details,
-            )
-            .map(|NewFullBase { task_manager, .. }| task_manager)?
+            let task_manager = new_full_base::<sc_network::NetworkWorker<_, _>>(config, with_db)
+                .map(|NewFullBase { task_manager, .. }| task_manager)?;
+            task_manager
         }
         sc_network::config::NetworkBackendType::Litep2p => {
-            new_full_base::<sc_network::Litep2pNetworkBackend>(
-                config,
-                with_db,
-                event_forwarder_details,
-            )
-            .map(|NewFullBase { task_manager, .. }| task_manager)?
+            let task_manager = new_full_base::<sc_network::Litep2pNetworkBackend>(config, with_db)
+                .map(|NewFullBase { task_manager, .. }| task_manager)?;
+            task_manager
         }
     };
+
+    if let Some(database_path) = database_path {
+        sc_storage_monitor::StorageMonitorService::try_spawn(
+            cli.storage_monitor,
+            database_path,
+            &task_manager.spawn_essential_handle(),
+        )
+        .map_err(|e| ServiceError::Application(e.into()))?;
+    }
 
     Ok(task_manager)
 }

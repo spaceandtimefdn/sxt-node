@@ -58,8 +58,6 @@ pub struct FullDeps<C, P, SC, B> {
     pub select_chain: SC,
     /// A copy of the chain spec.
     pub chain_spec: Box<dyn sc_chain_spec::ChainSpec>,
-    /// Whether to deny unsafe calls
-    pub deny_unsafe: DenyUnsafe,
     /// BABE specific dependencies.
     pub babe: BabeDeps,
     /// GRANDPA specific dependencies.
@@ -77,7 +75,6 @@ pub fn create_full<C, P, SC, B>(
         pool,
         select_chain,
         chain_spec,
-        deny_unsafe,
         babe,
         grandpa,
         statement_store,

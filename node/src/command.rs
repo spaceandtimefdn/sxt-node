@@ -200,21 +200,7 @@ pub fn run() -> sc_cli::Result<()> {
         None => {
             let runner = cli.create_runner(&cli.run)?;
             runner.run_node_until_exit(|config| async move {
-                let mut event_forwarder_details: Option<EventForwarderDetails> = None;
-
-                if cli.event_forwarder {
-                    // Why is arg group not working for this?
-                    if cli.event_forwarder_key.is_none() || cli.event_forwarder_rpc.is_none() {
-                        eprintln!("Error: --event-forwarder requires both --event-forwarder-key and --event-forwarder-rpc");
-                        std::process::exit(1);
-                    }
-                    event_forwarder_details = Some(EventForwarderDetails {
-                        key: cli.event_forwarder_key.unwrap(),
-                        rpc: cli.event_forwarder_rpc.unwrap(),
-                    });
-                }
-
-                service::new_full(config, cli.with_db, event_forwarder_details).map_err(sc_cli::Error::Service)
+                service::new_full(config, cli).map_err(sc_cli::Error::Service)
             })
         }
     }
