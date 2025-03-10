@@ -82,10 +82,10 @@ type Result<T, E = EventForwarderError> = std::result::Result<T, E>;
 /// CLI arguments parser using `clap` derive syntax
 #[derive(Parser, Debug)]
 #[command(
-    name = "Blockchain Processor",
+    name = "Space and Time Event Forwarder",
     version = "1.0",
-    author = "Your Name <your.email@example.com>",
-    about = "Listens to blockchain events and processes them"
+    author = "zach.frederick@spaceandtime.io",
+    about = "Forwards events from the SxT chain back to Ethereum for support of staking and ZKPay"
 )]
 struct Cli {
     /// The RPC URL of the Ethereum node
