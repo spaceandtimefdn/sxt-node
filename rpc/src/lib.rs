@@ -58,8 +58,6 @@ pub struct FullDeps<C, P, SC, B> {
     pub select_chain: SC,
     /// A copy of the chain spec.
     pub chain_spec: Box<dyn sc_chain_spec::ChainSpec>,
-    /// Whether to deny unsafe calls
-    pub deny_unsafe: DenyUnsafe,
     /// BABE specific dependencies.
     pub babe: BabeDeps,
     /// GRANDPA specific dependencies.
@@ -77,7 +75,6 @@ pub fn create_full<C, P, SC, B>(
         pool,
         select_chain,
         chain_spec,
-        deny_unsafe,
         babe,
         grandpa,
         statement_store,
@@ -125,7 +122,7 @@ where
         finality_provider,
     } = grandpa;
 
-    io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
+    io.merge(System::new(client.clone(), pool).into_rpc())?;
     // Making synchronous calls in light client freezes the browser currently,
     // more context: https://github.com/paritytech/substrate/pull/3480
     // These RPCs should use an asynchronous caller instead.
@@ -136,7 +133,6 @@ where
             babe_worker_handle.clone(),
             keystore,
             select_chain,
-            deny_unsafe,
         )
         .into_rpc(),
     )?;
@@ -161,10 +157,9 @@ where
         .into_rpc(),
     )?;
 
-    io.merge(StateMigration::new(client.clone(), backend, deny_unsafe).into_rpc())?;
-    io.merge(Dev::new(client, deny_unsafe).into_rpc())?;
-    let statement_store =
-        sc_rpc::statement::StatementStore::new(statement_store, deny_unsafe).into_rpc();
+    io.merge(StateMigration::new(client.clone(), backend).into_rpc())?;
+    io.merge(Dev::new(client).into_rpc())?;
+    let statement_store = sc_rpc::statement::StatementStore::new(statement_store).into_rpc();
     io.merge(statement_store)?;
 
     Ok(io)

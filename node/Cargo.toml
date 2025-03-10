@@ -99,6 +99,10 @@ sc-network-sync.workspace = true
 sc-chain-spec.workspace = true
 serde.workspace = true
 sc-sync-state-rpc.workspace = true
+sc-consensus-slots.workspace = true
+sc-authority-discovery.workspace = true
+codec = { workspace = true, default-features = true }
+sp-authority-discovery = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true

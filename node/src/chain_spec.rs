@@ -7,6 +7,7 @@ use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::{ChainType, Properties};
 use serde::{Deserialize, Serialize};
+use sp_authority_discovery::AuthorityId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
@@ -52,6 +53,7 @@ pub struct NodeIdSet {
     pub stash: AccountId,
     pub grandpa: GrandpaId,
     pub babe: BabeId,
+    pub authority_discovery: AuthorityId,
 }
 
 /// This struct defines extension modules that will be needed in generating and parsing
@@ -108,6 +110,7 @@ pub fn authority_keys_from_seed(s: &str) -> NodeIdSet {
         stash: get_from_seed::<sr25519::Public>(s).into(),
         grandpa: get_from_seed::<GrandpaId>(s),
         babe: get_from_seed::<BabeId>(s),
+        authority_discovery: get_from_seed::<AuthorityId>(s),
     }
 }
 
@@ -117,6 +120,7 @@ pub fn authority_keys_from_phrase(s: &str) -> NodeIdSet {
         stash: get_account_id_from_phrase::<sr25519::Public>(s),
         grandpa: get_from_phrase::<GrandpaId>(s),
         babe: get_from_phrase::<BabeId>(s),
+        authority_discovery: get_from_seed::<AuthorityId>(s),
     }
 }
 
@@ -414,7 +418,7 @@ fn testnet_genesis(
         },
         "session": {
             "keys": initial_authorities.iter().map(|x| {
-                (x.controller.clone(), x.stash.clone(), SessionKeys { grandpa: x.grandpa.clone(), babe: x.babe.clone()})
+                (x.controller.clone(), x.stash.clone(), SessionKeys { grandpa: x.grandpa.clone(), babe: x.babe.clone(), authority_discovery: x.authority_discovery.clone() })
             }).collect::<Vec<_>>(),
         },
         "staking": {
@@ -475,8 +479,12 @@ fn testnet_genesis(
     })
 }
 
-fn session_keys(grandpa: GrandpaId, babe: BabeId) -> SessionKeys {
-    SessionKeys { babe, grandpa }
+fn session_keys(grandpa: GrandpaId, babe: BabeId, authority_discovery: AuthorityId) -> SessionKeys {
+    SessionKeys {
+        babe,
+        grandpa,
+        authority_discovery,
+    }
 }
 
 /// Ethereum Core source and mode

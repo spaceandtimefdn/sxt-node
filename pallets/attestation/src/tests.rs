@@ -1,7 +1,10 @@
+use core::ops::Bound;
+
 use codec::Encode;
 use frame_support::{assert_err, assert_ok};
 use k256::ecdsa::{SigningKey, VerifyingKey};
 use sp_core::H256;
+use sp_runtime::BoundedVec;
 use sxt_core::attestation::{
     sign_eth_message,
     Attestation,
@@ -40,6 +43,16 @@ fn generate_keypair() -> (SigningKey, VerifyingKey) {
     (signing_key.clone(), *signing_key.verifying_key())
 }
 
+pub fn create_ethereum_attestation_message(
+    state_root: impl AsRef<[u8]>,
+    block_number: u32,
+) -> Vec<u8> {
+    let mut msg = Vec::new();
+    msg.extend_from_slice(state_root.as_ref());
+    msg.extend_from_slice(&block_number.to_be_bytes());
+    msg
+}
+
 #[test]
 fn attest_block_success() {
     new_test_ext().execute_with(|| {
@@ -48,12 +61,17 @@ fn attest_block_success() {
         let block_number: u32 = 10;
 
         // Generate a keypair and create a signed message.
-        let (_, public_key, signature) = create_signed_message_and_keypair(account_id);
+        let (private_key, public_key, signature) = create_signed_message_and_keypair(account_id);
+
+        // Compute the address20 from the public key.
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
 
         // Register the attestation key for the account.
         let registration = RegisterExternalAddress::EthereumAddress {
             signature,
             proposed_pub_key: public_key,
+            address20: address20.clone(),
         };
 
         assert_ok!(Keystore::register_key(
@@ -73,17 +91,29 @@ fn attest_block_success() {
         ));
 
         // Create an attestation using the same signature and public key.
+        let data: Vec<u8> = vec![0xFF; 64];
+
+        // Convert to BoundedVec<u8, ConstU32<64>>
+        let state_root = BoundedVec::try_from(data).expect("Should fit");
+        let attestation_message =
+            create_ethereum_attestation_message(state_root.clone().into_inner(), block_number);
+        let attestation_signature = sign_eth_message(&private_key.to_bytes(), &attestation_message)
+            .expect("could not sign");
+
         let attestation = Attestation::EthereumAttestation {
-            signature,
+            signature: attestation_signature,
             proposed_pub_key: public_key,
-            state_root: H256::zero(),
+            address20,
+            state_root,
+            block_number,
+            block_hash: H256::zero(),
         };
 
         // Submit the attestation.
         assert_ok!(Pallet::<Test>::attest_block(
             RuntimeOrigin::signed(account_id),
             block_number,
-            attestation
+            attestation.clone()
         ));
 
         // Verify that the attestation is stored correctly in the pallet's storage.
@@ -103,10 +133,17 @@ fn attest_block_fails_if_account_not_registered() {
 
         // Generate a keypair and create an attestation.
         let (_, public_key, signature) = create_signed_message_and_keypair(account_id);
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
+
+        let state_root = BoundedVec::new();
         let attestation = Attestation::EthereumAttestation {
             signature,
             proposed_pub_key: public_key,
-            state_root: H256::zero(),
+            address20,
+            state_root,
+            block_number,
+            block_hash: H256::zero(),
         };
 
         // Attempt to attest without registering the account.
@@ -129,17 +166,33 @@ fn attest_block_fails_if_duplicate_attestation() {
         let block_number: u32 = 10;
 
         // Generate a keypair and create an attestation.
-        let (_, public_key, signature) = create_signed_message_and_keypair(account_id);
-        let attestation = Attestation::EthereumAttestation {
-            signature,
-            proposed_pub_key: public_key,
-            state_root: H256::zero(),
-        };
+        let (private_key, public_key, signature) = create_signed_message_and_keypair(account_id);
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
 
+        // Create an attestation using the same signature and public key.
+        let data: Vec<u8> = vec![0xFF; 64];
+
+        // Convert to BoundedVec<u8, ConstU32<64>>
+        let state_root = BoundedVec::try_from(data).expect("Should fit");
+        let attestation_message =
+            create_ethereum_attestation_message(state_root.clone().into_inner(), block_number);
+        let attestation_signature = sign_eth_message(&private_key.to_bytes(), &attestation_message)
+            .expect("could not sign");
+
+        let attestation = Attestation::EthereumAttestation {
+            signature: attestation_signature,
+            proposed_pub_key: public_key,
+            address20: address20.clone(),
+            state_root,
+            block_number,
+            block_hash: H256::zero(),
+        };
         // Register the attestation key.
         let registration = RegisterExternalAddress::EthereumAddress {
             signature,
             proposed_pub_key: public_key,
+            address20,
         };
         assert_ok!(Keystore::register_key(
             RuntimeOrigin::root(),
@@ -161,7 +214,7 @@ fn attest_block_fails_if_duplicate_attestation() {
         assert_ok!(Pallet::<Test>::attest_block(
             RuntimeOrigin::signed(account_id),
             block_number,
-            attestation
+            attestation.clone()
         ));
 
         // Attempt to submit the same attestation again.
@@ -185,16 +238,23 @@ fn attest_block_fails_if_future_block() {
 
         // Generate a keypair and create an attestation.
         let (_, public_key, signature) = create_signed_message_and_keypair(account_id);
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
+
         let attestation = Attestation::EthereumAttestation {
             signature,
             proposed_pub_key: public_key,
-            state_root: H256::zero(),
+            address20: address20.clone(),
+            state_root: BoundedVec::new(),
+            block_number: future_block_number,
+            block_hash: H256::zero(),
         };
 
         // Register the attestation key.
         let registration = RegisterExternalAddress::EthereumAddress {
             signature,
             proposed_pub_key: public_key,
+            address20,
         };
         assert_ok!(Keystore::register_key(
             RuntimeOrigin::root(),

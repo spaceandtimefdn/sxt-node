@@ -9,7 +9,7 @@ use crate::Pallet as AttestationPallet;
 #[benchmarks]
 mod benchmarks {
     use codec::Encode;
-    use frame_support::assert_ok;
+    use frame_support::{assert_ok, BoundedVec};
     use k256::ecdsa::SigningKey;
     use pallet_keystore::Pallet as Keystore;
     use pallet_permissions::Pallet as Permissions;
@@ -56,9 +56,12 @@ mod benchmarks {
     fn create_registered_attestation_key<T: Config>(account_id: T::AccountId) -> AttestationKey {
         let account_id_u64 = account_id_to_u64::<T>(&account_id);
         let (_, public_key, signature) = create_signed_message_and_keypair(account_id_u64);
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
         let registration = RegisterExternalAddress::EthereumAddress {
             signature,
             proposed_pub_key: public_key,
+            address20: address20.clone(),
         };
 
         assert_ok!(Keystore::<T>::register_key(
@@ -80,6 +83,7 @@ mod benchmarks {
 
         AttestationKey::EthereumKey {
             pub_key: public_key,
+            address20,
         }
     }
 
@@ -97,14 +101,25 @@ mod benchmarks {
         // Generate deterministic attestation
         let caller_u64 = account_id_to_u64::<T>(&caller);
         let (_, public_key, signature) = create_signed_message_and_keypair(caller_u64);
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
+
+        let block_hash = H256::zero();
         let attestation = Attestation::EthereumAttestation {
             signature,
             proposed_pub_key: public_key,
-            state_root: H256::zero(),
+            state_root: BoundedVec::new(),
+            address20,
+            block_number,
+            block_hash,
         };
 
         #[extrinsic_call]
-        attest_block(RawOrigin::Signed(caller.clone()), block_number, attestation);
+        attest_block(
+            RawOrigin::Signed(caller.clone()),
+            block_number,
+            attestation.clone(),
+        );
 
         // Assert that the attestation was recorded
         let attestations = Attestations::<T>::get(block_number);

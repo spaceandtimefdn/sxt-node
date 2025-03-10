@@ -24,6 +24,12 @@ sp-core = { workspace = true, features = ["std"]}
 prometheus = "0.12.0"
 ratatui = "=0.23.0"
 crossterm = "0.28.1"
+snafu = { workspace = true }
+codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
+    "derive", "std",
+] }
+proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
+eth_merkle_tree = "=0.1.1"
 
 [lints]
 workspace = true

@@ -24,12 +24,15 @@ use sha3::digest::generic_array::GenericArray;
 use subxt::blocks::Block as BlockT;
 use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;
 use subxt::config::substrate::{BlakeTwo256, SubstrateHeader};
+use subxt::config::Header;
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
-use sxt_core::attestation::{verify_eth_signature, RegisterExternalAddress};
+use sxt_core::attestation::{verify_eth_signature, EthereumSignature, RegisterExternalAddress};
 use sxt_core::sxt_chain_runtime as runtime;
+use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
 use thiserror::Error;
+use watcher::attestation;
 
 type SxtConfig = PolkadotConfig;
 
@@ -134,6 +137,14 @@ pub enum AttestationError {
     /// This means the attestations cannot be verified due to a mismatch in state root values.
     #[error("The attestations have different state roots, impossible to verify")]
     StateRootMismatch,
+
+    /// Error fetching commitments and accounts from the chain.
+    #[error("FetchError: {0}")]
+    FetchError(#[from] attestation::fetch::FetchError),
+
+    /// Error constructing a merkle tree from the data.
+    #[error("MerkleTreeError: {0}")]
+    MerkleTreeError(#[from] attestation::merkle_tree::MerkleTreeError),
 }
 
 /// Command-line arguments for the CLI
@@ -296,8 +307,9 @@ impl AttestationClient {
 
         let mut blocks = self.api.blocks().subscribe_finalized().await?;
         while let Some(block_result) = blocks.next().await {
-            self.process_block(block_result, &eth_signing_key, &substrate_key)
-                .await?;
+            let _ = self
+                .process_block(block_result, &eth_signing_key, &substrate_key)
+                .await;
         }
         Ok(())
     }
@@ -307,12 +319,82 @@ impl AttestationClient {
         block_result: Result<SxtBlock, subxt::Error>,
         private_key: &SigningKey,
         keypair: &Keypair,
-    ) -> Result<(), AttestationError> {
-        let block = block_result?;
+    ) -> Result<(), ()> {
+        let block = match block_result {
+            Ok(block) => block,
+            Err(e) => {
+                log::error!("Error retrieving block: {}", e);
+                return Ok(()); // Swallow the error and continue
+            }
+        };
+
         info!("Processing block {:?}", block.number());
 
-        self.submit_transaction_with_retry(block, private_key, keypair)
+        let (commitments, accounts) =
+            match attestation::fetch::commitments_and_accounts(&self.api, block.hash()).await {
+                Ok(result) => result,
+                Err(e) => {
+                    log::error!("Error fetching commitments and accounts: {}", e);
+                    return Ok(());
+                }
+            };
+
+        let mut data: Vec<String> = Vec::new();
+        data.extend(commitments);
+        data.extend(accounts);
+
+        let hashed_data = match attestation::merkle_tree::hash_data(data) {
+            Ok(hashed) => hashed,
+            Err(e) => {
+                log::error!("Error hashing data: {}", e);
+                return Ok(());
+            }
+        };
+
+        let tree = match attestation::merkle_tree::build_merkle_tree(&hashed_data) {
+            Ok(tree) => tree,
+            Err(e) => {
+                log::error!("Error constructing Merkle tree: {}", e);
+                return Ok(());
+            }
+        };
+
+        let state_root = match tree.root {
+            Some(root) => root,
+            None => {
+                log::error!("Error: the tree calculated an empty state root");
+                return Ok(());
+            }
+        };
+
+        let message = attestation::message::create_attestation_message(
+            hex::decode(state_root.data.clone()).expect("could not decode for msg creation"),
+            block.number(),
+        );
+
+        let signature = match generate_signature(private_key, &message) {
+            Ok(sig) => sig,
+            Err(e) => {
+                log::error!("Error generating signature: {}", e);
+                return Ok(());
+            }
+        };
+
+        if let Err(e) = self
+            .submit_transaction_with_retry(
+                block,
+                private_key,
+                keypair,
+                signature,
+                message,
+                state_root.data.clone(),
+            )
             .await
+        {
+            log::info!("Error submitting tx: {:?}", e);
+        }
+
+        Ok(())
     }
 
     async fn submit_transaction_with_retry(
@@ -320,12 +402,22 @@ impl AttestationClient {
         block: BlockT<PolkadotConfig, OnlineClient<SxtConfig>>,
         private_key: &SigningKey,
         keypair: &Keypair,
+        signature: EthereumSignature,
+        message: Vec<u8>,
+        state_root: String,
     ) -> Result<(), AttestationError> {
         let header = block.header();
         let mut attempt = 0;
 
         loop {
-            let attestation = create_attestation(header, private_key)?;
+            let attestation = create_attestation(
+                header,
+                private_key,
+                message.clone(),
+                signature,
+                state_root.clone(),
+            )?;
+
             let tx_params = Params::new().nonce(self.nonce.get()).build();
             let tx = runtime::api::tx()
                 .attestations()
@@ -365,12 +457,20 @@ impl AttestationClient {
 fn create_attestation(
     header: &SubstrateHeader<u32, BlakeTwo256>,
     private_key: &SigningKey,
+    message: Vec<u8>,
+    signature: EthereumSignature,
+    state_root: String,
 ) -> Result<runtime::api::runtime_types::sxt_core::attestation::Attestation, AttestationError> {
-    let message = create_message(header.state_root, header.number);
-    let signature = generate_signature(private_key, &message)?;
-
     let sxt_core::attestation::EthereumSignature { r, s, v } = signature;
     let proposed_pub_key = get_proposed_pub_key(private_key)?;
+
+    let block_number = header.number;
+    let block_hash = header.hash();
+
+    let address20 = sxt_core::attestation::uncompressed_public_key_to_address(&proposed_pub_key)?;
+    let address20 = BoundedVec(address20.as_slice().to_vec());
+
+    let state_root = BoundedVec(hex::decode(state_root).expect("could not decode state root"));
 
     Ok(
         runtime::api::runtime_types::sxt_core::attestation::Attestation::EthereumAttestation {
@@ -380,7 +480,10 @@ fn create_attestation(
                 v,
             },
             proposed_pub_key,
-            state_root: header.state_root,
+            state_root,
+            address20,
+            block_number,
+            block_hash,
         },
     )
 }
@@ -403,17 +506,19 @@ async fn register(eth_key_path: &str, substrate_key_path: &str) -> Result<(), At
     let RegisterExternalAddress::EthereumAddress {
         signature,
         proposed_pub_key,
+        address20,
     } = registration;
     let sxt_core::attestation::EthereumSignature { r, s, v } = signature;
 
     // Format all of these values as hex
     info!(
-        "Send these registration details to an SxT network admin\naccount_id={}\nr=0x{}\ns=0x{}\nv=0x{:x}\npub_key=0x{}",
+        "Send these registration details to an SxT network admin\naccount_id={}\nr=0x{}\ns=0x{}\nv=0x{:x}\npub_key=0x{}\neth_address=0x{}",
         substrate_key.public_key().to_account_id(),
         hex::encode(r),
         hex::encode(s),
         v,
-        hex::encode(proposed_pub_key) // convert the public key to hex using hex::encode for slices
+        hex::encode(proposed_pub_key), // convert the public key to hex using hex::encode for slices
+        hex::encode(address20),
     );
 
     Ok(())
@@ -557,17 +662,20 @@ fn verify_attestations<B: ratatui::backend::Backend>(
     progress: &mut Vec<String>,
     terminal: &mut Terminal<B>,
 ) -> Result<(), AttestationError> {
-    let mut first_state_root: Option<&H256> = None;
+    let mut first_state_root: Option<&BoundedVec<u8>> = None;
 
     for (i, attestation) in attestations.iter().enumerate() {
         let runtime::api::runtime_types::sxt_core::attestation::Attestation::EthereumAttestation {
             signature,
             proposed_pub_key,
             state_root,
+            address20,
+            block_number,
+            block_hash,
         } = attestation;
 
         // Create message and verify signature
-        let msg = create_message(state_root, block_number);
+        let msg = create_message(state_root.0.clone(), *block_number);
         progress.push(format!(
             "Verifying attestation {}/{}...",
             i + 1,
@@ -575,11 +683,11 @@ fn verify_attestations<B: ratatui::backend::Backend>(
         ));
         update_ui(terminal, progress)?;
 
-        verify_signature(&msg, signature, proposed_pub_key, block_number)?;
+        verify_signature(&msg, signature, proposed_pub_key, *block_number)?;
 
         // Check state root consistency
         if let Some(first_root) = first_state_root {
-            if first_root != state_root {
+            if first_root.0 != state_root.0 {
                 return Err(AttestationError::StateRootMismatch);
             }
         } else {

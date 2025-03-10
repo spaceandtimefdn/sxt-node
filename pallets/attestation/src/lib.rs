@@ -25,9 +25,10 @@ pub use weights::*;
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::dispatch::DispatchResult;
-    use frame_support::pallet_prelude::*;
+    use frame_support::pallet_prelude::{OptionQuery, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
+    use scale_info::prelude::vec::Vec;
     use sxt_core::attestation::{Attestation, AttestationKey};
     use sxt_core::keystore::EthereumKey;
     use sxt_core::permissions::{AttestationPalletPermission, PermissionLevel};
@@ -97,6 +98,10 @@ pub mod pallet {
         BoundedVec<Attestation, ConstU32<64>>,
         ValueQuery,
     >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn last_forwarded_block)]
+    pub type LastForwardedBlock<T: Config> = StorageValue<_, u32, OptionQuery>;
 
     /// Errors that may occur in this pallet.
     #[pallet::error]
@@ -171,14 +176,23 @@ pub mod pallet {
                 Attestation::EthereumAttestation {
                     signature,
                     proposed_pub_key: attestor_pub_key,
+                    ref address20,
+                    ref state_root,
+                    block_number,
                     ..
                 } => {
                     let proposed_key = EthereumKey {
                         pub_key: attestor_pub_key,
+                        address20: address20.clone(),
                     };
 
-                    pallet_keystore::Pallet::<T>::verify_ethereum_key(
+                    let state_root_inner = state_root.clone().into_inner();
+                    let msg =
+                        Self::create_ethereum_attestation_message(state_root_inner, block_number);
+
+                    pallet_keystore::Pallet::<T>::verify_ethereum_msg(
                         &who,
+                        &msg,
                         &proposed_key,
                         &signature,
                     )?;
@@ -191,7 +205,7 @@ pub mod pallet {
                     )?;
 
                     attestations_for_block
-                        .try_push(attestation)
+                        .try_push(attestation.clone())
                         .map_err(|_| Error::<T>::MaxAttestationsForBlockError)?;
 
                     Attestations::<T>::insert(block_number, attestations_for_block);
@@ -203,6 +217,52 @@ pub mod pallet {
                     });
                 }
             }
+
+            Ok(())
+        }
+
+        /// Marks a block as forwarded on-chain.
+        ///
+        /// This function allows authorized accounts to mark a specific block as "forwarded."
+        /// It updates the `LastForwardedBlock` storage entry with the given block number.
+        ///
+        /// # Arguments
+        ///
+        /// * `origin` - The caller of the function, which must have the `ForwardAttestedBlock`
+        ///   permission within the attestation pallet.
+        /// * `block_number` - The block number that is being marked as forwarded.
+        ///
+        /// # Permissions
+        ///
+        /// The caller must have one of the following permissions:
+        /// * Root access (`ensure_root`)
+        /// * Explicit permission to forward attested blocks (`ForwardAttestedBlock`).
+        ///
+        /// # Storage Changes
+        ///
+        /// * Updates `LastForwardedBlock` to store the provided `block_number`.
+        ///
+        /// # Errors
+        ///
+        /// * Returns an error if the caller lacks the necessary permissions.
+        ///
+        /// # Emits
+        ///
+        /// This function does **not** emit an event upon execution.
+        #[pallet::call_index(2)]
+        #[pallet::weight(<T as Config>::WeightInfo::attest_block())]
+        pub fn mark_block_forwarded(
+            origin: OriginFor<T>,
+            block_number: BlockNumber,
+        ) -> DispatchResult {
+            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin,
+                &PermissionLevel::AttestationPallet(
+                    AttestationPalletPermission::ForwardAttestedBlock,
+                ),
+            )?;
+
+            LastForwardedBlock::<T>::set(Some(block_number));
 
             Ok(())
         }
@@ -237,6 +297,17 @@ pub mod pallet {
             );
 
             Ok(())
+        }
+
+        /// Create an ethereum attestation message from the state root and block number
+        pub fn create_ethereum_attestation_message(
+            state_root: impl AsRef<[u8]>,
+            block_number: u32,
+        ) -> Vec<u8> {
+            let mut msg = Vec::new();
+            msg.extend_from_slice(state_root.as_ref());
+            msg.extend_from_slice(&block_number.to_be_bytes());
+            msg
         }
     }
 }

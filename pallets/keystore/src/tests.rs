@@ -39,9 +39,13 @@ fn register_ethereum_key_success() {
         let account_id: u64 = 1;
         let (public_key, signature) = create_signed_message_and_keypair(account_id);
 
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
+
         let registration = RegisterExternalAddress::EthereumAddress {
             signature,
             proposed_pub_key: public_key,
+            address20: address20.clone(),
         };
 
         assert_ok!(Pallet::<Test>::register_key(
@@ -54,6 +58,7 @@ fn register_ethereum_key_success() {
         let expected_keystore = UserKeystore {
             eth_key: Some(EthereumKey {
                 pub_key: public_key,
+                address20,
             }),
         };
         assert_eq!(stored_key, Some(expected_keystore));
@@ -67,9 +72,13 @@ fn register_ethereum_key_fails_if_signature_wrong() {
 
         // Generate a keypair and register the key.
         let (public_key, signature) = create_signed_message_and_keypair(account_id);
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
+
         let registration = RegisterExternalAddress::EthereumAddress {
             signature,
             proposed_pub_key: public_key,
+            address20: address20.clone(),
         };
         assert_ok!(Pallet::<Test>::register_key(
             RuntimeOrigin::root(),
@@ -82,6 +91,7 @@ fn register_ethereum_key_fails_if_signature_wrong() {
         let duplicate_registration = RegisterExternalAddress::EthereumAddress {
             signature,
             proposed_pub_key: public_key,
+            address20,
         };
         assert_err!(
             Pallet::<Test>::register_key(
@@ -101,9 +111,13 @@ fn register_ethereum_key_fails_if_account_already_registered() {
 
         // Generate and register the first key.
         let (public_key_1, signature_1) = create_signed_message_and_keypair(account_id);
+        let address20_1 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key_1).unwrap();
+
         let registration_1 = RegisterExternalAddress::EthereumAddress {
             signature: signature_1,
             proposed_pub_key: public_key_1,
+            address20: address20_1.clone(),
         };
         assert_ok!(Pallet::<Test>::register_key(
             RuntimeOrigin::root(),
@@ -113,9 +127,13 @@ fn register_ethereum_key_fails_if_account_already_registered() {
 
         // Generate a second key and attempt to register it for the same account.
         let (public_key_2, signature_2) = create_signed_message_and_keypair(account_id);
+        let address20_2 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key_2).unwrap();
+
         let registration_2 = RegisterExternalAddress::EthereumAddress {
             signature: signature_2,
             proposed_pub_key: public_key_2,
+            address20: address20_2,
         };
         assert_err!(
             Pallet::<Test>::register_key(RuntimeOrigin::root(), account_id, registration_2),
@@ -131,6 +149,9 @@ fn register_ethereum_key_fails_if_signature_invalid() {
 
         // Generate a keypair and use an invalid signature.
         let (public_key, _) = create_signed_message_and_keypair(account_id);
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
+
         let invalid_signature = EthereumSignature {
             r: [0u8; 32],
             s: [0u8; 32],
@@ -139,6 +160,7 @@ fn register_ethereum_key_fails_if_signature_invalid() {
         let registration = RegisterExternalAddress::EthereumAddress {
             signature: invalid_signature,
             proposed_pub_key: public_key,
+            address20,
         };
 
         assert_err!(
@@ -154,10 +176,14 @@ fn remove_ethereum_key_success() {
         let account_id: u64 = 1;
         let (public_key, signature) = create_signed_message_and_keypair(account_id);
 
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
+
         // Register the key.
         let registration = RegisterExternalAddress::EthereumAddress {
             signature,
             proposed_pub_key: public_key,
+            address20: address20.clone(),
         };
         assert_ok!(Pallet::<Test>::register_key(
             RuntimeOrigin::root(),

@@ -20,6 +20,10 @@ pub struct Cli {
 
     #[clap(long)]
     pub event_forwarder_rpc: Option<String>,
+
+    #[allow(missing_docs)]
+    #[clap(flatten)]
+    pub storage_monitor: sc_storage_monitor::StorageMonitorParams,
 }
 
 #[derive(Debug, clap::Subcommand)]
