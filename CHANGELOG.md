@@ -1,3 +1,24 @@
+# [0.78.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.77.0...v0.78.0) (2025-03-10)
+
+
+### Bug Fixes
+
+* appease clippy ([f6dde51](https://github.com/spaceandtimelabs/sxt-node/commit/f6dde51c1a022be89c5586d53d8c1f0f1f1ac64e))
+* appease clippy ([4d89877](https://github.com/spaceandtimelabs/sxt-node/commit/4d89877993090699be9bb4ac6a512f06e5bf4f76))
+* fix incorrect service instantiation ([3c6a928](https://github.com/spaceandtimelabs/sxt-node/commit/3c6a928150a47448202a2afe1c7565bcddbb0607))
+* fmt chain runtime ([662cf8e](https://github.com/spaceandtimelabs/sxt-node/commit/662cf8e28fbe8b1f8f112e22d03ae1213bbe3f49))
+
+
+### Features
+
+* add catch up feature to chain and event forwarder ([38fab1d](https://github.com/spaceandtimelabs/sxt-node/commit/38fab1d5507009e66aa932fcd0035cbfc339bd07))
+* attestor and event-forwarder v2 ([32b6f2e](https://github.com/spaceandtimelabs/sxt-node/commit/32b6f2ecc957f8d406fd29face767a3d281cb948))
+* update author for event-forwarder ([f19d811](https://github.com/spaceandtimelabs/sxt-node/commit/f19d8112faedace0612df23fd6fb97f989927c2a))
+* update polkadot to polkadot-stable2409 ([cad6d35](https://github.com/spaceandtimelabs/sxt-node/commit/cad6d35744ecf5d4cdc4b084cff3e2db08b79546))
+* updated author section in event-forwarder ([4e25252](https://github.com/spaceandtimelabs/sxt-node/commit/4e252523de0aba5db29943946554879d8aa33bf7))
+
+
+
 # [0.77.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.76.1...v0.77.0) (2025-03-06)
 
 
@@ -29,16 +50,6 @@
 
 
 ## [0.75.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.75.0...v0.75.1) (2025-03-04)
-
-
-
-# [0.75.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.74.0...v0.75.0) (2025-03-02)
-
-
-### Features
-
-* Update the devnet chainspec ([01f92a1](https://github.com/spaceandtimelabs/sxt-node/commit/01f92a1c4025df1428fd5c99995e630247dd507b))
-* Update the sxt_chain_runtime generated file ([17ed645](https://github.com/spaceandtimelabs/sxt-node/commit/17ed645924c43dc666066cc53ec4ef9fb8fc12e5))
 
 
 
