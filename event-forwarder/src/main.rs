@@ -96,7 +96,7 @@ struct Cli {
     #[arg(
         short,
         long,
-        default_value = "0xf93fc53262fdb57302577Ab880150F626aE164ff"
+        default_value = "0xF26Cf27D9a2e53e1362fA8345f0D16Fb7Bb1E4C6"
     )]
     contract_address: String,
 
