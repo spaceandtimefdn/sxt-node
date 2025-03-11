@@ -148,7 +148,6 @@ pub trait Interface {
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
-    use std::str::from_utf8;
     use std::sync::Arc;
 
     use arrow::array::{ArrayRef, Int32Array, RecordBatch, StringArray};
@@ -165,8 +164,6 @@ mod tests {
     use sp_core::U256;
     use sp_runtime::BoundedVec;
     use sqlparser::ast::Ident;
-    use sqlparser::dialect::PostgreSqlDialect;
-    use sqlparser::parser::Parser;
     use sxt_core::tables::create_statement;
 
     use super::*;

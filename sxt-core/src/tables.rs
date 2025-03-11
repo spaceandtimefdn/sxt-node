@@ -1,4 +1,6 @@
-use alloc::string::ToString;
+extern crate alloc;
+use alloc::format;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::str::{from_utf8, Utf8Error};
 
@@ -8,14 +10,15 @@ use frame_support::traits::ConstU32;
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
-use sp_core::RuntimeDebug;
+use sp_core::{RuntimeDebug, U256};
+use sp_runtime::DispatchError;
 use sp_runtime_interface::pass_by::PassByCodec;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::ast::ObjectName;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
-use super::ByteString;
+use super::{ByteString, IDENT_LENGTH};
 
 /// Maxiumum number of columns per table
 pub const MAX_COLS_PER_TABLE: u32 = 64;
@@ -202,7 +205,7 @@ pub type TableNamespace = ByteString;
 /// Version of a given table's schema as a simple incrementing count
 pub type TableVersion = u16;
 
-const UUID_MAX_LEN: u32 = 36;
+const UUID_MAX_LEN: u32 = IDENT_LENGTH;
 /// The UUID for a given table
 pub type TableUuid = BoundedVec<u8, ConstU32<UUID_MAX_LEN>>;
 
@@ -546,10 +549,10 @@ fn extract_column_name(input: &str) -> Option<&str> {
 /// Convenience wrapper around uuids_from_sqlparser that accepts a raw CreateStatement
 pub fn uuids_from_create_statement(
     create_statement: CreateStatement,
-) -> (TableUuid, ColumnUuidList) {
+) -> Option<(TableUuid, ColumnUuidList)> {
     match create_statement_to_sqlparser(create_statement) {
-        Ok(create_table) => uuids_from_sqlparser(create_table),
-        _ => (TableUuid::default(), ColumnUuidList::default()),
+        Ok(create_table) => Some(uuids_from_sqlparser(create_table)),
+        _ => None,
     }
 }
 
@@ -582,6 +585,48 @@ pub fn uuids_from_sqlparser(create_table: CreateTableBuilder) -> (TableUuid, Col
     }
 
     (table_uuid, column_id_list)
+}
+
+/// Generate a new UUID for a given table name and namespace.
+pub fn generate_table_uuid(
+    block_number: U256,
+    namespace: &str,
+    name: &str,
+) -> Result<TableUuid, DispatchError> {
+    let source = format!("{}{}{}", block_number, namespace, name);
+    generate_uuid(source)
+}
+
+/// Generate a new UUID for a given namespace
+pub fn generate_namespace_uuid(
+    block_number: U256,
+    namespace: &str,
+) -> Result<TableUuid, DispatchError> {
+    let source = format!("{}{}", block_number, namespace);
+    generate_uuid(source)
+}
+
+/// Generate a new UUID for a given column_name. For now we are using the column_name as
+/// the id, until additional support is introduced on the database side.
+pub fn generate_column_uuid_list(create_statement: CreateStatement) -> ColumnUuidList {
+    let builder = create_statement_to_sqlparser(create_statement).unwrap();
+    let uuid_list = builder
+        .columns
+        .iter()
+        .map(|c| ColumnUuid {
+            name: ByteString::try_from(c.name.value.as_bytes().to_vec()).unwrap(),
+            uuid: TableUuid::try_from(c.name.value.as_bytes().to_vec()).unwrap(),
+        })
+        .collect::<Vec<ColumnUuid>>();
+
+    ColumnUuidList::try_from(uuid_list).unwrap()
+}
+
+/// Generate a new UUID from a given source string
+pub fn generate_uuid(source: String) -> Result<TableUuid, DispatchError> {
+    // Hash the source
+    let hash = sp_core::twox_256(source.as_bytes()).to_vec();
+    Ok(TableUuid::try_from(hash).unwrap())
 }
 
 #[cfg(test)]

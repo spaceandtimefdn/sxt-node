@@ -28,6 +28,9 @@ pub mod pallet {
     use sxt_core::tables::{
         create_statement_to_sqlparser,
         extract_schema_uuid,
+        generate_column_uuid_list,
+        generate_namespace_uuid,
+        generate_table_uuid,
         sqlparser_to_create_statement,
         uuids_from_create_statement,
         uuids_from_sqlparser,
@@ -206,6 +209,9 @@ pub mod pallet {
         /// There was an error deserializing the Arrow schema
         ArrowDeserializationError,
 
+        /// The provided Table Identifier was unable to be parsed
+        TableIdentifierParsingError,
+
         /// Existing commit for this table identifier
         IdentifierAlreadyExists,
 
@@ -241,23 +247,23 @@ pub mod pallet {
             )?;
 
             let tables_with_meta_columns = tables.into_iter().map(|(identifier, statement, insert_quorum_size)| {
-                    let (table_uuid, column_uuids) = uuids_from_create_statement(statement.clone());
+                let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(statement.clone(), identifier.clone());
 
-                    Self::insert_table_uuid(identifier.clone(), 0, table_uuid, column_uuids)?;
+                Self::insert_table_uuid(identifier.clone(), 0, table_uuid, column_uuids)?;
 
-                    Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), insert_quorum_size);
+                Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), insert_quorum_size);
 
-                    let create_table = create_statement_to_sqlparser(statement)
-                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                let create_table = create_statement_to_sqlparser(statement)
+                    .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
-                    let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(
-                        create_table,
-                    )?;
+                let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(
+                    create_table,
+                )?;
 
-                    let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
-                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
-                    Ok((identifier, statement_with_metadata, insert_quorum_size))
-                })
+                let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
+                    .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                Ok((identifier, statement_with_metadata, insert_quorum_size))
+            })
                 .collect::<Result<Vec<_>, DispatchError>>()?
                 .try_into()
                 .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
@@ -368,36 +374,36 @@ pub mod pallet {
             ensure_root(origin)?;
 
             GenesisTables::<T>::iter()
-            .map(|(source_and_mode, genesis_list)| {
-                // Process the genesis list and map over each table
-                let tables_with_meta_columns = genesis_list
-                    .tables
-                    .iter()
-                    .map(| GenesisTable { statement,  identifier, insert_quorum_size, version, ..}| {
-                        Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), *insert_quorum_size);
-                        let mut create_table = create_statement_to_sqlparser(statement.clone())
-                            .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                .map(|(source_and_mode, genesis_list)| {
+                    // Process the genesis list and map over each table
+                    let tables_with_meta_columns = genesis_list
+                        .tables
+                        .iter()
+                        .map(| GenesisTable { statement,  identifier, insert_quorum_size, version, ..}| {
+                            Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), *insert_quorum_size);
+                            let mut create_table = create_statement_to_sqlparser(statement.clone())
+                                .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
-                        // Get the UUIDs for the namespace, table, and columns from the create_table
-                        let (table_uuid, column_uuids) = uuids_from_sqlparser(create_table.clone());
-                        Self::insert_table_uuid(identifier.clone(), *version, table_uuid, column_uuids)?;
+                            // Get the UUIDs for the namespace, table, and columns from the create_table
+                            let (table_uuid, column_uuids) = uuids_from_sqlparser(create_table.clone());
+                            Self::insert_table_uuid(identifier.clone(), *version, table_uuid, column_uuids)?;
 
-                        let index = create_table.columns.iter().position(|x| *x == commitment_sql::row_number_column_def()).expect("must have");
-                        create_table.columns.remove(index);
+                            let index = create_table.columns.iter().position(|x| *x == commitment_sql::row_number_column_def()).expect("must have");
+                            create_table.columns.remove(index);
 
-                        let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } =
-                            pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(create_table)?;
-                        let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
-                            .map_err(|_| Error::<T>::CreateStatementParseError)?;
-                        Ok((identifier.clone(), statement_with_metadata, *insert_quorum_size))
-                    })
-                    .collect::<Result<Vec<(TableIdentifier, CreateStatement, InsertQuorumSize)>, DispatchError>>()?;
+                            let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } =
+                                pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(create_table)?;
+                            let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
+                                .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                            Ok((identifier.clone(), statement_with_metadata, *insert_quorum_size))
+                        })
+                        .collect::<Result<Vec<(TableIdentifier, CreateStatement, InsertQuorumSize)>, DispatchError>>()?;
 
-                let table_list = UpdateTableList::try_from(tables_with_meta_columns).expect("this should always work");
-                Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode.clone(), table_list));
-                Ok::<(), DispatchError>(())
-            })
-            .collect::<Result<Vec<()>, DispatchError>>()?;
+                    let table_list = UpdateTableList::try_from(tables_with_meta_columns).expect("this should always work");
+                    Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode.clone(), table_list));
+                    Ok::<(), DispatchError>(())
+                })
+                .collect::<Result<Vec<()>, DispatchError>>()?;
 
             Ok(())
         }
@@ -418,11 +424,13 @@ pub mod pallet {
             )?;
             let raw_sql =
                 from_utf8(&create_statement).map_err(|_| Error::<T>::CreateStatementParseError)?;
-            let generated_uuid = "someuuid"; // TODO generate this
+            let block_number = <frame_system::Pallet<T>>::block_number();
+            let generated_uuid =
+                generate_namespace_uuid(block_number.into(), from_utf8(&schema_name).unwrap())?; // TODO generate this
 
             let namespace_uuid = TableUuid::try_from(
                 extract_schema_uuid(raw_sql)
-                    .unwrap_or(generated_uuid)
+                    .unwrap_or(from_utf8(&generated_uuid).unwrap())
                     .as_bytes()
                     .to_vec(),
             )
@@ -538,6 +546,28 @@ pub mod pallet {
 
             Ok(statement_with_metadata)
         }
+
+        /// Attempts to extract UUIDs for the provided table, generating new ones if there are none
+        /// present in the DDL
+        pub fn get_or_generate_uuids_for_table(
+            statement: CreateStatement,
+            identifier: TableIdentifier,
+        ) -> (TableUuid, ColumnUuidList) {
+            // Check if this table statement has UUIDs embedded in it
+            let Some((table_uuid, column_uuids)) = uuids_from_create_statement(statement.clone())
+            else {
+                // If not we generate them for the table
+                let block_number = <frame_system::Pallet<T>>::block_number();
+                let namespace = from_utf8(&identifier.namespace).unwrap();
+                let name = from_utf8(&identifier.name).unwrap();
+                return (
+                    generate_table_uuid(block_number.into(), namespace, name).unwrap(),
+                    generate_column_uuid_list(statement),
+                );
+            };
+
+            (table_uuid, column_uuids)
+        }
     }
 
     #[pallet::genesis_config]
@@ -557,7 +587,11 @@ pub mod pallet {
                 .map(|(table, commitments)| {
                     // Insert the table IDs
                     let (table_uuid, column_uuids) =
-                        uuids_from_create_statement(table.create_statement.clone());
+                        pallet::Pallet::<T>::get_or_generate_uuids_for_table(
+                            table.create_statement.clone(),
+                            table.table_identifier.clone(),
+                        );
+
                     pallet::Pallet::<T>::insert_table_uuid(
                         table.table_identifier.clone(),
                         table.table_version,
@@ -613,7 +647,11 @@ pub mod pallet {
                 .map(|table| {
                     // Insert the table IDs
                     let (table_uuid, column_uuids) =
-                        uuids_from_create_statement(table.create_statement.clone());
+                        pallet::Pallet::<T>::get_or_generate_uuids_for_table(
+                            table.create_statement.clone(),
+                            table.table_identifier.clone(),
+                        );
+
                     pallet::Pallet::<T>::insert_table_uuid(
                         table.table_identifier.clone(),
                         table.table_version,

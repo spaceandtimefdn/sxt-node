@@ -26,6 +26,7 @@ frame-system.workspace = true
 pallet-permissions.workspace = true
 sxt-core.workspace = true
 sp-runtime = {default-features = false, workspace = true}
+sp-core.workspace = true
 pallet-commitments.workspace = true
 proof-of-sql-commitment-map.workspace = true
 
