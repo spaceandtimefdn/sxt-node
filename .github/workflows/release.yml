@@ -110,6 +110,15 @@ jobs:
           docker build . -t $DOCKERTAG
           jf docker push $DOCKERTAG
 
+      - name: Build and Release event-forwarder Docker Image
+        env:
+          DOCKERTAG: spaceandtime.jfrog.io/sxt-node/event-forwarder:${{ env.VERSION }}
+        working-directory: event-forwarder
+        run: |-
+          cp ../target/release/event-forwarder .
+          docker build . -t $DOCKERTAG
+          jf docker push $DOCKERTAG
+
       - name: Build and Release Dockerfile
         env:
           DOCKERTAG: spaceandtime.jfrog.io/sxtnode-docker-local/sxt-node:${{ env.VERSION }}
