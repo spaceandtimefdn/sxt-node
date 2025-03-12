@@ -1,114 +1,207 @@
+CREATE SCHEMA IF NOT EXISTS ETHEREUM_BEACON;
 CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.BLOCKS (
-    BLOCK_NUMBER BIGINT NOT NULL,
-    SLOT_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    EPOCH_NUMBER BIGINT NOT NULL,
-    PROPOSER_INDEX BIGINT NOT NULL,
-    PARENT_ROOT BINARY NOT NULL,
-    STATE_ROOT BINARY NOT NULL,
-    RANDAO_REVEAL BINARY NOT NULL,
-    GRAFFITI BINARY NOT NULL,
-    ETH1_BLOCK_HASH BINARY NOT NULL,
-    ETH1_DEPOSIT_COUNT BIGINT NOT NULL,
-    ETH1_DEPOSIT_ROOT BINARY NOT NULL,
-    SIGNATURE BINARY NOT NULL,
-    BLOB_GAS_USED BIGINT NOT NULL,
-    EXCESS_BLOB_GAS BIGINT NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, SLOT_NUMBER)
+    block_number bigint not null,
+    slot_number bigint not null,
+    time_stamp timestamp not null,
+    epoch_number bigint not null,
+    proposer_index bigint not null,
+    parent_root bytea not null,
+    state_root bytea not null,
+    randao_reveal bytea not null,
+    graffiti bytea not null,
+    eth1_block_hash bytea not null,
+    eth1_deposit_count bigint not null,
+    eth1_deposit_root bytea not null,
+    signature bytea not null,
+    blob_gas_used bigint not null,
+    excess_blob_gas bigint not null,
+    primary key (block_number, slot_number)
 );
 
 CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.DEPOSITS (
-    BLOCK_NUMBER BIGINT NOT NULL,
-    SLOT_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    DEPOSIT_AMOUNT BIGINT NOT NULL,
-    PUBKEY BINARY NOT NULL,
-    SIGNATURE BINARY NOT NULL,
-    WITHDRAWAL_CREDENTIALS BINARY NOT NULL,
-    EPOCH_NUMBER BIGINT NOT NULL,
-    DEPOSIT_INDEX INT NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, SLOT_NUMBER, DEPOSIT_INDEX)
+    block_number bigint not null,
+    slot_number bigint not null,
+    time_stamp timestamp not null,
+    deposit_amount bigint not null,
+    pubkey bytea not null,
+    signature bytea not null,
+    withdrawal_credentials bytea not null,
+    epoch_number bigint not null,
+    deposit_index int not null,
+    primary key (block_number, slot_number, deposit_index)
 );
 
 CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.WITHDRAWALS (
-    BLOCK_NUMBER BIGINT NOT NULL,
-    SLOT_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    WITHDRAWAL_INDEX BIGINT NOT NULL,
-    VALIDATOR_INDEX BIGINT NOT NULL,
-    ADDRESS ADDRESS NOT NULL,
-    AMOUNT BIGINT NOT NULL,
-    EPOCH_NUMBER BIGINT NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, SLOT_NUMBER, WITHDRAWAL_INDEX)
+    block_number bigint not null,
+    slot_number bigint not null,
+    time_stamp timestamp not null,
+    withdrawal_index bigint not null,
+    validator_index bigint not null,
+    address bytea not null,
+    amount bigint not null,
+    epoch_number bigint not null,
+    primary key (block_number, slot_number, withdrawal_index)
 );
-
 CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.ATTESTATIONS (
-    BLOCK_NUMBER BIGINT NOT NULL,
-    SLOT_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    EPOCH_NUMBER BIGINT NOT NULL,
-    ATTESTATION_INDEX BIGINT NOT NULL,
-    AGGREGATION_BITS VARCHAR NOT NULL,
-    BEACON_BLOCK_ROOT BINARY NOT NULL,
-    SOURCE_EPOCH BIGINT NOT NULL,
-    SOURCE_ROOT BINARY NOT NULL,
-    TARGET_EPOCH BIGINT NOT NULL,
-    TARGET_ROOT BINARY NOT NULL,
-    ATTESTATION_SIGNATURE BINARY NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, SLOT_NUMBER, ATTESTATION_INDEX)
+    block_number bigint not null,
+    slot_number bigint not null,
+    time_stamp timestamp not null,
+    epoch_number bigint not null,
+    attestation_index bigint not null,
+    aggregation_bits varchar not null,
+    beacon_block_root bytea not null,
+    source_epoch bigint not null,
+    source_root bytea not null,
+    target_epoch bigint not null,
+    target_root bytea not null,
+    attestation_signature bytea not null,
+    primary key (block_number, slot_number, attestation_index)
 );
-
 CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.BLOB_SIDECARS (
-    BLOCK_NUMBER BIGINT NOT NULL,
-    SLOT_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    EPOCH_NUMBER BIGINT NOT NULL,
-    BLOB VARCHAR NOT NULL,
-    BLOB_INDEX BIGINT NOT NULL,
-    KZG_COMMITMENT BINARY NOT NULL,
-    KZG_PROOF BINARY NOT NULL,
-    BODY_ROOT BINARY NOT NULL,
-    PARENT_ROOT BINARY NOT NULL,
-    PROPOSER_INDEX BIGINT NOT NULL,
-    STATE_ROOT BINARY NOT NULL,
-    ATTESTATION_SIGNATURE BINARY NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, SLOT_NUMBER, BLOB_INDEX)
+    block_number bigint not null,
+    slot_number bigint not null,
+    time_stamp timestamp not null,
+    epoch_number bigint not null,
+    blob varchar not null,
+    blob_index bigint not null,
+    kzg_commitment bytea not null,
+    kzg_proof bytea not null,
+    body_root bytea not null,
+    parent_root bytea not null,
+    proposer_index bigint not null,
+    state_root bytea not null,
+    attestation_signature bytea not null,
+    primary key (block_number, slot_number, blob_index)
 );
-
 CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.BLOB_SIDECAR_KZG_COMMITMENT_INCLUSION_PROOFS (
-    BLOCK_NUMBER BIGINT NOT NULL,
-    SLOT_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    EPOCH_NUMBER BIGINT NOT NULL,
-    BLOB_INDEX BIGINT NOT NULL,
-    KZG_COMMITMENT_INCLUSION_PROOF_INDEX INT NOT NULL,
-    KZG_COMMITMENT_INCLUSION_PROOF_VALUE BINARY NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, SLOT_NUMBER, BLOB_INDEX, KZG_COMMITMENT_INCLUSION_PROOF_INDEX)
+    block_number bigint not null,
+    slot_number bigint not null,
+    time_stamp timestamp not null,
+    epoch_number bigint not null,
+    blob_index bigint not null,
+    kzg_commitment_inclusion_proof_index int not null,
+    kzg_commitment_inclusion_proof_value bytea not null,
+    primary key (
+    block_number,
+    slot_number,
+    blob_index,
+    kzg_commitment_inclusion_proof_index
+    )
 );
-
 CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.VALIDATOR_BALANCES (
-    BLOCK_NUMBER BIGINT NOT NULL,
-    SLOT_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    EPOCH_NUMBER BIGINT NOT NULL,
-    STATE_ID BINARY NOT NULL,
-    VALIDATOR_INDEX BIGINT NOT NULL,
-    BALANCE BIGINT NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, SLOT_NUMBER, VALIDATOR_INDEX)
+    block_number bigint not null,
+    slot_number bigint not null,
+    time_stamp timestamp not null,
+    epoch_number bigint not null,
+    state_id bytea not null,
+    validator_index bigint not null,
+    balance bigint not null,
+    primary key (block_number, slot_number, validator_index)
 );
-
 CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.ATTESTER_SLASHINGS (
-    BLOCK_NUMBER BIGINT NOT NULL,
-    SLOT_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    EPOCH_NUMBER BIGINT NOT NULL,
-    ATTESTATION_1_BEACON_BLOCK_ROOT BINARY NOT NULL,
-    ATTESTATION_1_INDEX BIGINT NOT NULL,
-    ATTESTATION_1_SLOT BIGINT NOT NULL,
-    ATTESTATION_1_SOURCE_EPOCH BIGINT NOT NULL,
-    ATTESTATION_1_SOURCE_ROOT BINARY NOT NULL,
-    ATTESTATION_1_TARGET_EPOCH BIGINT NOT NULL,
-    ATTESTATION_1_TARGET_ROOT BINARY NOT NULL,
-    ATTESTATION_1_SIGNATURE BINARY NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, SLOT_NUMBER)
+    block_number bigint not null,
+    slot_number bigint not null,
+    time_stamp timestamp not null,
+    epoch_number bigint not null,
+    attestation_1_beacon_block_root bytea not null,
+    attestation_1_index bigint not null,
+    attestation_1_slot bigint not null,
+    attestation_1_source_epoch bigint not null,
+    attestation_1_source_root bytea not null,
+    attestation_1_target_epoch bigint not null,
+    attestation_1_target_root bytea not null,
+    attestation_1_signature bytea not null,
+    attestation_2_beacon_block_root bytea not null,
+    attestation_2_index bigint not null,
+    attestation_2_slot bigint not null,
+    attestation_2_source_epoch bigint not null,
+    attestation_2_source_root bytea not null,
+    attestation_2_target_epoch bigint not null,
+    attestation_2_target_root bytea not null,
+    attestation_2_signature bytea not null,
+    primary key (block_number, slot_number)
+);
+CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.PROPOSER_SLASHINGS (
+    block_number bigint not null,
+    slot_number bigint not null,
+    time_stamp timestamp not null,
+    epoch_number bigint not null,
+    signed_header_1_body_root bytea not null,
+    signed_header_1_parent_root bytea not null,
+    signed_header_1_proposer_index bigint not null,
+    signed_header_1_slot bigint not null,
+    signed_header_1_state_root bytea not null,
+    signed_header_1_signature bytea not null,
+    signed_header_2_body_root bytea not null,
+    signed_header_2_parent_root bytea not null,
+    signed_header_2_proposer_index bigint not null,
+    signed_header_2_slot bigint not null,
+    signed_header_2_state_root bytea not null,
+    signed_header_2_signature bytea not null,
+    primary key (block_number, slot_number)
+);
+CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.BLS_TO_EXECUTION_CHANGES (
+    block_number bigint not null,
+    slot_number bigint not null,
+    time_stamp timestamp not null,
+    epoch_number bigint not null,
+    from_bls_pubkey bytea not null,
+    to_execution_address bytea not null,
+    validator_index bigint not null,
+    signature bytea not null,
+    primary key (
+    block_number,
+    slot_number,
+    validator_index,
+    signature
+    )
+);
+CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.VOLUNTARY_EXITS (
+block_number bigint not null,
+slot_number bigint not null,
+time_stamp timestamp not null,
+epoch_number bigint not null,
+signature bytea not null,
+validator_index bigint not null,
+primary key (block_number, slot_number, validator_index)
+);
+CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.BLOB_KZG_COMMITMENTS (
+block_number bigint not null,
+slot_number bigint not null,
+time_stamp timestamp not null,
+epoch_number bigint not null,
+commitment bytea not null,
+commitment_index int not null,
+primary key (block_number, slot_number, commitment_index)
+);
+CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.DEPOSIT_PROOFS (
+block_number bigint not null,
+slot_number bigint not null,
+time_stamp timestamp not null,
+epoch_number bigint not null,
+proof bytea not null,
+deposit_index int not null,
+proof_index int not null,
+primary key (
+block_number,
+slot_number,
+deposit_index,
+proof_index
+)
+);
+CREATE TABLE IF NOT EXISTS ETHEREUM_BEACON.ATTESTER_SLASHINGS_ATTESTING_INDICES (
+block_number bigint not null,
+slot_number bigint not null,
+time_stamp timestamp not null,
+epoch_number bigint not null,
+attestation_index bigint not null,
+attesting_indices_index bigint not null,
+attesting_indices_value bigint not null,
+primary key (
+block_number,
+slot_number,
+attestation_index,
+attesting_indices_index,
+attesting_indices_value
+)
 );

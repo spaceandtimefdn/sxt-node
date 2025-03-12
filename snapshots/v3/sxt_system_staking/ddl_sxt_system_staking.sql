@@ -1,60 +1,59 @@
 CREATE TABLE IF NOT EXISTS SXT_SYSTEM_STAKING.UNSTAKEINITIATED(
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    TRANSACTION_HASH VARCHAR NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS VARCHAR NOT NULL,
-    DECODE_ERROR VARCHAR NOT NULL,
-    STAKER VARCHAR NOT NULL,
-    PRIMARY KEY(BLOCK_NUMBER, EVENT_INDEX)
+    block_number bigint not null,
+    time_stamp timestamp not null,
+    transaction_hash varchar not null,
+    event_index int not null,
+    contract_address varchar not null,
+    decode_error varchar not null,
+    staker varchar not null,
+    primary key(block_number, event_index)
 );
 
-CREATE TABLE IF NOT EXISTS SXT_SYSTEM_STAKING.NOMINATE(
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    TRANSACTION_HASH VARCHAR NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS VARCHAR NOT NULL,
-    DECODE_ERROR VARCHAR NOT NULL,
-    NODES VARCHAR NOT NULL,
-    NOMINATOR VARCHAR NOT NULL,
-    PRIMARY KEY(BLOCK_NUMBER, EVENT_INDEX)
+CREATE TABLE IF NOT EXISTS SXT_SYSTEM_STAKING.NOMINATED(
+    block_number bigint not null,
+    time_stamp timestamp not null,
+    transaction_hash varchar not null,
+    event_index int not null,
+    contract_address varchar not null,
+    decode_error varchar not null,
+    nodesed25519pubkeys varchar not null,
+    nominator varchar not null,
+    primary key(block_number, event_index)
 );
 
-CREATE TABLE IF NOT EXISTS SXT_SYSTEM_STAKING.UNSTAKECANCELLED(
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    TRANSACTION_HASH VARCHAR NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS VARCHAR NOT NULL,
-    DECODE_ERROR VARCHAR NOT NULL,
-    STAKER VARCHAR NOT NULL,
-    PRIMARY KEY(BLOCK_NUMBER, EVENT_INDEX)
+CREATE TABLE IF NOT EXISTS SXT_SYSTEM_STAKING.INITIATEUNSTAKECANCELLED(
+    block_number bigint not null,
+    time_stamp timestamp not null,
+    transaction_hash varchar not null,
+    event_index int not null,
+    contract_address varchar not null,
+    decode_error varchar not null,
+    staker varchar not null,
+    primary key(block_number, event_index)
 );
 
 CREATE TABLE IF NOT EXISTS SXT_SYSTEM_STAKING.STAKED(
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    TRANSACTION_HASH VARCHAR NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS VARCHAR NOT NULL,
-    DECODE_ERROR VARCHAR NOT NULL,
-    NODES VARCHAR NOT NULL,
-    STAKER VARCHAR NOT NULL,
-    AMOUNT DECIMAL(75, 0) NOT NULL,
-    PRIMARY KEY(BLOCK_NUMBER, EVENT_INDEX)
+    block_number bigint not null,
+    time_stamp timestamp not null,
+    transaction_hash varchar not null,
+    event_index int not null,
+    contract_address varchar not null,
+    decode_error varchar not null,
+    staker varchar not null,
+    amount decimal(75, 0) not null,
+    primary key(block_number, event_index)
 );
 
 CREATE TABLE IF NOT EXISTS SXT_SYSTEM_STAKING.UNSTAKECOMPLETED(
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    TRANSACTION_HASH VARCHAR NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS VARCHAR NOT NULL,
-    DECODE_ERROR VARCHAR NOT NULL,
-    NODES VARCHAR NOT NULL,
-    STAKER VARCHAR NOT NULL,
-    AMOUNT DECIMAL(75, 0) NOT NULL,
-    SXTBLOCKNUMBER BIGINT NOT NULL,
-    PRIMARY KEY(BLOCK_NUMBER, EVENT_INDEX)
+    block_number bigint not null,
+    time_stamp timestamp not null,
+    transaction_hash varchar not null,
+    event_index int not null,
+    contract_address varchar not null,
+    decode_error varchar not null,
+    nodes varchar not null,
+    staker varchar not null,
+    amount decimal(75, 0) not null,
+    sxtblocknumber bigint not null,
+    primary key(block_number, event_index)
 );

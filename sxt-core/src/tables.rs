@@ -153,9 +153,9 @@ pub type TableUuid = BoundedVec<u8, ConstU32<UUID_MAX_LEN>>;
     Deserialize,
 )]
 pub struct TableIdentifier {
-    /// TODO: add docs
+    /// The name of the table, utf8-encoded
     pub name: TableName,
-    /// TODO: add docs
+    /// The namespace of the table, utf8-encoded
     pub namespace: TableNamespace,
 }
 impl TableIdentifier {
@@ -167,12 +167,20 @@ impl TableIdentifier {
         self.namespace == system_staking
     }
 
+    /// Takes a given Table Identifier and coerces it to uppercase
+    pub fn normalized(ident: TableIdentifier) -> Self {
+        let name = from_utf8(&ident.name).unwrap();
+        let namespace = from_utf8(&ident.namespace).unwrap();
+        Self::from_str_unchecked(name, namespace)
+    }
+
     /// Optimistically create a Table Identifier from a given name and namespace. If the
     /// provided str is too long for the destination, this will panic
     pub fn from_str_unchecked(name: &str, namespace: &str) -> Self {
         TableIdentifier {
-            name: TableName::try_from(name.as_bytes().to_vec()).unwrap(),
-            namespace: TableNamespace::try_from(namespace.as_bytes().to_vec()).unwrap(),
+            name: TableName::try_from(name.to_uppercase().as_bytes().to_vec()).unwrap(),
+            namespace: TableNamespace::try_from(namespace.to_uppercase().as_bytes().to_vec())
+                .unwrap(),
         }
     }
 }

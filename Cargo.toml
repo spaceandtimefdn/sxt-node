@@ -30,7 +30,7 @@ members = [
     "pallets/attestation",
     "pallets/keystore",
     "pallets/smartcontracts",
-    "event-forwarder",
+    "event-forwarder", "chain-utils",
 ]
 resolver = "2"
 

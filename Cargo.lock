@@ -1661,6 +1661,7 @@ dependencies = [
  "atoi",
  "base64 0.22.1",
  "chrono",
+ "comfy-table",
  "half",
  "lexical-core",
  "num",
@@ -3296,6 +3297,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "chain-utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "arrow 54.2.1",
+ "clap 4.5.32",
+ "env_logger 0.11.6",
+ "hex",
+ "log",
+ "sqlparser",
+ "subxt",
+ "subxt-signer",
+ "sxt-core",
+ "tokio",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3384,9 +3402,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.31"
+version = "4.5.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "027bb0d98429ae334a8698531da7077bdf906419543a35a55c2cb1b66437d767"
+checksum = "6088f3ae8c3608d19260cd7445411865a485688711b78b5be70d78cd96136f83"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -3394,9 +3412,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.31"
+version = "4.5.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5589e0cba072e0f3d23791efac0fd8627b49c829c196a492e88168e6a669d863"
+checksum = "22a7ef7f676155edfb82daa97f99441f3ebf4a58d5e32f295a56259f1b6facc8"
 dependencies = [
  "anstream",
  "anstyle",
@@ -3407,9 +3425,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.28"
+version = "4.5.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf4ced95c6f4a675af3da73304b9ac4ed991640c36374e4b46795c49e17cf1ed"
+checksum = "09176aae279615badda0765c0c0b3f6ed53f4709118af73cf4655d85d1530cd7"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -3479,7 +3497,7 @@ dependencies = [
 name = "commit-grouper"
 version = "0.1.0"
 dependencies = [
- "clap 4.5.31",
+ "clap 4.5.32",
  "frame-support",
  "glob",
  "parity-scale-codec",
@@ -4327,7 +4345,7 @@ version = "1.0.143"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19c3062da294104183e1c34ea9887941d4d8c74f6195ce9fbb430ac4b5290ede"
 dependencies = [
- "clap 4.5.31",
+ "clap 4.5.32",
  "codespan-reporting",
  "proc-macro2",
  "quote",
@@ -5170,7 +5188,7 @@ dependencies = [
  "anyhow",
  "async-stream",
  "async-trait",
- "clap 4.5.31",
+ "clap 4.5.32",
  "env_logger 0.11.6",
  "eth_merkle_tree",
  "hex",
@@ -5533,7 +5551,7 @@ dependencies = [
  "Inflector",
  "array-bytes",
  "chrono",
- "clap 4.5.31",
+ "clap 4.5.32",
  "comfy-table",
  "frame-benchmarking",
  "frame-support",
@@ -12988,7 +13006,7 @@ name = "proof-of-sql-static-setups"
 version = "0.1.0"
 dependencies = [
  "ark-serialize 0.5.0",
- "clap 4.5.31",
+ "clap 4.5.32",
  "futures",
  "hex",
  "lazy_static",
@@ -14513,7 +14531,7 @@ checksum = "55a161ee7bf9d571c567f208b89ef4f2fd3c082180a54399403f7fdc44e94da5"
 dependencies = [
  "array-bytes",
  "chrono",
- "clap 4.5.31",
+ "clap 4.5.32",
  "fdlimit",
  "futures",
  "itertools 0.11.0",
@@ -15393,7 +15411,7 @@ version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d117c3945c524b9c0e30966359895f5ad551c2cd4ccbb677b53917fbad5039a"
 dependencies = [
- "clap 4.5.31",
+ "clap 4.5.32",
  "fs4",
  "log",
  "sp-core",
@@ -18301,7 +18319,7 @@ name = "sxt-node"
 version = "0.1.0"
 dependencies = [
  "bs58 0.5.1",
- "clap 4.5.31",
+ "clap 4.5.32",
  "dotenv",
  "frame-benchmarking-cli",
  "frame-system",
@@ -20069,7 +20087,7 @@ dependencies = [
 name = "watcher"
 version = "0.1.0"
 dependencies = [
- "clap 4.5.31",
+ "clap 4.5.32",
  "crossterm 0.28.1",
  "env_logger 0.10.2",
  "eth_merkle_tree",
