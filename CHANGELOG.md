@@ -1,3 +1,12 @@
+# [0.79.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.78.0...v0.79.0) (2025-03-12)
+
+
+### Features
+
+* added event-forwarder docker build to CI ([94a6d87](https://github.com/spaceandtimelabs/sxt-node/commit/94a6d87d8fa7a50adbe1a7169ec11c882989ca9b))
+
+
+
 # [0.78.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.77.0...v0.78.0) (2025-03-10)
 
 
@@ -46,10 +55,6 @@
 
 * alias ByteA for postgres compatibility ([9396179](https://github.com/spaceandtimelabs/sxt-node/commit/9396179094d6e98b59ba12b55e0b24529141edce))
 * increment spec version to 106 ([d0935a6](https://github.com/spaceandtimelabs/sxt-node/commit/d0935a6fd9229a5ba2e18c11e5422109abf06851))
-
-
-
-## [0.75.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.75.0...v0.75.1) (2025-03-04)
 
 
 
