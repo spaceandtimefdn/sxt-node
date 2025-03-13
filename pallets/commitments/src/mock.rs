@@ -1,4 +1,5 @@
 use frame_support::derive_impl;
+use proof_of_sql_static_setups::io::initialize_from_file_unchecked;
 use sp_runtime::BuildStorage;
 
 use crate as pallet_commitments;
@@ -23,6 +24,11 @@ impl pallet_commitments::Config for Test {}
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
+    let _ = initialize_from_file_unchecked(
+        &"../../proof-of-sql/static-setups/public_parameters_nu_15"
+            .parse()
+            .unwrap(),
+    );
     let mut storage = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap();

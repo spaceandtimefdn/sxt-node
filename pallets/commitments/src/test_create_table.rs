@@ -3,7 +3,7 @@ use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
 use proof_of_sql_commitment_map::{CommitmentScheme, CommitmentSchemeFlags, TableCommitmentBytes};
-use proof_of_sql_static_setups::PUBLIC_SETUPS;
+use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
 use sqlparser::ast::Ident;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
@@ -63,7 +63,7 @@ fn we_can_process_create_table() {
                     .iter_committable::<DoryScalar>()
                     .map(Result::unwrap),
                 0,
-                &PUBLIC_SETUPS.dynamic_dory,
+                &PUBLIC_SETUPS.get().unwrap().dynamic_dory,
             )
             .unwrap();
 
@@ -88,7 +88,8 @@ fn we_can_process_create_table() {
             dynamic_dory: true,
         };
         let (expected_create_table_and_commitment_metadata, _) =
-            process_create_table(expected_create_table, *PUBLIC_SETUPS, &flags).unwrap();
+            process_create_table(expected_create_table, *PUBLIC_SETUPS.get().unwrap(), &flags)
+                .unwrap();
 
         let create_table_and_commitment_metadata = test_params.execute().unwrap();
 

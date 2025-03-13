@@ -1,3 +1,4 @@
+use proof_of_sql_static_setups::io::ProofOfSqlPublicSetupArgs;
 use sc_cli::RunCmd;
 
 #[derive(Debug, clap::Parser)]
@@ -24,6 +25,10 @@ pub struct Cli {
     #[allow(missing_docs)]
     #[clap(flatten)]
     pub storage_monitor: sc_storage_monitor::StorageMonitorParams,
+
+    /// Configuration for loading proof-of-sql public setups.
+    #[clap(flatten)]
+    pub proof_of_sql_public_setup_args: ProofOfSqlPublicSetupArgs,
 }
 
 #[derive(Debug, clap::Subcommand)]

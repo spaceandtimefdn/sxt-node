@@ -78,6 +78,7 @@ sxt-runtime.workspace = true
 native.workspace = true
 sxt-core.workspace = true
 proof-of-sql-commitment-map = { workspace = true, features = [ "substrate"] }
+proof-of-sql-static-setups = { workspace = true, features = ["io"] }
 sqlparser = { workspace = true, default-features = false }
 bs58 = "0.5.1"
 dotenv = "0.15.0"

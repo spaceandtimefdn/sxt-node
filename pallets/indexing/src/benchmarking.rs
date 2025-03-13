@@ -52,6 +52,11 @@ mod benchmarks {
 
     #[benchmark]
     fn submit_data_quorum_reached() {
+        let _ = proof_of_sql_static_setups::io::initialize_from_file_unchecked(
+            &"proof-of-sql/static-setups/public_parameters_nu_15"
+                .parse()
+                .unwrap(),
+        );
         let table_id = TableIdentifier {
             namespace: TableNamespace::try_from(b"ETHEREUM".to_vec()).unwrap(),
             name: TableName::try_from(b"TRANSACTIONS".to_vec()).unwrap(),

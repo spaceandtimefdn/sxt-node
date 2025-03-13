@@ -19,7 +19,7 @@ use proof_of_sql_commitment_map::{
     TableCommitmentBytesPerCommitmentSchemePassBy,
 };
 #[cfg(feature = "std")]
-use proof_of_sql_static_setups::PUBLIC_SETUPS;
+use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
 use sp_runtime_interface::runtime_interface;
 use sxt_core::native::{
     CreateStatementPassBy,
@@ -118,7 +118,9 @@ pub trait Interface {
         let previous_commitments = PerCommitmentScheme::try_from(previous_commitments_bytes.data)
             .map_err(|_| NativeCommitmentError::CommitmentDeserialization)?;
 
-        let setups = *PUBLIC_SETUPS;
+        let setups = PUBLIC_SETUPS
+            .get()
+            .expect("PUBLIC_SETUPS should be initialized before runtime interface calls");
 
         let (
             InsertAndCommitmentMetadata {
@@ -130,7 +132,7 @@ pub trait Interface {
             &table_identifier,
             insert_data,
             previous_commitments,
-            setups,
+            *setups,
         )?;
 
         let table_bytes = insert_with_meta_columns.try_into()?;
@@ -158,6 +160,7 @@ mod tests {
     use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
     use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
     use proof_of_sql_commitment_map::TableCommitmentBytes;
+    use proof_of_sql_static_setups::io::initialize_from_file_unchecked;
     use sp_core::U256;
     use sp_runtime::BoundedVec;
     use sqlparser::ast::Ident;
@@ -324,8 +327,12 @@ mod tests {
         (empty_table, populated_table)
     }
 
-    #[test]
     fn we_can_process_inserts() {
+        let _ = initialize_from_file_unchecked(
+            &"../proof-of-sql/static-setups/public_parameters_nu_1"
+                .parse()
+                .unwrap(),
+        );
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
             name: b"population".to_vec().try_into().unwrap(),
@@ -342,7 +349,7 @@ mod tests {
                         .iter_committable::<DoryScalar>()
                         .map(Result::unwrap),
                     0,
-                    &PUBLIC_SETUPS.dynamic_dory,
+                    &PUBLIC_SETUPS.get().unwrap().dynamic_dory,
                 )
                 .unwrap(),
             ),
@@ -366,7 +373,7 @@ mod tests {
             &table_id,
             insert_data,
             empty_commitments,
-            *PUBLIC_SETUPS,
+            *PUBLIC_SETUPS.get().unwrap(),
         )
         .unwrap();
 
@@ -382,6 +389,11 @@ mod tests {
 
     #[test]
     fn we_cannot_process_insert_with_invalid_commitment_bytes() {
+        let _ = initialize_from_file_unchecked(
+            &"../proof-of-sql/static-setups/public_parameters_nu_1"
+                .parse()
+                .unwrap(),
+        );
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
             name: b"population".to_vec().try_into().unwrap(),
@@ -415,6 +427,11 @@ mod tests {
 
     #[test]
     fn we_cannot_process_insert_with_commitment_sql_failure() {
+        let _ = initialize_from_file_unchecked(
+            &"../proof-of-sql/static-setups/public_parameters_nu_1"
+                .parse()
+                .unwrap(),
+        );
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
             name: b"population".to_vec().try_into().unwrap(),
