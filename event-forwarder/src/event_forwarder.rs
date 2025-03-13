@@ -15,7 +15,7 @@
 use std::sync::Arc;
 
 use alloy::network::EthereumWallet;
-use alloy::primitives::{Address, FixedBytes, U256};
+use alloy::primitives::{Address, FixedBytes, Uint, U256};
 use alloy::sol;
 use async_trait::async_trait;
 use eth_merkle_tree::tree::MerkleTree;
@@ -42,7 +42,7 @@ sol!(
     #[allow(missing_docs)]
     #[sol(rpc)]
     EventForwarder,
-    "artifacts/EventForwarder.json"
+    "artifacts/0xd27Da90dfaabE287B572919A6f0aeEBc79a2Ed7e.json"
 );
 
 /// Provider instance type for Ethereum transactions.
@@ -271,20 +271,22 @@ async fn process_unbondings(
     let (r_values, s_values, v_values, expected_addresses) = extract_signature_data(attestations);
 
     for Unbonded { stash, .. } in unbondings.iter() {
-        process_unstake(
-            api,
-            contract,
-            first_attestation,
-            stash,
-            &tree,
-            &state_root,
-            &r_values,
-            &s_values,
-            &v_values,
-            &expected_addresses,
-            attested_block,
-        )
-        .await?;
+        if stash.0.as_ref()[..12] == [0; 12] {
+            process_unstake(
+                api,
+                contract,
+                first_attestation,
+                stash,
+                &tree,
+                &state_root,
+                &r_values,
+                &s_values,
+                &v_values,
+                &expected_addresses,
+                attested_block,
+            )
+            .await?;
+        }
     }
 
     Ok(())
@@ -366,24 +368,23 @@ async fn process_unstake(
 
     let free_balance = balance.data.free;
 
-    let account_id = FixedBytes::<32>::from_slice(stash.0.as_slice());
+    let staker = Address::from_slice(&stash.0.as_ref()[12..32]);
     let stash = sp_core::crypto::AccountId32::from_slice(&stash.0).expect("should always work");
     let encoded_leaf =
         watcher::attestation::fetch::encode_account_leaf(stash.clone(), free_balance);
     let proof = generate_proof(tree, &encoded_leaf)?;
 
+    let amount = Uint::from(free_balance);
+
     match contract
-        .processUnstake(
-            account_id,
-            free_balance,
-            attestation.block_number,
-            *state_root,
+        .sxtFulfillUnstake(
+            staker,
+            amount,
+            attestation.block_number.into(),
             proof,
             r_values.to_vec(),
             s_values.to_vec(),
             v_values.to_vec(),
-            expected_addresses.to_vec(),
-            U256::from(1),
         )
         .send()
         .await
