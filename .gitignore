@@ -2,3 +2,5 @@ target/
 .idea
 .env
 **.key
+**.substrate
+**.eth

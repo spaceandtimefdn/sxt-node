@@ -96,7 +96,7 @@ struct Cli {
     #[arg(
         short,
         long,
-        default_value = "0xF26Cf27D9a2e53e1362fA8345f0D16Fb7Bb1E4C6"
+        default_value = "0xd27Da90dfaabE287B572919A6f0aeEBc79a2Ed7e"
     )]
     contract_address: String,
 
@@ -211,7 +211,7 @@ async fn setup_config(rpc_url: &str, eth_key_path: &str, contract_address: &str)
     let provider: Arc<ProviderInstance> =
         Arc::new(ProviderBuilder::new().wallet(wallet).on_http(rpc_url));
 
-    let contract_address = Address::from_str(contract_address).context(AddressParseSnafu)?;
+    let contract_address = Address::from_str(contract_address.trim()).context(AddressParseSnafu)?;
 
     let api = OnlineClient::<PolkadotConfig>::new().await.map_err(|e| {
         EventForwarderError::BlockchainProcessing {
