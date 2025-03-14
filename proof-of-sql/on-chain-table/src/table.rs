@@ -14,11 +14,25 @@ use crate::OutOfScalarBounds;
 
 /// Table data type for all data types supported by sxt-node.
 ///
+/// Guarantees that all column identifiers are uppercase.
+///
 /// With the `arrow` feature, implements conversion to/from arrow `RecordBatch`s.
 ///
 /// Without the `std` feature, this type can be used in `no_std` envs.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OnChainTable(IndexMap<Ident, OnChainColumn>);
+
+// This custom impl leverages [`OnChainTable::try_from_iter`] to preserve type guarantees.
+impl<'de> Deserialize<'de> for OnChainTable {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let map = IndexMap::<Ident, OnChainColumn>::deserialize(deserializer)?;
+
+        OnChainTable::try_from_iter(map).map_err(serde::de::Error::custom)
+    }
+}
 
 /// Errors that can occur when constructing a [`OnChainTable`].
 #[derive(Debug, Snafu)]
@@ -33,6 +47,8 @@ pub enum OnChainTableError {
 
 impl OnChainTable {
     /// Create a new [`OnChainTable`] from an iterator.
+    ///
+    /// Coerces all column identifiers to uppercase.
     pub fn try_from_iter(
         iter: impl IntoIterator<Item = (Ident, OnChainColumn)>,
     ) -> Result<OnChainTable, OnChainTableError> {
@@ -44,6 +60,13 @@ impl OnChainTable {
             .ok_or(OnChainTableError::NoColumns)?;
 
         peekable_iter
+            .map(|(identifier, column)| {
+                let identifier = Ident {
+                    value: identifier.value.to_uppercase(),
+                    ..identifier
+                };
+                (identifier, column)
+            })
             .map(|(identifier, column)| {
                 if column.len() != length {
                     Err(OnChainTableError::ColumnLengthMismatch)
@@ -91,7 +114,7 @@ impl OnChainTable {
         })
     }
 
-    /// Returns this [`OnChainTable`], with columns in the order provided.
+    /// Returns this [`OnChainTable`], with columns in the order provided, case-sensitive.
     ///
     /// There are a couple edge cases handled infallibly:
     /// - Any columns in the table that don't appear in the order will be placed at the end of the
@@ -117,7 +140,7 @@ impl OnChainTable {
     /// Attempts to retrieve the values for a given decimal column name
     /// Returns None if the provided column does not exist
     pub fn get_decimal_by_column(&self, column_name: &str) -> Option<&Vec<U256>> {
-        let column_id: Ident = Ident::from(column_name);
+        let column_id: Ident = Ident::new(column_name.to_uppercase());
         let column = self.as_map().get(&column_id)?;
         match column {
             OnChainColumn::Decimal75(_, _, values) => Some(values),
@@ -128,7 +151,7 @@ impl OnChainTable {
     /// Attempts to retrieve the values for a given VarChar column name
     /// Returns None if the provided column does not exist
     pub fn get_varchars_by_column(&self, column_name: &str) -> Option<&Vec<alloc::string::String>> {
-        let column_id: Ident = Ident::from(column_name);
+        let column_id: Ident = Ident::new(column_name.to_uppercase());
         let column = self.as_map().get(&column_id)?;
         match column {
             OnChainColumn::VarChar(values) => Some(values),
@@ -186,11 +209,11 @@ mod tests {
     fn we_can_convert_table_to_and_from_iter() {
         let data = [
             (
-                Ident::new("bigint_col"),
+                Ident::new("BIGINT_COL"),
                 OnChainColumn::BigInt(vec![1, 2, 3]),
             ),
             (
-                Ident::new("varchar_col"),
+                Ident::new("VARCHAR_COL"),
                 OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
             ),
         ];
@@ -209,7 +232,7 @@ mod tests {
 
     #[test]
     fn we_can_get_table_size() {
-        let data = [(Ident::new("bigint_col"), OnChainColumn::BigInt(vec![]))];
+        let data = [(Ident::new("BIGINT_COL"), OnChainColumn::BigInt(vec![]))];
         let table = OnChainTable::try_from_iter(data.clone()).unwrap();
 
         assert_eq!(table.num_columns(), 1);
@@ -217,11 +240,11 @@ mod tests {
 
         let data = [
             (
-                Ident::new("bigint_col"),
+                Ident::new("BIGINT_COL"),
                 OnChainColumn::BigInt(vec![1, 2, 3]),
             ),
             (
-                Ident::new("varchar_col"),
+                Ident::new("VARCHAR_COL"),
                 OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
             ),
         ];
@@ -289,10 +312,10 @@ mod tests {
     }
 
     fn we_can_iter_table_with_committable_columns<S: Scalar>() {
-        let bigint_id = Ident::new("bigint_col");
+        let bigint_id = Ident::new("BIGINT_COL");
         let bigint_data = vec![-10, 0, 3];
 
-        let varchar_id = Ident::new("varchar_col");
+        let varchar_id = Ident::new("VARCHAR_COL");
         let varchar_data = ["lorem", "ipsum", "dolor"].map(String::from).to_vec();
 
         let on_chain_data = [
@@ -329,16 +352,16 @@ mod tests {
 
     #[test]
     fn we_can_order_columns() {
-        let bigint_id = Ident::new("bigint_col");
+        let bigint_id = Ident::new("BIGINT_COL");
         let bigint_entry = (bigint_id.clone(), OnChainColumn::BigInt(vec![-10, 0, 3]));
 
-        let varchar_id = Ident::new("varchar_col");
+        let varchar_id = Ident::new("VARCHAR_COL");
         let varchar_entry = (
             varchar_id.clone(),
             OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
         );
 
-        let int_id = Ident::new("int_col");
+        let int_id = Ident::new("INT_COL");
         let int_entry = (int_id.clone(), OnChainColumn::Int(vec![0, 1, 1000]));
 
         let table = OnChainTable::try_from_iter([
@@ -480,5 +503,34 @@ mod tests {
 
         let result = table.get_varchars_by_column("price");
         assert!(result.is_none());
+    }
+
+    #[test]
+    fn we_can_construct_table_with_lowercase_column_identifiers_and_get_uppercase() {
+        let data = [
+            (
+                Ident::new("bigint_col"),
+                OnChainColumn::BigInt(vec![1, 2, 3]),
+            ),
+            (
+                Ident::new("VaRcHaR_cOl"),
+                OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
+            ),
+        ];
+
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
+
+        let expected_data = [
+            (
+                Ident::new("BIGINT_COL"),
+                OnChainColumn::BigInt(vec![1, 2, 3]),
+            ),
+            (
+                Ident::new("VARCHAR_COL"),
+                OnChainColumn::VarChar(["lorem", "ipsum", "dolor"].map(String::from).to_vec()),
+            ),
+        ];
+        let expected_map = IndexMap::<Ident, OnChainColumn>::from_iter(expected_data);
+        assert_eq!(table.as_map(), &expected_map);
     }
 }

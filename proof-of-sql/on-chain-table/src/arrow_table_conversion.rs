@@ -74,12 +74,12 @@ mod tests {
 
     #[test]
     fn we_can_convert_table_to_and_from_record_batch() {
-        let bigint_col_id = Ident::new("bigint_col");
+        let bigint_col_id = Ident::new("BIGINT_COL");
         let bigint_col_data = vec![1, 2, 3];
         let bigint_col_array: ArrayRef = Arc::new(Int64Array::from(bigint_col_data.clone()));
         let bigint_col_column = OnChainColumn::BigInt(bigint_col_data);
 
-        let varchar_col_id = Ident::new("varchar_col");
+        let varchar_col_id = Ident::new("VARCHAR_COL");
         let varchar_col_data = ["lorem", "ipsum", "dolor"].map(String::from).to_vec();
         let varchar_col_array: ArrayRef = Arc::new(StringArray::from(varchar_col_data.clone()));
         let varchar_col_column = OnChainColumn::VarChar(varchar_col_data);
