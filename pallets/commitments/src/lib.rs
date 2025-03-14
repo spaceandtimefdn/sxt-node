@@ -49,7 +49,7 @@ pub mod pallet {
         TableCommitmentBytesPerCommitmentScheme,
         TableCommitmentBytesPerCommitmentSchemePassBy,
     };
-    use proof_of_sql_static_setups::PUBLIC_SETUPS;
+    use proof_of_sql_static_setups::baked::PUBLIC_SETUPS;
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
     use sxt_core::tables::TableIdentifier;
 

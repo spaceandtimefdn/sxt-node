@@ -6,7 +6,7 @@ use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
 use proof_of_sql_commitment_map::{CommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
-use proof_of_sql_static_setups::PUBLIC_SETUPS;
+use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
 use sp_core::U256;
 use sqlparser::ast::Ident;
 use sxt_core::tables::TableIdentifier;
@@ -77,7 +77,7 @@ fn we_can_process_insert() {
                     .iter_committable::<DoryScalar>()
                     .map(Result::unwrap),
                 0,
-                &PUBLIC_SETUPS.dynamic_dory,
+                &PUBLIC_SETUPS.get().unwrap().dynamic_dory,
             )
             .unwrap();
 
@@ -92,7 +92,7 @@ fn we_can_process_insert() {
             &test_params.table_id,
             test_params.insert_data.clone(),
             empty_commitments,
-            *PUBLIC_SETUPS,
+            *PUBLIC_SETUPS.get().unwrap(),
         )
         .unwrap();
         let expected_commitment_bytes =

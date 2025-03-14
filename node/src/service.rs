@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use codec::Encode;
 use futures::prelude::*;
+use proof_of_sql_static_setups::io::initialize_from_config;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_babe::{self, SlotProportion};
 use sc_network::event::Event;
@@ -557,6 +558,9 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceError> {
     let database_path = config.database.path().map(Path::to_path_buf);
     let with_db = cli.with_db;
+
+    futures::executor::block_on(initialize_from_config(&cli.proof_of_sql_public_setup_args))
+        .map_err(|e| ServiceError::Other(e.to_string()))?;
 
     let task_manager = match config.network.network_backend {
         sc_network::config::NetworkBackendType::Libp2p => {

@@ -34,6 +34,7 @@ sp-runtime = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
 native-api = { workspace = true, default-features = false}
 postcard = "1.0"
+proof-of-sql-static-setups = { workspace = true, features = ["io"], optional = true }
 on-chain-table = { workspace = true, default-features = false}
 
 [dev-dependencies]
@@ -42,6 +43,7 @@ pallet-staking-reward-curve.workspace = true
 pallet-timestamp.workspace = true
 pallet-balances.workspace = true
 pallet-staking.workspace = true
+proof-of-sql-static-setups = { workspace = true, features = ["io"] }
 sp-core.workspace = true
 sp-io.workspace = true
 sp-runtime.workspace = true
@@ -69,6 +71,7 @@ runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
+	"dep:proof-of-sql-static-setups",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
