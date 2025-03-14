@@ -1,3 +1,14 @@
+# [0.82.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.81.0...v0.82.0) (2025-03-14)
+
+
+### Features
+
+* define proof-of-sql setup loading configuration and functionality ([2f1d61c](https://github.com/spaceandtimelabs/sxt-node/commit/2f1d61c9a2be2b0376db05e81d6a02e2121f6838))
+* store loaded proof-of-sql setups statically ([2e03334](https://github.com/spaceandtimelabs/sxt-node/commit/2e033346d701a6a05a7370a0f2d708f43ceab559))
+* use io static setups in native and initialize them on startup ([63088b3](https://github.com/spaceandtimelabs/sxt-node/commit/63088b35cedb157335b83fc44b6815f22dd78488))
+
+
+
 # [0.81.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.80.0...v0.81.0) (2025-03-14)
 
 
@@ -31,27 +42,6 @@
 ### Features
 
 * added event-forwarder docker build to CI ([94a6d87](https://github.com/spaceandtimelabs/sxt-node/commit/94a6d87d8fa7a50adbe1a7169ec11c882989ca9b))
-
-
-
-# [0.78.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.77.0...v0.78.0) (2025-03-10)
-
-
-### Bug Fixes
-
-* appease clippy ([f6dde51](https://github.com/spaceandtimelabs/sxt-node/commit/f6dde51c1a022be89c5586d53d8c1f0f1f1ac64e))
-* appease clippy ([4d89877](https://github.com/spaceandtimelabs/sxt-node/commit/4d89877993090699be9bb4ac6a512f06e5bf4f76))
-* fix incorrect service instantiation ([3c6a928](https://github.com/spaceandtimelabs/sxt-node/commit/3c6a928150a47448202a2afe1c7565bcddbb0607))
-* fmt chain runtime ([662cf8e](https://github.com/spaceandtimelabs/sxt-node/commit/662cf8e28fbe8b1f8f112e22d03ae1213bbe3f49))
-
-
-### Features
-
-* add catch up feature to chain and event forwarder ([38fab1d](https://github.com/spaceandtimelabs/sxt-node/commit/38fab1d5507009e66aa932fcd0035cbfc339bd07))
-* attestor and event-forwarder v2 ([32b6f2e](https://github.com/spaceandtimelabs/sxt-node/commit/32b6f2ecc957f8d406fd29face767a3d281cb948))
-* update author for event-forwarder ([f19d811](https://github.com/spaceandtimelabs/sxt-node/commit/f19d8112faedace0612df23fd6fb97f989927c2a))
-* update polkadot to polkadot-stable2409 ([cad6d35](https://github.com/spaceandtimelabs/sxt-node/commit/cad6d35744ecf5d4cdc4b084cff3e2db08b79546))
-* updated author section in event-forwarder ([4e25252](https://github.com/spaceandtimelabs/sxt-node/commit/4e252523de0aba5db29943946554879d8aa33bf7))
 
 
 
