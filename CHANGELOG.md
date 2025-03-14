@@ -1,3 +1,12 @@
+# [0.81.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.80.0...v0.81.0) (2025-03-14)
+
+
+### Features
+
+* add event-forwarder key files to gitignore and update default contract address ([fed9a0d](https://github.com/spaceandtimelabs/sxt-node/commit/fed9a0d3d471d2a8db367263404d96ebaa748ce2))
+
+
+
 # [0.80.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.79.1...v0.80.0) (2025-03-14)
 
 
@@ -43,17 +52,6 @@
 * update author for event-forwarder ([f19d811](https://github.com/spaceandtimelabs/sxt-node/commit/f19d8112faedace0612df23fd6fb97f989927c2a))
 * update polkadot to polkadot-stable2409 ([cad6d35](https://github.com/spaceandtimelabs/sxt-node/commit/cad6d35744ecf5d4cdc4b084cff3e2db08b79546))
 * updated author section in event-forwarder ([4e25252](https://github.com/spaceandtimelabs/sxt-node/commit/4e252523de0aba5db29943946554879d8aa33bf7))
-
-
-
-# [0.77.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.76.1...v0.77.0) (2025-03-06)
-
-
-### Features
-
-* feature-flag multiple static-setups nu sizes ([9f7c19a](https://github.com/spaceandtimelabs/sxt-node/commit/9f7c19a8918a12f3017563823c3d82bda1b1c25b))
-* increase large proof-of-sql static-setup to nu 15 ([2075ad6](https://github.com/spaceandtimelabs/sxt-node/commit/2075ad6d38e3408d125d11eb686f7c28fbbd4fe6))
-* regenerate devnet chain spec with smaller runtime setup ([25005f0](https://github.com/spaceandtimelabs/sxt-node/commit/25005f0ce937c2e9e07b3114bf5bc63f3ff428e7))
 
 
 
