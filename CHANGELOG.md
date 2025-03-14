@@ -1,3 +1,12 @@
+# [0.80.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.79.1...v0.80.0) (2025-03-14)
+
+
+### Features
+
+* update event forwarder to only send 20 bytes ([2354af2](https://github.com/spaceandtimelabs/sxt-node/commit/2354af23a6c6921b57cb51ab5e19875f5ac25160))
+
+
+
 ## [0.79.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.79.0...v0.79.1) (2025-03-14)
 
 
@@ -45,15 +54,6 @@
 * feature-flag multiple static-setups nu sizes ([9f7c19a](https://github.com/spaceandtimelabs/sxt-node/commit/9f7c19a8918a12f3017563823c3d82bda1b1c25b))
 * increase large proof-of-sql static-setup to nu 15 ([2075ad6](https://github.com/spaceandtimelabs/sxt-node/commit/2075ad6d38e3408d125d11eb686f7c28fbbd4fe6))
 * regenerate devnet chain spec with smaller runtime setup ([25005f0](https://github.com/spaceandtimelabs/sxt-node/commit/25005f0ce937c2e9e07b3114bf5bc63f3ff428e7))
-
-
-
-## [0.76.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.76.0...v0.76.1) (2025-03-05)
-
-
-### Bug Fixes
-
-* bump arrow packages ([7ff3d8c](https://github.com/spaceandtimelabs/sxt-node/commit/7ff3d8c0d3b80a7857d44515842688d6f03bbcc7))
 
 
 
