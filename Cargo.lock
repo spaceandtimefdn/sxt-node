@@ -3505,7 +3505,6 @@ dependencies = [
  "primitive-types 0.12.2",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
- "proof-of-sql-parser",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "snafu",
@@ -9189,7 +9188,6 @@ dependencies = [
  "indexmap 2.7.1",
  "primitive-types 0.12.2",
  "proof-of-sql",
- "proof-of-sql-parser",
  "serde",
  "snafu",
  "sqlparser",
@@ -12902,9 +12900,9 @@ dependencies = [
 
 [[package]]
 name = "proof-of-sql"
-version = "0.73.3"
+version = "0.80.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76b725f6b8a292e1184ac626643685a60058b7bbccc98be0b047e2648c8058b7"
+checksum = "bb1f157f8b2f47f7868545fa6031c216190d8b3ad8c6fb6745baa900688bd8d9"
 dependencies = [
  "ahash 0.8.11",
  "ark-bls12-381 0.5.0",
@@ -12970,9 +12968,9 @@ dependencies = [
 
 [[package]]
 name = "proof-of-sql-parser"
-version = "0.73.3"
+version = "0.80.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fbb4d6848d1eddf84f81656f7a3658e19632b9678704e35208d926f1faca5c6"
+checksum = "44c312e6422580367cc08458df3b235ba654cc8669960c7558d12e722e129408"
 dependencies = [
  "arrayvec 0.7.6",
  "bigdecimal 0.4.7",

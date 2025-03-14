@@ -200,8 +200,8 @@ mod tests {
 
     use proof_of_sql::base::database::{OwnedColumn, OwnedTable};
     use proof_of_sql::base::math::decimal::Precision;
-    use proof_of_sql::base::scalar::Curve25519Scalar;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
+    use proof_of_sql::proof_primitive::inner_product::curve_25519_scalar::Curve25519Scalar;
 
     use super::*;
 

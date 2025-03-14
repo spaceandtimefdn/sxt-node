@@ -304,8 +304,9 @@ mod tests {
     use alloc::vec;
     use alloc::vec::Vec;
 
-    use proof_of_sql::base::scalar::{Curve25519Scalar, Scalar};
+    use proof_of_sql::base::scalar::Scalar;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
+    use proof_of_sql::proof_primitive::inner_product::curve_25519_scalar::Curve25519Scalar;
 
     use super::*;
     use crate::generic_over_commitment::{AssociatedScalarType, CommitmentType};

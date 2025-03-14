@@ -20,7 +20,7 @@ use arrow::array::{
 };
 use arrow::datatypes::{DataType, TimeUnit};
 use proof_of_sql::base::math::decimal::Precision;
-use proof_of_sql_parser::posql_time::{PoSQLTimeUnit, PoSQLTimeZone, PoSQLTimestampError};
+use proof_of_sql::base::posql_time::{PoSQLTimeUnit, PoSQLTimeZone, PoSQLTimestampError};
 use snafu::Snafu;
 
 use crate::i256_conversion::{arrow_i256_to_u256, u256_to_arrow_i256};

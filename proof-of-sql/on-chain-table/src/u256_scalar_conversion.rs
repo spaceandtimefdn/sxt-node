@@ -28,8 +28,8 @@ pub fn u256_to_scalar<S: Scalar>(value: &U256) -> Result<S, OutOfScalarBounds> {
 
 #[cfg(test)]
 mod tests {
-    use proof_of_sql::base::scalar::Curve25519Scalar;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
+    use proof_of_sql::proof_primitive::inner_product::curve_25519_scalar::Curve25519Scalar;
 
     use super::*;
 

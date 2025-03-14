@@ -6,8 +6,8 @@ use primitive_types::U256;
 use proof_of_sql::base::commitment::CommittableColumn;
 use proof_of_sql::base::database::ColumnType;
 use proof_of_sql::base::math::decimal::Precision;
+use proof_of_sql::base::posql_time::{PoSQLTimeUnit, PoSQLTimeZone};
 use proof_of_sql::base::scalar::{Scalar, ScalarExt};
-use proof_of_sql_parser::posql_time::{PoSQLTimeUnit, PoSQLTimeZone};
 use serde::{Deserialize, Serialize};
 
 use crate::u256_scalar_conversion::u256_to_scalar;
@@ -150,8 +150,8 @@ mod tests {
     use alloc::vec;
 
     use proof_of_sql::base::database::OwnedColumn;
-    use proof_of_sql::base::scalar::Curve25519Scalar;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
+    use proof_of_sql::proof_primitive::inner_product::curve_25519_scalar::Curve25519Scalar;
 
     use super::*;
 
