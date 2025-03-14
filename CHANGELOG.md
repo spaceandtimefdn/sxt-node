@@ -1,3 +1,12 @@
+## [0.79.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.79.0...v0.79.1) (2025-03-14)
+
+
+### Bug Fixes
+
+* guarantee column identifiers are uppercase in OnChainTable ([277657f](https://github.com/spaceandtimelabs/sxt-node/commit/277657f6d7f7114c64f3bc023f662a6fb58714cc))
+
+
+
 # [0.79.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.78.0...v0.79.0) (2025-03-12)
 
 
@@ -45,16 +54,6 @@
 ### Bug Fixes
 
 * bump arrow packages ([7ff3d8c](https://github.com/spaceandtimelabs/sxt-node/commit/7ff3d8c0d3b80a7857d44515842688d6f03bbcc7))
-
-
-
-# [0.76.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.75.1...v0.76.0) (2025-03-05)
-
-
-### Features
-
-* alias ByteA for postgres compatibility ([9396179](https://github.com/spaceandtimelabs/sxt-node/commit/9396179094d6e98b59ba12b55e0b24529141edce))
-* increment spec version to 106 ([d0935a6](https://github.com/spaceandtimelabs/sxt-node/commit/d0935a6fd9229a5ba2e18c11e5422109abf06851))
 
 
 
