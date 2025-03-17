@@ -145,7 +145,7 @@ pub trait Interface {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use std::io::Cursor;
     use std::sync::Arc;
@@ -327,9 +327,10 @@ mod tests {
         (empty_table, populated_table)
     }
 
+    #[test]
     fn we_can_process_inserts() {
         let _ = initialize_from_file_unchecked(
-            &"../proof-of-sql/static-setups/public_parameters_nu_1"
+            &"../proof-of-sql/static-setups/public_parameters_nu_15"
                 .parse()
                 .unwrap(),
         );
@@ -390,7 +391,7 @@ mod tests {
     #[test]
     fn we_cannot_process_insert_with_invalid_commitment_bytes() {
         let _ = initialize_from_file_unchecked(
-            &"../proof-of-sql/static-setups/public_parameters_nu_1"
+            &"../proof-of-sql/static-setups/public_parameters_nu_15"
                 .parse()
                 .unwrap(),
         );
@@ -428,7 +429,7 @@ mod tests {
     #[test]
     fn we_cannot_process_insert_with_commitment_sql_failure() {
         let _ = initialize_from_file_unchecked(
-            &"../proof-of-sql/static-setups/public_parameters_nu_1"
+            &"../proof-of-sql/static-setups/public_parameters_nu_15"
                 .parse()
                 .unwrap(),
         );
