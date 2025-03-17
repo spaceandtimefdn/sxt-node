@@ -1,3 +1,12 @@
+# [0.84.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.83.0...v0.84.0) (2025-03-17)
+
+
+### Features
+
+* add flag to configure substrate rpc ([3464af7](https://github.com/spaceandtimelabs/sxt-node/commit/3464af75f97068e1b877e470889baae408e182ca))
+
+
+
 # [0.83.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.82.0...v0.83.0) (2025-03-17)
 
 
@@ -34,15 +43,6 @@
 ### Features
 
 * update event forwarder to only send 20 bytes ([2354af2](https://github.com/spaceandtimelabs/sxt-node/commit/2354af23a6c6921b57cb51ab5e19875f5ac25160))
-
-
-
-## [0.79.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.79.0...v0.79.1) (2025-03-14)
-
-
-### Bug Fixes
-
-* guarantee column identifiers are uppercase in OnChainTable ([277657f](https://github.com/spaceandtimelabs/sxt-node/commit/277657f6d7f7114c64f3bc023f662a6fb58714cc))
 
 
 
