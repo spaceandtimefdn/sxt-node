@@ -113,6 +113,10 @@ struct Cli {
     /// Subcommands (e.g., integration-test)
     #[command(subcommand)]
     command: Option<Commands>,
+
+    /// The substrate rpc url
+    #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
+    substrate_rpc_url: String,
 }
 
 /// Defines the available subcommands
@@ -135,7 +139,13 @@ async fn main() -> Result<()> {
     }
 
     // Run the normal blockchain processor
-    let config = setup_config(&args.rpc_url, &args.eth_key_path, &args.contract_address).await?;
+    let config = setup_config(
+        &args.rpc_url,
+        &args.eth_key_path,
+        &args.contract_address,
+        &args.substrate_rpc_url,
+    )
+    .await?;
     let keypair = load_substrate_key(&args.substrate_key_path).await?;
     let initial_nonce = fetch_initial_nonce(&config.api, &keypair).await?;
 
@@ -165,6 +175,7 @@ async fn run_integration_test() -> Result<()> {
         "https://eth-sepolia.g.alchemy.com/v2/rkAXO6gJwI3eR9jVZeCcY5ejjpVxGkw8",
         ".eth",
         "0xf93fc53262fdb57302577Ab880150F626aE164ff",
+        "ws://127.0.0.1:9944",
     )
     .await?;
 
@@ -202,7 +213,12 @@ struct Config {
 }
 
 /// Initializes common configuration used in both main and integration test
-async fn setup_config(rpc_url: &str, eth_key_path: &str, contract_address: &str) -> Result<Config> {
+async fn setup_config(
+    rpc_url: &str,
+    eth_key_path: &str,
+    contract_address: &str,
+    substrate_rpc_url: &str,
+) -> Result<Config> {
     let rpc_url = Url::from_str(rpc_url).context(UrlParseSnafu)?;
     let ethereum_signer = load_ethereum_key(eth_key_path).await?;
     let signer = PrivateKeySigner::from_signing_key(ethereum_signer);
@@ -213,11 +229,11 @@ async fn setup_config(rpc_url: &str, eth_key_path: &str, contract_address: &str)
 
     let contract_address = Address::from_str(contract_address.trim()).context(AddressParseSnafu)?;
 
-    let api = OnlineClient::<PolkadotConfig>::new().await.map_err(|e| {
-        EventForwarderError::BlockchainProcessing {
+    let api = OnlineClient::<PolkadotConfig>::from_insecure_url(substrate_rpc_url)
+        .await
+        .map_err(|e| EventForwarderError::BlockchainProcessing {
             source: Box::new(e),
-        }
-    })?;
+        })?;
 
     Ok(Config {
         provider,
