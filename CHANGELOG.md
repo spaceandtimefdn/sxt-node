@@ -1,3 +1,13 @@
+# [0.83.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.82.0...v0.83.0) (2025-03-17)
+
+
+### Features
+
+* add UUID generation support ([f6a6c83](https://github.com/spaceandtimelabs/sxt-node/commit/f6a6c83df610b579ca3406293e0726afc4f9599b))
+* Added basic support for table, namespace, and column UUIDs parsed ([985947d](https://github.com/spaceandtimelabs/sxt-node/commit/985947d73229fa0c6771a75dd6e5623bdf4e37ee))
+
+
+
 # [0.82.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.81.0...v0.82.0) (2025-03-14)
 
 
@@ -33,15 +43,6 @@
 ### Bug Fixes
 
 * guarantee column identifiers are uppercase in OnChainTable ([277657f](https://github.com/spaceandtimelabs/sxt-node/commit/277657f6d7f7114c64f3bc023f662a6fb58714cc))
-
-
-
-# [0.79.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.78.0...v0.79.0) (2025-03-12)
-
-
-### Features
-
-* added event-forwarder docker build to CI ([94a6d87](https://github.com/spaceandtimelabs/sxt-node/commit/94a6d87d8fa7a50adbe1a7169ec11c882989ca9b))
 
 
 
