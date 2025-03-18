@@ -1,3 +1,12 @@
+# [0.85.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.84.0...v0.85.0) (2025-03-18)
+
+
+### Features
+
+* update nonce manager to handle new accounts ([813fea0](https://github.com/spaceandtimelabs/sxt-node/commit/813fea097166bfa9d47a7c43f19e06f2d2838f7b))
+
+
+
 # [0.84.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.83.0...v0.84.0) (2025-03-17)
 
 
@@ -34,15 +43,6 @@
 ### Features
 
 * add event-forwarder key files to gitignore and update default contract address ([fed9a0d](https://github.com/spaceandtimelabs/sxt-node/commit/fed9a0d3d471d2a8db367263404d96ebaa748ce2))
-
-
-
-# [0.80.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.79.1...v0.80.0) (2025-03-14)
-
-
-### Features
-
-* update event forwarder to only send 20 bytes ([2354af2](https://github.com/spaceandtimelabs/sxt-node/commit/2354af23a6c6921b57cb51ab5e19875f5ac25160))
 
 
 
