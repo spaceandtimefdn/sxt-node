@@ -12948,13 +12948,13 @@ dependencies = [
 name = "proof-of-sql-commitment-map"
 version = "0.0.0"
 dependencies = [
+ "bincode 2.0.0",
  "curve25519-dalek",
  "frame-support",
  "frame-system",
  "itertools 0.12.1",
  "on-chain-table",
  "parity-scale-codec",
- "postcard",
  "proof-of-sql",
  "rand 0.8.5",
  "rand_chacha 0.3.1",

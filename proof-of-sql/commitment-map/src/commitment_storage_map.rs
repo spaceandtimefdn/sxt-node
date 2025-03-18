@@ -25,12 +25,12 @@ const TABLE_COMMITMENT_MAX_LENGTH: u32 = 45_328;
 /// Maximum byte length of a TableCommitment with 64 columns, as a type alias.
 pub type TableCommitmentMaxLength = ConstU32<TABLE_COMMITMENT_MAX_LENGTH>;
 
-/// Postcard-serialized TableCommitment stored in substrate [`CommitmentMap`] implementation.
+/// Bincode-serialized TableCommitment stored in substrate [`CommitmentMap`] implementation.
 #[derive(
     Debug, Clone, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo, Serialize, Deserialize,
 )]
 pub struct TableCommitmentBytes {
-    /// Raw postcard-serialized bytes.
+    /// Raw bincode-serialized bytes.
     pub data: BoundedVec<u8, TableCommitmentMaxLength>,
 }
 
@@ -56,15 +56,15 @@ pub enum TableCommitmentToBytesError {
     },
     /// Failed to serialize TableCommitment.
     #[snafu(display("failed to serialize TableCommitment: {error}"))]
-    Postcard {
-        /// Source postcard error.
-        error: postcard::Error,
+    Bincode {
+        /// Source bincode error.
+        error: bincode::error::EncodeError,
     },
 }
 
-impl From<postcard::Error> for TableCommitmentToBytesError {
-    fn from(error: postcard::Error) -> Self {
-        TableCommitmentToBytesError::Postcard { error }
+impl From<bincode::error::EncodeError> for TableCommitmentToBytesError {
+    fn from(error: bincode::error::EncodeError) -> Self {
+        TableCommitmentToBytesError::Bincode { error }
     }
 }
 
@@ -83,7 +83,12 @@ impl<C: Commitment + Serialize> TryFrom<&TableCommitment<C>> for TableCommitment
             return Err(TableCommitmentToBytesError::TooManyColumns { num_columns });
         }
 
-        let bytes = postcard::to_allocvec(&value)?;
+        let bytes = bincode::serde::encode_to_vec(
+            value,
+            bincode::config::legacy()
+                .with_fixed_int_encoding()
+                .with_big_endian(),
+        )?;
 
         Ok(TableCommitmentBytes {
             data: bytes.try_into().expect("TableCommitment that doesn't exceed maximum num columns shouldn't serialize to more than TABLE_COMMITMENT_MAX_LENGTH bytes"),
@@ -115,13 +120,20 @@ impl TryFrom<PerCommitmentScheme<OptionType<TableCommitmentType>>>
     }
 }
 
-impl<'de, C: Commitment + Deserialize<'de>> TryFrom<&'de TableCommitmentBytes>
-    for TableCommitment<C>
+impl<C: Commitment> TryFrom<&TableCommitmentBytes> for TableCommitment<C>
+where
+    C: Commitment + for<'de> Deserialize<'de>,
 {
-    type Error = postcard::Error;
+    type Error = bincode::error::DecodeError;
 
-    fn try_from(value: &'de TableCommitmentBytes) -> Result<Self, Self::Error> {
-        postcard::from_bytes(value.data.as_slice())
+    fn try_from(value: &TableCommitmentBytes) -> Result<Self, Self::Error> {
+        let (commitment, _) = bincode::serde::decode_from_slice(
+            value.data.as_slice(),
+            bincode::config::legacy()
+                .with_fixed_int_encoding()
+                .with_big_endian(),
+        )?;
+        Ok(commitment)
     }
 }
 
@@ -130,7 +142,7 @@ impl<'de, C: Commitment + Deserialize<'de>> TryFrom<&'de TableCommitmentBytes>
 impl TryFrom<TableCommitmentBytesPerCommitmentScheme>
     for PerCommitmentScheme<OptionType<TableCommitmentType>>
 {
-    type Error = postcard::Error;
+    type Error = bincode::error::DecodeError;
 
     fn try_from(value: TableCommitmentBytesPerCommitmentScheme) -> Result<Self, Self::Error> {
         value
