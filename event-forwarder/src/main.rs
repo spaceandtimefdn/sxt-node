@@ -257,7 +257,11 @@ async fn fetch_initial_nonce(api: &OnlineClient<PolkadotConfig>, keypair: &Keypa
         .await
         .context(FetchInitialNonceSnafu)?;
 
-    Ok(nonce.unwrap().nonce)
+    if let Some(nonce) = nonce {
+        return Ok(nonce.nonce);
+    }
+
+    Ok(0)
 }
 
 /// Fetches the start block based on the last forwarded block in the chain
