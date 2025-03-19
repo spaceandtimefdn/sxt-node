@@ -26,6 +26,7 @@
 //! - [`IncrementingBlockStream`]: Fetches blocks sequentially based on an external trigger signal.
 
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
 
 use async_stream::stream;
@@ -37,6 +38,7 @@ use subxt::backend::StreamOf;
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use tokio::sync::mpsc::Receiver;
+use tokio::sync::Mutex;
 use tokio::time::sleep;
 
 /// The `API` type represents a connected Substrate client that interacts with the blockchain.
@@ -196,20 +198,25 @@ pub struct IncrementingBlockStream {
     /// The first block to begin processing
     start_block: u32,
     /// Channel that indicates when it is time to increment to the next block
-    receiver: Receiver<bool>,
+    receiver: Arc<Mutex<Receiver<bool>>>,
+    /// Address where the block stream can fetch the initial nonce from
+    substrate_rpc_url: String,
 }
 
 impl IncrementingBlockStream {
     /// Creates a new `IncrementingBlockStream` starting from a given block number.
-    pub fn new(start_block: u32, receiver: Receiver<bool>) -> Self {
+    pub fn new(start_block: u32, receiver: Receiver<bool>, substrate_rpc_url: String) -> Self {
+        let substrate_rpc_url = convert_ws_to_https(&substrate_rpc_url);
+
         Self {
             start_block,
-            receiver,
+            receiver: Arc::new(Mutex::new(receiver)),
+            substrate_rpc_url,
         }
     }
 
     /// Fetches the block hash for a given block number using JSON-RPC.
-    async fn get_block_hash(block_number: u32) -> Result<Option<String>, reqwest::Error> {
+    async fn get_block_hash(&self, block_number: u32) -> Result<Option<String>, reqwest::Error> {
         let url = "http://127.0.0.1:9944"; // Substrate RPC endpoint
         let client = Client::new();
 
@@ -231,8 +238,12 @@ impl IncrementingBlockStream {
         Ok(response["result"].as_str().map(|s| s.to_string()))
     }
 
-    async fn fetch_block(api: &API, block_number: u32) -> Result<Option<Block>, subxt::Error> {
-        match Self::get_block_hash(block_number).await {
+    async fn fetch_block(
+        &self,
+        api: &API,
+        block_number: u32,
+    ) -> Result<Option<Block>, subxt::Error> {
+        match self.get_block_hash(block_number).await {
             Ok(Some(block_hash)) => {
                 let block_hash = H256::from_str(&block_hash)
                     .map_err(|_| subxt::Error::Other("Invalid block hash format".into()))?;
@@ -256,11 +267,11 @@ impl BlockStreamProvider for IncrementingBlockStream {
     ) -> Result<StreamOf<Result<Block, subxt::Error>>, subxt::Error> {
         let mut current_block = self.start_block;
         let api = api.clone();
-        let mut receiver = self.receiver;
+        let receiver = Arc::clone(&self.receiver); // Clone the Arc to share receiver
 
         let stream = stream! {
             // Send the first block before entering the loop
-            match Self::fetch_block(&api, current_block).await {
+            match self.fetch_block(&api, current_block).await {
                 Ok(Some(block)) => {
                     info!("Processing first block: {}", current_block);
                     yield Ok(block);
@@ -274,11 +285,12 @@ impl BlockStreamProvider for IncrementingBlockStream {
             }
 
             loop {
-                match receiver.recv().await {
+                let mut rx = receiver.lock().await;  // Lock the receiver before receiving
+                match rx.recv().await {
                     Some(true) => {
                         current_block += 1; // Increment only after a success signal
 
-                        match Self::fetch_block(&api, current_block).await {
+                        match self.fetch_block(&api, current_block).await {
                             Ok(Some(block)) => {
                                 info!("Processing block: {}", current_block);
                                 yield Ok(block);
@@ -300,4 +312,9 @@ impl BlockStreamProvider for IncrementingBlockStream {
 
         Ok(StreamOf::new(Box::pin(stream)))
     }
+}
+
+fn convert_ws_to_https(url: &str) -> String {
+    url.replacen("ws://", "http://", 1)
+        .replacen("wss://", "https://", 1)
 }
