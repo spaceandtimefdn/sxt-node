@@ -151,7 +151,7 @@ async fn main() -> Result<()> {
 
     let (tx, rx) = mpsc::channel(1);
     let start_block = fetch_start_block(&config.api).await?;
-    let stream = IncrementingBlockStream::new(start_block, rx);
+    let stream = IncrementingBlockStream::new(start_block, rx, args.substrate_rpc_url);
 
     let processor = EventForwarderProcessor::new(
         config.provider.clone(),
@@ -184,7 +184,7 @@ async fn run_integration_test() -> Result<()> {
 
     let (tx, rx) = mpsc::channel(1);
     let start_block = fetch_start_block(&config.api).await?;
-    let stream = IncrementingBlockStream::new(start_block, rx);
+    let stream = IncrementingBlockStream::new(start_block, rx, "http://127.0.0.1:9944".into());
 
     info!("Starting integration test...");
     let processor = KitchenSinkProcessor::from_existing_deployment(
