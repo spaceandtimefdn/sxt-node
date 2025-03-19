@@ -94,11 +94,13 @@ pub async fn initialize_from_config(
 mod tests {
     use super::*;
     use crate::io::args::tests::sample_config_from_file;
+    use crate::io::test_directory::TestDirectory;
 
     async fn we_cannot_initialize_public_setups_that_fail_to_load() {
+        let test_directory = TestDirectory::random(&mut rand::thread_rng());
         let setup_args = ProofOfSqlPublicSetupArgs {
             dory_public_setup_sha256: [0; 32],
-            ..sample_config_from_file()
+            ..sample_config_from_file(&test_directory)
         };
 
         let result = initialize_from_config(&setup_args).await;
@@ -110,7 +112,8 @@ mod tests {
     }
 
     async fn we_can_initialize_public_setups() {
-        let setup_args = sample_config_from_file();
+        let test_directory = TestDirectory::random(&mut rand::thread_rng());
+        let setup_args = sample_config_from_file(&test_directory);
 
         initialize_from_config(&setup_args).await.unwrap();
 
@@ -120,7 +123,8 @@ mod tests {
     }
 
     async fn we_cannot_initialize_public_setups_twice() {
-        let setup_args = sample_config_from_file();
+        let test_directory = TestDirectory::random(&mut rand::thread_rng());
+        let setup_args = sample_config_from_file(&test_directory);
 
         let result = initialize_from_config(&setup_args).await;
 

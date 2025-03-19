@@ -12992,6 +12992,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "log",
+ "num_cpus",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
  "rand 0.8.5",

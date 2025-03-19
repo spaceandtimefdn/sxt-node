@@ -13,6 +13,7 @@ lazy_static.workspace = true
 hex = { workspace = true, optional = true, features = ["std"] }
 futures = { workspace = true, optional = true, features = ["std"] }
 log = { workspace = true, optional = true }
+num_cpus = { workspace = true, optional = true }
 proof-of-sql.workspace = true
 proof-of-sql-commitment-map.workspace = true
 url = { workspace = true, optional = true }
@@ -29,7 +30,7 @@ rand = { workspace = true, features = ["std"] }
 default = ["io"]
 std = []
 baked = []
-io = ["std", "dep:clap", "dep:url", "dep:hex", "dep:reqwest", "dep:sha2", "dep:snafu", "dep:tokio", "dep:futures", "dep:log"]
+io = ["std", "proof-of-sql/std", "dep:clap", "dep:url", "dep:hex", "dep:reqwest", "dep:sha2", "dep:snafu", "dep:tokio", "dep:futures", "dep:num_cpus", "dep:log"]
 
 [lints]
 workspace = true

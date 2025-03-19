@@ -11,6 +11,10 @@ use futures::stream::StreamExt;
 use futures::TryStreamExt;
 use hex::FromHex;
 use proof_of_sql::proof_primitive::dory::PublicParameters;
+use proof_of_sql::proof_primitive::hyperkzg::{
+    deserialize_flat_compressed_hyperkzg_public_setup_from_slice,
+    HyperKZGPublicSetupOwned,
+};
 use reqwest::Response;
 use sha2::{Digest, Sha256};
 use snafu::Snafu;
@@ -39,6 +43,22 @@ pub struct ProofOfSqlPublicSetupArgs {
         value_parser = |s: &str| <[u8; 32]>::from_hex(s)
     )]
     pub dory_public_setup_sha256: [u8; 32],
+
+    /// Directory to download proof-of-sql hyper_kzg public setup files.
+    ///
+    /// If the files already exist, setup is loaded from the files without download.
+    #[arg(long, env, default_value = ".")]
+    pub hyper_kzg_public_setup_directory: PathBuf,
+    /// Degree name of proof-of-sql publicly released ptau files.
+    #[arg(long, env, default_value = "final")]
+    pub hyper_kzg_public_setup_release_degree: String,
+    /// Sha256sum of hyper_kzg ptau to verify loaded file.
+    #[arg(long,
+        env,
+        default_value = "f86fe5740fd4eecdd317e818ad7c807b98458dbe95bd180bf2d7758a5a66c7b4",
+        value_parser = |s: &str| <[u8; 32]>::from_hex(s)
+    )]
+    pub hyper_kzg_public_setup_sha256: [u8; 32],
 }
 
 /// Errors that can occur when loading proof-of-sql public setups.
@@ -120,6 +140,8 @@ const PROOF_OF_SQL_RELEASE_DOWNLOADS_URL: &str =
     "https://github.com/spaceandtimelabs/sxt-proof-of-sql/releases/download/";
 
 const ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
+
+const HYPER_KZG_POINT_COMPRESSED_SIZE: usize = 32;
 
 /// Doing 2 tasks per cpu ensures that the temporary memory cost of deserialization/decompression
 /// never exceeds 125% of the ultimate decompressed setup.
@@ -229,6 +251,68 @@ async fn download_hyperkzg_public_setup_files(
     Ok(file_paths)
 }
 
+/// Returns hyper_kzg public setup loaded from a file, downloaded if necessary.
+pub async fn load_hyper_kzg_public_setup(
+    args: &ProofOfSqlPublicSetupArgs,
+) -> Result<HyperKZGPublicSetupOwned, LoadPublicSetupError> {
+    let file_paths = download_hyperkzg_public_setup_files(
+        &args.hyper_kzg_public_setup_directory,
+        &args.hyper_kzg_public_setup_release_degree,
+    )
+    .await?;
+
+    let bytes = try_join_all(file_paths.into_iter().map(tokio::fs::read))
+        .await?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+
+    log::info!("verifying sha256sum...");
+    let mut hasher = Sha256::new();
+    hasher.update(&bytes);
+    let actual_sha256: [u8; 32] = hasher.finalize().into();
+
+    if actual_sha256 != args.hyper_kzg_public_setup_sha256 {
+        Err(LoadPublicSetupError::Verification)?
+    }
+
+    let num_points = bytes.len() / HYPER_KZG_POINT_COMPRESSED_SIZE;
+    let points_per_task_ceil = num_points.div_ceil(num_cpus::get() * DESERIALIZATION_TASKS_PER_CPU);
+    let bytes_per_task = points_per_task_ceil * HYPER_KZG_POINT_COMPRESSED_SIZE;
+
+    let chunks = bytes
+        .as_slice()
+        .chunks(bytes_per_task)
+        .map(|chunk| chunk.to_vec())
+        .collect::<Vec<Vec<u8>>>();
+    std::mem::drop(bytes);
+
+    Ok(try_join_all(
+        chunks
+            .into_iter()
+            .enumerate()
+            .map(|(i, chunk)| async move {
+                Result::<_, LoadPublicSetupError>::Ok(
+                    tokio::task::spawn(async move {
+                        log::info!("decompressing and deserializing hyperkzg chunk {i}");
+                        let result = deserialize_flat_compressed_hyperkzg_public_setup_from_slice(
+                            &chunk,
+                            Validate::No,
+                        );
+                        log::info!("finished decompressing and deserializing hyperkzg chunk {i}");
+                        result
+                    })
+                    .await??,
+                )
+            })
+            .collect::<Vec<_>>(),
+    )
+    .await?
+    .into_iter()
+    .flatten()
+    .collect())
+}
+
 #[cfg(test)]
 pub mod tests {
     use ark_serialize::CanonicalSerialize;
@@ -238,12 +322,18 @@ pub mod tests {
     use crate::io::test_directory::TestDirectory;
 
     /// Test config that will load nu_1 setups from a file in this repository.
-    pub fn sample_config_from_file() -> ProofOfSqlPublicSetupArgs {
+    pub fn sample_config_from_file(test_directory: &TestDirectory) -> ProofOfSqlPublicSetupArgs {
         ProofOfSqlPublicSetupArgs {
             dory_public_setup_path: Some("public_parameters_nu_1".parse().unwrap()),
             dory_public_setup_url: "https://unused.com".parse().unwrap(),
             dory_public_setup_sha256: <[u8; 32]>::from_hex(
                 b"ff917d588abb232ebf0192b84f0b40fcefa163e04abe0f37358c5a914098d2ad",
+            )
+            .unwrap(),
+            hyper_kzg_public_setup_directory: test_directory.path.clone(),
+            hyper_kzg_public_setup_release_degree: "02".parse().unwrap(),
+            hyper_kzg_public_setup_sha256: <[u8; 32]>::from_hex(
+                b"5cd0eaf9964713e136d1a947ee2d1c8cf673ca73c96098df844828ecce296fdf",
             )
             .unwrap(),
         }
@@ -287,8 +377,26 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn we_can_load_dory_public_setup_from_file() {
-        let setup_args = sample_config_from_file();
+    async fn we_can_load_small_hyper_kzg_public_setup_from_url() {
+        let test_directory = TestDirectory::random(&mut rand::thread_rng());
+        let setup_args = ProofOfSqlPublicSetupArgs {
+            hyper_kzg_public_setup_release_degree: "03".to_string(),
+            hyper_kzg_public_setup_sha256: <[u8; 32]>::from_hex(
+                b"cb2b219e50e5abc8b3cbda5a93b2dbda5f8633f4e328d4a17f84be221c2f0b54",
+            )
+            .unwrap(),
+            ..sample_config_from_file(&test_directory)
+        };
+
+        let loaded_setup = load_hyper_kzg_public_setup(&setup_args).await.unwrap();
+
+        assert_eq!(loaded_setup.len(), 8);
+    }
+
+    #[tokio::test]
+    async fn we_can_load_public_setups_from_files() {
+        let test_directory = TestDirectory::random(&mut rand::thread_rng());
+        let setup_args = sample_config_from_file(&test_directory);
 
         let mut buffer = vec![];
 
@@ -299,26 +407,38 @@ pub mod tests {
             .unwrap();
 
         assert_eq!(&include_bytes!("../../public_parameters_nu_1")[..], buffer,);
+
+        let hyper_kzg_setup = load_hyper_kzg_public_setup(&setup_args).await.unwrap();
+
+        assert_eq!(hyper_kzg_setup.len(), 4);
     }
 
     #[tokio::test]
     async fn we_cannot_load_public_setup_from_nonexistent_file() {
+        let test_directory = TestDirectory::random(&mut rand::thread_rng());
+        let nonexistent_path: PathBuf = "nonexistent".parse().unwrap();
         let setup_args = ProofOfSqlPublicSetupArgs {
-            dory_public_setup_path: Some("nonexistent".parse().unwrap()),
-            ..sample_config_from_file()
+            dory_public_setup_path: Some(nonexistent_path.clone()),
+            hyper_kzg_public_setup_directory: nonexistent_path,
+            ..sample_config_from_file(&test_directory)
         };
 
         let result = load_dory_public_setup(&setup_args).await;
+
+        assert!(matches!(result, Err(LoadPublicSetupError::Io { .. })));
+
+        let result = load_hyper_kzg_public_setup(&setup_args).await;
 
         assert!(matches!(result, Err(LoadPublicSetupError::Io { .. })));
     }
 
     #[tokio::test]
     async fn we_cannot_load_public_setup_from_nonexistent_url() {
+        let test_directory = TestDirectory::random(&mut rand::thread_rng());
         let setup_args = ProofOfSqlPublicSetupArgs {
             dory_public_setup_path: None,
             dory_public_setup_url: "https://www.google.com/404".parse().unwrap(),
-            ..sample_config_from_file()
+            ..sample_config_from_file(&test_directory)
         };
 
         let result = load_dory_public_setup(&setup_args).await;
@@ -328,12 +448,18 @@ pub mod tests {
 
     #[tokio::test]
     async fn we_cannot_verify_public_setup_against_zero_hash() {
+        let test_directory = TestDirectory::random(&mut rand::thread_rng());
         let setup_args = ProofOfSqlPublicSetupArgs {
             dory_public_setup_sha256: [0; 32],
-            ..sample_config_from_file()
+            hyper_kzg_public_setup_sha256: [0; 32],
+            ..sample_config_from_file(&test_directory)
         };
 
         let result = load_dory_public_setup(&setup_args).await;
+
+        assert!(matches!(result, Err(LoadPublicSetupError::Verification)));
+
+        let result = load_hyper_kzg_public_setup(&setup_args).await;
 
         assert!(matches!(result, Err(LoadPublicSetupError::Verification)));
     }

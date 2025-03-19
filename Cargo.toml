@@ -59,6 +59,7 @@ pallet-indexing = { path = "pallets/indexing", default-features = false }
 native = { path = "native", default-features = false }
 native-api = { path = "native-api", default-features = false }
 num-bigint = { version = "0.4", default-features = false }
+num_cpus = { version = "1.16.0" }
 clap = { version = "4.5.3" }
 exponential-backoff = { version = "2.0.0", default-features = false }
 curve25519-dalek = { version = "4.1.3", default-features = false }
