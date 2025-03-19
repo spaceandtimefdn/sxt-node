@@ -206,6 +206,8 @@ pub struct IncrementingBlockStream {
 impl IncrementingBlockStream {
     /// Creates a new `IncrementingBlockStream` starting from a given block number.
     pub fn new(start_block: u32, receiver: Receiver<bool>, substrate_rpc_url: String) -> Self {
+        let substrate_rpc_url = convert_ws_to_https(&substrate_rpc_url);
+
         Self {
             start_block,
             receiver: Arc::new(Mutex::new(receiver)),
@@ -310,4 +312,9 @@ impl BlockStreamProvider for IncrementingBlockStream {
 
         Ok(StreamOf::new(Box::pin(stream)))
     }
+}
+
+fn convert_ws_to_https(url: &str) -> String {
+    url.replacen("ws://", "http://", 1)
+        .replacen("wss://", "https://", 1)
 }
