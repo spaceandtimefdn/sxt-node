@@ -1,3 +1,13 @@
+# [0.86.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.85.0...v0.86.0) (2025-03-19)
+
+
+### Features
+
+* allow incrementing block stream to parse an http/https connection from a websocket ([fb370ac](https://github.com/spaceandtimelabs/sxt-node/commit/fb370acbabb8757938840fef66ef9b8ab60db0ee))
+* upgrade IncrementingBlockStream to use substrate_rpc_url4 ([12be8df](https://github.com/spaceandtimelabs/sxt-node/commit/12be8df7ab247cba2319c5e6fe896e898bf69e40))
+
+
+
 # [0.85.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.84.0...v0.85.0) (2025-03-18)
 
 
@@ -34,15 +44,6 @@
 * define proof-of-sql setup loading configuration and functionality ([2f1d61c](https://github.com/spaceandtimelabs/sxt-node/commit/2f1d61c9a2be2b0376db05e81d6a02e2121f6838))
 * store loaded proof-of-sql setups statically ([2e03334](https://github.com/spaceandtimelabs/sxt-node/commit/2e033346d701a6a05a7370a0f2d708f43ceab559))
 * use io static setups in native and initialize them on startup ([63088b3](https://github.com/spaceandtimelabs/sxt-node/commit/63088b35cedb157335b83fc44b6815f22dd78488))
-
-
-
-# [0.81.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.80.0...v0.81.0) (2025-03-14)
-
-
-### Features
-
-* add event-forwarder key files to gitignore and update default contract address ([fed9a0d](https://github.com/spaceandtimelabs/sxt-node/commit/fed9a0d3d471d2a8db367263404d96ebaa748ce2))
 
 
 
