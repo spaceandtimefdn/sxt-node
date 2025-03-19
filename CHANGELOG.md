@@ -1,3 +1,19 @@
+# [0.87.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.86.0...v0.87.0) (2025-03-19)
+
+
+### Bug Fixes
+
+* enable sxt-core/std via native/std and run process_insert test ([ff600d9](https://github.com/spaceandtimelabs/sxt-node/commit/ff600d91f76b3ea8141d3d05471201cbebe2f654))
+
+
+### Features
+
+* download hyperkzg public setup files ([812e8aa](https://github.com/spaceandtimelabs/sxt-node/commit/812e8aa1e437d4eb75ef6688520f91bb3d677f0b))
+* load hyperkzg public setup from files or github release ([87b89d8](https://github.com/spaceandtimelabs/sxt-node/commit/87b89d8dd1336238d6ff23e50c18a8df744cae06))
+* upgrade to proof-of-sql 0.80.2 ([bd715e4](https://github.com/spaceandtimelabs/sxt-node/commit/bd715e404f6b27f44af93f87519d5a9992bb8831))
+
+
+
 # [0.86.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.85.0...v0.86.0) (2025-03-19)
 
 
@@ -33,17 +49,6 @@
 
 * add UUID generation support ([f6a6c83](https://github.com/spaceandtimelabs/sxt-node/commit/f6a6c83df610b579ca3406293e0726afc4f9599b))
 * Added basic support for table, namespace, and column UUIDs parsed ([985947d](https://github.com/spaceandtimelabs/sxt-node/commit/985947d73229fa0c6771a75dd6e5623bdf4e37ee))
-
-
-
-# [0.82.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.81.0...v0.82.0) (2025-03-14)
-
-
-### Features
-
-* define proof-of-sql setup loading configuration and functionality ([2f1d61c](https://github.com/spaceandtimelabs/sxt-node/commit/2f1d61c9a2be2b0376db05e81d6a02e2121f6838))
-* store loaded proof-of-sql setups statically ([2e03334](https://github.com/spaceandtimelabs/sxt-node/commit/2e033346d701a6a05a7370a0f2d708f43ceab559))
-* use io static setups in native and initialize them on startup ([63088b3](https://github.com/spaceandtimelabs/sxt-node/commit/63088b35cedb157335b83fc44b6815f22dd78488))
 
 
 
