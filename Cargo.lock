@@ -12988,8 +12988,10 @@ version = "0.1.0"
 dependencies = [
  "ark-serialize 0.5.0",
  "clap 4.5.31",
+ "futures",
  "hex",
  "lazy_static",
+ "log",
  "proof-of-sql",
  "proof-of-sql-commitment-map",
  "rand 0.8.5",
@@ -13776,10 +13778,12 @@ dependencies = [
  "system-configuration 0.5.1",
  "tokio",
  "tokio-native-tls",
+ "tokio-util 0.7.13",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-streams",
  "web-sys",
  "winreg",
 ]

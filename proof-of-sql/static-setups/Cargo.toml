@@ -11,11 +11,13 @@ edition.workspace = true
 ark-serialize.workspace = true
 lazy_static.workspace = true
 hex = { workspace = true, optional = true, features = ["std"] }
+futures = { workspace = true, optional = true, features = ["std"] }
+log = { workspace = true, optional = true }
 proof-of-sql.workspace = true
 proof-of-sql-commitment-map.workspace = true
 url = { workspace = true, optional = true }
 clap = { workspace = true, optional = true, features = ["env", "derive"] }
-reqwest = { workspace = true, optional = true, features = ["default"] }
+reqwest = { workspace = true, optional = true, features = ["default", "stream"] }
 sha2 = { workspace = true, optional = true, features = ["std"] }
 snafu = { workspace = true, optional = true, features = ["std"] }
 tokio = { workspace = true, optional = true, features = ["fs", "macros"] }
@@ -27,7 +29,7 @@ rand = { workspace = true, features = ["std"] }
 default = ["io"]
 std = []
 baked = []
-io = ["std", "dep:clap", "dep:url", "dep:hex", "dep:reqwest", "dep:sha2", "dep:snafu", "dep:tokio"]
+io = ["std", "dep:clap", "dep:url", "dep:hex", "dep:reqwest", "dep:sha2", "dep:snafu", "dep:tokio", "dep:futures", "dep:log"]
 
 [lints]
 workspace = true
