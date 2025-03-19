@@ -1,12 +1,15 @@
-use commitment_sql::{process_create_table, CreateTableAndCommitmentMetadata};
+use commitment_sql::{
+    process_create_table,
+    CreateTableAndCommitmentMetadata,
+    OnChainTableToTableCommitmentFn,
+};
 use frame_support::assert_noop;
 use on_chain_table::{OnChainColumn, OnChainTable};
-use proof_of_sql::base::commitment::TableCommitment;
-use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
+use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
 use proof_of_sql_commitment_map::{
     CommitmentScheme,
     CommitmentSchemeFlags,
-    TableCommitmentBytes,
+    PerCommitmentScheme,
     TableCommitmentBytesPerCommitmentScheme,
 };
 use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
@@ -61,21 +64,19 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
     }
 
     fn execute(self) -> Result<CreateTableAndCommitmentMetadata, Error<Test>> {
-        let commitment = TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
-            self.snapshot_data
-                .iter_committable::<DoryScalar>()
-                .map(Result::unwrap),
-            0,
-            &PUBLIC_SETUPS.get().unwrap().dynamic_dory,
-        )
-        .unwrap();
+        let commitments = PUBLIC_SETUPS
+            .get()
+            .unwrap()
+            .into_iter()
+            .map(|any| {
+                any.map(OnChainTableToTableCommitmentFn::new(&self.snapshot_data, 0))
+                    .transpose_result()
+                    .unwrap()
+            })
+            .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
-        let commitment_bytes = TableCommitmentBytes::try_from(&commitment).unwrap();
-
-        let per_commitment_scheme = TableCommitmentBytesPerCommitmentScheme {
-            ipa: None,
-            dynamic_dory: Some(commitment_bytes.clone()),
-        };
+        let per_commitment_scheme =
+            TableCommitmentBytesPerCommitmentScheme::try_from(commitments).unwrap();
 
         let create_table = Parser::new(&PostgreSqlDialect {})
             .try_with_sql(&self.sql_statement)
@@ -97,20 +98,6 @@ fn we_can_process_create_table_from_snapshot() {
     new_test_ext().execute_with(|| {
         let test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
-        let expected_commitment =
-            TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
-                test_params
-                    .snapshot_data
-                    .iter_committable::<DoryScalar>()
-                    .map(Result::unwrap),
-                0,
-                &PUBLIC_SETUPS.get().unwrap().dynamic_dory,
-            )
-            .unwrap();
-
-        let expected_commitment_bytes =
-            TableCommitmentBytes::try_from(&expected_commitment).unwrap();
-
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
             name: b"population".to_vec().try_into().unwrap(),
@@ -125,12 +112,29 @@ fn we_can_process_create_table_from_snapshot() {
             .unwrap();
 
         let flags = CommitmentSchemeFlags {
-            ipa: false,
+            hyper_kzg: true,
             dynamic_dory: true,
         };
         let (expected_create_table_and_commitment_metadata, _) =
             process_create_table(expected_create_table, *PUBLIC_SETUPS.get().unwrap(), &flags)
                 .unwrap();
+
+        let expected_commitments = PUBLIC_SETUPS
+            .get()
+            .unwrap()
+            .into_iter()
+            .map(|any| {
+                any.map(OnChainTableToTableCommitmentFn::new(
+                    &test_params.snapshot_data,
+                    0,
+                ))
+                .transpose_result()
+                .unwrap()
+            })
+            .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
+
+        let expected_commitments_bytes =
+            TableCommitmentBytesPerCommitmentScheme::try_from(expected_commitments).unwrap();
 
         let create_table_and_commitment_metadata = test_params.execute().unwrap();
 
@@ -139,12 +143,12 @@ fn we_can_process_create_table_from_snapshot() {
             expected_create_table_and_commitment_metadata
         );
         assert_eq!(
-            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Ipa),
-            None
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::DynamicDory),
+            expected_commitments_bytes.dynamic_dory
         );
         assert_eq!(
-            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::DynamicDory),
-            Some(expected_commitment_bytes)
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::HyperKzg),
+            expected_commitments_bytes.hyper_kzg
         );
     });
 }

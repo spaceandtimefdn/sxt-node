@@ -58,7 +58,7 @@ pub mod pallet {
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 
             let zero_hashes = TableCommitmentBytesPerCommitmentScheme {
-                ipa: Some(
+                hyper_kzg: Some(
                     (&TableCommitment::<RistrettoPoint>::default())
                         .try_into()
                         .unwrap(),

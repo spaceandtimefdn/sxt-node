@@ -104,8 +104,8 @@ impl TryFrom<PerCommitmentScheme<OptionType<TableCommitmentType>>>
         value
             .into_flat_iter()
             .map(|any| match &any {
-                AnyCommitmentScheme::Ipa(commitment) => {
-                    commitment.try_into().map(AnyCommitmentScheme::Ipa)
+                AnyCommitmentScheme::HyperKzg(commitment) => {
+                    commitment.try_into().map(AnyCommitmentScheme::HyperKzg)
                 }
                 AnyCommitmentScheme::DynamicDory(commitment) => {
                     commitment.try_into().map(AnyCommitmentScheme::DynamicDory)
@@ -136,8 +136,8 @@ impl TryFrom<TableCommitmentBytesPerCommitmentScheme>
         value
             .into_flat_iter()
             .map(|any| match &any {
-                AnyCommitmentScheme::Ipa(commitment) => {
-                    commitment.try_into().map(AnyCommitmentScheme::Ipa)
+                AnyCommitmentScheme::HyperKzg(commitment) => {
+                    commitment.try_into().map(AnyCommitmentScheme::HyperKzg)
                 }
                 AnyCommitmentScheme::DynamicDory(commitment) => {
                     commitment.try_into().map(AnyCommitmentScheme::DynamicDory)
@@ -195,7 +195,7 @@ where
         scheme: &CommitmentScheme,
     ) -> AnyCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>> {
         match scheme {
-            CommitmentScheme::Ipa => AnyCommitmentScheme::Ipa(S::get(key, scheme)),
+            CommitmentScheme::HyperKzg => AnyCommitmentScheme::HyperKzg(S::get(key, scheme)),
             CommitmentScheme::DynamicDory => AnyCommitmentScheme::DynamicDory(S::get(key, scheme)),
         }
     }
@@ -268,7 +268,7 @@ mod tests {
         assert_eq!(deserialized, commitment);
 
         let per_commitment_scheme = PerCommitmentScheme::<OptionType<TableCommitmentType>> {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: Some(commitment),
         };
 
@@ -334,7 +334,7 @@ mod tests {
         ));
 
         let per_commitment_scheme = PerCommitmentScheme::<OptionType<TableCommitmentType>> {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: Some(commitment),
         };
 

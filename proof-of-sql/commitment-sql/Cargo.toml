@@ -21,6 +21,7 @@ sqlparser.workspace = true
 sxt-core.workspace = true
 
 [dev-dependencies]
+proof-of-sql-static-setups = { workspace = true, features = ["io"] }
 rand.workspace = true
 rand_chacha.workspace = true
 primitive-types.workspace = true

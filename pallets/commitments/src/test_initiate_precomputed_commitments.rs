@@ -25,7 +25,7 @@ fn we_can_initiate_precomputed_commitments() {
                 .unwrap();
 
         let per_commitment_scheme = TableCommitmentBytesPerCommitmentScheme {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: Some(commitment.clone()),
         };
 
@@ -36,7 +36,7 @@ fn we_can_initiate_precomputed_commitments() {
         .unwrap();
 
         assert_eq!(
-            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Ipa),
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::HyperKzg),
             None
         );
 
@@ -61,7 +61,7 @@ fn we_cannot_initiate_commitments_if_table_already_exists() {
                 .unwrap();
 
         let per_commitment_scheme = TableCommitmentBytesPerCommitmentScheme {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: Some(commitment.clone()),
         };
 

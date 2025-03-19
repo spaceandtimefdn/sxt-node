@@ -151,7 +151,7 @@ mod tests {
 
     use proof_of_sql::base::database::OwnedColumn;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
-    use proof_of_sql::proof_primitive::inner_product::curve_25519_scalar::Curve25519Scalar;
+    use proof_of_sql::proof_primitive::hyperkzg::BNScalar;
 
     use super::*;
 
@@ -169,15 +169,13 @@ mod tests {
     }
 
     #[test]
-    fn we_can_convert_on_chain_varbinary_column_to_ipa_committable_column() {
+    fn we_can_convert_on_chain_varbinary_column_to_hyper_kzg_committable_column() {
         let data = vec![vec![5u8, 6, 7], vec![100, 101]];
         let column = OnChainColumn::VarBinary(data.clone());
-        let committable = column
-            .try_to_committable_column::<Curve25519Scalar>()
-            .unwrap();
+        let committable = column.try_to_committable_column::<BNScalar>().unwrap();
         let expected = CommittableColumn::VarBinary(
             data.into_iter()
-                .map(|bytes| Curve25519Scalar::from_byte_slice_via_hash(&bytes).into())
+                .map(|bytes| BNScalar::from_byte_slice_via_hash(&bytes).into())
                 .collect(),
         );
         assert_eq!(committable, expected);
@@ -415,8 +413,8 @@ mod tests {
     }
 
     #[test]
-    fn we_can_convert_on_chain_column_to_ipa_committable_column() {
-        we_can_convert_on_chain_column_to_committable_column::<Curve25519Scalar>()
+    fn we_can_convert_on_chain_column_to_hyper_kzg_committable_column() {
+        we_can_convert_on_chain_column_to_committable_column::<BNScalar>()
     }
 
     fn we_cannot_convert_out_of_bounds_on_chain_column_to_committable_column<S: Scalar>() {
@@ -438,7 +436,7 @@ mod tests {
     }
 
     #[test]
-    fn we_cannot_convert_out_of_bounds_on_chain_column_to_ipa_committable_column() {
-        we_cannot_convert_out_of_bounds_on_chain_column_to_committable_column::<Curve25519Scalar>()
+    fn we_cannot_convert_out_of_bounds_on_chain_column_to_hyper_kzg_committable_column() {
+        we_cannot_convert_out_of_bounds_on_chain_column_to_committable_column::<BNScalar>()
     }
 }

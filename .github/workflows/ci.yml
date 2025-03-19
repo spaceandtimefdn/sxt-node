@@ -90,6 +90,9 @@ jobs:
           ./target/release/sxt-node --disable-log-color --chain chainspecs/raw/testnet-spec.json 2>&1 | tee out.txt &
           until curl -s '127.0.0.1:9944'; do sleep 5; done
           until cat out.txt | grep -s "Idle (0 peers)"; do sleep 5; done
+        env:
+          HYPER_KZG_PUBLIC_SETUP_RELEASE_DEGREE: "02"
+          HYPER_KZG_PUBLIC_SETUP_SHA256: "5cd0eaf9964713e136d1a947ee2d1c8cf673ca73c96098df844828ecce296fdf"
         shell: bash
         timeout-minutes: 5
 

@@ -52,8 +52,11 @@ mod benchmarks {
 
     #[benchmark]
     fn submit_data_quorum_reached() {
-        let _ = proof_of_sql_static_setups::io::initialize_from_file_unchecked(
+        let _ = proof_of_sql_static_setups::io::get_or_init_from_files_unchecked(
             &"proof-of-sql/static-setups/public_parameters_nu_15"
+                .parse()
+                .unwrap(),
+            &"proof-of-sql/static-setups/ppot_0080_08.bin"
                 .parse()
                 .unwrap(),
         );

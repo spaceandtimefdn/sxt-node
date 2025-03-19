@@ -3,17 +3,28 @@ use std::sync::OnceLock;
 
 use ark_serialize::{CanonicalDeserialize, Compress, Validate};
 use proof_of_sql::proof_primitive::dory;
+use proof_of_sql::proof_primitive::hyperkzg::{
+    deserialize_flat_compressed_hyperkzg_public_setup_from_reader,
+    HyperKZGPublicSetupOwned,
+};
 use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
 use proof_of_sql_commitment_map::PerCommitmentScheme;
 use snafu::Snafu;
 
-use super::args::{load_dory_public_setup, LoadPublicSetupError, ProofOfSqlPublicSetupArgs};
+use super::args::{
+    load_dory_public_setup,
+    load_hyper_kzg_public_setup,
+    LoadPublicSetupError,
+    ProofOfSqlPublicSetupArgs,
+};
 
 /// Dory public parameters.
 static DORY_PUBLIC_PARAMETERS: OnceLock<dory::PublicParameters> = OnceLock::new();
 
 /// Dory prover setup.
 static DORY_PROVER_SETUP: OnceLock<dory::ProverSetup<'static>> = OnceLock::new();
+
+static HYPERKZG_PUBLIC_SETUP: OnceLock<HyperKZGPublicSetupOwned> = OnceLock::new();
 
 /// Proof-of-sql public setups for all commitment schemes.
 pub static PUBLIC_SETUPS: OnceLock<PerCommitmentScheme<AssociatedPublicSetupType<'static>>> =
@@ -25,39 +36,62 @@ pub static PUBLIC_SETUPS: OnceLock<PerCommitmentScheme<AssociatedPublicSetupType
 pub struct PublicSetupAlreadyInitialized;
 
 /// Initializes [`DORY_PROVER_SETUP`] and [`PUBLIC_SETUPS`].
-fn initialize_setups_after_load() -> Result<(), PublicSetupAlreadyInitialized> {
-    let dory_prover_setup = DORY_PROVER_SETUP
-        .get_or_init(|| dory::ProverSetup::from(DORY_PUBLIC_PARAMETERS.get().unwrap()));
+fn get_or_init_public_setups_with(
+    dory_public_parameters: &'static dory::PublicParameters,
+    hyper_kzg_public_setup: &'static HyperKZGPublicSetupOwned,
+) -> &'static PerCommitmentScheme<AssociatedPublicSetupType<'static>> {
+    let dory_public_setup =
+        DORY_PROVER_SETUP.get_or_init(|| dory::ProverSetup::from(dory_public_parameters));
 
-    PUBLIC_SETUPS
-        .set(PerCommitmentScheme {
-            ipa: (),
-            dynamic_dory: dory_prover_setup,
-        })
-        .map_err(|_| PublicSetupAlreadyInitialized)?;
-
-    Ok(())
+    PUBLIC_SETUPS.get_or_init(|| PerCommitmentScheme {
+        hyper_kzg: hyper_kzg_public_setup,
+        dynamic_dory: dory_public_setup,
+    })
 }
 
 /// Initializes [`PUBLIC_SETUPS`] from a file.
 ///
 /// Does not compare the file to a sha256sum, is intended only for testing.
 /// Use [`initialize_from_config`] for production use cases.
-pub fn initialize_from_file_unchecked(
+pub fn get_or_init_from_files_unchecked(
     dory_public_setup_path: &PathBuf,
-) -> Result<(), PublicSetupAlreadyInitialized> {
-    DORY_PUBLIC_PARAMETERS
-        .set(
-            dory::PublicParameters::deserialize_with_mode(
-                std::fs::read(dory_public_setup_path).unwrap().as_slice(),
-                Compress::No,
-                Validate::No,
-            )
-            .unwrap(),
+    hyper_kzg_public_setup_path: &PathBuf,
+) -> &'static PerCommitmentScheme<AssociatedPublicSetupType<'static>> {
+    let dory_parameters = DORY_PUBLIC_PARAMETERS.get_or_init(|| {
+        dory::PublicParameters::deserialize_with_mode(
+            std::fs::read(dory_public_setup_path).unwrap().as_slice(),
+            Compress::No,
+            Validate::No,
         )
-        .map_err(|_| PublicSetupAlreadyInitialized)?;
+        .unwrap()
+    });
 
-    initialize_setups_after_load()
+    let hyper_kzg_setup = HYPERKZG_PUBLIC_SETUP.get_or_init(|| {
+        deserialize_flat_compressed_hyperkzg_public_setup_from_reader(
+            std::fs::File::open(hyper_kzg_public_setup_path).unwrap(),
+            Validate::No,
+        )
+        .unwrap()
+    });
+
+    get_or_init_public_setups_with(dory_parameters, hyper_kzg_setup)
+}
+
+/// Initializes [`PUBLIC_SETUPS`] from small files in the sxt-node repository.
+///
+/// Does not compare the file to a sha256sum, is intended only for testing.
+/// Use [`initialize_from_config`] for production use cases.
+pub fn get_or_init_from_files_with_four_points_unchecked(
+) -> &'static PerCommitmentScheme<AssociatedPublicSetupType<'static>> {
+    let manifest_dir: PathBuf = std::env::var("CARGO_WORKSPACE_DIR")
+        .unwrap()
+        .parse()
+        .unwrap();
+    let static_setups_dir = manifest_dir.join("proof-of-sql/static-setups");
+    get_or_init_from_files_unchecked(
+        &static_setups_dir.join("public_parameters_nu_2.bin"),
+        &static_setups_dir.join("ppot_0080_02.bin"),
+    )
 }
 
 /// Errors that can occur when initializing public setups from config.
@@ -85,7 +119,14 @@ pub async fn initialize_from_config(
         .set(load_dory_public_setup(config).await?)
         .map_err(|_| PublicSetupAlreadyInitialized)?;
 
-    initialize_setups_after_load()?;
+    HYPERKZG_PUBLIC_SETUP
+        .set(load_hyper_kzg_public_setup(config).await?)
+        .map_err(|_| PublicSetupAlreadyInitialized)?;
+
+    get_or_init_public_setups_with(
+        DORY_PUBLIC_PARAMETERS.get().unwrap(),
+        HYPERKZG_PUBLIC_SETUP.get().unwrap(),
+    );
 
     Ok(())
 }

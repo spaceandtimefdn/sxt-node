@@ -88,20 +88,13 @@ mod tests {
     use alloc::vec;
 
     use on_chain_table::{OnChainColumn, OnChainTable};
-    use proof_of_sql::base::commitment::TableCommitment;
-    use proof_of_sql::proof_primitive::dory::{
-        DoryScalar,
-        DynamicDoryCommitment,
-        ProverSetup,
-        PublicParameters,
-    };
-    use rand::SeedableRng;
-    use rand_chacha::ChaCha20Rng;
+    use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
     use sqlparser::ast::Ident;
     use sqlparser::dialect::PostgreSqlDialect;
     use sqlparser::parser::Parser;
 
     use super::*;
+    use crate::create_table::OnChainTableToTableCommitmentFn;
 
     struct ProcessCreateTableFromSnapshotTestParams {
         sql_text: String,
@@ -144,9 +137,8 @@ mod tests {
             }
         }
 
-        fn execute_dory(
+        fn execute(
             self,
-            dory_setup: &ProverSetup,
         ) -> Result<
             (
                 CreateTableAndCommitmentMetadata,
@@ -154,6 +146,7 @@ mod tests {
             ),
             ProcessCreateTableFromSnapshotError,
         > {
+            let setups = get_or_init_from_files_with_four_points_unchecked();
             let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
                 .try_with_sql(&self.sql_text)
                 .unwrap()
@@ -162,34 +155,25 @@ mod tests {
                 .try_into()
                 .unwrap();
 
-            let dory_commitment =
-                TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
-                    self.snapshot_data
-                        .iter_committable::<DoryScalar>()
-                        .map(Result::unwrap),
-                    self.commitment_offset,
-                    &dory_setup,
-                )
-                .unwrap();
+            let snapshot_commitments = setups
+                .into_iter()
+                .map(|any| {
+                    any.map(OnChainTableToTableCommitmentFn::new(
+                        &self.snapshot_data,
+                        self.commitment_offset,
+                    ))
+                    .transpose_result()
+                    .unwrap()
+                })
+                .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
-            let snapshot_commitments = PerCommitmentScheme {
-                ipa: None,
-                dynamic_dory: Some(dory_commitment),
-            };
-
-            let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
-                ipa: (),
-                dynamic_dory: dory_setup,
-            };
-
-            process_create_table_from_snapshot(create_table, setups, snapshot_commitments)
+            process_create_table_from_snapshot(create_table, *setups, snapshot_commitments)
         }
     }
 
     #[test]
     fn we_can_process_create_table_from_snapshot() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
+        let setups = get_or_init_from_files_with_four_points_unchecked();
 
         let test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
@@ -214,23 +198,20 @@ mod tests {
             meta_table_inserts: vec![],
         };
 
-        let commitment = TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
-            test_params
-                .snapshot_data
-                .iter_committable::<DoryScalar>()
-                .map(Result::unwrap),
-            0,
-            &&prover_setup,
-        )
-        .unwrap();
-
-        let expected_snapshot_commitments = PerCommitmentScheme {
-            ipa: None,
-            dynamic_dory: Some(commitment),
-        };
+        let expected_snapshot_commitments = setups
+            .into_iter()
+            .map(|any| {
+                any.map(OnChainTableToTableCommitmentFn::new(
+                    &test_params.snapshot_data,
+                    0,
+                ))
+                .transpose_result()
+                .unwrap()
+            })
+            .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
         assert_eq!(
-            test_params.execute_dory(&prover_setup).unwrap(),
+            test_params.execute().unwrap(),
             (
                 expected_create_table_and_commitment_metadata,
                 expected_snapshot_commitments
@@ -240,9 +221,6 @@ mod tests {
 
     #[test]
     fn we_cannot_process_invalid_create_table_from_snapshot() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
-
         let mut test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
         test_params.sql_text = "CREATE TABLE animal.population (
@@ -252,31 +230,25 @@ mod tests {
             .to_string();
 
         assert!(matches!(
-            test_params.execute_dory(&prover_setup),
+            test_params.execute(),
             Err(ProcessCreateTableFromSnapshotError::InvalidCreateTable { .. })
         ),);
     }
 
     #[test]
     fn we_cannot_process_create_table_with_noncontiguous_snapshot() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
-
         let mut test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
-        test_params.commitment_offset = 10;
+        test_params.commitment_offset = 1;
 
         assert!(matches!(
-            test_params.execute_dory(&prover_setup),
+            test_params.execute(),
             Err(ProcessCreateTableFromSnapshotError::InappropriateSnapshotCommitments { .. })
         ),);
     }
 
     #[test]
     fn we_cannot_process_create_table_with_mismatched_snapshot() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
-
         let mut test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
 
         let animals_col_id = Ident::new("animal");
@@ -298,7 +270,7 @@ mod tests {
         .unwrap();
 
         assert!(matches!(
-            test_params.execute_dory(&prover_setup),
+            test_params.execute(),
             Err(ProcessCreateTableFromSnapshotError::InappropriateSnapshotCommitments { .. })
         ),);
     }

@@ -84,16 +84,16 @@ impl CommitmentParser {
 
         let commit_data = Some(TableCommitmentBytes { data: commit_data });
 
-        let (dory, ipa) = match scheme {
+        let (dory, hyper_kzg) = match scheme {
             "dynamic_dory" => (commit_data, None),
             "dory" => (commit_data, None),
-            "ipa" => (None, commit_data),
+            "hyper_kzg" => (None, commit_data),
             _ => return Err(CommitmentParserError::InvalidCommitmentScheme),
         };
 
         let commit = TableCommitmentBytesPerCommitmentScheme {
             dynamic_dory: dory,
-            ipa,
+            hyper_kzg,
         };
 
         let namespace = TableNamespace::try_from(namespace.as_bytes().to_vec())

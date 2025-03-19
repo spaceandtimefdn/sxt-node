@@ -4,7 +4,7 @@ use frame_support::pallet_prelude::ConstU32;
 use frame_support::traits::{ConstU128, VariantCountOf};
 use frame_support::{derive_impl, parameter_types};
 use native_api::Api;
-use proof_of_sql_static_setups::io::initialize_from_file_unchecked;
+use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
 use sp_core::{ConstU64, H256};
 use sp_runtime::traits::{ConvertInto, IdentityLookup, MaybeConvert, OpaqueKeys, TryConvertInto};
 use sp_runtime::{BuildStorage, KeyTypeId};
@@ -160,11 +160,7 @@ impl pallet_permissions::Config for Test {
 impl pallet_commitments::Config for Test {}
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    let _ = initialize_from_file_unchecked(
-        &"../../proof-of-sql/static-setups/public_parameters_nu_15"
-            .parse()
-            .unwrap(),
-    );
+    let _ = get_or_init_from_files_with_four_points_unchecked();
     let mut storage = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap();

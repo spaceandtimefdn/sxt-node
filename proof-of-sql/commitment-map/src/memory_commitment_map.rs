@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use curve25519_dalek::RistrettoPoint;
 use proof_of_sql::base::database::TableRef;
 use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
+use proof_of_sql::proof_primitive::hyperkzg::HyperKZGCommitment;
 
 use crate::commitment_map_implementor::CommitmentMapImplementor;
 use crate::commitment_scheme::{AnyCommitmentScheme, CommitmentScheme};
@@ -15,18 +15,18 @@ use crate::generic_over_commitment::{GenericOverCommitment, OptionType};
 /// [`CommitmentMap`]: crate::CommitmentMap
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct MemoryCommitmentMap<V: GenericOverCommitment> {
-    ipa_map: HashMap<TableRef, V::WithCommitment<RistrettoPoint>>,
+    hyper_kzg_map: HashMap<TableRef, V::WithCommitment<HyperKZGCommitment>>,
     dory_map: HashMap<TableRef, V::WithCommitment<DynamicDoryCommitment>>,
 }
 
 impl<V: GenericOverCommitment> CommitmentMapImplementor<TableRef, V> for MemoryCommitmentMap<V>
 where
     V::WithCommitment<DynamicDoryCommitment>: Clone,
-    V::WithCommitment<RistrettoPoint>: Clone,
+    V::WithCommitment<HyperKZGCommitment>: Clone,
 {
     fn has_key_and_scheme_impl(&self, key: &TableRef, scheme: &CommitmentScheme) -> bool {
         match scheme {
-            CommitmentScheme::Ipa => self.ipa_map.contains_key(key),
+            CommitmentScheme::HyperKzg => self.hyper_kzg_map.contains_key(key),
             CommitmentScheme::DynamicDory => self.dory_map.contains_key(key),
         }
     }
@@ -37,7 +37,9 @@ where
         scheme: &CommitmentScheme,
     ) -> AnyCommitmentScheme<OptionType<V>> {
         match scheme {
-            CommitmentScheme::Ipa => AnyCommitmentScheme::Ipa(self.ipa_map.get(key).cloned()),
+            CommitmentScheme::HyperKzg => {
+                AnyCommitmentScheme::HyperKzg(self.hyper_kzg_map.get(key).cloned())
+            }
             CommitmentScheme::DynamicDory => {
                 AnyCommitmentScheme::DynamicDory(self.dory_map.get(key).cloned())
             }
@@ -50,8 +52,8 @@ where
         commitment: AnyCommitmentScheme<V>,
     ) {
         match commitment {
-            AnyCommitmentScheme::Ipa(commitment) => {
-                self.ipa_map.insert(key, commitment);
+            AnyCommitmentScheme::HyperKzg(commitment) => {
+                self.hyper_kzg_map.insert(key, commitment);
             }
             AnyCommitmentScheme::DynamicDory(commitment) => {
                 self.dory_map.insert(key, commitment);
@@ -61,8 +63,8 @@ where
 
     fn delete_commitment_for_any_scheme_impl(&mut self, key: &TableRef, scheme: &CommitmentScheme) {
         match scheme {
-            CommitmentScheme::Ipa => {
-                self.ipa_map.remove(key);
+            CommitmentScheme::HyperKzg => {
+                self.hyper_kzg_map.remove(key);
             }
             CommitmentScheme::DynamicDory => {
                 self.dory_map.remove(key);
@@ -115,7 +117,7 @@ mod tests {
     }
 
     struct CombinationsCommitmentMapRefs {
-        ipa_ref: TableRef,
+        hyper_kzg_ref: TableRef,
         dory_ref: TableRef,
         all_ref: TableRef,
     }
@@ -124,20 +126,21 @@ mod tests {
         MemoryCommitmentMap<TestCommitmentMetadataType>,
         CombinationsCommitmentMapRefs,
     ) {
-        let ipa_ref: TableRef = "table.ipa_only".parse().unwrap();
-        let ipa_ref_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(1);
+        let hyper_kzg_ref: TableRef = "table.hyper_kzg_only".parse().unwrap();
+        let hyper_kzg_ref_hyper_kzg_commitment =
+            TestCommitmentMetadata::<HyperKZGCommitment>::new(1);
 
         let dory_ref: TableRef = "table.dory_only".parse().unwrap();
         let dory_ref_dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(2);
 
         let all_ref: TableRef = "table.all_schemes".parse().unwrap();
-        let all_ref_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(3);
+        let all_ref_hyper_kzg_commitment = TestCommitmentMetadata::<HyperKZGCommitment>::new(3);
         let all_ref_dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(3);
 
         let commitment_map = MemoryCommitmentMap {
-            ipa_map: HashMap::from_iter([
-                (ipa_ref.clone(), ipa_ref_ipa_commitment),
-                (all_ref.clone(), all_ref_ipa_commitment),
+            hyper_kzg_map: HashMap::from_iter([
+                (hyper_kzg_ref.clone(), hyper_kzg_ref_hyper_kzg_commitment),
+                (all_ref.clone(), all_ref_hyper_kzg_commitment),
             ]),
             dory_map: HashMap::from_iter([
                 (dory_ref.clone(), dory_ref_dory_commitment),
@@ -148,7 +151,7 @@ mod tests {
         (
             commitment_map,
             CombinationsCommitmentMapRefs {
-                ipa_ref,
+                hyper_kzg_ref,
                 dory_ref,
                 all_ref,
             },
@@ -159,22 +162,24 @@ mod tests {
     fn we_can_check_existence_of_tables_and_schema() {
         let (commitment_map, refs) = all_combinations_commitment_map();
 
-        assert!(commitment_map.has_key_and_scheme(&refs.ipa_ref, &CommitmentScheme::Ipa));
-        assert!(!commitment_map.has_key_and_scheme(&refs.ipa_ref, &CommitmentScheme::DynamicDory));
-        assert!(!commitment_map.has_key_and_scheme(&refs.dory_ref, &CommitmentScheme::Ipa));
+        assert!(commitment_map.has_key_and_scheme(&refs.hyper_kzg_ref, &CommitmentScheme::HyperKzg));
+        assert!(
+            !commitment_map.has_key_and_scheme(&refs.hyper_kzg_ref, &CommitmentScheme::DynamicDory)
+        );
+        assert!(!commitment_map.has_key_and_scheme(&refs.dory_ref, &CommitmentScheme::HyperKzg));
         assert!(commitment_map.has_key_and_scheme(&refs.dory_ref, &CommitmentScheme::DynamicDory));
 
         assert_eq!(
-            commitment_map.schemes_for_key(&refs.ipa_ref),
+            commitment_map.schemes_for_key(&refs.hyper_kzg_ref),
             CommitmentSchemeFlags {
-                ipa: true,
+                hyper_kzg: true,
                 dynamic_dory: false
             }
         );
         assert_eq!(
             commitment_map.schemes_for_key(&refs.dory_ref),
             CommitmentSchemeFlags {
-                ipa: false,
+                hyper_kzg: false,
                 dynamic_dory: true,
             }
         );
@@ -187,7 +192,7 @@ mod tests {
             CommitmentSchemeFlags::default()
         );
 
-        assert!(commitment_map.has_key(&refs.ipa_ref));
+        assert!(commitment_map.has_key(&refs.hyper_kzg_ref));
         assert!(commitment_map.has_key(&refs.dory_ref));
         assert!(commitment_map.has_key(&refs.all_ref));
         assert!(!commitment_map.has_key(&"does_not.exist".parse().unwrap()));
@@ -203,17 +208,17 @@ mod tests {
             none_commitments
         );
 
-        let ipa_commitments = PerCommitmentScheme {
-            ipa: Some(TestCommitmentMetadata::<RistrettoPoint>::new(1)),
+        let hyper_kzg_commitments = PerCommitmentScheme {
+            hyper_kzg: Some(TestCommitmentMetadata::<HyperKZGCommitment>::new(1)),
             dynamic_dory: None,
         };
         assert_eq!(
-            commitment_map.get_commitments(&refs.ipa_ref),
-            ipa_commitments
+            commitment_map.get_commitments(&refs.hyper_kzg_ref),
+            hyper_kzg_commitments
         );
 
         let dory_commitments = PerCommitmentScheme {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: Some(TestCommitmentMetadata::<DynamicDoryCommitment>::new(2)),
         };
         assert_eq!(
@@ -222,7 +227,7 @@ mod tests {
         );
 
         let all_commitments = PerCommitmentScheme {
-            ipa: Some(TestCommitmentMetadata::<RistrettoPoint>::new(3)),
+            hyper_kzg: Some(TestCommitmentMetadata::<HyperKZGCommitment>::new(3)),
             dynamic_dory: Some(TestCommitmentMetadata::<DynamicDoryCommitment>::new(3)),
         };
         assert_eq!(
@@ -233,20 +238,20 @@ mod tests {
 
     #[test]
     fn we_can_create_tables() {
-        let ipa_ref: TableRef = "table.ipa_only".parse().unwrap();
+        let hyper_kzg_ref: TableRef = "table.hyper_kzg_only".parse().unwrap();
         let dory_ref: TableRef = "table.dory_only".parse().unwrap();
         let all_ref: TableRef = "table.all_schemes".parse().unwrap();
 
-        let ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(1);
+        let hyper_kzg_commitment = TestCommitmentMetadata::<HyperKZGCommitment>::new(1);
         let dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(2);
 
         let mut commitment_map = MemoryCommitmentMap::<TestCommitmentMetadataType>::default();
 
         commitment_map
             .create_commitments(
-                ipa_ref.clone(),
+                hyper_kzg_ref.clone(),
                 PerCommitmentScheme {
-                    ipa: Some(ipa_commitment),
+                    hyper_kzg: Some(hyper_kzg_commitment),
                     dynamic_dory: None,
                 },
             )
@@ -255,7 +260,7 @@ mod tests {
             .create_commitments(
                 dory_ref.clone(),
                 PerCommitmentScheme {
-                    ipa: None,
+                    hyper_kzg: None,
                     dynamic_dory: Some(dory_commitment),
                 },
             )
@@ -264,15 +269,18 @@ mod tests {
             .create_commitments(
                 all_ref.clone(),
                 PerCommitmentScheme {
-                    ipa: Some(ipa_commitment),
+                    hyper_kzg: Some(hyper_kzg_commitment),
                     dynamic_dory: Some(dory_commitment),
                 },
             )
             .unwrap();
 
         assert_eq!(
-            commitment_map.ipa_map,
-            HashMap::from_iter([(ipa_ref, ipa_commitment), (all_ref.clone(), ipa_commitment)])
+            commitment_map.hyper_kzg_map,
+            HashMap::from_iter([
+                (hyper_kzg_ref, hyper_kzg_commitment),
+                (all_ref.clone(), hyper_kzg_commitment)
+            ])
         );
         assert_eq!(
             commitment_map.dory_map,
@@ -285,18 +293,19 @@ mod tests {
         let (mut commitment_map, refs) = all_combinations_commitment_map();
         let original_commitment_map = commitment_map.clone();
 
-        let ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(10);
+        let hyper_kzg_commitment = TestCommitmentMetadata::<HyperKZGCommitment>::new(10);
         let dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(20);
 
         assert!(matches!(
-            commitment_map.create_commitments(refs.ipa_ref.clone(), PerCommitmentScheme::default()),
+            commitment_map
+                .create_commitments(refs.hyper_kzg_ref.clone(), PerCommitmentScheme::default()),
             Err(KeyExistsError { .. })
         ));
         assert!(matches!(
             commitment_map.create_commitments(
-                refs.ipa_ref.clone(),
+                refs.hyper_kzg_ref.clone(),
                 PerCommitmentScheme {
-                    ipa: Some(ipa_commitment),
+                    hyper_kzg: Some(hyper_kzg_commitment),
                     dynamic_dory: None
                 }
             ),
@@ -304,9 +313,9 @@ mod tests {
         ));
         assert!(matches!(
             commitment_map.create_commitments(
-                refs.ipa_ref.clone(),
+                refs.hyper_kzg_ref.clone(),
                 PerCommitmentScheme {
-                    ipa: None,
+                    hyper_kzg: None,
                     dynamic_dory: Some(dory_commitment),
                 }
             ),
@@ -314,9 +323,9 @@ mod tests {
         ));
         assert!(matches!(
             commitment_map.create_commitments(
-                refs.ipa_ref,
+                refs.hyper_kzg_ref,
                 PerCommitmentScheme {
-                    ipa: Some(ipa_commitment),
+                    hyper_kzg: Some(hyper_kzg_commitment),
                     dynamic_dory: Some(dory_commitment),
                 }
             ),
@@ -331,9 +340,9 @@ mod tests {
     fn we_can_delete_tables() {
         let (mut commitment_map, refs) = all_combinations_commitment_map();
 
-        assert!(commitment_map.has_key(&refs.ipa_ref));
-        commitment_map.delete_commitments(&refs.ipa_ref);
-        assert!(!commitment_map.has_key(&refs.ipa_ref));
+        assert!(commitment_map.has_key(&refs.hyper_kzg_ref));
+        commitment_map.delete_commitments(&refs.hyper_kzg_ref);
+        assert!(!commitment_map.has_key(&refs.hyper_kzg_ref));
 
         assert!(commitment_map.has_key(&refs.all_ref));
         commitment_map.delete_commitments(&refs.all_ref);
@@ -350,25 +359,31 @@ mod tests {
     fn we_can_update_tables() {
         let (mut commitment_map, refs) = all_combinations_commitment_map();
 
-        let new_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(10);
+        let new_hyper_kzg_commitment = TestCommitmentMetadata::<HyperKZGCommitment>::new(10);
         let new_dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(20);
 
         assert_ne!(
-            commitment_map.ipa_map.get(&refs.ipa_ref).unwrap(),
-            &new_ipa_commitment
+            commitment_map
+                .hyper_kzg_map
+                .get(&refs.hyper_kzg_ref)
+                .unwrap(),
+            &new_hyper_kzg_commitment
         );
         commitment_map
             .update_commitments(
-                refs.ipa_ref.clone(),
+                refs.hyper_kzg_ref.clone(),
                 PerCommitmentScheme {
-                    ipa: Some(new_ipa_commitment),
+                    hyper_kzg: Some(new_hyper_kzg_commitment),
                     dynamic_dory: None,
                 },
             )
             .unwrap();
         assert_eq!(
-            commitment_map.ipa_map.get(&refs.ipa_ref).unwrap(),
-            &new_ipa_commitment
+            commitment_map
+                .hyper_kzg_map
+                .get(&refs.hyper_kzg_ref)
+                .unwrap(),
+            &new_hyper_kzg_commitment
         );
 
         assert_ne!(
@@ -379,7 +394,7 @@ mod tests {
             .update_commitments(
                 refs.dory_ref.clone(),
                 PerCommitmentScheme {
-                    ipa: None,
+                    hyper_kzg: None,
                     dynamic_dory: Some(new_dory_commitment),
                 },
             )
@@ -390,8 +405,8 @@ mod tests {
         );
 
         assert_ne!(
-            commitment_map.ipa_map.get(&refs.all_ref).unwrap(),
-            &new_ipa_commitment
+            commitment_map.hyper_kzg_map.get(&refs.all_ref).unwrap(),
+            &new_hyper_kzg_commitment
         );
         assert_ne!(
             commitment_map.dory_map.get(&refs.all_ref).unwrap(),
@@ -401,14 +416,14 @@ mod tests {
             .update_commitments(
                 refs.all_ref.clone(),
                 PerCommitmentScheme {
-                    ipa: Some(new_ipa_commitment),
+                    hyper_kzg: Some(new_hyper_kzg_commitment),
                     dynamic_dory: Some(new_dory_commitment),
                 },
             )
             .unwrap();
         assert_eq!(
-            commitment_map.ipa_map.get(&refs.all_ref).unwrap(),
-            &new_ipa_commitment
+            commitment_map.hyper_kzg_map.get(&refs.all_ref).unwrap(),
+            &new_hyper_kzg_commitment
         );
         assert_eq!(
             commitment_map.dory_map.get(&refs.all_ref).unwrap(),
@@ -421,30 +436,30 @@ mod tests {
         let (mut commitment_map, refs) = all_combinations_commitment_map();
         let original_commitment_map = commitment_map.clone();
 
-        let new_ipa_commitment = TestCommitmentMetadata::<RistrettoPoint>::new(10);
+        let new_hyper_kzg_commitment = TestCommitmentMetadata::<HyperKZGCommitment>::new(10);
         let new_dory_commitment = TestCommitmentMetadata::<DynamicDoryCommitment>::new(20);
 
         let no_commitments = PerCommitmentScheme::default();
         assert!(matches!(
-            commitment_map.update_commitments(refs.ipa_ref.clone(), no_commitments),
+            commitment_map.update_commitments(refs.hyper_kzg_ref.clone(), no_commitments),
             Err(CommitmentSchemesMismatchError { .. })
         ));
 
         let dory_commitments = PerCommitmentScheme {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: Some(new_dory_commitment),
         };
         assert!(matches!(
-            commitment_map.update_commitments(refs.ipa_ref.clone(), dory_commitments),
+            commitment_map.update_commitments(refs.hyper_kzg_ref.clone(), dory_commitments),
             Err(CommitmentSchemesMismatchError { .. })
         ));
 
         let all_commitments = PerCommitmentScheme {
-            ipa: Some(new_ipa_commitment),
+            hyper_kzg: Some(new_hyper_kzg_commitment),
             dynamic_dory: Some(new_dory_commitment),
         };
         assert!(matches!(
-            commitment_map.update_commitments(refs.ipa_ref, all_commitments),
+            commitment_map.update_commitments(refs.hyper_kzg_ref, all_commitments),
             Err(CommitmentSchemesMismatchError { .. })
         ));
 
