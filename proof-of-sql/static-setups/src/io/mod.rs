@@ -10,3 +10,6 @@ pub use cells::{
     PublicSetupAlreadyInitialized,
     PUBLIC_SETUPS,
 };
+
+#[cfg(test)]
+mod test_directory;

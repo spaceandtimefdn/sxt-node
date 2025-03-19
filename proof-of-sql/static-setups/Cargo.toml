@@ -20,6 +20,9 @@ sha2 = { workspace = true, optional = true, features = ["std"] }
 snafu = { workspace = true, optional = true, features = ["std"] }
 tokio = { workspace = true, optional = true, features = ["fs", "macros"] }
 
+[dev-dependencies]
+rand = { workspace = true, features = ["std"] }
+
 [features]
 default = ["io"]
 std = []
