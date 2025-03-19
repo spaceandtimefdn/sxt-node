@@ -1,10 +1,10 @@
 use commitment_sql::{process_create_table, CreateTableAndCommitmentMetadata};
-use on_chain_table::{OnChainColumn, OnChainTable};
-use proof_of_sql::base::commitment::TableCommitment;
-use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
-use proof_of_sql_commitment_map::{CommitmentScheme, CommitmentSchemeFlags, TableCommitmentBytes};
+use proof_of_sql_commitment_map::{
+    CommitmentScheme,
+    CommitmentSchemeFlags,
+    TableCommitmentBytesPerCommitmentScheme,
+};
 use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
-use sqlparser::ast::Ident;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 use sxt_core::tables::TableIdentifier;
@@ -51,25 +51,6 @@ fn we_can_process_create_table() {
     new_test_ext().execute_with(|| {
         let test_params = ProcessCreateTableTestParams::new_valid();
 
-        let empty_table = OnChainTable::try_from_iter([
-            (Ident::new("animal"), OnChainColumn::VarChar(vec![])),
-            (Ident::new("population"), OnChainColumn::BigInt(vec![])),
-        ])
-        .unwrap();
-
-        let expected_commitment =
-            TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
-                empty_table
-                    .iter_committable::<DoryScalar>()
-                    .map(Result::unwrap),
-                0,
-                &PUBLIC_SETUPS.get().unwrap().dynamic_dory,
-            )
-            .unwrap();
-
-        let expected_commitment_bytes =
-            TableCommitmentBytes::try_from(&expected_commitment).unwrap();
-
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
             name: b"population".to_vec().try_into().unwrap(),
@@ -84,12 +65,15 @@ fn we_can_process_create_table() {
             .unwrap();
 
         let flags = CommitmentSchemeFlags {
-            ipa: false,
+            hyper_kzg: true,
             dynamic_dory: true,
         };
-        let (expected_create_table_and_commitment_metadata, _) =
+        let (expected_create_table_and_commitment_metadata, expected_commitments) =
             process_create_table(expected_create_table, *PUBLIC_SETUPS.get().unwrap(), &flags)
                 .unwrap();
+
+        let expected_commitments_bytes =
+            TableCommitmentBytesPerCommitmentScheme::try_from(expected_commitments).unwrap();
 
         let create_table_and_commitment_metadata = test_params.execute().unwrap();
 
@@ -98,12 +82,12 @@ fn we_can_process_create_table() {
             expected_create_table_and_commitment_metadata
         );
         assert_eq!(
-            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Ipa),
-            None
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::HyperKzg),
+            expected_commitments_bytes.hyper_kzg
         );
         assert_eq!(
             CommitmentsModule::table_commitment(&table_id, CommitmentScheme::DynamicDory),
-            Some(expected_commitment_bytes)
+            expected_commitments_bytes.dynamic_dory
         );
     });
 }

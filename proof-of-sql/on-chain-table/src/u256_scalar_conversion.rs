@@ -28,8 +28,8 @@ pub fn u256_to_scalar<S: Scalar>(value: &U256) -> Result<S, OutOfScalarBounds> {
 
 #[cfg(test)]
 mod tests {
-    use proof_of_sql::base::scalar::Curve25519Scalar;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
+    use proof_of_sql::proof_primitive::hyperkzg::BNScalar;
 
     use super::*;
 
@@ -59,8 +59,8 @@ mod tests {
     }
 
     #[test]
-    fn we_can_convert_u256_to_ipa_scalar() {
-        we_can_convert_u256_to_scalar::<Curve25519Scalar>()
+    fn we_can_convert_u256_to_hyper_kzg_scalar() {
+        we_can_convert_u256_to_scalar::<BNScalar>()
     }
 
     fn we_cannot_convert_out_of_bounds_u256_to_scalar<S: Scalar>() {
@@ -95,7 +95,7 @@ mod tests {
     }
 
     #[test]
-    fn we_cannot_convert_out_of_bounds_u256_to_ipa_scalar() {
-        we_cannot_convert_out_of_bounds_u256_to_scalar::<Curve25519Scalar>()
+    fn we_cannot_convert_out_of_bounds_u256_to_hyper_kzg_scalar() {
+        we_cannot_convert_out_of_bounds_u256_to_scalar::<BNScalar>()
     }
 }

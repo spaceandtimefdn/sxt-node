@@ -89,7 +89,7 @@ pub mod pallet {
     impl<T: Config> Default for GenesisConfig<T> {
         fn default() -> Self {
             let default_commitment_schemes = CommitmentSchemeFlags {
-                ipa: false,
+                hyper_kzg: true,
                 dynamic_dory: true,
             };
 
@@ -186,7 +186,7 @@ pub mod pallet {
         ) -> Result<CreateTableAndCommitmentMetadata, Error<T>> {
             let scheme = CommitmentSchemeFlags {
                 dynamic_dory: true,
-                ipa: false,
+                hyper_kzg: false,
             };
 
             Self::process_create_table_and_initiate_commitments_with_scheme(create_table, scheme)

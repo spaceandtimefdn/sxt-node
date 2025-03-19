@@ -320,26 +320,14 @@ mod tests {
     use proof_of_sql::base::commitment::TableCommitment;
     use proof_of_sql::base::database::ColumnType;
     use proof_of_sql::base::math::decimal::Precision;
-    use proof_of_sql::proof_primitive::dory::{
-        DoryScalar,
-        DynamicDoryCommitment,
-        ProverSetup,
-        PublicParameters,
-    };
-    use rand::SeedableRng;
-    use rand_chacha::ChaCha20Rng;
+    use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
 
     use super::*;
+    use crate::create_table::OnChainTableToTableCommitmentFn;
 
     #[test]
     fn we_can_process_inserts() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
-
-        let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
-            ipa: (),
-            dynamic_dory: &prover_setup,
-        };
+        let setups = get_or_init_from_files_with_four_points_unchecked();
 
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
@@ -366,19 +354,14 @@ mod tests {
             ),
         ])
         .unwrap();
-        let empty_commitments = PerCommitmentScheme {
-            ipa: None,
-            dynamic_dory: Some(
-                TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
-                    empty_table
-                        .iter_committable::<DoryScalar>()
-                        .map(Result::unwrap),
-                    0,
-                    &&prover_setup,
-                )
-                .unwrap(),
-            ),
-        };
+        let empty_commitments = setups
+            .into_iter()
+            .map(|any| {
+                any.map(OnChainTableToTableCommitmentFn::new(&empty_table, 0))
+                    .transpose_result()
+                    .unwrap()
+            })
+            .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
         let first_insert = OnChainTable::try_from_iter([
             (
@@ -407,22 +390,17 @@ mod tests {
             ),
         ])
         .unwrap();
-        let expected_first_commitments = PerCommitmentScheme {
-            ipa: None,
-            dynamic_dory: Some(
-                TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
-                    first_insert
-                        .iter_committable::<DoryScalar>()
-                        .map(Result::unwrap),
-                    0,
-                    &&prover_setup,
-                )
-                .unwrap(),
-            ),
-        };
+        let expected_first_commitments = setups
+            .into_iter()
+            .map(|any| {
+                any.map(OnChainTableToTableCommitmentFn::new(&first_insert, 0))
+                    .transpose_result()
+                    .unwrap()
+            })
+            .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
         assert_eq!(
-            process_insert(&table_id, first_insert, empty_commitments, setups).unwrap(),
+            process_insert(&table_id, first_insert, empty_commitments, *setups).unwrap(),
             (
                 InsertAndCommitmentMetadata {
                     insert_with_meta_columns: expected_first_insert_with_meta_columns,
@@ -444,7 +422,7 @@ mod tests {
         ])
         .unwrap();
 
-        let second_insert_with_original_column_order = OnChainTable::try_from_iter([
+        let expected_second_insert_with_meta_columns = OnChainTable::try_from_iter([
             (
                 animals_col_id.clone(),
                 OnChainColumn::VarChar(animals_data[2..].to_vec()),
@@ -453,51 +431,40 @@ mod tests {
                 population_col_id.clone(),
                 OnChainColumn::BigInt(population_data[2..].to_vec()),
             ),
-        ])
-        .unwrap();
-
-        let expected_second_insert_with_meta_columns = OnChainTable::try_from_iter([
             (
-                animals_col_id,
-                OnChainColumn::VarChar(animals_data[2..].to_vec()),
-            ),
-            (
-                population_col_id,
-                OnChainColumn::BigInt(population_data[2..].to_vec()),
-            ),
-            (
-                row_number_col_id,
+                row_number_col_id.clone(),
                 OnChainColumn::BigInt(row_number_data[2..].to_vec()),
             ),
         ])
         .unwrap();
-        let expected_second_commitments = PerCommitmentScheme {
-            ipa: None,
-            dynamic_dory: Some(
-                expected_first_commitments
-                    .clone()
-                    .dynamic_dory
-                    .unwrap()
-                    .try_add(
-                        TableCommitment::try_from_columns_with_offset(
-                            second_insert_with_original_column_order
-                                .iter_committable::<DoryScalar>()
-                                .map(Result::unwrap),
-                            2,
-                            &&prover_setup,
-                        )
-                        .unwrap(),
-                    )
-                    .unwrap(),
+
+        let full_table = OnChainTable::try_from_iter([
+            (
+                animals_col_id,
+                OnChainColumn::VarChar(animals_data.to_vec()),
             ),
-        };
+            (
+                population_col_id,
+                OnChainColumn::BigInt(population_data.to_vec()),
+            ),
+        ])
+        .unwrap();
+
+        let expected_second_commitments = setups
+            .into_iter()
+            .map(|any| {
+                any.map(OnChainTableToTableCommitmentFn::new(&full_table, 0))
+                    .transpose_result()
+                    .unwrap()
+            })
+            .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
         assert_eq!(
             process_insert(
                 &table_id,
                 second_insert_with_different_column_order,
                 expected_first_commitments,
-                setups
+                *setups
             )
             .unwrap(),
             (
@@ -512,13 +479,7 @@ mod tests {
 
     #[test]
     fn we_cannot_process_insert_with_differing_commitment_ranges_in_existing_commitments() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
-
-        let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
-            ipa: (),
-            dynamic_dory: &prover_setup,
-        };
+        let setups = get_or_init_from_files_with_four_points_unchecked();
 
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
@@ -544,25 +505,19 @@ mod tests {
         .unwrap();
 
         let previous_commitments = PerCommitmentScheme {
-            ipa: Some(TableCommitment::try_new(Default::default(), 0..2).unwrap()),
+            hyper_kzg: Some(TableCommitment::try_new(Default::default(), 0..2).unwrap()),
             dynamic_dory: Some(TableCommitment::try_new(Default::default(), 0..3).unwrap()),
         };
 
         assert!(matches!(
-            process_insert(&table_id, insert_data, previous_commitments, setups),
+            process_insert(&table_id, insert_data, previous_commitments, *setups),
             Err(ProcessInsertError::TableCommitmentRangeMismatch)
         ));
     }
 
     #[test]
     fn we_cannot_process_insert_with_mismatched_table_metadata() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
-
-        let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
-            ipa: (),
-            dynamic_dory: &prover_setup,
-        };
+        let setups = get_or_init_from_files_with_four_points_unchecked();
 
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
@@ -585,19 +540,15 @@ mod tests {
             ),
         ])
         .unwrap();
-        let previous_commitments = PerCommitmentScheme {
-            ipa: None,
-            dynamic_dory: Some(
-                TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
-                    empty_table
-                        .iter_committable::<DoryScalar>()
-                        .map(Result::unwrap),
-                    0,
-                    &&prover_setup,
-                )
-                .unwrap(),
-            ),
-        };
+
+        let previous_commitments = setups
+            .into_iter()
+            .map(|any| {
+                any.map(OnChainTableToTableCommitmentFn::new(&empty_table, 0))
+                    .transpose_result()
+                    .unwrap()
+            })
+            .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
         let insert_missing_column = OnChainTable::try_from_iter([(
             population_col_id,
@@ -610,7 +561,7 @@ mod tests {
                 &table_id,
                 insert_missing_column,
                 previous_commitments,
-                setups
+                *setups
             ),
             Err(ProcessInsertError::AppendOnChainTable {
                 source: AppendOnChainTableError::ColumnCommitmentsMismatch { .. }
@@ -620,13 +571,7 @@ mod tests {
 
     #[test]
     fn we_cannot_process_insert_with_no_commitments() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
-
-        let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
-            ipa: (),
-            dynamic_dory: &prover_setup,
-        };
+        let setups = get_or_init_from_files_with_four_points_unchecked();
 
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
@@ -654,20 +599,14 @@ mod tests {
         let none_previous_commitments = PerCommitmentScheme::default();
 
         assert!(matches!(
-            process_insert(&table_id, insert_data, none_previous_commitments, setups),
+            process_insert(&table_id, insert_data, none_previous_commitments, *setups),
             Err(ProcessInsertError::NoCommitments)
         ));
     }
 
     #[test]
     fn we_cannot_process_insert_with_out_of_bounds_value() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
-
-        let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
-            ipa: (),
-            dynamic_dory: &prover_setup,
-        };
+        let setups = get_or_init_from_files_with_four_points_unchecked();
 
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
@@ -693,12 +632,12 @@ mod tests {
         .unwrap();
 
         let previous_commitments = PerCommitmentScheme {
-            ipa: Some(TableCommitment::try_new(Default::default(), 0..2).unwrap()),
+            hyper_kzg: Some(TableCommitment::try_new(Default::default(), 0..2).unwrap()),
             dynamic_dory: Some(TableCommitment::try_new(Default::default(), 0..2).unwrap()),
         };
 
         assert!(matches!(
-            process_insert(&table_id, insert_data, previous_commitments, setups),
+            process_insert(&table_id, insert_data, previous_commitments, *setups),
             Err(ProcessInsertError::AppendOnChainTable {
                 source: AppendOnChainTableError::OutOfScalarBounds { .. }
             })

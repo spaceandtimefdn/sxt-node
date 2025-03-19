@@ -145,7 +145,7 @@ pub trait Interface {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use std::io::Cursor;
     use std::sync::Arc;
@@ -153,14 +153,13 @@ mod tests {
     use arrow::array::{ArrayRef, Int32Array, RecordBatch, StringArray};
     use arrow::datatypes::{DataType, Field, Schema};
     use arrow::ipc::writer::StreamWriter;
+    use commitment_sql::OnChainTableToTableCommitmentFn;
     use on_chain_table::{OnChainColumn, OnChainTable};
-    use proof_of_sql::base::commitment::TableCommitment;
     use proof_of_sql::base::database::ColumnType;
     use proof_of_sql::base::math::decimal::Precision;
-    use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
     use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
     use proof_of_sql_commitment_map::TableCommitmentBytes;
-    use proof_of_sql_static_setups::io::initialize_from_file_unchecked;
+    use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
     use sp_core::U256;
     use sp_runtime::BoundedVec;
     use sqlparser::ast::Ident;
@@ -327,12 +326,9 @@ mod tests {
         (empty_table, populated_table)
     }
 
+    #[test]
     fn we_can_process_inserts() {
-        let _ = initialize_from_file_unchecked(
-            &"../proof-of-sql/static-setups/public_parameters_nu_1"
-                .parse()
-                .unwrap(),
-        );
+        let setups = get_or_init_from_files_with_four_points_unchecked();
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
             name: b"population".to_vec().try_into().unwrap(),
@@ -341,19 +337,14 @@ mod tests {
         let (empty_table, insert_data) = sample_empty_and_populated_on_chain_table();
         let insert_data_bytes = OnChainTableBytes::try_from(insert_data.clone()).unwrap();
 
-        let empty_commitments = PerCommitmentScheme::<OptionType<TableCommitmentType>> {
-            ipa: None,
-            dynamic_dory: Some(
-                TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
-                    empty_table
-                        .iter_committable::<DoryScalar>()
-                        .map(Result::unwrap),
-                    0,
-                    &PUBLIC_SETUPS.get().unwrap().dynamic_dory,
-                )
-                .unwrap(),
-            ),
-        };
+        let empty_commitments = setups
+            .into_iter()
+            .map(|any| {
+                any.map(OnChainTableToTableCommitmentFn::new(&empty_table, 0))
+                    .transpose_result()
+                    .unwrap()
+            })
+            .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
         let empty_commitments_bytes = TableCommitmentBytesPerCommitmentSchemePassBy {
             data: empty_commitments.clone().try_into().unwrap(),
@@ -369,13 +360,8 @@ mod tests {
                 ..
             },
             expected_commitments,
-        ) = commitment_sql::process_insert(
-            &table_id,
-            insert_data,
-            empty_commitments,
-            *PUBLIC_SETUPS.get().unwrap(),
-        )
-        .unwrap();
+        ) = commitment_sql::process_insert(&table_id, insert_data, empty_commitments, *setups)
+            .unwrap();
 
         assert_eq!(
             insert_with_meta_columns,
@@ -389,11 +375,8 @@ mod tests {
 
     #[test]
     fn we_cannot_process_insert_with_invalid_commitment_bytes() {
-        let _ = initialize_from_file_unchecked(
-            &"../proof-of-sql/static-setups/public_parameters_nu_1"
-                .parse()
-                .unwrap(),
-        );
+        let _ = get_or_init_from_files_with_four_points_unchecked();
+
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
             name: b"population".to_vec().try_into().unwrap(),
@@ -405,7 +388,7 @@ mod tests {
 
         let invalid_commitments = TableCommitmentBytesPerCommitmentSchemePassBy {
             data: TableCommitmentBytesPerCommitmentScheme {
-                ipa: None,
+                hyper_kzg: None,
                 dynamic_dory: Some(TableCommitmentBytes {
                     data: insert_data_bytes
                         .data()
@@ -427,11 +410,8 @@ mod tests {
 
     #[test]
     fn we_cannot_process_insert_with_commitment_sql_failure() {
-        let _ = initialize_from_file_unchecked(
-            &"../proof-of-sql/static-setups/public_parameters_nu_1"
-                .parse()
-                .unwrap(),
-        );
+        let _ = get_or_init_from_files_with_four_points_unchecked();
+
         let table_id = TableIdentifier {
             namespace: b"animal".to_vec().try_into().unwrap(),
             name: b"population".to_vec().try_into().unwrap(),

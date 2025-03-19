@@ -1,6 +1,6 @@
 use proof_of_sql::base::database::ColumnType;
 use proof_of_sql::base::math::decimal::Precision;
-use proof_of_sql_parser::posql_time::{PoSQLTimeUnit, PoSQLTimeZone};
+use proof_of_sql::base::posql_time::{PoSQLTimeUnit, PoSQLTimeZone};
 use snafu::Snafu;
 use sqlparser::ast::{DataType, ExactNumberInfo};
 

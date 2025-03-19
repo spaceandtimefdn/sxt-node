@@ -54,7 +54,7 @@ fn row_data() -> RowData {
         false,
     )]));
 
-    let int_data = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5])) as ArrayRef;
+    let int_data = Arc::new(Int32Array::from(vec![1, 2, 3, 4])) as ArrayRef;
 
     let batch = RecordBatch::try_new(schema.clone(), vec![int_data]).unwrap();
 
@@ -68,7 +68,7 @@ fn diff_row_data() -> RowData {
         false,
     )]));
 
-    let int_data = Arc::new(Int32Array::from(vec![2, 4, 6, 8, 10])) as ArrayRef;
+    let int_data = Arc::new(Int32Array::from(vec![2, 4, 6, 8])) as ArrayRef;
 
     let batch = RecordBatch::try_new(schema.clone(), vec![int_data]).unwrap();
 

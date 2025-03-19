@@ -16,12 +16,12 @@ itertools.workspace = true
 on-chain-table.workspace = true
 proof-of-sql.workspace = true
 proof-of-sql-commitment-map.workspace = true
-proof-of-sql-parser.workspace = true
 snafu.workspace = true
 sqlparser.workspace = true
 sxt-core.workspace = true
 
 [dev-dependencies]
+proof-of-sql-static-setups = { workspace = true, features = ["io"] }
 rand.workspace = true
 rand_chacha.workspace = true
 primitive-types.workspace = true

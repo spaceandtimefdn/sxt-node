@@ -19,7 +19,7 @@ impl<T> From<TableCommitmentToBytesError> for Error<T> {
             TableCommitmentToBytesError::TooManyColumns { .. } => {
                 Error::CommitmentWithTooManyColumns
             }
-            TableCommitmentToBytesError::Postcard { .. } => Error::SerializeCommitment,
+            TableCommitmentToBytesError::Bincode { .. } => Error::SerializeCommitment,
         }
     }
 }

@@ -51,4 +51,5 @@ std = [
     "frame-system/std",
     "sp-core/std",
     "proof-of-sql/cpu-perf",
+    "sxt-core/std",
 ]

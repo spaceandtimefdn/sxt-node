@@ -5,12 +5,12 @@ edition.workspace = true
 repository.workspace = true
 
 [dependencies]
+bincode = { workspace = true, features = ["serde", "alloc"], optional = true }
 codec = { workspace = true, features = ["derive"], optional = true }
 curve25519-dalek = { workspace = true }
 frame-support = { workspace = true, optional = true }
 frame-system = { workspace = true, optional = true }
 itertools = { workspace = true }
-postcard = { workspace = true, features = ["alloc"], optional = true }
 proof-of-sql = { workspace = true }
 scale-info = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true }
@@ -21,7 +21,7 @@ sxt-core = { workspace = true, optional = true }
 
 [features]
 memory-commitment-map = ["std"]
-substrate = ["dep:frame-support", "dep:frame-system", "dep:codec", "dep:scale-info", "dep:sp-core", "dep:sxt-core", "dep:postcard", "dep:sp-runtime-interface"]
+substrate = ["dep:frame-support", "dep:frame-system", "dep:codec", "dep:scale-info", "dep:sp-core", "dep:sxt-core", "dep:bincode", "dep:sp-runtime-interface"]
 std = []
 try-runtime = []
 

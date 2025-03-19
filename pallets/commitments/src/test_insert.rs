@@ -1,11 +1,18 @@
-use commitment_sql::{process_insert, InsertAndCommitmentMetadata};
+use commitment_sql::{
+    process_insert,
+    InsertAndCommitmentMetadata,
+    OnChainTableToTableCommitmentFn,
+};
 use frame_support::assert_noop;
 use native_api::Api;
 use on_chain_table::{OnChainColumn, OnChainTable};
-use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql::base::math::decimal::Precision;
-use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
-use proof_of_sql_commitment_map::{CommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
+use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
+use proof_of_sql_commitment_map::{
+    CommitmentScheme,
+    PerCommitmentScheme,
+    TableCommitmentBytesPerCommitmentScheme,
+};
 use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
 use sp_core::U256;
 use sqlparser::ast::Ident;
@@ -71,20 +78,16 @@ fn we_can_process_insert() {
         ])
         .unwrap();
 
-        let empty_commitment =
-            TableCommitment::<DynamicDoryCommitment>::try_from_columns_with_offset(
-                empty_table
-                    .iter_committable::<DoryScalar>()
-                    .map(Result::unwrap),
-                0,
-                &PUBLIC_SETUPS.get().unwrap().dynamic_dory,
-            )
-            .unwrap();
-
-        let empty_commitments = PerCommitmentScheme {
-            dynamic_dory: Some(empty_commitment),
-            ipa: None,
-        };
+        let empty_commitments = PUBLIC_SETUPS
+            .get()
+            .unwrap()
+            .into_iter()
+            .map(|any| {
+                any.map(OnChainTableToTableCommitmentFn::new(&empty_table, 0))
+                    .transpose_result()
+                    .unwrap()
+            })
+            .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
         let test_params = ProcessInsertTestParams::new_valid();
 
@@ -95,8 +98,8 @@ fn we_can_process_insert() {
             *PUBLIC_SETUPS.get().unwrap(),
         )
         .unwrap();
-        let expected_commitment_bytes =
-            TableCommitmentBytes::try_from(&expected_commitments.dynamic_dory.unwrap()).unwrap();
+        let expected_commitments_bytes =
+            TableCommitmentBytesPerCommitmentScheme::try_from(expected_commitments).unwrap();
 
         let table_id = test_params.table_id.clone();
         let insert_and_commitment_metadata = test_params.execute().unwrap();
@@ -107,12 +110,12 @@ fn we_can_process_insert() {
         );
 
         assert_eq!(
-            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::Ipa),
-            None
+            CommitmentsModule::table_commitment(&table_id, CommitmentScheme::HyperKzg),
+            expected_commitments_bytes.hyper_kzg
         );
         assert_eq!(
             CommitmentsModule::table_commitment(&table_id, CommitmentScheme::DynamicDory),
-            Some(expected_commitment_bytes)
+            expected_commitments_bytes.dynamic_dory
         );
     });
 }

@@ -200,8 +200,8 @@ mod tests {
 
     use proof_of_sql::base::database::{OwnedColumn, OwnedTable};
     use proof_of_sql::base::math::decimal::Precision;
-    use proof_of_sql::base::scalar::Curve25519Scalar;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
+    use proof_of_sql::proof_primitive::hyperkzg::BNScalar;
 
     use super::*;
 
@@ -419,8 +419,8 @@ mod tests {
     }
 
     #[test]
-    fn we_can_iter_table_with_ipa_committable_columns() {
-        we_can_iter_table_with_committable_columns::<Curve25519Scalar>()
+    fn we_can_iter_table_with_hyper_kzg_committable_columns() {
+        we_can_iter_table_with_committable_columns::<BNScalar>()
     }
     #[test]
     fn get_decimal_with_valid_params_works() {

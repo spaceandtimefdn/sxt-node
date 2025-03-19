@@ -1,7 +1,7 @@
-use curve25519_dalek::RistrettoPoint;
 #[cfg(feature = "substrate")]
 use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
 use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
+use proof_of_sql::proof_primitive::hyperkzg::HyperKZGCommitment;
 #[cfg(feature = "substrate")]
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
@@ -20,7 +20,7 @@ use crate::GenericOverCommitmentFn;
 #[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
 pub enum CommitmentScheme {
     /// Scheme with commitments in the ristretto group, proven by inner-product-argument.
-    Ipa,
+    HyperKzg,
     /// Scheme with dory commitments.
     DynamicDory,
 }
@@ -30,7 +30,7 @@ pub enum CommitmentScheme {
 #[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
 pub struct CommitmentSchemeFlags {
     /// Select [`CommitmentScheme::Ipa`].
-    pub ipa: bool,
+    pub hyper_kzg: bool,
     /// Select [`CommitmentScheme::DynamicDory`].
     pub dynamic_dory: bool,
 }
@@ -39,7 +39,7 @@ impl CommitmentSchemeFlags {
     /// Construct a [`CommitmentSchemeFlags`] with all schemes selected.
     pub const fn all() -> Self {
         CommitmentSchemeFlags {
-            ipa: true,
+            hyper_kzg: true,
             dynamic_dory: true,
         }
     }
@@ -50,7 +50,10 @@ impl FromIterator<CommitmentScheme> for CommitmentSchemeFlags {
         iter.into_iter().fold(
             CommitmentSchemeFlags::default(),
             |acc, scheme| match scheme {
-                CommitmentScheme::Ipa => CommitmentSchemeFlags { ipa: true, ..acc },
+                CommitmentScheme::HyperKzg => CommitmentSchemeFlags {
+                    hyper_kzg: true,
+                    ..acc
+                },
                 CommitmentScheme::DynamicDory => CommitmentSchemeFlags {
                     dynamic_dory: true,
                     ..acc
@@ -67,13 +70,13 @@ impl IntoIterator for CommitmentSchemeFlags {
 
     fn into_iter(self) -> Self::IntoIter {
         let CommitmentSchemeFlags {
-            ipa,
-            dynamic_dory: dory,
+            hyper_kzg,
+            dynamic_dory,
         } = self;
 
         itertools::chain!(
-            ipa.then_some(CommitmentScheme::Ipa),
-            dory.then_some(CommitmentScheme::DynamicDory)
+            hyper_kzg.then_some(CommitmentScheme::HyperKzg),
+            dynamic_dory.then_some(CommitmentScheme::DynamicDory)
         )
     }
 }
@@ -83,7 +86,7 @@ impl IntoIterator for CommitmentSchemeFlags {
 #[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
 pub enum AnyCommitmentScheme<T: GenericOverCommitment> {
     /// Data with [`CommitmentScheme::Ipa`].
-    Ipa(T::WithCommitment<RistrettoPoint>),
+    HyperKzg(T::WithCommitment<HyperKZGCommitment>),
     /// Data with [`CommitmentScheme::DynamicDory`].
     DynamicDory(T::WithCommitment<DynamicDoryCommitment>),
 }
@@ -100,7 +103,7 @@ impl<T: GenericOverCommitment> AnyCommitmentScheme<T> {
         M: GenericOverCommitmentFn<In = T>,
     {
         match self {
-            AnyCommitmentScheme::Ipa(data) => AnyCommitmentScheme::Ipa(mapper.call(data)),
+            AnyCommitmentScheme::HyperKzg(data) => AnyCommitmentScheme::HyperKzg(mapper.call(data)),
             AnyCommitmentScheme::DynamicDory(data) => {
                 AnyCommitmentScheme::DynamicDory(mapper.call(data))
             }
@@ -112,11 +115,11 @@ impl<T: GenericOverCommitment> AnyCommitmentScheme<OptionType<T>> {
     /// Transpose an `AnyCommitmentScheme<Option<T>>` to an `Option<AnyCommitmentScheme<T>>`.
     pub fn transpose_option(self) -> Option<AnyCommitmentScheme<T>> {
         match self {
-            AnyCommitmentScheme::Ipa(Some(data)) => Some(AnyCommitmentScheme::Ipa(data)),
+            AnyCommitmentScheme::HyperKzg(Some(data)) => Some(AnyCommitmentScheme::HyperKzg(data)),
             AnyCommitmentScheme::DynamicDory(Some(data)) => {
                 Some(AnyCommitmentScheme::DynamicDory(data))
             }
-            AnyCommitmentScheme::Ipa(None) | AnyCommitmentScheme::DynamicDory(None) => None,
+            AnyCommitmentScheme::HyperKzg(None) | AnyCommitmentScheme::DynamicDory(None) => None,
         }
     }
 }
@@ -125,11 +128,13 @@ impl<T: GenericOverCommitment, E> AnyCommitmentScheme<ResultOkType<T, E>> {
     /// Transpose an `AnyCommitmentScheme<Result<T, E>>` to an `Result<AnyCommitmentScheme<T>, E>`.
     pub fn transpose_result(self) -> Result<AnyCommitmentScheme<T>, E> {
         match self {
-            AnyCommitmentScheme::Ipa(Ok(data)) => Ok(AnyCommitmentScheme::Ipa(data)),
+            AnyCommitmentScheme::HyperKzg(Ok(data)) => Ok(AnyCommitmentScheme::HyperKzg(data)),
             AnyCommitmentScheme::DynamicDory(Ok(data)) => {
                 Ok(AnyCommitmentScheme::DynamicDory(data))
             }
-            AnyCommitmentScheme::Ipa(Err(e)) | AnyCommitmentScheme::DynamicDory(Err(e)) => Err(e),
+            AnyCommitmentScheme::HyperKzg(Err(e)) | AnyCommitmentScheme::DynamicDory(Err(e)) => {
+                Err(e)
+            }
         }
     }
 }
@@ -138,9 +143,9 @@ impl<T: GenericOverCommitment, U: GenericOverCommitment> AnyCommitmentScheme<Pai
     /// Unzips a `AnyCommitmentScheme` containing a pair into a pair of `AnyCommitmentScheme`s.
     pub fn unzip(self) -> (AnyCommitmentScheme<T>, AnyCommitmentScheme<U>) {
         match self {
-            AnyCommitmentScheme::Ipa((left, right)) => (
-                AnyCommitmentScheme::Ipa(left),
-                AnyCommitmentScheme::Ipa(right),
+            AnyCommitmentScheme::HyperKzg((left, right)) => (
+                AnyCommitmentScheme::HyperKzg(left),
+                AnyCommitmentScheme::HyperKzg(right),
             ),
             AnyCommitmentScheme::DynamicDory((left, right)) => (
                 AnyCommitmentScheme::DynamicDory(left),
@@ -154,7 +159,7 @@ impl<T> AnyCommitmentScheme<ConcreteType<T>> {
     /// Unwraps an `AnyCommitmentScheme` with a concrete type into its internal value
     pub fn unwrap(self) -> T {
         match self {
-            AnyCommitmentScheme::Ipa(data) => data,
+            AnyCommitmentScheme::HyperKzg(data) => data,
             AnyCommitmentScheme::DynamicDory(data) => data,
         }
     }
@@ -163,7 +168,7 @@ impl<T> AnyCommitmentScheme<ConcreteType<T>> {
 impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentScheme {
     fn from(commitment: &AnyCommitmentScheme<T>) -> Self {
         match commitment {
-            AnyCommitmentScheme::Ipa(_) => CommitmentScheme::Ipa,
+            AnyCommitmentScheme::HyperKzg(_) => CommitmentScheme::HyperKzg,
             AnyCommitmentScheme::DynamicDory(_) => CommitmentScheme::DynamicDory,
         }
     }
@@ -174,7 +179,7 @@ impl<T: GenericOverCommitment> From<&AnyCommitmentScheme<T>> for CommitmentSchem
 #[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
 pub struct PerCommitmentScheme<T: GenericOverCommitment> {
     /// Element with [`CommitmentScheme::Ipa`].
-    pub ipa: T::WithCommitment<RistrettoPoint>,
+    pub hyper_kzg: T::WithCommitment<HyperKZGCommitment>,
     /// Element with [`CommitmentScheme::DynamicDory`].
     pub dynamic_dory: T::WithCommitment<DynamicDoryCommitment>,
 }
@@ -186,7 +191,7 @@ impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
         M: GenericOverCommitmentFn<In = T>,
     {
         PerCommitmentScheme {
-            ipa: mapper.call(self.ipa),
+            hyper_kzg: mapper.call(self.hyper_kzg),
             dynamic_dory: mapper.call(self.dynamic_dory),
         }
     }
@@ -194,7 +199,7 @@ impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
     /// Returns this collection including only the elements selected by `flags`.
     pub fn select(self, flags: &CommitmentSchemeFlags) -> PerCommitmentScheme<OptionType<T>> {
         PerCommitmentScheme {
-            ipa: flags.ipa.then_some(self.ipa),
+            hyper_kzg: flags.hyper_kzg.then_some(self.hyper_kzg),
             dynamic_dory: flags.dynamic_dory.then_some(self.dynamic_dory),
         }
     }
@@ -205,7 +210,7 @@ impl<T: GenericOverCommitment> PerCommitmentScheme<T> {
         other: PerCommitmentScheme<U>,
     ) -> PerCommitmentScheme<PairType<T, U>> {
         PerCommitmentScheme {
-            ipa: (self.ipa, other.ipa),
+            hyper_kzg: (self.hyper_kzg, other.hyper_kzg),
             dynamic_dory: (self.dynamic_dory, other.dynamic_dory),
         }
     }
@@ -216,11 +221,11 @@ impl<T: GenericOverCommitment, U: GenericOverCommitment> PerCommitmentScheme<Pai
     pub fn unzip(self) -> (PerCommitmentScheme<T>, PerCommitmentScheme<U>) {
         (
             PerCommitmentScheme {
-                ipa: self.ipa.0,
+                hyper_kzg: self.hyper_kzg.0,
                 dynamic_dory: self.dynamic_dory.0,
             },
             PerCommitmentScheme {
-                ipa: self.ipa.1,
+                hyper_kzg: self.hyper_kzg.1,
                 dynamic_dory: self.dynamic_dory.1,
             },
         )
@@ -243,13 +248,13 @@ impl<T: GenericOverCommitment> PerCommitmentScheme<OptionType<T>> {
 impl<T: GenericOverCommitment> From<&PerCommitmentScheme<OptionType<T>>> for CommitmentSchemeFlags {
     fn from(
         PerCommitmentScheme {
-            ipa,
-            dynamic_dory: dory,
+            hyper_kzg,
+            dynamic_dory,
         }: &PerCommitmentScheme<OptionType<T>>,
     ) -> Self {
         CommitmentSchemeFlags {
-            ipa: ipa.is_some(),
-            dynamic_dory: dory.is_some(),
+            hyper_kzg: hyper_kzg.is_some(),
+            dynamic_dory: dynamic_dory.is_some(),
         }
     }
 }
@@ -257,7 +262,7 @@ impl<T: GenericOverCommitment> From<&PerCommitmentScheme<OptionType<T>>> for Com
 impl<T: GenericOverCommitment> Default for PerCommitmentScheme<OptionType<T>> {
     fn default() -> Self {
         PerCommitmentScheme {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: None,
         }
     }
@@ -269,13 +274,13 @@ impl<T: GenericOverCommitment> IntoIterator for PerCommitmentScheme<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         let PerCommitmentScheme {
-            ipa,
-            dynamic_dory: dory,
+            hyper_kzg,
+            dynamic_dory,
         } = self;
 
         alloc::vec![
-            AnyCommitmentScheme::Ipa(ipa),
-            AnyCommitmentScheme::DynamicDory(dory),
+            AnyCommitmentScheme::HyperKzg(hyper_kzg),
+            AnyCommitmentScheme::DynamicDory(dynamic_dory),
         ]
         .into_iter()
     }
@@ -287,8 +292,8 @@ impl<G: GenericOverCommitment> FromIterator<AnyCommitmentScheme<G>>
     fn from_iter<T: IntoIterator<Item = AnyCommitmentScheme<G>>>(iter: T) -> Self {
         iter.into_iter()
             .fold(PerCommitmentScheme::default(), |acc, scheme| match scheme {
-                AnyCommitmentScheme::Ipa(data) => PerCommitmentScheme {
-                    ipa: Some(data),
+                AnyCommitmentScheme::HyperKzg(data) => PerCommitmentScheme {
+                    hyper_kzg: Some(data),
                     ..acc
                 },
                 AnyCommitmentScheme::DynamicDory(data) => PerCommitmentScheme {
@@ -304,8 +309,9 @@ mod tests {
     use alloc::vec;
     use alloc::vec::Vec;
 
-    use proof_of_sql::base::scalar::{Curve25519Scalar, Scalar};
+    use proof_of_sql::base::scalar::Scalar;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
+    use proof_of_sql::proof_primitive::hyperkzg::BNScalar;
 
     use super::*;
     use crate::generic_over_commitment::{AssociatedScalarType, CommitmentType};
@@ -314,19 +320,22 @@ mod tests {
     #[test]
     fn we_can_iterate_over_commitment_schemes_in_commitment_scheme_flags() {
         let no_flags = CommitmentSchemeFlags {
-            ipa: false,
+            hyper_kzg: false,
             dynamic_dory: false,
         };
         assert_eq!(Vec::from_iter(no_flags), vec![]);
 
-        let ipa_flags = CommitmentSchemeFlags {
-            ipa: true,
+        let hyper_kzg_flags = CommitmentSchemeFlags {
+            hyper_kzg: true,
             dynamic_dory: false,
         };
-        assert_eq!(Vec::from_iter(ipa_flags), vec![CommitmentScheme::Ipa]);
+        assert_eq!(
+            Vec::from_iter(hyper_kzg_flags),
+            vec![CommitmentScheme::HyperKzg]
+        );
 
         let dory_flags = CommitmentSchemeFlags {
-            ipa: false,
+            hyper_kzg: false,
             dynamic_dory: true,
         };
         assert_eq!(
@@ -337,7 +346,7 @@ mod tests {
         let all_flags = CommitmentSchemeFlags::all();
         assert_eq!(
             Vec::from_iter(all_flags),
-            vec![CommitmentScheme::Ipa, CommitmentScheme::DynamicDory]
+            vec![CommitmentScheme::HyperKzg, CommitmentScheme::DynamicDory]
         );
     }
 
@@ -346,11 +355,11 @@ mod tests {
         let no_flags = CommitmentSchemeFlags::from_iter(None);
         assert_eq!(no_flags, CommitmentSchemeFlags::default());
 
-        let ipa_flags = CommitmentSchemeFlags::from_iter([CommitmentScheme::Ipa]);
+        let hyper_kzg_flags = CommitmentSchemeFlags::from_iter([CommitmentScheme::HyperKzg]);
         assert_eq!(
-            ipa_flags,
+            hyper_kzg_flags,
             CommitmentSchemeFlags {
-                ipa: true,
+                hyper_kzg: true,
                 dynamic_dory: false
             }
         );
@@ -359,13 +368,13 @@ mod tests {
         assert_eq!(
             dory_flags,
             CommitmentSchemeFlags {
-                ipa: false,
+                hyper_kzg: false,
                 dynamic_dory: true
             }
         );
 
         let all_flags = CommitmentSchemeFlags::from_iter([
-            CommitmentScheme::Ipa,
+            CommitmentScheme::HyperKzg,
             CommitmentScheme::DynamicDory,
         ]);
         assert_eq!(all_flags, CommitmentSchemeFlags::all());
@@ -374,13 +383,13 @@ mod tests {
     #[test]
     fn we_can_iterate_over_commitments_in_per_commitment_scheme() {
         let all_commitments = PerCommitmentScheme::<CommitmentType> {
-            ipa: Default::default(),
+            hyper_kzg: Default::default(),
             dynamic_dory: Default::default(),
         };
         assert_eq!(
             Vec::from_iter(all_commitments),
             vec![
-                AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default()),
+                AnyCommitmentScheme::<CommitmentType>::HyperKzg(Default::default()),
                 AnyCommitmentScheme::<CommitmentType>::DynamicDory(Default::default())
             ]
         );
@@ -388,8 +397,9 @@ mod tests {
 
     #[test]
     fn we_can_convert_any_commitment_scheme_to_scheme() {
-        let ipa_commitment = AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default());
-        assert_eq!(ipa_commitment.to_scheme(), CommitmentScheme::Ipa);
+        let hyper_kzg_commitment =
+            AnyCommitmentScheme::<CommitmentType>::HyperKzg(Default::default());
+        assert_eq!(hyper_kzg_commitment.to_scheme(), CommitmentScheme::HyperKzg);
 
         let dory_commitment =
             AnyCommitmentScheme::<CommitmentType>::DynamicDory(Default::default());
@@ -399,37 +409,37 @@ mod tests {
     #[test]
     fn we_can_convert_per_commitment_scheme_to_flags() {
         let no_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: None,
         };
         assert_eq!(no_commitments.to_flags(), CommitmentSchemeFlags::default());
 
-        let ipa_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
-            ipa: Some(Default::default()),
+        let hyper_kzg_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
+            hyper_kzg: Some(Default::default()),
             dynamic_dory: None,
         };
         assert_eq!(
-            ipa_commitments.to_flags(),
+            hyper_kzg_commitments.to_flags(),
             CommitmentSchemeFlags {
-                ipa: true,
+                hyper_kzg: true,
                 dynamic_dory: false
             }
         );
 
         let dory_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: Some(Default::default()),
         };
         assert_eq!(
             dory_commitments.to_flags(),
             CommitmentSchemeFlags {
-                ipa: false,
+                hyper_kzg: false,
                 dynamic_dory: true
             }
         );
 
         let all_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
-            ipa: Some(Default::default()),
+            hyper_kzg: Some(Default::default()),
             dynamic_dory: Some(Default::default()),
         };
         assert_eq!(all_commitments.to_flags(), CommitmentSchemeFlags::all());
@@ -437,11 +447,11 @@ mod tests {
 
     #[test]
     fn we_can_transpose_any_commitment_scheme_with_option_type() {
-        let ipa_commitment =
-            AnyCommitmentScheme::<OptionType<CommitmentType>>::Ipa(Some(Default::default()));
+        let hyper_kzg_commitment =
+            AnyCommitmentScheme::<OptionType<CommitmentType>>::HyperKzg(Some(Default::default()));
         assert_eq!(
-            ipa_commitment.transpose_option(),
-            Some(AnyCommitmentScheme::Ipa(Default::default()))
+            hyper_kzg_commitment.transpose_option(),
+            Some(AnyCommitmentScheme::HyperKzg(Default::default()))
         );
 
         let dory_commitment = AnyCommitmentScheme::<OptionType<CommitmentType>>::DynamicDory(Some(
@@ -452,8 +462,9 @@ mod tests {
             Some(AnyCommitmentScheme::DynamicDory(Default::default()))
         );
 
-        let ipa_commitment = AnyCommitmentScheme::<OptionType<CommitmentType>>::Ipa(None);
-        assert_eq!(ipa_commitment.transpose_option(), None);
+        let hyper_kzg_commitment =
+            AnyCommitmentScheme::<OptionType<CommitmentType>>::HyperKzg(None);
+        assert_eq!(hyper_kzg_commitment.transpose_option(), None);
 
         let dory_commitment = AnyCommitmentScheme::<OptionType<CommitmentType>>::DynamicDory(None);
         assert_eq!(dory_commitment.transpose_option(), None);
@@ -461,11 +472,13 @@ mod tests {
 
     #[test]
     fn we_can_transpose_any_commitment_scheme_with_result_type() {
-        let ipa_commitment =
-            AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::Ipa(Ok(Default::default()));
+        let hyper_kzg_commitment =
+            AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::HyperKzg(Ok(
+                Default::default(),
+            ));
         assert_eq!(
-            ipa_commitment.transpose_result(),
-            Ok(AnyCommitmentScheme::Ipa(Default::default()))
+            hyper_kzg_commitment.transpose_result(),
+            Ok(AnyCommitmentScheme::HyperKzg(Default::default()))
         );
 
         let dory_commitment =
@@ -477,9 +490,9 @@ mod tests {
             Ok(AnyCommitmentScheme::DynamicDory(Default::default()))
         );
 
-        let ipa_commitment =
-            AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::Ipa(Err(1));
-        assert_eq!(ipa_commitment.transpose_result(), Err(1));
+        let hyper_kzg_commitment =
+            AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::HyperKzg(Err(1));
+        assert_eq!(hyper_kzg_commitment.transpose_result(), Err(1));
 
         let dory_commitment =
             AnyCommitmentScheme::<ResultOkType<CommitmentType, usize>>::DynamicDory(Err(2));
@@ -489,7 +502,7 @@ mod tests {
     #[test]
     fn we_can_collect_per_commitment_scheme_with_option_type_from_iter_and_into_flat_iter() {
         let no_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: None,
         };
         let no_iterator = vec![];
@@ -499,24 +512,24 @@ mod tests {
         );
         assert_eq!(PerCommitmentScheme::from_iter(no_iterator), no_commitments);
 
-        let ipa_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
-            ipa: Some(Default::default()),
+        let hyper_kzg_commitment = PerCommitmentScheme::<OptionType<CommitmentType>> {
+            hyper_kzg: Some(Default::default()),
             dynamic_dory: None,
         };
-        let ipa_iterator = vec![AnyCommitmentScheme::<CommitmentType>::Ipa(
+        let hyper_kzg_iterator = vec![AnyCommitmentScheme::<CommitmentType>::HyperKzg(
             Default::default(),
         )];
         assert_eq!(
-            ipa_commitments.into_flat_iter().collect::<Vec<_>>(),
-            ipa_iterator.clone(),
+            hyper_kzg_commitment.into_flat_iter().collect::<Vec<_>>(),
+            hyper_kzg_iterator.clone(),
         );
         assert_eq!(
-            PerCommitmentScheme::from_iter(ipa_iterator),
-            ipa_commitments
+            PerCommitmentScheme::from_iter(hyper_kzg_iterator),
+            hyper_kzg_commitment
         );
 
         let dory_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
-            ipa: None,
+            hyper_kzg: None,
             dynamic_dory: Some(Default::default()),
         };
         let dory_iterator = vec![AnyCommitmentScheme::<CommitmentType>::DynamicDory(
@@ -532,11 +545,11 @@ mod tests {
         );
 
         let all_commitments = PerCommitmentScheme::<OptionType<CommitmentType>> {
-            ipa: Some(Default::default()),
+            hyper_kzg: Some(Default::default()),
             dynamic_dory: Some(Default::default()),
         };
         let all_iterator = vec![
-            AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default()),
+            AnyCommitmentScheme::<CommitmentType>::HyperKzg(Default::default()),
             AnyCommitmentScheme::<CommitmentType>::DynamicDory(Default::default()),
         ];
         assert_eq!(
@@ -553,14 +566,18 @@ mod tests {
     fn we_can_map_any_commitment_scheme_to_another() {
         let some_fn = SomeFn::<CommitmentType>::new();
 
-        let ipa_commitment = AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default());
-        let some_ipa_commitment =
-            AnyCommitmentScheme::<OptionType<CommitmentType>>::Ipa(Some(Default::default()));
-        assert_eq!(ipa_commitment.map(&some_fn), some_ipa_commitment);
+        let hyper_kzg_commitment =
+            AnyCommitmentScheme::<CommitmentType>::HyperKzg(Default::default());
+        let some_hyper_kzg_commitment =
+            AnyCommitmentScheme::<OptionType<CommitmentType>>::HyperKzg(Some(Default::default()));
+        assert_eq!(
+            hyper_kzg_commitment.map(&some_fn),
+            some_hyper_kzg_commitment
+        );
 
-        let dory_commitment = AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default());
+        let dory_commitment = AnyCommitmentScheme::<CommitmentType>::HyperKzg(Default::default());
         let some_dory_commitment =
-            AnyCommitmentScheme::<OptionType<CommitmentType>>::Ipa(Some(Default::default()));
+            AnyCommitmentScheme::<OptionType<CommitmentType>>::HyperKzg(Some(Default::default()));
         assert_eq!(dory_commitment.map(some_fn), some_dory_commitment);
     }
 
@@ -569,11 +586,11 @@ mod tests {
         let some_fn = SomeFn::<CommitmentType>::new();
 
         let per_commitment_scheme = PerCommitmentScheme::<CommitmentType> {
-            ipa: Default::default(),
+            hyper_kzg: Default::default(),
             dynamic_dory: Default::default(),
         };
         let some_per_commitment_scheme = PerCommitmentScheme::<OptionType<CommitmentType>> {
-            ipa: Some(Default::default()),
+            hyper_kzg: Some(Default::default()),
             dynamic_dory: Some(Default::default()),
         };
 
@@ -586,7 +603,7 @@ mod tests {
     #[test]
     fn we_can_select_per_commitment_scheme_by_flags() {
         let per_commitment_scheme = PerCommitmentScheme::<CommitmentType> {
-            ipa: Default::default(),
+            hyper_kzg: Default::default(),
             dynamic_dory: Default::default(),
         };
 
@@ -596,14 +613,14 @@ mod tests {
             PerCommitmentScheme::<OptionType<CommitmentType>>::default()
         );
 
-        let ipa_flags = CommitmentSchemeFlags {
-            ipa: true,
+        let hyper_kzg_flags = CommitmentSchemeFlags {
+            hyper_kzg: true,
             ..Default::default()
         };
         assert_eq!(
-            per_commitment_scheme.select(&ipa_flags),
+            per_commitment_scheme.select(&hyper_kzg_flags),
             PerCommitmentScheme::<OptionType<CommitmentType>> {
-                ipa: Some(Default::default()),
+                hyper_kzg: Some(Default::default()),
                 dynamic_dory: None,
             }
         );
@@ -615,7 +632,7 @@ mod tests {
         assert_eq!(
             per_commitment_scheme.select(&dory_flags),
             PerCommitmentScheme::<OptionType<CommitmentType>> {
-                ipa: None,
+                hyper_kzg: None,
                 dynamic_dory: Some(Default::default()),
             }
         );
@@ -624,7 +641,7 @@ mod tests {
         assert_eq!(
             per_commitment_scheme.select(&all_flags),
             PerCommitmentScheme::<OptionType<CommitmentType>> {
-                ipa: Some(Default::default()),
+                hyper_kzg: Some(Default::default()),
                 dynamic_dory: Some(Default::default()),
             }
         );
@@ -633,18 +650,18 @@ mod tests {
     #[test]
     fn we_can_zip_and_unzip_per_commitment_scheme() {
         let commitments = PerCommitmentScheme::<CommitmentType> {
-            ipa: Default::default(),
+            hyper_kzg: Default::default(),
             dynamic_dory: Default::default(),
         };
 
         let scalars = PerCommitmentScheme::<AssociatedScalarType> {
-            ipa: Curve25519Scalar::ZERO,
+            hyper_kzg: BNScalar::ZERO,
             dynamic_dory: DoryScalar::ONE,
         };
 
         let commitments_with_scalars =
             PerCommitmentScheme::<PairType<CommitmentType, AssociatedScalarType>> {
-                ipa: (Default::default(), Curve25519Scalar::ZERO),
+                hyper_kzg: (Default::default(), BNScalar::ZERO),
                 dynamic_dory: (Default::default(), DoryScalar::ONE),
             };
 
@@ -654,16 +671,16 @@ mod tests {
 
     #[test]
     fn we_can_unzip_any_commitment_scheme() {
-        let ipa_commitment_with_scalar =
-            AnyCommitmentScheme::<PairType<CommitmentType, AssociatedScalarType>>::Ipa((
+        let hyper_kzg_commitment_with_scalar =
+            AnyCommitmentScheme::<PairType<CommitmentType, AssociatedScalarType>>::HyperKzg((
                 Default::default(),
-                Curve25519Scalar::ONE,
+                BNScalar::ONE,
             ));
         assert_eq!(
-            ipa_commitment_with_scalar.unzip(),
+            hyper_kzg_commitment_with_scalar.unzip(),
             (
-                AnyCommitmentScheme::<CommitmentType>::Ipa(Default::default()),
-                AnyCommitmentScheme::<AssociatedScalarType>::Ipa(Curve25519Scalar::ONE)
+                AnyCommitmentScheme::<CommitmentType>::HyperKzg(Default::default()),
+                AnyCommitmentScheme::<AssociatedScalarType>::HyperKzg(BNScalar::ONE)
             )
         );
 
@@ -683,8 +700,8 @@ mod tests {
 
     #[test]
     fn we_can_unwrap_any_commitment_scheme_with_concrete_type() {
-        let ipa_usize = AnyCommitmentScheme::<ConcreteType<usize>>::Ipa(123);
-        assert_eq!(ipa_usize.unwrap(), 123);
+        let hyper_kzg_usize = AnyCommitmentScheme::<ConcreteType<usize>>::HyperKzg(123);
+        assert_eq!(hyper_kzg_usize.unwrap(), 123);
 
         let dory_usize = AnyCommitmentScheme::<ConcreteType<usize>>::DynamicDory(456);
         assert_eq!(dory_usize.unwrap(), 456);

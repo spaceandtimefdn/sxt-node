@@ -25,11 +25,11 @@ use crate::validated_create_table::{InvalidCreateTable, ValidatedCreateTable};
 
 /// Generically accepts a commitment setup and returns the table commitment to the captured
 /// `OnChainTable` and offset.
-struct OnChainTableToTableCommitmentFn<'a, 's>(&'a OnChainTable, usize, PhantomData<&'s ()>);
+pub struct OnChainTableToTableCommitmentFn<'a, 's>(&'a OnChainTable, usize, PhantomData<&'s ()>);
 
 impl<'a> OnChainTableToTableCommitmentFn<'a, '_> {
     /// Construct a new [`OnChainTableToTableCommitmentFn`].
-    fn new(table: &'a OnChainTable, offset: usize) -> Self {
+    pub fn new(table: &'a OnChainTable, offset: usize) -> Self {
         OnChainTableToTableCommitmentFn(table, offset, PhantomData)
     }
 }
@@ -122,14 +122,9 @@ pub fn process_create_table(
 #[cfg(test)]
 mod tests {
     use on_chain_table::OnChainColumn;
-    use proof_of_sql::proof_primitive::dory::{
-        DoryScalar,
-        DynamicDoryCommitment,
-        ProverSetup,
-        PublicParameters,
-    };
-    use rand::SeedableRng;
-    use rand_chacha::ChaCha20Rng;
+    use proof_of_sql::proof_primitive::dory::{DoryScalar, DynamicDoryCommitment};
+    use proof_of_sql::proof_primitive::hyperkzg::{BNScalar, HyperKZGCommitment};
+    use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
     use sqlparser::ast::Ident;
     use sqlparser::dialect::PostgreSqlDialect;
     use sqlparser::parser::Parser;
@@ -138,18 +133,12 @@ mod tests {
 
     #[test]
     fn we_can_process_create_table() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
-
-        let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
-            ipa: (),
-            dynamic_dory: &prover_setup,
-        };
+        let setups = get_or_init_from_files_with_four_points_unchecked();
 
         // we currently cannot compute ipa commitments in no_std environments
         let flags = CommitmentSchemeFlags {
             dynamic_dory: true,
-            ipa: false,
+            hyper_kzg: true,
         };
 
         let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
@@ -190,7 +179,21 @@ mod tests {
                 .iter_committable::<DoryScalar>()
                 .map(|result| result.unwrap()),
                 0,
-                &&prover_setup,
+                &setups.dynamic_dory,
+            )
+            .unwrap();
+
+        let expected_hyper_kzg_commitment =
+            TableCommitment::<HyperKZGCommitment>::try_from_columns_with_offset(
+                OnChainTable::try_from_iter([
+                    (Ident::new("animal"), OnChainColumn::VarChar(vec![])),
+                    (Ident::new("population"), OnChainColumn::BigInt(vec![])),
+                ])
+                .unwrap()
+                .iter_committable::<BNScalar>()
+                .map(|result| result.unwrap()),
+                0,
+                &setups.hyper_kzg,
             )
             .unwrap();
 
@@ -201,12 +204,12 @@ mod tests {
         };
 
         let expected_commitments = PerCommitmentScheme {
-            ipa: None,
+            hyper_kzg: Some(expected_hyper_kzg_commitment),
             dynamic_dory: Some(expected_dory_commitment),
         };
 
         assert_eq!(
-            process_create_table(create_table, setups, &flags).unwrap(),
+            process_create_table(create_table, *setups, &flags).unwrap(),
             (
                 expected_create_table_and_commitment_metadata,
                 expected_commitments
@@ -216,13 +219,7 @@ mod tests {
 
     #[test]
     fn we_cannot_process_invalid_create_table() {
-        let public_parameters = PublicParameters::rand(4, &mut ChaCha20Rng::seed_from_u64(123));
-        let prover_setup = ProverSetup::from(&public_parameters);
-
-        let setups = PerCommitmentScheme::<AssociatedPublicSetupType> {
-            ipa: (),
-            dynamic_dory: &prover_setup,
-        };
+        let setups = get_or_init_from_files_with_four_points_unchecked();
 
         let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
             .try_with_sql("CREATE TABLE animal.population ()")
@@ -235,7 +232,7 @@ mod tests {
         let flags = CommitmentSchemeFlags::all();
 
         assert!(matches!(
-            process_create_table(create_table, setups, &flags),
+            process_create_table(create_table, *setups, &flags),
             Err(InvalidCreateTable::NoColumns)
         ));
     }
