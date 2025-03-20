@@ -35,8 +35,6 @@ use {
     crate::sxt_chain_runtime::api::tables::events::TablesCreatedWithCommitments,
 };
 
-use crate::tables::{GenesisTable, GenesisTableList};
-
 /// Maximum delay between backoff retries (3 minutes)
 pub const MAX_DELAY_SECONDS: u64 = 60 * 3;
 /// Minimum delay between backoff retries (5 Second)
@@ -137,9 +135,6 @@ where
                 block.number()
             );
 
-            if block.number() == 1 {
-                process_genesis(&chain_client, client.clone()).await;
-            }
             process_block(&client, block)
                 .await
                 .expect("Unrecoverable FlightSQL Error; Please Verify Your DB Setup");
@@ -153,62 +148,10 @@ where
             .await
             .unwrap();
 
-        // The genesis block is skipped, so if we're getting block 1 it's because we just missed genesis
-        // We need to request the genesis block and its events specifically
-        if block.number() == 1 {
-            process_genesis(&chain_client, client.clone()).await;
-        }
-
         // Process non-genesis blocks
         process_block(&client, block)
             .await
             .expect("Unrecoverable FlightSQL Error; Please Verify Your DB Setup");
-    }
-}
-
-async fn process_genesis<Client, Block, BE>(
-    chain_client: &Arc<Client>,
-    client: Arc<Mutex<FlightSqlServiceClient<Channel>>>,
-) where
-    Client: BlockchainEvents<Block>
-        + HeaderBackend<Block>
-        + StorageProvider<Block, BE>
-        + Finalizer<Block, BE>,
-    BE: Backend<Block>,
-    Block: sp_runtime::traits::Block,
-{
-    log::info!("FlightSQL Task: Processing GENESIS block");
-    let genesis_hash = chain_client.hash(0u8.into()).unwrap().unwrap();
-
-    let genesis_table_prefix = StorageKey(
-        sp_core::twox_128("Tables".as_bytes())
-            .into_iter()
-            .chain(sp_core::twox_128("GenesisTables".as_bytes()).to_vec())
-            .collect::<Vec<_>>(),
-    );
-    let genesis_keys = chain_client
-        .storage_keys(genesis_hash, Some(&genesis_table_prefix), None)
-        .unwrap();
-    let tables: Vec<GenesisTable> = genesis_keys
-        .flat_map(|key| {
-            let data = chain_client.storage(genesis_hash, &key).unwrap().unwrap().0;
-            let table_list: GenesisTableList =
-                GenesisTableList::decode(&mut data.as_slice()).unwrap();
-            table_list.tables.to_vec()
-        })
-        .collect();
-
-    // let mut c = client.lock().await;
-    for table in tables {
-        let sql = from_utf8(table.statement.as_slice()).unwrap();
-        let ns = from_utf8(table.identifier.namespace.as_slice()).unwrap();
-        let name = from_utf8(table.identifier.name.as_slice()).unwrap();
-        let url = format!("{}/{}", from_utf8(table.url.as_slice()).unwrap(), name);
-
-        log::info!("FlightSQL: Creating Table {ns}.{name} with snapshot: {url} and DDL\n{sql}\n");
-        create_table_with_snapshot(client.clone(), sql, url.as_str(), ns)
-            .await
-            .unwrap();
     }
 }
 
