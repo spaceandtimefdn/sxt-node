@@ -18,6 +18,7 @@ proof-of-sql.workspace = true
 proof-of-sql-commitment-map.workspace = true
 url = { workspace = true, optional = true }
 clap = { workspace = true, optional = true, features = ["env", "derive"] }
+rayon = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true, features = ["default", "stream"] }
 sha2 = { workspace = true, optional = true, features = ["std"] }
 snafu = { workspace = true, optional = true, features = ["std"] }
@@ -30,7 +31,7 @@ rand = { workspace = true, features = ["std"] }
 default = ["io"]
 std = []
 baked = []
-io = ["std", "proof-of-sql/std", "dep:clap", "dep:url", "dep:hex", "dep:reqwest", "dep:sha2", "dep:snafu", "dep:tokio", "dep:futures", "dep:num_cpus", "dep:log"]
+io = ["std", "proof-of-sql/std", "dep:clap", "dep:url", "dep:hex", "dep:reqwest", "dep:sha2", "dep:snafu", "dep:tokio", "dep:futures", "dep:num_cpus", "dep:log", "dep:rayon"]
 
 [lints]
 workspace = true

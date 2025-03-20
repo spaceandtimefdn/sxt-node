@@ -79,6 +79,7 @@ proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default
 proof-of-sql-static-setups = { path = "./proof-of-sql/static-setups/", default-features = false }
 rand = { version = "0.8.5", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
+rayon = { version = "1.10.0" }
 snafu = { version = "0.8.4", default-features = false }
 sqlparser = { version = "0.45.0", default-features = false }
 pallet-transaction-payment = { version = "38.0.0", default-features = false }
