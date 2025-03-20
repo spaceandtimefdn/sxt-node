@@ -1,3 +1,14 @@
+# [0.89.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.88.0...v0.89.0) (2025-03-20)
+
+
+### Features
+
+* Remove GenesisTables ([7312cfd](https://github.com/spaceandtimelabs/sxt-node/commit/7312cfdf20836fd8a87928fff8b43e5c404db9a8))
+* Update Devnet and Testnet Chainspecs and subxt codegen ([dd8af25](https://github.com/spaceandtimelabs/sxt-node/commit/dd8af251cb9b13e6329b9a5d661e7009629fbeb3))
+* Update runtime spec version to 200 ([9708d11](https://github.com/spaceandtimelabs/sxt-node/commit/9708d1101c113082674070440cccd35c13fe19e8))
+
+
+
 # [0.88.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.87.0...v0.88.0) (2025-03-20)
 
 
@@ -39,15 +50,6 @@
 ### Features
 
 * update nonce manager to handle new accounts ([813fea0](https://github.com/spaceandtimelabs/sxt-node/commit/813fea097166bfa9d47a7c43f19e06f2d2838f7b))
-
-
-
-# [0.84.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.83.0...v0.84.0) (2025-03-17)
-
-
-### Features
-
-* add flag to configure substrate rpc ([3464af7](https://github.com/spaceandtimelabs/sxt-node/commit/3464af75f97068e1b877e470889baae408e182ca))
 
 
 
