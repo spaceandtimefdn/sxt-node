@@ -217,7 +217,6 @@ impl IncrementingBlockStream {
 
     /// Fetches the block hash for a given block number using JSON-RPC.
     async fn get_block_hash(&self, block_number: u32) -> Result<Option<String>, reqwest::Error> {
-        let url = "http://127.0.0.1:9944"; // Substrate RPC endpoint
         let client = Client::new();
 
         let payload = json!({
@@ -228,7 +227,7 @@ impl IncrementingBlockStream {
         });
 
         let response = client
-            .post(url)
+            .post(self.substrate_rpc_url.clone())
             .json(&payload)
             .send()
             .await?
