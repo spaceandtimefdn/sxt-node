@@ -9,7 +9,6 @@ use sp_consensus_babe::AuthorityId as BabeId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-
 use sxt_runtime::opaque::SessionKeys;
 use sxt_runtime::{
     AccountId,

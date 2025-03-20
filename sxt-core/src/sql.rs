@@ -35,7 +35,6 @@ use {
     crate::sxt_chain_runtime::api::tables::events::TablesCreatedWithCommitments,
 };
 
-
 /// Maximum delay between backoff retries (3 minutes)
 pub const MAX_DELAY_SECONDS: u64 = 60 * 3;
 /// Minimum delay between backoff retries (5 Second)
@@ -148,7 +147,7 @@ where
             .at(subxt::utils::H256::from_slice(hash.as_ref()))
             .await
             .unwrap();
-        
+
         // Process non-genesis blocks
         process_block(&client, block)
             .await
