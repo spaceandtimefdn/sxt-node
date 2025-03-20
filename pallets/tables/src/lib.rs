@@ -36,12 +36,9 @@ pub mod pallet {
         uuids_from_sqlparser,
         ColumnUuidList,
         CreateStatement,
-        GenesisTable,
-        GenesisTableList,
         IdentifierList,
         IndexerMode,
         InsertQuorumSize,
-        RawGenesisTable,
         SnapshotUrl,
         Source,
         SourceAndMode,
@@ -146,11 +143,6 @@ pub mod pallet {
         IdentifierList,
         ValueQuery,
     >;
-
-    #[pallet::storage]
-    #[pallet::getter(fn genesis_tables)]
-    pub type GenesisTables<T: Config> =
-        StorageMap<_, Blake2_128Concat, SourceAndMode, GenesisTableList>;
 
     #[pallet::storage]
     #[pallet::getter(fn schemas)]
@@ -366,48 +358,6 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Attempts to recreate all tables stored in the genesis, but does not start loading from
-        /// snapshot
-        #[pallet::call_index(2)]
-        #[pallet::weight(<T as Config>::WeightInfo::create_empty_genesis_tables())]
-        pub fn create_empty_genesis_tables(origin: OriginFor<T>) -> DispatchResult {
-            ensure_root(origin)?;
-
-            GenesisTables::<T>::iter()
-                .map(|(source_and_mode, genesis_list)| {
-                    // Process the genesis list and map over each table
-                    let tables_with_meta_columns = genesis_list
-                        .tables
-                        .iter()
-                        .map(| GenesisTable { statement,  identifier, insert_quorum_size, version, ..}| {
-                            Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), *insert_quorum_size);
-                            let mut create_table = create_statement_to_sqlparser(statement.clone())
-                                .map_err(|_| Error::<T>::CreateStatementParseError)?;
-
-                            // Get the UUIDs for the namespace, table, and columns from the create_table
-                            let (table_uuid, column_uuids) = uuids_from_sqlparser(create_table.clone());
-                            Self::insert_table_uuid(identifier.clone(), *version, table_uuid, column_uuids)?;
-
-                            let index = create_table.columns.iter().position(|x| *x == commitment_sql::row_number_column_def()).expect("must have");
-                            create_table.columns.remove(index);
-
-                            let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } =
-                                pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(create_table)?;
-                            let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
-                                .map_err(|_| Error::<T>::CreateStatementParseError)?;
-                            Ok((identifier.clone(), statement_with_metadata, *insert_quorum_size))
-                        })
-                        .collect::<Result<Vec<(TableIdentifier, CreateStatement, InsertQuorumSize)>, DispatchError>>()?;
-
-                    let table_list = UpdateTableList::try_from(tables_with_meta_columns).expect("this should always work");
-                    Self::deposit_event(Event::<T>::SchemaUpdated(source_and_mode.clone(), table_list));
-                    Ok::<(), DispatchError>(())
-                })
-                .collect::<Result<Vec<()>, DispatchError>>()?;
-
-            Ok(())
-        }
-
         /// Used to create a new namespace/schema on chain. Stores the associated UUID and emits
         /// an event containing the CREATE statement
         #[pallet::call_index(4)]
@@ -567,140 +517,6 @@ pub mod pallet {
             };
 
             (table_uuid, column_uuids)
-        }
-    }
-
-    #[pallet::genesis_config]
-    #[derive(frame_support::DefaultNoBound)]
-    pub struct GenesisConfig<T: Config> {
-        tables: Vec<(RawGenesisTable, TableCommitmentBytesPerCommitmentScheme)>,
-        tables_without_commits: Vec<RawGenesisTable>,
-        _marker: PhantomData<T>,
-    }
-
-    #[pallet::genesis_build]
-    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
-        fn build(&self) {
-            let tables_with_meta: Vec<GenesisTable> = self
-                .tables
-                .iter()
-                .map(|(table, commitments)| {
-                    // Insert the table IDs
-                    let (table_uuid, column_uuids) =
-                        pallet::Pallet::<T>::get_or_generate_uuids_for_table(
-                            table.create_statement.clone(),
-                            table.table_identifier.clone(),
-                        );
-
-                    pallet::Pallet::<T>::insert_table_uuid(
-                        table.table_identifier.clone(),
-                        table.table_version,
-                        table_uuid,
-                        column_uuids,
-                    );
-
-                    // Insert the table schemas
-                    pallet::Pallet::<T>::insert_schema(
-                        table.source_and_mode.clone(),
-                        table.table_identifier.clone(),
-                        table.create_statement.clone(),
-                        table.insert_quorum_size,
-                    );
-                    let statement = pallet::Pallet::<T>::insert_initial_commitment(
-                        table.table_identifier.clone(),
-                        table.create_statement.clone(),
-                        commitments.clone(),
-                        table.snapshot_url.clone(),
-                    )
-                    .unwrap();
-                    GenesisTable {
-                        statement,
-                        insert_quorum_size: table.insert_quorum_size,
-                        url: table.snapshot_url.clone(),
-                        identifier: table.table_identifier.clone(),
-                        namespace_uuid: table.namespace_uuid.clone(),
-                        version: table.table_version,
-                    }
-                })
-                .collect();
-
-            let list = GenesisTableList {
-                tables: BoundedVec::try_from(tables_with_meta).unwrap(),
-            };
-
-            GenesisTables::<T>::insert(
-                SourceAndMode {
-                    source: Source::Ethereum,
-                    mode: IndexerMode::Core,
-                },
-                list,
-            );
-
-            let quorum = InsertQuorumSize {
-                public: Some(3),
-                privileged: Some(0),
-            };
-
-            let tables_without_commits: Vec<GenesisTable> = self
-                .tables_without_commits
-                .iter()
-                .map(|table| {
-                    // Insert the table IDs
-                    let (table_uuid, column_uuids) =
-                        pallet::Pallet::<T>::get_or_generate_uuids_for_table(
-                            table.create_statement.clone(),
-                            table.table_identifier.clone(),
-                        );
-
-                    pallet::Pallet::<T>::insert_table_uuid(
-                        table.table_identifier.clone(),
-                        table.table_version,
-                        table_uuid,
-                        column_uuids,
-                    );
-
-                    pallet::Pallet::<T>::insert_schema(
-                        table.source_and_mode.clone(),
-                        table.table_identifier.clone(),
-                        table.create_statement.clone(),
-                        quorum,
-                    );
-                    let statement = pallet::Pallet::<T>::insert_table_with_empty_commit(
-                        table.table_identifier.clone(),
-                        table.create_statement.clone(),
-                        table.snapshot_url.clone(),
-                    )
-                    .unwrap();
-
-                    GenesisTable {
-                        statement: table.create_statement.clone(),
-                        insert_quorum_size: table.insert_quorum_size,
-                        url: table.snapshot_url.clone(),
-                        identifier: table.table_identifier.clone(),
-                        namespace_uuid: table.namespace_uuid.clone(),
-                        version: table.table_version,
-                    }
-                })
-                .collect();
-
-            let list_with_no_commits = GenesisTableList {
-                tables: BoundedVec::try_from(tables_without_commits).unwrap(),
-            };
-
-            let contract_byte_string = ByteString::try_from(
-                "0x99b712919F0c2C07ad32f4c3a3742D3C6642d0A2"
-                    .as_bytes()
-                    .to_vec(),
-            )
-            .unwrap();
-
-            GenesisTables::<T>::insert(
-                SourceAndMode {
-                    source: Source::Sepolia,
-                    mode: IndexerMode::SmartContract(contract_byte_string),
-                },
-                list_with_no_commits,
-            );
         }
     }
 }
