@@ -1,3 +1,12 @@
+# [0.88.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.87.0...v0.88.0) (2025-03-20)
+
+
+### Features
+
+* make event-forwarder use correct rpc ([eec80bf](https://github.com/spaceandtimelabs/sxt-node/commit/eec80bf202e90f3a827551d1af0bc3d7400b7816))
+
+
+
 # [0.87.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.86.0...v0.87.0) (2025-03-19)
 
 
@@ -39,16 +48,6 @@
 ### Features
 
 * add flag to configure substrate rpc ([3464af7](https://github.com/spaceandtimelabs/sxt-node/commit/3464af75f97068e1b877e470889baae408e182ca))
-
-
-
-# [0.83.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.82.0...v0.83.0) (2025-03-17)
-
-
-### Features
-
-* add UUID generation support ([f6a6c83](https://github.com/spaceandtimelabs/sxt-node/commit/f6a6c83df610b579ca3406293e0726afc4f9599b))
-* Added basic support for table, namespace, and column UUIDs parsed ([985947d](https://github.com/spaceandtimelabs/sxt-node/commit/985947d73229fa0c6771a75dd6e5623bdf4e37ee))
 
 
 
