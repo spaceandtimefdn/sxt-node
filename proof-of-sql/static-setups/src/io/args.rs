@@ -15,6 +15,8 @@ use proof_of_sql::proof_primitive::hyperkzg::{
     deserialize_flat_compressed_hyperkzg_public_setup_from_slice,
     HyperKZGPublicSetupOwned,
 };
+use rayon::iter::{IndexedParallelIterator, ParallelIterator};
+use rayon::slice::ParallelSlice;
 use reqwest::Response;
 use sha2::{Digest, Sha256};
 use snafu::Snafu;
@@ -143,10 +145,6 @@ const ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
 
 const HYPER_KZG_POINT_COMPRESSED_SIZE: usize = 32;
 
-/// Doing 2 tasks per cpu ensures that the temporary memory cost of deserialization/decompression
-/// never exceeds 125% of the ultimate decompressed setup.
-const DESERIALIZATION_TASKS_PER_CPU: usize = 2;
-
 /// Download hyperkzg public setup files to the given directory if they do not exist.
 async fn download_hyperkzg_public_setup_files(
     directory: &Path,
@@ -261,56 +259,64 @@ pub async fn load_hyper_kzg_public_setup(
     )
     .await?;
 
-    let bytes = try_join_all(file_paths.into_iter().map(tokio::fs::read))
-        .await?
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>();
+    let bytes_by_file = try_join_all(file_paths.into_iter().map(tokio::fs::read)).await?;
 
     log::info!("verifying sha256sum...");
-    let mut hasher = Sha256::new();
-    hasher.update(&bytes);
+    let hasher = bytes_by_file
+        .iter()
+        .fold(Sha256::new(), |mut hasher, bytes| {
+            hasher.update(bytes);
+            hasher
+        });
     let actual_sha256: [u8; 32] = hasher.finalize().into();
 
     if actual_sha256 != args.hyper_kzg_public_setup_sha256 {
         Err(LoadPublicSetupError::Verification)?
     }
 
-    let num_points = bytes.len() / HYPER_KZG_POINT_COMPRESSED_SIZE;
-    let points_per_task_ceil = num_points.div_ceil(num_cpus::get() * DESERIALIZATION_TASKS_PER_CPU);
-    let bytes_per_task = points_per_task_ceil * HYPER_KZG_POINT_COMPRESSED_SIZE;
-
-    let chunks = bytes
-        .as_slice()
-        .chunks(bytes_per_task)
-        .map(|chunk| chunk.to_vec())
-        .collect::<Vec<Vec<u8>>>();
-    std::mem::drop(bytes);
-
-    Ok(try_join_all(
-        chunks
+    tokio::task::spawn_blocking(move || {
+        Ok(bytes_by_file
+            // don't parallelize between files
+            // decompressing has a temporary memory cost of 1.5x the decompressed size
+            // so, consuming and compressing the bytes one file at a time limits this cost to
+            // 1.5x the size of a single file instead of 1.5x the size of the entire setup
             .into_iter()
             .enumerate()
-            .map(|(i, chunk)| async move {
-                Result::<_, LoadPublicSetupError>::Ok(
-                    tokio::task::spawn(async move {
-                        log::info!("decompressing and deserializing hyperkzg chunk {i}");
+            .map(|(i, file_bytes)| {
+                let num_points_in_file = file_bytes.len() / HYPER_KZG_POINT_COMPRESSED_SIZE;
+                let num_points_per_par_chunk = num_points_in_file.div_ceil(num_cpus::get());
+                let par_chunk_size = num_points_per_par_chunk * HYPER_KZG_POINT_COMPRESSED_SIZE;
+
+                log::info!("decompressing and deserializing hyperkzg file {i}");
+                let result = file_bytes
+                    // instead parallelize within files
+                    .par_chunks(par_chunk_size)
+                    .enumerate()
+                    .map(|(j, chunk_bytes)| {
+                        log::debug!("decompressing and deserializing hyperkzg chunk {i}-{j}");
                         let result = deserialize_flat_compressed_hyperkzg_public_setup_from_slice(
-                            &chunk,
+                            chunk_bytes,
                             Validate::No,
                         );
-                        log::info!("finished decompressing and deserializing hyperkzg chunk {i}");
-                        result
+                        log::debug!(
+                            "finished decompressing and deserializing hyperkzg chunk {i}-{j}"
+                        );
+                        Ok(result?)
                     })
-                    .await??,
-                )
+                    .collect::<Result<Vec<_>, LoadPublicSetupError>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect();
+                log::info!("finished decompressing and deserializing hyperkzg file {i}");
+
+                Ok(result)
             })
-            .collect::<Vec<_>>(),
-    )
+            .collect::<Result<Vec<HyperKZGPublicSetupOwned>, LoadPublicSetupError>>()?
+            .into_iter()
+            .flatten()
+            .collect())
+    })
     .await?
-    .into_iter()
-    .flatten()
-    .collect())
 }
 
 #[cfg(test)]

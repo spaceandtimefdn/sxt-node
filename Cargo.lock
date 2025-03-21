@@ -12997,6 +12997,7 @@ dependencies = [
  "proof-of-sql",
  "proof-of-sql-commitment-map",
  "rand 0.8.5",
+ "rayon",
  "reqwest 0.11.27",
  "sha2 0.10.8",
  "snafu",
