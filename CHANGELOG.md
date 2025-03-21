@@ -1,3 +1,12 @@
+## [0.89.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.89.0...v0.89.1) (2025-03-21)
+
+
+### Bug Fixes
+
+* keep file bytes independent during hyperkzg load and use rayon ([c8c4df1](https://github.com/spaceandtimelabs/sxt-node/commit/c8c4df1ad72b523ff2ba1fd8e59d58a42909d265))
+
+
+
 # [0.89.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.88.0...v0.89.0) (2025-03-20)
 
 
@@ -41,15 +50,6 @@
 
 * allow incrementing block stream to parse an http/https connection from a websocket ([fb370ac](https://github.com/spaceandtimelabs/sxt-node/commit/fb370acbabb8757938840fef66ef9b8ab60db0ee))
 * upgrade IncrementingBlockStream to use substrate_rpc_url4 ([12be8df](https://github.com/spaceandtimelabs/sxt-node/commit/12be8df7ab247cba2319c5e6fe896e898bf69e40))
-
-
-
-# [0.85.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.84.0...v0.85.0) (2025-03-18)
-
-
-### Features
-
-* update nonce manager to handle new accounts ([813fea0](https://github.com/spaceandtimelabs/sxt-node/commit/813fea097166bfa9d47a7c43f19e06f2d2838f7b))
 
 
 
