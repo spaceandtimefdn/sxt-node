@@ -1,3 +1,7 @@
+## [0.89.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.89.2...v0.89.3) (2025-03-25)
+
+
+
 ## [0.89.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.89.1...v0.89.2) (2025-03-25)
 
 
@@ -33,22 +37,6 @@
 ### Features
 
 * make event-forwarder use correct rpc ([eec80bf](https://github.com/spaceandtimelabs/sxt-node/commit/eec80bf202e90f3a827551d1af0bc3d7400b7816))
-
-
-
-# [0.87.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.86.0...v0.87.0) (2025-03-19)
-
-
-### Bug Fixes
-
-* enable sxt-core/std via native/std and run process_insert test ([ff600d9](https://github.com/spaceandtimelabs/sxt-node/commit/ff600d91f76b3ea8141d3d05471201cbebe2f654))
-
-
-### Features
-
-* download hyperkzg public setup files ([812e8aa](https://github.com/spaceandtimelabs/sxt-node/commit/812e8aa1e437d4eb75ef6688520f91bb3d677f0b))
-* load hyperkzg public setup from files or github release ([87b89d8](https://github.com/spaceandtimelabs/sxt-node/commit/87b89d8dd1336238d6ff23e50c18a8df744cae06))
-* upgrade to proof-of-sql 0.80.2 ([bd715e4](https://github.com/spaceandtimelabs/sxt-node/commit/bd715e404f6b27f44af93f87519d5a9992bb8831))
 
 
 
