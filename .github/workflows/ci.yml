@@ -92,7 +92,7 @@ jobs:
           until cat out.txt | grep -s "Idle (0 peers)"; do sleep 5; done
         env:
           HYPER_KZG_PUBLIC_SETUP_RELEASE_DEGREE: "02"
-          HYPER_KZG_PUBLIC_SETUP_SHA256: "5cd0eaf9964713e136d1a947ee2d1c8cf673ca73c96098df844828ecce296fdf"
+          HYPER_KZG_PUBLIC_SETUP_SHA256: "1821173e2452afb5ad77ff8ef740140cd5e57b9b847d8b6edb81e04897b1efe4"
         shell: bash
         timeout-minutes: 5
 

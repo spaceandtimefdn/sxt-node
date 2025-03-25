@@ -57,7 +57,7 @@ pub struct ProofOfSqlPublicSetupArgs {
     /// Sha256sum of hyper_kzg ptau to verify loaded file.
     #[arg(long,
         env,
-        default_value = "f86fe5740fd4eecdd317e818ad7c807b98458dbe95bd180bf2d7758a5a66c7b4",
+        default_value = "c65198b7006b08652900d3dc4d282e2ad0bc71a04afffdbafa8fba7d956e478f",
         value_parser = |s: &str| <[u8; 32]>::from_hex(s)
     )]
     pub hyper_kzg_public_setup_sha256: [u8; 32],
@@ -339,7 +339,7 @@ pub mod tests {
             hyper_kzg_public_setup_directory: test_directory.path.clone(),
             hyper_kzg_public_setup_release_degree: "02".parse().unwrap(),
             hyper_kzg_public_setup_sha256: <[u8; 32]>::from_hex(
-                b"5cd0eaf9964713e136d1a947ee2d1c8cf673ca73c96098df844828ecce296fdf",
+                b"1821173e2452afb5ad77ff8ef740140cd5e57b9b847d8b6edb81e04897b1efe4",
             )
             .unwrap(),
         }
@@ -388,7 +388,7 @@ pub mod tests {
         let setup_args = ProofOfSqlPublicSetupArgs {
             hyper_kzg_public_setup_release_degree: "03".to_string(),
             hyper_kzg_public_setup_sha256: <[u8; 32]>::from_hex(
-                b"cb2b219e50e5abc8b3cbda5a93b2dbda5f8633f4e328d4a17f84be221c2f0b54",
+                b"68c22caac883f8b569d11a7bab024c87f53a14f956c23f52fe6722473218721d",
             )
             .unwrap(),
             ..sample_config_from_file(&test_directory)
