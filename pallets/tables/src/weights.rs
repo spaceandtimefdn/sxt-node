@@ -51,6 +51,9 @@ pub trait WeightInfo {
 
 	/// Weight for create_namespace
 	fn create_namespace() -> Weight;
+
+	/// drop a table
+	fn drop_table() -> Weight;
 }
 
 /// TODO: add docs
@@ -80,10 +83,18 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn create_namespace() -> Weight {
 		Weight::from_parts(0,0)
 	}
+
+	fn drop_table() -> Weight {
+		Weight::from_parts(0,0)
+	}
 }
 
 // For backwards compatibility and tests
 impl WeightInfo for () {
+	fn drop_table() -> Weight {
+		Weight::from_parts(0,0)
+	}
+
 	fn update_tables() -> Weight {
 		Weight::from_parts(0,0)
 	}

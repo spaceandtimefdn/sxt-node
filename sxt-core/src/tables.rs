@@ -761,6 +761,7 @@ mod tests {
     }
 }
 
+/// The type of table that we are indexing
 #[derive(
     Clone,
     Encode,

@@ -357,8 +357,9 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Drop a single table
         #[pallet::call_index(5)]
-        #[pallet::weight(<T as Config>::WeightInfo::create_namespace())]
+        #[pallet::weight(<T as Config>::WeightInfo::drop_table())]
         pub fn drop_table(
             origin: OriginFor<T>,
             table_type: TableType,
@@ -531,6 +532,7 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Create a table. Exactly the same as the extrinsic but available to other pallets
         pub fn create_tables_inner(
             origin: OriginFor<T>,
             tables: UpdateTableList,
