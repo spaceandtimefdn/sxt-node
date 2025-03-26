@@ -197,7 +197,7 @@ async fn process_block(
         } else if let Some(e) = event.as_event::<SchemaUpdated>().unwrap() {
             log::info!("FlightSQL: Processing Table Creation");
             let raw_list: Vec<BoundedVec<u8>> =
-                e.1 .0
+                e.0 .0
                     .into_iter()
                     .map(|(_, statement, quorum_size)| statement)
                     .collect();
