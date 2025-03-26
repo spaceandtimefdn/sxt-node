@@ -42,7 +42,7 @@ fn update_tables_should_work_when_permissioned() {
         set_permission!(who, TablesPalletPermission::EditSchema);
 
         assert_ok!(
-            Tables::update_tables(signer, SourceAndMode::default(), UpdateTableList::default()),
+            Tables::create_tables(signer, UpdateTableList::default()),
             ()
         );
     })
@@ -54,11 +54,7 @@ fn update_tables_should_work_when_sudo() {
         System::set_block_number(1);
 
         assert_ok!(
-            Tables::update_tables(
-                RuntimeOrigin::root(),
-                SourceAndMode::default(),
-                UpdateTableList::default()
-            ),
+            Tables::create_tables(RuntimeOrigin::root(), UpdateTableList::default()),
             ()
         );
     })

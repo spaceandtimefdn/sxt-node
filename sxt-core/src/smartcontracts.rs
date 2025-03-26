@@ -24,8 +24,8 @@ use frame_support::traits::ConstU32;
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 
-use crate::tables::{CreateStatement, Source};
-use crate::ByteString;
+use crate::tables::{CreateStatement, Source, TableName};
+use crate::{ByteString, IdentLength};
 
 /// A bounded vector representing a smart contract's unique address.
 ///
@@ -97,4 +97,49 @@ pub struct ContractDetails {
 
     /// The name of the contract, if available.
     pub contract_name: Option<ByteString>,
+
+    /// A list of event details associated with the contract.
+    pub event_details: Option<EventDetailsList>,
 }
+
+/// A bounded vector representing an Ethereum-compatible event signature.
+///
+/// Ethereum event signatures follow the format:
+/// ```solidity
+/// EventName(Type1 indexed param1, Type2 param2, ...)
+/// ```
+/// The maximum estimated length is:
+/// - Event name: ~64 characters
+/// - Parameters: ~450 characters (assuming multiple indexed and complex types)
+/// - Formatting (commas, spaces): ~30 characters
+///
+/// **Total upper bound: ~550 characters**  
+/// We set a safe limit of **600 bytes** for future-proofing.
+pub type EventSignature = BoundedVec<u8, ConstU32<600>>;
+
+/// A bounded vector representing an event name.
+///
+/// This name should follow Solidity-compatible identifier conventions.
+/// The length limit is defined by `IdentLength`.
+pub type EventName = BoundedVec<u8, IdentLength>;
+
+/// Represents detailed information about an individual smart contract event.
+///
+/// Each event maps an on-chain emitted event to a structured table in an off-chain database.
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct EventDetails {
+    /// The event's name (e.g., `Transfer`, `Approval`).
+    pub name: EventName,
+
+    /// The full event signature, including parameter types.
+    pub signature: EventSignature,
+
+    /// The target table where event data should be stored.
+    pub table: TableName,
+}
+
+/// A bounded list of event details.
+///
+/// This list holds up to **100** event mappings for a single contract.
+/// A reasonable upper bound is set to prevent excessive storage usage.
+pub type EventDetailsList = BoundedVec<EventDetails, ConstU32<100>>;

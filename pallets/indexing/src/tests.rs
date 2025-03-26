@@ -24,6 +24,7 @@ use sxt_core::tables::{
     TableIdentifier,
     TableName,
     TableNamespace,
+    TableType,
 };
 
 use crate::mock::*;
@@ -54,7 +55,7 @@ fn row_data() -> RowData {
         false,
     )]));
 
-    let int_data = Arc::new(Int32Array::from(vec![1, 2, 3, 4])) as ArrayRef;
+    let int_data = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5])) as ArrayRef;
 
     let batch = RecordBatch::try_new(schema.clone(), vec![int_data]).unwrap();
 
@@ -68,7 +69,7 @@ fn diff_row_data() -> RowData {
         false,
     )]));
 
-    let int_data = Arc::new(Int32Array::from(vec![2, 4, 6, 8])) as ArrayRef;
+    let int_data = Arc::new(Int32Array::from(vec![2, 4, 6, 8, 10])) as ArrayRef;
 
     let batch = RecordBatch::try_new(schema.clone(), vec![int_data]).unwrap();
 
@@ -110,19 +111,11 @@ fn inserting_data_succeeds_when_data_is_good() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (table_id, test_create) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
-            vec![(
-                table_id.clone(),
-                test_create,
-                InsertQuorumSize {
-                    public: Some(3),
-                    ..Default::default()
-                },
-            )]
-            .try_into()
-            .unwrap(),
+            vec![(table_id.clone(), test_create, TableType::CoreBlockchain)]
+                .try_into()
+                .unwrap(),
         )
         .unwrap();
 
@@ -160,19 +153,11 @@ fn submission_fails_when_data_is_already_submitted() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (table_id, test_create) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
-            vec![(
-                table_id.clone(),
-                test_create,
-                InsertQuorumSize {
-                    public: Some(3),
-                    ..Default::default()
-                },
-            )]
-            .try_into()
-            .unwrap(),
+            vec![(table_id.clone(), test_create, TableType::CoreBlockchain)]
+                .try_into()
+                .unwrap(),
         )
         .unwrap();
         let signer = RuntimeOrigin::signed(1);
@@ -254,16 +239,12 @@ fn data_is_decided_on_after_required_submissions() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (table_id, create_statement) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 table_id.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
-                    public: Some(3),
-                    ..Default::default()
-                },
+                TableType::CoreBlockchain,
             )]
             .try_into()
             .unwrap(),
@@ -335,16 +316,12 @@ fn correct_data_is_decided_on_after_required_submissions() {
         System::set_block_number(1);
 
         let (table_id, create_statement) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 table_id.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
-                    public: Some(3),
-                    ..Default::default()
-                },
+                TableType::CoreBlockchain,
             )]
             .try_into()
             .unwrap(),
@@ -438,16 +415,12 @@ fn inserting_data_fails_when_data_is_empty() {
         pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
 
         let (test_identifier, create_statement) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 test_identifier.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
-                    public: Some(3),
-                    ..Default::default()
-                },
+                TableType::CoreBlockchain,
             )]
             .try_into()
             .unwrap(),
@@ -486,16 +459,12 @@ fn inserting_data_fails_when_table_name_is_empty() {
             ..table_id
         };
 
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 test_identifier.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
-                    public: Some(3),
-                    ..Default::default()
-                },
+                TableType::CoreBlockchain,
             )]
             .try_into()
             .unwrap(),
@@ -531,16 +500,12 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
             namespace: TableNamespace::try_from(b"".to_vec()).unwrap(),
             ..table_id
         };
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 test_identifier.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
-                    public: Some(3),
-                    ..Default::default()
-                },
+                TableType::CoreBlockchain,
             )]
             .try_into()
             .unwrap(),
@@ -573,16 +538,12 @@ fn inserting_data_fails_when_batch_id_is_empty() {
 
         let (test_identifier, create_statement) = sample_table_definition();
 
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 test_identifier.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
-                    public: Some(3),
-                    ..Default::default()
-                },
+                TableType::CoreBlockchain,
             )]
             .try_into()
             .unwrap(),
@@ -606,16 +567,12 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
         System::set_block_number(1);
 
         let (table_id, create_statement) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 table_id.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
-                    public: Some(3),
-                    ..Default::default()
-                },
+                TableType::CoreBlockchain,
             )]
             .try_into()
             .unwrap(),
@@ -679,16 +636,12 @@ fn submit_data_with_mothership_key_work() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (test_identifier, test_create) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 test_identifier.clone(),
                 test_create.clone(),
-                InsertQuorumSize {
-                    public: Some(3),
-                    ..Default::default()
-                },
+                TableType::CoreBlockchain,
             )]
             .try_into()
             .unwrap(),
@@ -743,16 +696,15 @@ fn we_can_reach_privileged_quorum() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (table_id, create_statement) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 table_id.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
+                TableType::Testing(InsertQuorumSize {
+                    public: None,
                     privileged: Some(0),
-                    ..Default::default()
-                },
+                }),
             )]
             .try_into()
             .unwrap(),
@@ -800,16 +752,15 @@ fn we_can_manage_quorum_state_for_both_scopes() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (table_id, create_statement) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 table_id.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
+                TableType::Testing(InsertQuorumSize {
                     public: Some(2),
                     privileged: Some(1),
-                },
+                }),
             )]
             .try_into()
             .unwrap(),
@@ -897,16 +848,15 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_one_quorum_reached_ev
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (table_id, create_statement) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 table_id.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
+                TableType::Testing(InsertQuorumSize {
                     public: Some(0),
                     privileged: Some(0),
-                },
+                }),
             )]
             .try_into()
             .unwrap(),
@@ -965,16 +915,15 @@ fn we_cannot_submit_for_table_disabled_quorum_scope() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (table_id, create_statement) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 table_id.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
+                TableType::Testing(InsertQuorumSize {
                     public: None,
                     privileged: Some(0),
-                },
+                }),
             )]
             .try_into()
             .unwrap(),
@@ -1016,16 +965,15 @@ fn we_cannot_submit_with_privilege_to_different_table() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (table_id, create_statement) = sample_table_definition();
-        Tables::update_tables(
+        Tables::create_tables(
             RuntimeOrigin::root(),
-            SourceAndMode::default(),
             vec![(
                 table_id.clone(),
                 create_statement.clone(),
-                InsertQuorumSize {
+                TableType::Testing(InsertQuorumSize {
                     public: None,
                     privileged: Some(0),
-                },
+                }),
             )]
             .try_into()
             .unwrap(),

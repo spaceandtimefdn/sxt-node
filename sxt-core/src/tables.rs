@@ -321,7 +321,7 @@ impl InsertQuorumSize {
 }
 
 /// TODO: add docs
-pub type UpdateTableCmd = (TableIdentifier, CreateStatement, InsertQuorumSize);
+pub type UpdateTableCmd = (TableIdentifier, CreateStatement, TableType);
 
 #[derive(
     Clone,
@@ -759,4 +759,32 @@ mod tests {
             Some(0)
         );
     }
+}
+
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Default,
+    Serialize,
+    Deserialize,
+)]
+pub enum TableType {
+    /// Core Blockchain table
+    #[default]
+    CoreBlockchain,
+
+    /// Smart Contract Indexing
+    SCI,
+
+    /// Community Owned Table
+    Community,
+
+    /// Testing type
+    Testing(InsertQuorumSize),
 }
