@@ -19744,6 +19744,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "utoipa"
 version = "5.3.1"
+source = "git+https://github.com/zachfrederick/utoipa.git?rev=323fc4af3df0dc0f1763aec25587642f0200b8bf#323fc4af3df0dc0f1763aec25587642f0200b8bf"
 dependencies = [
  "indexmap 2.7.1",
  "serde",
@@ -19754,6 +19755,7 @@ dependencies = [
 [[package]]
 name = "utoipa-axum"
 version = "0.2.0"
+source = "git+https://github.com/zachfrederick/utoipa.git?rev=323fc4af3df0dc0f1763aec25587642f0200b8bf#323fc4af3df0dc0f1763aec25587642f0200b8bf"
 dependencies = [
  "axum 0.8.1",
  "paste",
@@ -19765,6 +19767,7 @@ dependencies = [
 [[package]]
 name = "utoipa-gen"
 version = "5.3.1"
+source = "git+https://github.com/zachfrederick/utoipa.git?rev=323fc4af3df0dc0f1763aec25587642f0200b8bf#323fc4af3df0dc0f1763aec25587642f0200b8bf"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -19775,6 +19778,7 @@ dependencies = [
 [[package]]
 name = "utoipa-swagger-ui"
 version = "9.0.0"
+source = "git+https://github.com/zachfrederick/utoipa.git?rev=323fc4af3df0dc0f1763aec25587642f0200b8bf#323fc4af3df0dc0f1763aec25587642f0200b8bf"
 dependencies = [
  "axum 0.8.1",
  "base64 0.22.1",
