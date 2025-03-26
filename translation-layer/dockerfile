@@ -1,35 +1,9 @@
-# Use Rust official image as a build stage
-FROM rust:1.84 as builder
+FROM rust:1.80
 
-# Set the working directory
-WORKDIR /app
+RUN useradd -m -u 1001 -U -s /bin/sh -d /home/sxtuser sxtuser
+USER sxtuser
 
-# Copy the entire workspace (to resolve dependencies)
-COPY . .
+WORKDIR /opt/sxt
+COPY --chmod=755 --chown=sxtuser translation-layer .
 
-# Build only the translation-layer binary
-RUN cargo build --release -p translation-layer
-
-# Use a lightweight runtime image
-FROM debian:bullseye-slim
-
-# Set working directory
-WORKDIR /app
-
-# Create a non-root user and group
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# Copy the compiled binary from the builder stage
-COPY --from=builder /app/target/release/translation-layer /app/translation-layer
-
-# Set ownership to the non-root user
-RUN chown -R appuser:appuser /app
-
-# Switch to the non-root user
-USER appuser
-
-# Expose the application port
-EXPOSE 3000
-
-# Run the application
-CMD ["/app/translation-layer"]
+ENTRYPOINT [ "/opt/sxt/translation-layer" ]
