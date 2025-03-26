@@ -1,3 +1,7 @@
+## [0.89.4](https://github.com/spaceandtimelabs/sxt-node/compare/v0.89.3...v0.89.4) (2025-03-26)
+
+
+
 ## [0.89.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.89.2...v0.89.3) (2025-03-25)
 
 
@@ -28,15 +32,6 @@
 * Remove GenesisTables ([7312cfd](https://github.com/spaceandtimelabs/sxt-node/commit/7312cfdf20836fd8a87928fff8b43e5c404db9a8))
 * Update Devnet and Testnet Chainspecs and subxt codegen ([dd8af25](https://github.com/spaceandtimelabs/sxt-node/commit/dd8af251cb9b13e6329b9a5d661e7009629fbeb3))
 * Update runtime spec version to 200 ([9708d11](https://github.com/spaceandtimelabs/sxt-node/commit/9708d1101c113082674070440cccd35c13fe19e8))
-
-
-
-# [0.88.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.87.0...v0.88.0) (2025-03-20)
-
-
-### Features
-
-* make event-forwarder use correct rpc ([eec80bf](https://github.com/spaceandtimelabs/sxt-node/commit/eec80bf202e90f3a827551d1af0bc3d7400b7816))
 
 
 
