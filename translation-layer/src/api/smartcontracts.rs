@@ -65,12 +65,12 @@ pub async fn add_smartcontract(
 
     let mut table_creator = TableCreator::new();
 
-    for table in request.tables {
+    for table in request.iter() {
         table_creator
             .add_table()
             .identifier(&table.table_name, &table.schema_name)
             .ddl_statement(&table.ddl_statement)
-            .table_type(request.table_type.clone().into())
+            .table_type(table.table_type.clone().into())
             .add();
     }
     let tables = BoundedVec(table_creator.tables());

@@ -62,7 +62,7 @@ pub enum AddContractRequest {
         /// The DDL statement correpsonding to this smart contract
         ddl_statement: Option<String>,
         /// The tables to create along with this smartcontract
-        tables: CreateTableRequest,
+        tables: Vec<TableRequest>,
     },
     /// A proxy contract that points to an implementation contract.
     Proxy {
@@ -85,7 +85,7 @@ pub enum AddContractRequest {
         /// The DDL statement correpsonding to this smart contract
         ddl_statement: Option<String>,
         /// The tables to create along with this smartcontract
-        tables: CreateTableRequest,
+        tables: Vec<TableRequest>,
     },
 }
 
@@ -165,6 +165,8 @@ pub struct CreateTableRequest {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TableRequest {
+    /// table type
+    pub table_type: TableType,
     /// The table name.
     pub table_name: String,
     /// The namespace of the table.
@@ -237,7 +239,7 @@ pub enum ApiContract {
 
 impl AddContractRequest {
     /// convert a json request to a contract type
-    pub fn to_contract(self) -> (CreateTableRequest, Contract) {
+    pub fn to_contract(self) -> (Vec<TableRequest>, Contract) {
         match self {
             AddContractRequest::Normal {
                 source,

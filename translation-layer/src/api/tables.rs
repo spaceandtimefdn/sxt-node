@@ -9,7 +9,7 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
     TableIdentifier,
 };
 
-use crate::model::{ApiResponse, CreateTableRequest, DropTableRequest};
+use crate::model::{ApiResponse, CreateTableRequest, DropTableRequest, TableRequest};
 use crate::state::TranslationLayerState;
 use crate::table_builder::TableCreator;
 use crate::utils::{string_to_mode, string_to_source};
@@ -57,11 +57,11 @@ use crate::utils::{string_to_mode, string_to_source};
     ))]
 pub async fn create_table(
     State(state): State<Arc<TranslationLayerState>>,
-    Json(request): Json<CreateTableRequest>,
+    Json(request): Json<Vec<TableRequest>>,
 ) -> Json<ApiResponse> {
     let mut table_creator = TableCreator::new();
 
-    for table in request.tables {
+    for table in request.iter() {
         let decoded_commitment = match base64::decode(&table.commitment) {
             Ok(bytes) => bytes,
             Err(_) => {
@@ -77,7 +77,7 @@ pub async fn create_table(
             .add_table()
             .identifier(&table.table_name, &table.schema_name)
             .ddl_statement(&table.ddl_statement)
-            .table_type(request.table_type.clone().into())
+            .table_type(table.table_type.clone().into())
             .commitment_scheme(table.commitment_scheme.clone())
             .commitment(&decoded_commitment)
             .snapshot_url(&table.snapshot_url)

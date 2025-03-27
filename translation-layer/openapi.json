@@ -971,7 +971,10 @@
                                 "minimum": 0
                             },
                             "tables": {
-                                "$ref": "#/components/schemas/CreateTableRequest",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/TableRequest"
+                                },
                                 "description": "The tables to create along with this smartcontract"
                             },
                             "target_schema": {
@@ -1051,7 +1054,10 @@
                                 "minimum": 0
                             },
                             "tables": {
-                                "$ref": "#/components/schemas/CreateTableRequest",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/TableRequest"
+                                },
                                 "description": "The tables to create along with this smartcontract"
                             },
                             "target_schema": {
@@ -1433,6 +1439,7 @@
                 "type": "object",
                 "description": "Represents an individual table entry inside a `CreateTableRequest`.",
                 "required": [
+                    "tableType",
                     "tableName",
                     "schemaName",
                     "ddlStatement",
@@ -1464,6 +1471,10 @@
                     "tableName": {
                         "type": "string",
                         "description": "The table name."
+                    },
+                    "tableType": {
+                        "$ref": "#/components/schemas/TableType",
+                        "description": "table type"
                     }
                 }
             },
