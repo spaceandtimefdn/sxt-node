@@ -24,10 +24,10 @@ frame-support.workspace = true
 frame-system.workspace = true
 sxt-core.workspace = true
 pallet-permissions.workspace = true 
-pallet-commitments.workspace = true
 pallet-tables.workspace = true 
 
 [dev-dependencies]
+pallet-commitments.workspace = true
 sp-core = { default-features = true, workspace = true }
 sp-io = { default-features = true, workspace = true }
 sp-runtime = { default-features = true, workspace = true }

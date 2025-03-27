@@ -789,3 +789,19 @@ pub enum TableType {
     /// Testing type
     Testing(InsertQuorumSize),
 }
+
+impl From<TableType> for InsertQuorumSize {
+    fn from(table_type: TableType) -> Self {
+        match table_type {
+            TableType::CoreBlockchain | TableType::SCI => InsertQuorumSize {
+                public: Some(3),
+                privileged: None,
+            },
+            TableType::Community => InsertQuorumSize {
+                public: None,
+                privileged: Some(0),
+            },
+            TableType::Testing(quorum) => quorum,
+        }
+    }
+}

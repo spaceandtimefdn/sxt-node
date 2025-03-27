@@ -127,16 +127,28 @@ pub mod pallet {
             Ok(())
         }
 
-        /// **Remove a Smart Contract Entry**
+        /// Adds a new smart contract and its associated indexing tables to the chain.
         ///
-        /// Deletes a smart contract entry from storage.
+        /// This function is permissioned: it can only be called by a signed account or `Root` origin
+        /// with `SmartContractsPallet::UpdateABI` permission. It stores the provided smart contract,
+        /// verifies it doesn’t already exist, emits a `SmartContractAdded` event, and registers any
+        /// associated indexing tables via `pallet_tables::create_tables_inner`.
         ///
-        /// **Parameters:**
-        /// - `origin`: Must be a signed account.
-        /// - `source`: The `Source` identifier for the contract.
-        /// - `contract_address`: The address of the smart contract.
+        /// # Parameters
+        /// - `origin`: Must be either `Root` or a signed user with appropriate smart contract permissions.
+        /// - `contract`: The [`Contract`] to be added. Can be a normal or proxy contract.
+        /// - `tables`: The list of [`UpdateTable`] entries associated with this contract. Each entry defines
+        ///    a table to be created (including schema, DDL, and type).
         ///
-        /// **Emits:** `SmartContractRemoved`
+        /// # Emits
+        /// - [`Event::SmartContractAdded`] — when the contract is successfully stored.
+        /// - [`Event::SchemaUpdated`] — for each table added via `pallet_tables`.
+        ///
+        /// # Errors
+        /// - [`Error::ExistingContractError`] — if a contract with the same `source` and `address` already exists.
+        /// - Any error from:
+        ///     - [`pallet_permissions::Pallet::ensure_root_or_permissioned`] if origin is unauthorized.
+        ///     - [`pallet_tables::Pallet::create_tables_inner`] if any table creation fails.
         #[pallet::call_index(2)]
         #[pallet::weight(<T as pallet::Config>::WeightInfo::add_smartcontract())]
         pub fn add_smartcontract(

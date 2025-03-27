@@ -425,12 +425,7 @@ pub mod pallet {
 
             let TableIdentifier { name, namespace } = ident.clone();
             Schemas::<T>::insert(namespace, name, stmnt.clone());
-            let quorum = match table_type {
-                TableType::CoreBlockchain => std_quorum_size(),
-                TableType::SCI => std_quorum_size(),
-                TableType::Community => community_quorum_size(),
-                TableType::Testing(quorum) => quorum,
-            };
+            let quorum: InsertQuorumSize = table_type.into();
 
             TableInsertQuorums::<T>::insert(ident, quorum);
         }
@@ -509,13 +504,15 @@ pub mod pallet {
             // Retrieve the current list of table identifiers for this source and mode.
             let mut identifiers = Identifiers::<T>::get(&table_type);
 
-            // Remove the specific table identifier.
-            if let Some(index) = identifiers.iter().position(|id| id == &ident) {
-                identifiers.remove(index);
+            // Retain all identifiers that are not equal to `ident`
+            identifiers.retain(|id| id != &ident);
+
+            if identifiers.len() < Identifiers::<T>::get(&table_type).len() {
                 Identifiers::<T>::insert(&table_type, identifiers);
             } else {
                 return Err(Error::<T>::TableNotFound.into());
             }
+
             // Remove the schema definition.
             let TableIdentifier { name, namespace } = ident.clone();
             if Schemas::<T>::contains_key(&namespace, &name) {
@@ -569,20 +566,6 @@ pub mod pallet {
             Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
 
             Ok(())
-        }
-    }
-
-    fn std_quorum_size() -> InsertQuorumSize {
-        InsertQuorumSize {
-            public: Some(3),
-            privileged: None,
-        }
-    }
-
-    fn community_quorum_size() -> InsertQuorumSize {
-        InsertQuorumSize {
-            public: None,
-            privileged: Some(0),
         }
     }
 }
