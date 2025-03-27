@@ -199,7 +199,7 @@ async fn process_block(
             let raw_list: Vec<BoundedVec<u8>> =
                 e.0 .0
                     .into_iter()
-                    .map(|(_, statement, quorum_size)| statement)
+                    .map(|(_, statement, quorum_size, _, _, _)| statement)
                     .collect();
             let list: Vec<&str> = raw_list
                 .iter()

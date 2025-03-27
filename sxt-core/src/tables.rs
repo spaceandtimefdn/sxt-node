@@ -320,8 +320,18 @@ impl InsertQuorumSize {
     }
 }
 
+/// A table commitment
+pub type CommitmentBytes = BoundedVec<u8, ConstU32<8192>>;
+
 /// TODO: add docs
-pub type UpdateTableCmd = (TableIdentifier, CreateStatement, TableType);
+pub type UpdateTableCmd = (
+    TableIdentifier,
+    CreateStatement,
+    TableType,
+    Option<CommitmentBytes>,
+    Option<SnapshotUrl>,
+    Option<CommitmentScheme>,
+);
 
 #[derive(
     Clone,
@@ -588,6 +598,7 @@ mod tests {
         let sql3 = "CREATE SCHEMA TEST;";
         assert_eq!(extract_schema_uuid(sql3), None);
     }
+
     #[test]
     fn we_can_parse_uuids_from_ddl_statement() {
         let expected_uuid = TableUuid::try_from("abc678".as_bytes().to_vec()).unwrap();
@@ -804,4 +815,25 @@ impl From<TableType> for InsertQuorumSize {
             TableType::Testing(quorum) => quorum,
         }
     }
+}
+
+/// Commitment schemes
+#[derive(
+    Copy,
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Serialize,
+    Deserialize,
+)]
+pub enum CommitmentScheme {
+    /// HyperKzg
+    HyperKzg,
+    /// dynamic dory
+    DynamicDory,
 }

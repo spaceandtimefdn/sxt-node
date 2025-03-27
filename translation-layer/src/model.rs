@@ -7,6 +7,7 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::smartcontracts::{
     NormalContract,
     ProxyContract,
 };
+use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_runtime::Runtime;
 use utoipa::ToSchema;
 
 use crate::utils::{convert_event_details_to_chain, string_to_source};
@@ -170,6 +171,12 @@ pub struct TableRequest {
     pub schema_name: String,
     /// The Data Definition Language (DDL) statement defining tnkhe table schema.
     pub ddl_statement: String,
+    /// commitment data
+    pub commitment: String,
+    /// snapshot location
+    pub snapshot_url: String,
+    /// commitment scheme
+    pub commitment_scheme: CommitmentScheme,
 }
 
 /// Represents quorum settings for table creation.
@@ -450,6 +457,35 @@ impl From<RuntimeTableType> for TableType {
             RuntimeTableType::SCI => TableType::SCI,
             RuntimeTableType::Community => TableType::Community,
             _ => TableType::CoreBlockchain,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone)]
+pub enum CommitmentScheme {
+    /// HyperKzg
+    HyperKzg,
+    /// dynamic dory
+    #[default]
+    DynamicDory,
+}
+
+use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::CommitmentScheme as RuntimeCommitmentScheme;
+
+impl From<CommitmentScheme> for RuntimeCommitmentScheme {
+    fn from(t: CommitmentScheme) -> Self {
+        match t {
+            CommitmentScheme::HyperKzg => RuntimeCommitmentScheme::HyperKzg,
+            CommitmentScheme::DynamicDory => RuntimeCommitmentScheme::DynamicDory,
+        }
+    }
+}
+
+impl From<RuntimeCommitmentScheme> for CommitmentScheme {
+    fn from(t: RuntimeCommitmentScheme) -> Self {
+        match t {
+            RuntimeCommitmentScheme::DynamicDory => CommitmentScheme::DynamicDory,
+            RuntimeCommitmentScheme::HyperKzg => CommitmentScheme::HyperKzg,
         }
     }
 }

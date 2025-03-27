@@ -22,7 +22,10 @@ pub mod pallet {
     use frame_support::pallet_prelude::{StorageDoubleMap, ValueQuery, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
-    use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
+    use proof_of_sql_commitment_map::{
+        TableCommitmentBytes,
+        TableCommitmentBytesPerCommitmentScheme,
+    };
     use sp_runtime::Vec;
     use sxt_core::permissions::*;
     use sxt_core::tables::{
@@ -35,6 +38,8 @@ pub mod pallet {
         uuids_from_create_statement,
         uuids_from_sqlparser,
         ColumnUuidList,
+        CommitmentBytes,
+        CommitmentScheme,
         CreateStatement,
         IdentifierList,
         IndexerMode,
@@ -220,6 +225,15 @@ pub mod pallet {
 
         /// The desired table could not be located
         TableNotFound,
+
+        /// missing commitment scheme
+        MissingCommitmentScheme,
+
+        /// Error constructing a bounded vector for the given data
+        BoundedVecError,
+
+        /// Missing snapshot
+        MissingSnapshot,
     }
 
     #[pallet::call]
@@ -541,24 +555,69 @@ pub mod pallet {
 
             let tables_with_meta_columns = tables
                 .into_iter()
-                .map(|(identifier, statement, table_type)| {
-                    Self::insert_schema(identifier.clone(), statement.clone(), table_type.clone());
-
-                    let create_table = create_statement_to_sqlparser(statement)
-                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
-
-                    let CreateTableAndCommitmentMetadata {
-                    table_with_meta_columns,
-                    ..
-                } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(
-                    create_table,
-                )?;
-
-                    let statement_with_metadata =
-                        sqlparser_to_create_statement(table_with_meta_columns)
+                .map(
+                    |(identifier, statement, table_type, commitment_opt, snapshot_url_opt, commitment_scheme_opt)| {
+                        Self::insert_schema(
+                            identifier.clone(),
+                            statement.clone(),
+                            table_type.clone(),
+                        );
+        
+                        let create_table = create_statement_to_sqlparser(statement)
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
-                    Ok((identifier, statement_with_metadata, table_type))
-                })
+        
+                        let CreateTableAndCommitmentMetadata {
+                            table_with_meta_columns,
+                            ..
+                        } = match commitment_opt {
+                            None => {
+                                pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(create_table)?
+                            }
+                            Some(ref commitment) => {
+                                let raw_bytes = commitment.clone().into_inner();
+                                let data = BoundedVec::try_from(raw_bytes).map_err(|e| Error::<T>::BoundedVecError)?;
+                                let commitment = TableCommitmentBytes { data };
+                                
+                                // Build `per_commitment_scheme` based on `commitment_scheme_opt`
+                                let per_commitment_scheme = match commitment_scheme_opt {
+                                    Some(CommitmentScheme::HyperKzg) => TableCommitmentBytesPerCommitmentScheme {
+                                        hyper_kzg: Some(commitment.clone()),
+                                        dynamic_dory: None,
+                                    },
+                                    Some(CommitmentScheme::DynamicDory) => TableCommitmentBytesPerCommitmentScheme {
+                                        hyper_kzg: None,
+                                        dynamic_dory: Some(commitment.clone()),
+                                    },
+                                    None => return Err(Error::<T>::MissingCommitmentScheme.into()),
+                                }; 
+                                        
+                                match snapshot_url_opt {
+                                    Some(ref snapshot) => Snapshots::<T>::insert(identifier.clone(), snapshot.clone()),
+                                    None => return Err(Error::<T>::MissingSnapshot.into()),
+                                };
+
+                                pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
+                                    create_table,
+                                    per_commitment_scheme,
+                                )?
+
+                                                           }
+                        };
+        
+                        let statement_with_metadata =
+                            sqlparser_to_create_statement(table_with_meta_columns)
+                                .map_err(|_| Error::<T>::CreateStatementParseError)?;
+        
+                        Ok((
+                            identifier,
+                            statement_with_metadata,
+                            table_type,
+                            commitment_opt,
+                            snapshot_url_opt,
+                            commitment_scheme_opt,
+                        ))
+                    },
+                )
                 .collect::<Result<Vec<_>, DispatchError>>()?
                 .try_into()
                 .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");

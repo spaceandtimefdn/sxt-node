@@ -159,14 +159,20 @@ async fn main() -> anyhow::Result<()> {
 }
 
 #[derive(OpenApi)]
-#[openapi(paths(
-    api::smartcontracts::add_smartcontract,
-    api::smartcontracts::remove_smartcontract,
-    api::smartcontracts::get_smartcontract,
-    api::smartcontracts::get_smartcontracts,
-    api::tables::create_table,
-    api::tables::drop_table,
-    api::extrinsics::get_extrinsic_status_in_block,
-    api::extrinsics::get_extrinsic_status,
-))]
+#[openapi(
+    paths(
+        api::smartcontracts::add_smartcontract,
+        api::smartcontracts::remove_smartcontract,
+        api::smartcontracts::get_smartcontract,
+        api::smartcontracts::get_smartcontracts,
+        api::tables::create_table,
+        api::tables::drop_table,
+        api::extrinsics::get_extrinsic_status_in_block,
+        api::extrinsics::get_extrinsic_status,
+    ),
+    servers(
+        (url = "/api/mainnet", description = "Mainnet API"),
+        (url = "/api/testnet", description = "Testnet API")
+    )
+)]
 struct ApiDoc;

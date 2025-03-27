@@ -12,6 +12,16 @@
         },
         "version": "0.1.0"
     },
+    "servers": [
+        {
+            "url": "/api/mainnet",
+            "description": "Mainnet API"
+        },
+        {
+            "url": "/api/testnet",
+            "description": "Testnet API"
+        }
+    ],
     "paths": {
         "/add_smartcontract": {
             "post": {
@@ -468,11 +478,12 @@
                 "oneOf": [
                     {
                         "type": "object",
-                        "description": "A standard smart contract.",
+                        "description": "A normal contract",
                         "required": [
                             "source",
                             "address",
                             "events",
+                            "tables",
                             "type"
                         ],
                         "properties": {
@@ -521,6 +532,10 @@
                                 "description": "The block number from which to start indexing.",
                                 "minimum": 0
                             },
+                            "tables": {
+                                "$ref": "#/components/schemas/CreateTableRequest",
+                                "description": "The tables to create along with this smartcontract"
+                            },
                             "target_schema": {
                                 "type": [
                                     "string",
@@ -544,6 +559,7 @@
                             "address",
                             "implementation_address",
                             "events",
+                            "tables",
                             "type"
                         ],
                         "properties": {
@@ -596,6 +612,10 @@
                                 "description": "The block number from which to start indexing.",
                                 "minimum": 0
                             },
+                            "tables": {
+                                "$ref": "#/components/schemas/CreateTableRequest",
+                                "description": "The tables to create along with this smartcontract"
+                            },
                             "target_schema": {
                                 "type": [
                                     "string",
@@ -612,7 +632,7 @@
                         }
                     }
                 ],
-                "description": "Represents a request to add a smart contract to the indexing system."
+                "description": "Represents a request to add a smart contract to the indexing system.\nA standard smart contract."
             },
             "ApiContract": {
                 "oneOf": [
@@ -795,37 +815,39 @@
                     }
                 }
             },
+            "CommitmentScheme": {
+                "type": "string",
+                "enum": [
+                    "HyperKzg",
+                    "DynamicDory"
+                ]
+            },
             "CreateTableRequest": {
                 "type": "object",
                 "description": "Represents a request to create tables for storing indexed data.",
                 "required": [
                     "schemaName",
                     "ddlStatement",
-                    "source",
-                    "mode",
                     "tables",
-                    "tableName"
+                    "tableName",
+                    "tableType"
                 ],
                 "properties": {
                     "ddlStatement": {
                         "type": "string",
                         "description": "Schema level DDL statement"
                     },
-                    "mode": {
-                        "type": "string",
-                        "description": "The indexing mode for the table."
-                    },
                     "schemaName": {
                         "type": "string",
                         "description": "Schema name"
                     },
-                    "source": {
-                        "type": "string",
-                        "description": "The source blockchain network."
-                    },
                     "tableName": {
                         "type": "string",
                         "description": "The table name."
+                    },
+                    "tableType": {
+                        "$ref": "#/components/schemas/TableType",
+                        "description": "The table type"
                     },
                     "tables": {
                         "type": "array",
@@ -843,7 +865,8 @@
                     "schemaName",
                     "tableName",
                     "source",
-                    "mode"
+                    "mode",
+                    "tableType"
                 ],
                 "properties": {
                     "mode": {
@@ -861,6 +884,10 @@
                     "tableName": {
                         "type": "string",
                         "description": "The table name to drop."
+                    },
+                    "tableType": {
+                        "$ref": "#/components/schemas/TableType",
+                        "description": "Table type"
                     }
                 }
             },
@@ -970,9 +997,20 @@
                 "required": [
                     "tableName",
                     "schemaName",
-                    "ddlStatement"
+                    "ddlStatement",
+                    "commitment",
+                    "snapshotUrl",
+                    "commitmentScheme"
                 ],
                 "properties": {
+                    "commitment": {
+                        "type": "string",
+                        "description": "commitment data"
+                    },
+                    "commitmentScheme": {
+                        "$ref": "#/components/schemas/CommitmentScheme",
+                        "description": "commitment scheme"
+                    },
                     "ddlStatement": {
                         "type": "string",
                         "description": "The Data Definition Language (DDL) statement defining tnkhe table schema."
@@ -981,11 +1019,24 @@
                         "type": "string",
                         "description": "The namespace of the table."
                     },
+                    "snapshotUrl": {
+                        "type": "string",
+                        "description": "snapshot location"
+                    },
                     "tableName": {
                         "type": "string",
                         "description": "The table name."
                     }
                 }
+            },
+            "TableType": {
+                "type": "string",
+                "description": "Represents the type of a table being created or referenced within the translation layer.\n\nThis enum categorizes tables based on their intended usage and ownership model.\nIt is used to determine how data should be interpreted, stored, or indexed\nacross different subsystems.\n\n# Variants\n- `CoreBlockchain`: A default system table directly tied to the core blockchain state.\n- `SCI`: A table used for indexing smart contract events and data (Smart Contract Indexing).\n- `Community`: A table managed or curated by the community or external contributors.",
+                "enum": [
+                    "CoreBlockchain",
+                    "SCI",
+                    "Community"
+                ]
             },
             "TxExecutionStatus": {
                 "type": "object",

@@ -29,6 +29,7 @@ sp-runtime = {default-features = false, workspace = true}
 sp-core.workspace = true
 pallet-commitments.workspace = true
 proof-of-sql-commitment-map.workspace = true
+bincode = { workspace = true, features = ["serde", "alloc"] }
 
 [dev-dependencies]
 sp-core = { default-features = true, workspace = true }

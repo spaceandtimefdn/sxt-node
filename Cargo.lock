@@ -11252,6 +11252,7 @@ dependencies = [
 name = "pallet-tables"
 version = "0.1.0"
 dependencies = [
+ "bincode 2.0.0",
  "commitment-sql",
  "frame-benchmarking",
  "frame-support",
@@ -19377,6 +19378,7 @@ dependencies = [
  "anyhow",
  "arrow 54.2.1",
  "axum 0.8.1",
+ "base64 0.21.7",
  "clap 4.5.31",
  "env_logger 0.11.6",
  "futures",
