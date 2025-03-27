@@ -62,6 +62,8 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// A smart contract was added to storage.
         SmartContractAdded {
+            /// owner
+            owner: Option<T::AccountId>,
             /// Source chain
             source: Source,
             /// Address
@@ -70,6 +72,8 @@ pub mod pallet {
 
         /// A smart contract was removed from storage.
         SmartContractRemoved {
+            /// owner
+            owner: Option<T::AccountId>,
             /// Source chain
             source: Source,
             /// Address
@@ -105,8 +109,8 @@ pub mod pallet {
             address: ContractAddress,
         ) -> DispatchResult {
             // Ensure the caller is a signed user with proper permissions
-            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin,
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
                 &PermissionLevel::SmartContractsPallet(SmartContractsPalletPermission::UpdateABI),
             )?;
 
@@ -114,7 +118,11 @@ pub mod pallet {
             ContractStorage::<T>::remove(&source, &address);
 
             // Emit an event indicating the contract was removed
-            Self::deposit_event(Event::SmartContractRemoved { source, address });
+            Self::deposit_event(Event::SmartContractRemoved {
+                owner,
+                source,
+                address,
+            });
 
             Ok(())
         }
@@ -137,7 +145,7 @@ pub mod pallet {
             tables: UpdateTableList,
         ) -> DispatchResult {
             // Ensure the caller is a signed user with proper permissions
-            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),
                 &PermissionLevel::SmartContractsPallet(SmartContractsPalletPermission::UpdateABI),
             )?;
@@ -160,7 +168,11 @@ pub mod pallet {
 
             ContractStorage::<T>::insert(source.clone(), address.clone(), contract);
 
-            Self::deposit_event(Event::SmartContractAdded { source, address });
+            Self::deposit_event(Event::SmartContractAdded {
+                owner,
+                source,
+                address,
+            });
 
             pallet_tables::Pallet::<T>::create_tables_inner(origin, tables)?;
             Ok(())

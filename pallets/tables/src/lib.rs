@@ -81,7 +81,7 @@ pub mod pallet {
         },
 
         /// The schema for a table has been updated
-        SchemaUpdated(UpdateTableList),
+        SchemaUpdated(Option<T::AccountId>, UpdateTableList),
 
         /// Tables have been created with known commitments
         TablesCreatedWithCommitments {
@@ -92,7 +92,7 @@ pub mod pallet {
         },
 
         /// A table has been successfully dropped
-        TableDropped(TableType, TableIdentifier),
+        TableDropped(Option<T::AccountId>, TableType, TableIdentifier),
     }
 
     /// A Map of Column UUIDs by Table Identifier and Version
@@ -365,13 +365,13 @@ pub mod pallet {
             table_type: TableType,
             ident: TableIdentifier,
         ) -> DispatchResult {
-            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin,
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
             )?;
 
             Self::drop_single_table(table_type.clone(), ident.clone())?;
-            Self::deposit_event(Event::<T>::TableDropped(table_type, ident));
+            Self::deposit_event(Event::<T>::TableDropped(owner, table_type, ident));
 
             Ok(())
         }
@@ -537,8 +537,8 @@ pub mod pallet {
             origin: OriginFor<T>,
             tables: UpdateTableList,
         ) -> DispatchResult {
-            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin,
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
             )?;
 
@@ -566,7 +566,7 @@ pub mod pallet {
                 .try_into()
                 .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
 
-            Self::deposit_event(Event::<T>::SchemaUpdated(tables_with_meta_columns));
+            Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
 
             Ok(())
         }

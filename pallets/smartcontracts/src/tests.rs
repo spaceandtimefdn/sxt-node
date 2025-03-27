@@ -89,6 +89,7 @@ fn add_smartcontract_works() {
         // Verify event emitted
         System::assert_has_event(
             Event::SmartContractAdded {
+                owner: Some(who),
                 source,
                 address: contract_address,
             }
@@ -149,6 +150,7 @@ fn add_proxy_smartcontract_works() {
         // Verify event emitted
         System::assert_has_event(
             Event::SmartContractAdded {
+                owner: Some(who),
                 source,
                 address: proxy_address,
             }
@@ -249,6 +251,7 @@ fn remove_smartcontract_works() {
         // Verify event emitted
         System::assert_last_event(
             Event::SmartContractRemoved {
+                owner: Some(who),
                 source,
                 address: contract_address,
             }
