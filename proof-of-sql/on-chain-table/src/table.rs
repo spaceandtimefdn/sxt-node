@@ -150,6 +150,17 @@ impl OnChainTable {
 
     /// Attempts to retrieve the values for a given VarChar column name
     /// Returns None if the provided column does not exist
+    pub fn get_bytes_by_column(&self, column_name: &str) -> Option<&Vec<Vec<u8>>> {
+        let column_id: Ident = Ident::new(column_name.to_uppercase());
+        let column = self.as_map().get(&column_id)?;
+        match column {
+            OnChainColumn::VarBinary(values) => Some(values),
+            _ => None,
+        }
+    }
+
+    /// Attempts to retrieve the values for a given VarChar column name
+    /// Returns None if the provided column does not exist
     pub fn get_varchars_by_column(&self, column_name: &str) -> Option<&Vec<alloc::string::String>> {
         let column_id: Ident = Ident::new(column_name.to_uppercase());
         let column = self.as_map().get(&column_id)?;
