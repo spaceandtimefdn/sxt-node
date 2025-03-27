@@ -17,6 +17,7 @@ use sp_core::Hasher;
 use sp_runtime::BoundedVec;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{
+    CommitmentScheme,
     CreateStatement,
     InsertQuorumSize,
     QuorumScope,
@@ -113,9 +114,16 @@ fn inserting_data_succeeds_when_data_is_good() {
         let (table_id, test_create) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(table_id.clone(), test_create, TableType::CoreBlockchain)]
-                .try_into()
-                .unwrap(),
+            vec![(
+                table_id.clone(),
+                test_create,
+                TableType::CoreBlockchain,
+                None,
+                None,
+                None,
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
 
@@ -155,9 +163,16 @@ fn submission_fails_when_data_is_already_submitted() {
         let (table_id, test_create) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(table_id.clone(), test_create, TableType::CoreBlockchain)]
-                .try_into()
-                .unwrap(),
+            vec![(
+                table_id.clone(),
+                test_create,
+                TableType::CoreBlockchain,
+                None,
+                None,
+                None,
+            )]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
         let signer = RuntimeOrigin::signed(1);
@@ -245,6 +260,9 @@ fn data_is_decided_on_after_required_submissions() {
                 table_id.clone(),
                 create_statement.clone(),
                 TableType::CoreBlockchain,
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -322,6 +340,9 @@ fn correct_data_is_decided_on_after_required_submissions() {
                 table_id.clone(),
                 create_statement.clone(),
                 TableType::CoreBlockchain,
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -421,6 +442,9 @@ fn inserting_data_fails_when_data_is_empty() {
                 test_identifier.clone(),
                 create_statement.clone(),
                 TableType::CoreBlockchain,
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -465,6 +489,9 @@ fn inserting_data_fails_when_table_name_is_empty() {
                 test_identifier.clone(),
                 create_statement.clone(),
                 TableType::CoreBlockchain,
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -506,6 +533,9 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
                 test_identifier.clone(),
                 create_statement.clone(),
                 TableType::CoreBlockchain,
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -544,6 +574,9 @@ fn inserting_data_fails_when_batch_id_is_empty() {
                 test_identifier.clone(),
                 create_statement.clone(),
                 TableType::CoreBlockchain,
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -573,6 +606,9 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
                 table_id.clone(),
                 create_statement.clone(),
                 TableType::CoreBlockchain,
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -642,6 +678,9 @@ fn submit_data_with_mothership_key_work() {
                 test_identifier.clone(),
                 test_create.clone(),
                 TableType::CoreBlockchain,
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -705,6 +744,9 @@ fn we_can_reach_privileged_quorum() {
                     public: None,
                     privileged: Some(0),
                 }),
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -761,6 +803,9 @@ fn we_can_manage_quorum_state_for_both_scopes() {
                     public: Some(2),
                     privileged: Some(1),
                 }),
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -857,6 +902,9 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_one_quorum_reached_ev
                     public: Some(0),
                     privileged: Some(0),
                 }),
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -924,6 +972,9 @@ fn we_cannot_submit_for_table_disabled_quorum_scope() {
                     public: None,
                     privileged: Some(0),
                 }),
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),
@@ -974,6 +1025,9 @@ fn we_cannot_submit_with_privilege_to_different_table() {
                     public: None,
                     privileged: Some(0),
                 }),
+                None,
+                None,
+                None,
             )]
             .try_into()
             .unwrap(),

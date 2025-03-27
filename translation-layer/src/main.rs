@@ -13,7 +13,7 @@ use translation_layer::state::{Network, TranslationLayerState};
 use translation_layer::tx_progress::TxProgressDb;
 use translation_layer::tx_submitter::TxSubmitter;
 use translation_layer::{api, signer};
-use utoipa::OpenApi;
+use utoipa::{Modify, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
 
 /// Translation Layer CLI
@@ -159,20 +159,34 @@ async fn main() -> anyhow::Result<()> {
 }
 
 #[derive(OpenApi)]
-#[openapi(
-    paths(
-        api::smartcontracts::add_smartcontract,
-        api::smartcontracts::remove_smartcontract,
-        api::smartcontracts::get_smartcontract,
-        api::smartcontracts::get_smartcontracts,
-        api::tables::create_table,
-        api::tables::drop_table,
-        api::extrinsics::get_extrinsic_status_in_block,
-        api::extrinsics::get_extrinsic_status,
-    ),
-    servers(
-        (url = "/api/mainnet", description = "Mainnet API"),
-        (url = "/api/testnet", description = "Testnet API")
-    )
-)]
+#[openapi(paths(
+    api::smartcontracts::add_smartcontract,
+    api::smartcontracts::remove_smartcontract,
+    api::smartcontracts::get_smartcontract,
+    api::smartcontracts::get_smartcontracts,
+    api::tables::create_table,
+    api::tables::drop_table,
+    api::extrinsics::get_extrinsic_status_in_block,
+    api::extrinsics::get_extrinsic_status,
+), modifiers(&AddRoutePrefixes))]
 struct ApiDoc;
+
+struct AddRoutePrefixes;
+
+impl Modify for AddRoutePrefixes {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        let original_paths = std::mem::take(&mut openapi.paths.paths);
+
+        for (path, path_item) in original_paths {
+            openapi
+                .paths
+                .paths
+                .insert(format!("/api/mainnet{}", path), path_item.clone());
+
+            openapi
+                .paths
+                .paths
+                .insert(format!("/api/testnet{}", path), path_item);
+        }
+    }
+}
