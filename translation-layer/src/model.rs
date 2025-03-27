@@ -471,23 +471,3 @@ pub enum CommitmentScheme {
     #[default]
     DynamicDory,
 }
-
-use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::CommitmentScheme as RuntimeCommitmentScheme;
-
-impl From<CommitmentScheme> for RuntimeCommitmentScheme {
-    fn from(t: CommitmentScheme) -> Self {
-        match t {
-            CommitmentScheme::HyperKzg => RuntimeCommitmentScheme::HyperKzg,
-            CommitmentScheme::DynamicDory => RuntimeCommitmentScheme::DynamicDory,
-        }
-    }
-}
-
-impl From<RuntimeCommitmentScheme> for CommitmentScheme {
-    fn from(t: RuntimeCommitmentScheme) -> Self {
-        match t {
-            RuntimeCommitmentScheme::DynamicDory => CommitmentScheme::DynamicDory,
-            RuntimeCommitmentScheme::HyperKzg => CommitmentScheme::HyperKzg,
-        }
-    }
-}

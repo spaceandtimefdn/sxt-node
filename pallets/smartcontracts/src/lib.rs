@@ -21,10 +21,11 @@ pub mod pallet {
     use frame_support::pallet_prelude::{OptionQuery, StorageDoubleMap, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
+    use pallet_tables::UpdateTableList;
     use scale_info::prelude::boxed::Box;
     use sxt_core::permissions::{PermissionLevel, SmartContractsPalletPermission};
     use sxt_core::smartcontracts::{Contract, ContractAddress};
-    use sxt_core::tables::{Source, UpdateTableList};
+    use sxt_core::tables::Source;
 
     use super::*;
 

@@ -1,10 +1,10 @@
 use frame_support::assert_ok;
 use pallet_permissions::Pallet;
 use sxt_core::permissions::{PermissionLevel, PermissionList, TablesPalletPermission};
-use sxt_core::tables::{SourceAndMode, UpdateTableList};
+use sxt_core::tables::SourceAndMode;
 
 use crate::mock::*;
-use crate::CreateTableList;
+use crate::{CreateTableList, UpdateTableList};
 
 // Give $who permission $p
 macro_rules! set_permission {

@@ -323,16 +323,6 @@ impl InsertQuorumSize {
 /// A table commitment
 pub type CommitmentBytes = BoundedVec<u8, ConstU32<8192>>;
 
-/// TODO: add docs
-pub type UpdateTableCmd = (
-    TableIdentifier,
-    CreateStatement,
-    TableType,
-    Option<CommitmentBytes>,
-    Option<SnapshotUrl>,
-    Option<CommitmentScheme>,
-);
-
 #[derive(
     Clone,
     Encode,
@@ -359,9 +349,6 @@ pub struct UpdateTableRequest {
     /// The uuid of the namespace. It will be automatically generated if not supplied
     pub namespace_uuid: Option<TableUuid>,
 }
-
-/// TODO: add docs
-pub type UpdateTableList = BoundedVec<UpdateTableCmd, ConstU32<MAX_TABLES_PER_SCHEMA>>;
 
 /// The maximum number of identifiers allowed per source and mode.
 /// This constant defines an upper limit for the number of `TableIdentifier` elements

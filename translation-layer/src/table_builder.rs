@@ -1,7 +1,9 @@
 use subxt::tx::DefaultPayload;
-use sxt_chain_runtime::api::runtime_types::sxt_core::tables::CommitmentScheme as RuntimeCommitmentScheme;
 use sxt_core::sxt_chain_runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
+use sxt_core::sxt_chain_runtime::api::runtime_types::pallet_tables::pallet::CommitmentCreationCmd;
+use sxt_core::sxt_chain_runtime::api::runtime_types::proof_of_sql_commitment_map::commitment_scheme::{CommitmentSchemeFlags, PerCommitmentScheme};
+use sxt_core::sxt_chain_runtime::api::runtime_types::proof_of_sql_commitment_map::commitment_storage_map::TableCommitmentBytes;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
     TableIdentifier,
     TableType,
@@ -16,7 +18,7 @@ pub struct TableBuilder<'a> {
     ddl_statement: BoundedVec<u8>,
     parent: &'a mut TableCreator,
     table_type: TableType,
-    commitment_scheme: Option<RuntimeCommitmentScheme>,
+    commitment_scheme: Option<CommitmentScheme>,
     snapshot_url: Option<BoundedVec<u8>>,
     commitment: Option<BoundedVec<u8>>,
 }
@@ -59,16 +61,19 @@ impl<'a> TableBuilder<'a> {
         self
     }
 
+    /// scheme
     pub fn commitment_scheme(mut self, scheme: CommitmentScheme) -> Self {
         self.commitment_scheme = Some(scheme.into());
         self
     }
 
+    /// snapshot
     pub fn snapshot_url(mut self, snapshot_url: &str) -> Self {
         self.snapshot_url = Some(BoundedVec(snapshot_url.as_bytes().to_vec()));
         self
     }
 
+    /// commitment as base64 hex
     pub fn commitment(mut self, commitment: &[u8]) -> Self {
         self.commitment = Some(BoundedVec(commitment.to_vec()));
         self
@@ -76,28 +81,45 @@ impl<'a> TableBuilder<'a> {
 
     /// Finalizes the table configuration and adds it to the parent `TableCreator`.
     pub fn add(self) -> &'a mut TableCreator {
-        self.parent.tables.push((
-            self.identifier,
-            self.ddl_statement,
-            self.table_type,
-            self.commitment,
-            self.snapshot_url,
-            self.commitment_scheme,
-        ));
+        let commitment = match (self.commitment_scheme, self.commitment, self.snapshot_url) {
+            (Some(scheme), Some(commitment), Some(snapshot)) => {
+                let bytes = TableCommitmentBytes { data: commitment };
+                let scheme = match scheme {
+                    CommitmentScheme::HyperKzg => PerCommitmentScheme {
+                        hyper_kzg: Some(bytes),
+                        dynamic_dory: None,
+                        __ignore: std::marker::PhantomData,
+                    },
+                    CommitmentScheme::DynamicDory => PerCommitmentScheme {
+                        hyper_kzg: None,
+                        dynamic_dory: Some(bytes),
+                        __ignore: std::marker::PhantomData,
+                    },
+                };
+
+                CommitmentCreationCmd::FromSnapshot(snapshot, scheme)
+            }
+            (None, None, None) => CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                hyper_kzg: false,
+                dynamic_dory: true,
+            }),
+            _ => unimplemented!("need to update scheme selections"),
+        };
+
+        let request = sxt_chain_runtime::api::runtime_types::pallet_tables::pallet::UpdateTable {
+            ident: self.identifier,
+            create_statement: self.ddl_statement,
+            table_type: self.table_type,
+            commitment,
+        };
+        self.parent.tables.push(request);
         self.parent
     }
 }
 
 /// A creator for defining multiple tables and building an `UpdateTables` payload.
 pub struct TableCreator {
-    tables: Vec<(
-        TableIdentifier,
-        BoundedVec<u8>,
-        TableType,
-        Option<BoundedVec<u8>>,
-        Option<BoundedVec<u8>>,
-        Option<RuntimeCommitmentScheme>,
-    )>,
+    tables: Vec<sxt_chain_runtime::api::runtime_types::pallet_tables::pallet::UpdateTable>,
 }
 
 impl TableCreator {
@@ -121,14 +143,7 @@ impl TableCreator {
     /// Get the list of tables without finishing the builder
     pub fn tables(
         self,
-    ) -> Vec<(
-        TableIdentifier,
-        BoundedVec<u8>,
-        TableType,
-        Option<BoundedVec<u8>>,
-        Option<BoundedVec<u8>>,
-        Option<RuntimeCommitmentScheme>,
-    )> {
+    ) -> Vec<sxt_chain_runtime::api::runtime_types::pallet_tables::pallet::UpdateTable> {
         self.tables
     }
 }

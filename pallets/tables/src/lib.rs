@@ -23,6 +23,7 @@ pub mod pallet {
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
     use proof_of_sql_commitment_map::{
+        CommitmentSchemeFlags,
         TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
     };
@@ -53,11 +54,39 @@ pub mod pallet {
         TableType,
         TableUuid,
         TableVersion,
-        UpdateTableList,
     };
     use sxt_core::ByteString;
 
     use super::*;
+
+    /// TODO: add docs
+    pub type UpdateTableCmd = (
+        TableIdentifier,
+        CreateStatement,
+        TableType,
+        Option<CommitmentBytes>,
+        Option<SnapshotUrl>,
+        Option<CommitmentScheme>,
+    );
+
+    /// todo 
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    pub struct UpdateTable {
+        pub ident: TableIdentifier,
+        pub create_statement: CreateStatement,
+        pub table_type: TableType,
+        pub commitment: CommitmentCreationCmd,
+    }
+
+    /// TODO: add docs
+    pub type UpdateTableList = BoundedVec<UpdateTable, ConstU32<1024>>;
+
+    /// todo 
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    pub enum CommitmentCreationCmd {
+        FromSnapshot(SnapshotUrl, TableCommitmentBytesPerCommitmentScheme),
+        Empty(CommitmentSchemeFlags),
+    }
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -555,69 +584,40 @@ pub mod pallet {
 
             let tables_with_meta_columns = tables
                 .into_iter()
-                .map(
-                    |(identifier, statement, table_type, commitment_opt, snapshot_url_opt, commitment_scheme_opt)| {
-                        Self::insert_schema(
-                            identifier.clone(),
-                            statement.clone(),
-                            table_type.clone(),
-                        );
-        
-                        let create_table = create_statement_to_sqlparser(statement)
-                            .map_err(|_| Error::<T>::CreateStatementParseError)?;
-        
-                        let CreateTableAndCommitmentMetadata {
-                            table_with_meta_columns,
-                            ..
-                        } = match commitment_opt {
-                            None => {
-                                pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(create_table)?
-                            }
-                            Some(ref commitment) => {
-                                let raw_bytes = commitment.clone().into_inner();
-                                let data = BoundedVec::try_from(raw_bytes).map_err(|e| Error::<T>::BoundedVecError)?;
-                                let commitment = TableCommitmentBytes { data };
-                                
-                                // Build `per_commitment_scheme` based on `commitment_scheme_opt`
-                                let per_commitment_scheme = match commitment_scheme_opt {
-                                    Some(CommitmentScheme::HyperKzg) => TableCommitmentBytesPerCommitmentScheme {
-                                        hyper_kzg: Some(commitment.clone()),
-                                        dynamic_dory: None,
-                                    },
-                                    Some(CommitmentScheme::DynamicDory) => TableCommitmentBytesPerCommitmentScheme {
-                                        hyper_kzg: None,
-                                        dynamic_dory: Some(commitment.clone()),
-                                    },
-                                    None => return Err(Error::<T>::MissingCommitmentScheme.into()),
-                                }; 
-                                        
-                                match snapshot_url_opt {
-                                    Some(ref snapshot) => Snapshots::<T>::insert(identifier.clone(), snapshot.clone()),
-                                    None => return Err(Error::<T>::MissingSnapshot.into()),
-                                };
+                .map(|mut table| {
+                    Self::insert_schema(
+                        table.ident.clone(),
+                        table.create_statement.clone(),
+                        table.table_type.clone(),
+                    );
 
+                    let create_table = create_statement_to_sqlparser(table.create_statement.clone())
+                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+                    let CreateTableAndCommitmentMetadata {
+                        table_with_meta_columns,
+                        ..
+                    } = match table.commitment {
+                        CommitmentCreationCmd::Empty(scheme) => pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_scheme(create_table, scheme)?,
+                        CommitmentCreationCmd::FromSnapshot(ref snapshot_url, ref per_commitment_scheme) => {
+                            Snapshots::<T>::insert(table.ident.clone(), snapshot_url.clone());
+             
                                 pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
                                     create_table,
-                                    per_commitment_scheme,
+                                    per_commitment_scheme.clone(),
                                 )?
 
-                                                           }
-                        };
-        
-                        let statement_with_metadata =
-                            sqlparser_to_create_statement(table_with_meta_columns)
-                                .map_err(|_| Error::<T>::CreateStatementParseError)?;
-        
-                        Ok((
-                            identifier,
-                            statement_with_metadata,
-                            table_type,
-                            commitment_opt,
-                            snapshot_url_opt,
-                            commitment_scheme_opt,
-                        ))
-                    },
-                )
+                        },
+                    };
+
+                    let statement_with_metadata =
+                        sqlparser_to_create_statement(table_with_meta_columns)
+                            .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+                    table.create_statement = statement_with_metadata;
+                    
+                    Ok(table)
+                })
                 .collect::<Result<Vec<_>, DispatchError>>()?
                 .try_into()
                 .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
