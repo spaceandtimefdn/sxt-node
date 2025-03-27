@@ -33,19 +33,18 @@ on-chain-table = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
 spin.workspace = true
 sp-io.workspace = true
+hex.workspace = true
 
 [dev-dependencies]
-hex.workspace = true
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
 frame-election-provider-support.workspace = true
 pallet-staking-reward-curve.workspace = true
+pallet-authorship.workspace = true
 pallet-timestamp.workspace = true
 pallet-balances.workspace = true
 pallet-staking.workspace = true
 pallet-grandpa.workspace = true
 pallet-babe.workspace = true
-pallet-offences.workspace = true
-pallet-authorship.workspace = true
 pallet-authority-discovery.workspace = true
 pallet-permissions.workspace = true
 sp-authority-discovery.workspace = true
@@ -69,9 +68,6 @@ std = [
 	"pallet-balances/std",
 	"pallet-commitments/std",
 	"pallet-staking/std",
-	"pallet-grandpa/std",
-	"pallet-babe/std",
-	"pallet-authority-discovery/std",
 	"sxt-core/std",
 	"sp-runtime/std",
 	"on-chain-table/std",

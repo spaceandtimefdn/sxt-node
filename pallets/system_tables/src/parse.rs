@@ -9,13 +9,14 @@ use sp_core::U256;
 use sxt_core::tables::TableIdentifier;
 
 use crate::parse::SystemFieldType::{Decimal, Varchar};
-use crate::parse::SystemRequestType::StakingRequest;
+use crate::parse::SystemRequestType::{Message, Staking};
 
 /// Supported types of system requests, typically originating from data submissions
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum SystemRequestType {
-    StakingRequest(StakingSystemRequest),
-    ZkPayRequest,
+    Message,
+    Staking(StakingSystemRequest),
+    ZkPay,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -58,6 +59,7 @@ impl SystemRequest {
 #[derive(Clone)]
 enum SystemFieldType {
     Varchar,
+    Bytes,
     Decimal,
 }
 
@@ -65,6 +67,7 @@ enum SystemFieldType {
 #[derive(Clone)]
 pub enum SystemFieldValue {
     Varchar(String),
+    Bytes(Vec<u8>),
     Decimal(U256),
 }
 
@@ -74,6 +77,23 @@ pub struct SystemTableField {
     pub name: String,
     pub value_type: SystemFieldType,
     pub values: Vec<SystemFieldValue>,
+}
+
+impl SystemTableField {
+    /// Returns a System Table Field with the given value and name. Useful for tests
+    pub fn with_value(name: String, value: SystemFieldValue) -> Self {
+        let value_type = match value {
+            SystemFieldValue::Varchar(_) => SystemFieldType::Varchar,
+            SystemFieldValue::Bytes(_) => SystemFieldType::Bytes,
+            SystemFieldValue::Decimal(_) => SystemFieldType::Decimal,
+        };
+
+        SystemTableField {
+            name,
+            value_type,
+            values: vec![value],
+        }
+    }
 }
 
 impl From<(&str, SystemFieldType)> for SystemTableField {
@@ -91,21 +111,26 @@ fn get_system_templates() -> &'static Vec<SystemRequest> {
     SYSTEM_TEMPLATES.call_once(|| {
         vec![
             SystemRequest {
-                request_type: StakingRequest(StakingSystemRequest::Stake),
+                request_type: Message,
                 fields: vec![
-                    ("STAKER", Varchar).into(),
-                    ("NODES", Varchar).into(),
-                    ("AMOUNT", Decimal).into(),
+                    ("SENDER", Varchar).into(),
+                    ("BODY", Varchar).into(),
+                    ("NONCE", Decimal).into(),
                 ],
+                table_id: TableIdentifier::from_str_unchecked("MESSAGE", "SXT_SYSTEM_STAKING"),
+            },
+            SystemRequest {
+                request_type: Staking(StakingSystemRequest::Stake),
+                fields: vec![("STAKER", Varchar).into(), ("AMOUNT", Decimal).into()],
                 table_id: TableIdentifier::from_str_unchecked("STAKED", "SXT_SYSTEM_STAKING"),
             },
             SystemRequest {
-                request_type: StakingRequest(StakingSystemRequest::Nominate),
+                request_type: Staking(StakingSystemRequest::Nominate),
                 fields: vec![("NOMINATOR", Varchar).into(), ("NODES", Varchar).into()],
-                table_id: TableIdentifier::from_str_unchecked("NOMINATE", "SXT_SYSTEM_STAKING"),
+                table_id: TableIdentifier::from_str_unchecked("NOMINATED", "SXT_SYSTEM_STAKING"),
             },
             SystemRequest {
-                request_type: StakingRequest(StakingSystemRequest::UnstakeInitiated),
+                request_type: Staking(StakingSystemRequest::UnstakeInitiated),
                 fields: vec![("STAKER", Varchar).into()],
                 table_id: TableIdentifier::from_str_unchecked(
                     "UNSTAKEINITIATED",
@@ -113,7 +138,7 @@ fn get_system_templates() -> &'static Vec<SystemRequest> {
                 ),
             },
             SystemRequest {
-                request_type: StakingRequest(StakingSystemRequest::UnstakeCancelled),
+                request_type: Staking(StakingSystemRequest::UnstakeCancelled),
                 fields: vec![("STAKER", Varchar).into()],
                 table_id: TableIdentifier::from_str_unchecked(
                     "UNSTAKECANCELLED",
@@ -148,6 +173,18 @@ fn parse_request_with_template(oc_table: OnChainTable, template: &SystemRequest)
                     value_type: Decimal,
                     values: data.iter().map(|v| SystemFieldValue::Decimal(*v)).collect(),
                 }),
+            SystemFieldType::Bytes => {
+                oc_table
+                    .get_bytes_by_column(&f.name)
+                    .map(|data| SystemTableField {
+                        name: f.name.clone(),
+                        value_type: SystemFieldType::Bytes,
+                        values: data
+                            .iter()
+                            .map(|v| SystemFieldValue::Bytes(v.clone()))
+                            .collect(),
+                    })
+            }
         })
         .collect();
 

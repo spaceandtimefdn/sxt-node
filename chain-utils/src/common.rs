@@ -8,10 +8,11 @@ use subxt::utils::AccountId32;
 use subxt::{OnlineClient, PolkadotConfig};
 use sxt_core::sxt_chain_runtime;
 use tokio::sync::Mutex;
+use url::Url;
 
 /// Create the subxt client
 pub(crate) async fn create_subxt_client(
-    rpc_url: &str,
+    rpc_url: &Url,
 ) -> Result<Arc<Mutex<OnlineClient<PolkadotConfig>>>, Error> {
     info!("Connecting to Substrate node at: {}", rpc_url);
 

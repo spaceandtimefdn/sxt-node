@@ -1,26 +1,18 @@
 use std::str::from_utf8;
+
 use anyhow::{anyhow, Result};
 use log::{error, info};
 use subxt::utils::H256;
 use sxt_core::sxt_chain_runtime::api::indexing::calls::types::SubmitData;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::TableIdentifier;
+
 use crate::common::create_subxt_client;
 use crate::print_batch::print_batch;
 
 /// Retrieves submit data extrinsic for a given block hash and prints the record batches
-pub async fn fetch_submissions(block_ref: &str, rpc: &str) -> Result<()> {
+pub async fn fetch_submissions(hash: H256, rpc: &url::Url) -> Result<()> {
     let client = create_subxt_client(rpc).await?;
-
     let client = client.lock().await;
-
-    let hash = if let Some(stripped) = block_ref.strip_prefix("0x") {
-        H256::from_slice(&hex::decode(stripped)?)
-    } else {
-        return Err(anyhow!(
-            "Invalid Block Hash Provided {}, expected 0x1234....",
-            block_ref
-        ));
-    };
 
     info!("Fetching submit_data extrinsics from block {:?}", hash);
 

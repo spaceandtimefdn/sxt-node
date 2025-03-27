@@ -148,7 +148,7 @@ impl OnChainTable {
         }
     }
 
-    /// Attempts to retrieve the values for a given VarChar column name
+    /// Attempts to retrieve the values for a given Bytes column name
     /// Returns None if the provided column does not exist
     pub fn get_bytes_by_column(&self, column_name: &str) -> Option<&Vec<Vec<u8>>> {
         let column_id: Ident = Ident::new(column_name.to_uppercase());

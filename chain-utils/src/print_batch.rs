@@ -17,7 +17,6 @@ pub(crate) fn print_batch(hex_encoded: &str) -> anyhow::Result<()> {
     let batch = (reader.next().unwrap())?;
 
     print_batches(&[batch.clone()])?;
-    // dbg!(&batch.schema());
-    // dbg!(&batch.num_rows());
+    dbg!(&batch.schema());
     Ok(())
 }

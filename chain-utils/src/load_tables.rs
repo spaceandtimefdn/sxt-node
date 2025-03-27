@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -26,6 +27,7 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
 };
 use sxt_core::sxt_chain_runtime::api::tx;
 use tokio::sync::Mutex;
+use url::Url;
 
 use crate::common;
 
@@ -57,8 +59,8 @@ fn extract_table_data(
         let encoded_schema = BoundedVec(statement.to_string().into_bytes());
 
         let quorum_size = InsertQuorumSize {
-            public: Some(3u8),
-            privileged: Some(0u8),
+            public: Some(0u8),
+            privileged: None,
         };
 
         return Some((table_id, encoded_schema, quorum_size));
@@ -73,10 +75,7 @@ async fn send_to_substrate(
     keypair: &Keypair,
     nonce: Arc<AtomicU64>,
 ) {
-    let table_data: Vec<_> = statements
-        .iter()
-        .filter_map(|s| extract_table_data(s))
-        .collect();
+    let table_data: Vec<_> = statements.iter().filter_map(extract_table_data).collect();
 
     let client = client.lock().await;
     let tx = tx().tables().update_tables(
@@ -106,7 +105,7 @@ async fn send_to_substrate(
 }
 
 /// Handles the `load-tables` command
-pub(crate) async fn load_tables(file: &str, private_key: &str, rpc: &str) -> anyhow::Result<()> {
+pub(crate) async fn load_tables(file: PathBuf, private_key: &str, rpc: &Url) -> anyhow::Result<()> {
     let signer = Keypair::from_uri(&SecretUri::from_str(private_key)?)?;
     let ddl_content = std::fs::read_to_string(file)?;
 

@@ -7,6 +7,7 @@ mod load_tables;
 mod print_batch;
 
 use std::io::Write;
+use std::path::PathBuf;
 use std::process;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -19,7 +20,7 @@ use arrow::util::pretty::print_batches;
 use clap::{Parser, Subcommand};
 use log::{error, info};
 use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
-use subxt::utils::AccountId32;
+use subxt::utils::{AccountId32, H256};
 use subxt::{OnlineClient, PolkadotConfig};
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
     IndexerMode,
@@ -48,7 +49,7 @@ enum Commands {
     LoadTables {
         /// Path to the SQL DDL file
         #[arg(short, long)]
-        file: String,
+        file: PathBuf,
 
         /// Private key URI to sign transactions
         #[arg(short, long)]
@@ -56,7 +57,7 @@ enum Commands {
 
         /// Node RPC endpoint
         #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
-        rpc: String,
+        rpc: url::Url,
     },
 
     /// Stub for future utility to print batch
@@ -69,12 +70,12 @@ enum Commands {
     FetchSubmissions {
         /// Block hash (0x-prefixed)
         #[arg(short, long)]
-        block: String,
+        block: H256,
 
         /// Node RPC endpoint
         #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
-        rpc: String,
-    }
+        rpc: url::Url,
+    },
 }
 
 #[tokio::main]
@@ -88,7 +89,7 @@ async fn main() {
             private_key,
             rpc,
         } => {
-            if let Err(e) = load_tables::load_tables(&file, &private_key, &rpc).await {
+            if let Err(e) = load_tables::load_tables(file, &private_key, &rpc).await {
                 error!("Failed to load tables: {}", e);
                 process::exit(1);
             }
@@ -97,11 +98,11 @@ async fn main() {
             if let Err(e) = print_batch::print_batch(row_data.as_str()) {
                 error!("Failed to print batch: {}", e);
             }
-        },
+        }
         Commands::FetchSubmissions { block, rpc } => {
-            if let Err(e) = fetch_submissions::fetch_submissions(block.as_str(), rpc.as_str()).await {
+            if let Err(e) = fetch_submissions::fetch_submissions(block, &rpc).await {
                 error!("Failed to fetch submissions: {}", e);
             }
-        },
+        }
     }
 }

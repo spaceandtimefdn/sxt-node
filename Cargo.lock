@@ -3311,6 +3311,7 @@ dependencies = [
  "subxt-signer",
  "sxt-core",
  "tokio",
+ "url",
 ]
 
 [[package]]
@@ -11122,7 +11123,6 @@ dependencies = [
  "pallet-balances",
  "pallet-commitments",
  "pallet-grandpa",
- "pallet-offences",
  "pallet-permissions",
  "pallet-session",
  "pallet-staking",

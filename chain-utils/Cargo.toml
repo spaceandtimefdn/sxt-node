@@ -19,6 +19,7 @@ anyhow.workspace = true
 hex.workspace = true
 arrow = {workspace = true, features = ["prettyprint"] }
 clap = { workspace = true, features = ["derive"] }
+url = "2.5.4"
 
 [lints]
 workspace = true

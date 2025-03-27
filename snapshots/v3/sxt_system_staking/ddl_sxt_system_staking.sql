@@ -57,3 +57,16 @@ CREATE TABLE IF NOT EXISTS SXT_SYSTEM_STAKING.UNSTAKECOMPLETED(
     sxtblocknumber bigint not null,
     primary key(block_number, event_index)
 );
+
+CREATE TABLE IF NOT EXISTS SXT_SYSTEM_STAKING.MESSAGE(
+    block_number bigint not null,
+    time_stamp timestamp not null,
+    transaction_hash varchar not null,
+    event_index int not null,
+    contract_address varchar not null,
+    decode_error varchar not null,
+    sender varchar not null,
+    body varchar not null,
+    nonce decimal(75, 0) not null,
+    primary key(block_number, event_index)
+);

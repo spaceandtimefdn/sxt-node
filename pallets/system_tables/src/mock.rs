@@ -53,7 +53,7 @@ impl frame_system::Config for Test {
 pub const MAX_AUTHORITIES: u32 = 100_000u32;
 
 parameter_types! {
-    pub EpochDuration: u64 = 50 as u64;
+    pub EpochDuration: u64 = 50;
     pub const ExpectedBlockTime: u64 = 4000;
     pub ReportLongevity: u64 = 100;
 }
