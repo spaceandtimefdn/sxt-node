@@ -1,3 +1,25 @@
+# [0.92.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.91.0...v0.92.0) (2025-03-28)
+
+
+### Bug Fixes
+
+* fix openapi spec and failing tests ([dbe6783](https://github.com/spaceandtimelabs/sxt-node/commit/dbe67834081d843959554474bd6bf618188bb063))
+* rebase ([2bead95](https://github.com/spaceandtimelabs/sxt-node/commit/2bead95dc7daaad3ee43341118c3e38fea87b8d1))
+* update cargo.toml to use forked utoipa rather than local copy ([9ca4af3](https://github.com/spaceandtimelabs/sxt-node/commit/9ca4af3ccfe3926e6b00d877eb665211f04fd953))
+
+
+### Features
+
+* add commitments to create tables ([c8f8e32](https://github.com/spaceandtimelabs/sxt-node/commit/c8f8e323b902e8f8d1181e3c4517eeb11e71e316))
+* add dockerfile and add dockr build to CI ([a29969f](https://github.com/spaceandtimelabs/sxt-node/commit/a29969f85cefd095c5713bcbd110548d555392c9))
+* add translation layer ([0f6b4dd](https://github.com/spaceandtimelabs/sxt-node/commit/0f6b4dda1219fabbb2916624918ceb17553a9c90))
+* make sure create_tables handles uuids ([7805fda](https://github.com/spaceandtimelabs/sxt-node/commit/7805fda3bdba46dff8b528d2de7a9e2aba829f8a))
+* reintroduce source ([f7b33b0](https://github.com/spaceandtimelabs/sxt-node/commit/f7b33b008287737579a620025867c9854ca306a9))
+* update create tables api ([f9512a4](https://github.com/spaceandtimelabs/sxt-node/commit/f9512a4d163e9c29ccb670c95c2859b9edd284ed))
+* update create_tables interface ([9c27dae](https://github.com/spaceandtimelabs/sxt-node/commit/9c27dae4b2e83f80fd2898822f1d23788e1aac77))
+
+
+
 # [0.91.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.90.0...v0.91.0) (2025-03-28)
 
 
@@ -30,15 +52,6 @@
 
 
 ## [0.89.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.89.2...v0.89.3) (2025-03-25)
-
-
-
-## [0.89.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.89.1...v0.89.2) (2025-03-25)
-
-
-### Bug Fixes
-
-* update the HyperKZG powers of tau binaries and hashes to include the first element or point to a release that includes the first element ([cf1cb97](https://github.com/spaceandtimelabs/sxt-node/commit/cf1cb97c614619f9fc8732ea03fa2d5265de5685))
 
 
 
