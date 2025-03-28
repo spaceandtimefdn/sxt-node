@@ -1859,9 +1859,9 @@ pub mod api {
                         "query_call_info",
                         types::QueryCallInfo { call, len },
                         [
-                            51u8, 34u8, 21u8, 229u8, 19u8, 95u8, 178u8, 165u8, 178u8, 91u8, 123u8,
-                            24u8, 237u8, 20u8, 161u8, 253u8, 40u8, 6u8, 53u8, 119u8, 187u8, 106u8,
-                            10u8, 85u8, 194u8, 112u8, 255u8, 46u8, 128u8, 244u8, 161u8, 238u8,
+                            85u8, 66u8, 147u8, 147u8, 0u8, 7u8, 231u8, 143u8, 97u8, 229u8, 170u8,
+                            211u8, 156u8, 198u8, 249u8, 213u8, 168u8, 195u8, 126u8, 4u8, 110u8,
+                            41u8, 84u8, 180u8, 184u8, 8u8, 126u8, 179u8, 131u8, 122u8, 186u8, 76u8,
                         ],
                     )
                 }
@@ -1879,9 +1879,9 @@ pub mod api {
                         "query_call_fee_details",
                         types::QueryCallFeeDetails { call, len },
                         [
-                            88u8, 57u8, 178u8, 5u8, 21u8, 245u8, 75u8, 176u8, 39u8, 213u8, 50u8,
-                            131u8, 8u8, 62u8, 245u8, 242u8, 244u8, 42u8, 13u8, 83u8, 126u8, 143u8,
-                            196u8, 80u8, 76u8, 64u8, 119u8, 7u8, 6u8, 179u8, 70u8, 49u8,
+                            18u8, 80u8, 122u8, 108u8, 1u8, 32u8, 152u8, 237u8, 232u8, 91u8, 113u8,
+                            189u8, 149u8, 138u8, 85u8, 124u8, 164u8, 243u8, 134u8, 69u8, 139u8,
+                            8u8, 194u8, 13u8, 71u8, 63u8, 45u8, 252u8, 93u8, 11u8, 254u8, 215u8,
                         ],
                     )
                 }
@@ -2393,6 +2393,9 @@ pub mod api {
         pub fn smartcontracts(&self) -> smartcontracts::storage::StorageApi {
             smartcontracts::storage::StorageApi
         }
+        pub fn system_tables(&self) -> system_tables::storage::StorageApi {
+            system_tables::storage::StorageApi
+        }
     }
     pub struct TransactionApi;
     impl TransactionApi {
@@ -2465,9 +2468,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                60u8, 3u8, 171u8, 101u8, 30u8, 109u8, 121u8, 99u8, 96u8, 198u8, 118u8, 175u8, 30u8,
-                105u8, 106u8, 60u8, 24u8, 240u8, 141u8, 250u8, 31u8, 74u8, 29u8, 123u8, 231u8,
-                215u8, 1u8, 132u8, 120u8, 252u8, 166u8, 54u8,
+                224u8, 4u8, 236u8, 163u8, 185u8, 114u8, 201u8, 158u8, 184u8, 209u8, 85u8, 125u8,
+                29u8, 57u8, 180u8, 239u8, 37u8, 248u8, 3u8, 18u8, 195u8, 80u8, 220u8, 211u8, 160u8,
+                52u8, 173u8, 105u8, 128u8, 233u8, 25u8, 146u8,
             ]
     }
     pub mod system {
@@ -3606,9 +3609,10 @@ pub mod api {
                         "Events",
                         (),
                         [
-                            102u8, 209u8, 84u8, 131u8, 66u8, 210u8, 38u8, 54u8, 145u8, 237u8,
-                            193u8, 81u8, 156u8, 36u8, 156u8, 166u8, 96u8, 47u8, 204u8, 70u8, 182u8,
-                            114u8, 246u8, 153u8, 42u8, 208u8, 22u8, 97u8, 152u8, 50u8, 77u8, 21u8,
+                            23u8, 93u8, 234u8, 151u8, 54u8, 16u8, 189u8, 93u8, 240u8, 112u8, 207u8,
+                            151u8, 224u8, 224u8, 12u8, 144u8, 102u8, 252u8, 53u8, 107u8, 211u8,
+                            61u8, 176u8, 220u8, 223u8, 188u8, 119u8, 245u8, 11u8, 203u8, 45u8,
+                            33u8,
                         ],
                     )
                 }
@@ -4192,9 +4196,10 @@ pub mod api {
                         "batch",
                         types::Batch { calls },
                         [
-                            226u8, 8u8, 102u8, 29u8, 6u8, 75u8, 158u8, 197u8, 109u8, 91u8, 255u8,
-                            17u8, 91u8, 242u8, 139u8, 67u8, 189u8, 53u8, 99u8, 50u8, 43u8, 80u8,
-                            86u8, 109u8, 60u8, 252u8, 205u8, 120u8, 67u8, 79u8, 141u8, 166u8,
+                            28u8, 26u8, 96u8, 177u8, 62u8, 92u8, 0u8, 247u8, 42u8, 34u8, 34u8,
+                            214u8, 184u8, 130u8, 49u8, 53u8, 247u8, 89u8, 176u8, 244u8, 85u8,
+                            225u8, 148u8, 129u8, 202u8, 120u8, 179u8, 224u8, 70u8, 228u8, 138u8,
+                            137u8,
                         ],
                     )
                 }
@@ -4225,10 +4230,10 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            167u8, 43u8, 82u8, 245u8, 186u8, 88u8, 12u8, 206u8, 84u8, 113u8, 162u8,
-                            79u8, 224u8, 115u8, 237u8, 70u8, 22u8, 45u8, 111u8, 155u8, 213u8,
-                            235u8, 253u8, 7u8, 109u8, 239u8, 127u8, 17u8, 118u8, 161u8, 230u8,
-                            200u8,
+                            11u8, 23u8, 15u8, 126u8, 38u8, 64u8, 133u8, 99u8, 98u8, 141u8, 151u8,
+                            185u8, 124u8, 42u8, 131u8, 163u8, 20u8, 117u8, 171u8, 224u8, 219u8,
+                            143u8, 235u8, 200u8, 10u8, 103u8, 4u8, 173u8, 145u8, 141u8, 98u8,
+                            179u8,
                         ],
                     )
                 }
@@ -4255,10 +4260,10 @@ pub mod api {
                         "batch_all",
                         types::BatchAll { calls },
                         [
-                            181u8, 166u8, 255u8, 255u8, 215u8, 240u8, 6u8, 233u8, 209u8, 118u8,
-                            88u8, 190u8, 128u8, 242u8, 126u8, 251u8, 219u8, 210u8, 119u8, 126u8,
-                            88u8, 95u8, 43u8, 117u8, 201u8, 42u8, 185u8, 185u8, 141u8, 143u8,
-                            236u8, 128u8,
+                            93u8, 11u8, 229u8, 56u8, 88u8, 236u8, 186u8, 210u8, 147u8, 188u8,
+                            105u8, 223u8, 41u8, 55u8, 170u8, 177u8, 65u8, 235u8, 148u8, 189u8, 8u8,
+                            97u8, 147u8, 172u8, 250u8, 184u8, 2u8, 166u8, 144u8, 54u8, 106u8,
+                            240u8,
                         ],
                     )
                 }
@@ -4282,10 +4287,10 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            33u8, 63u8, 28u8, 104u8, 169u8, 92u8, 163u8, 119u8, 182u8, 99u8, 31u8,
-                            233u8, 61u8, 109u8, 41u8, 237u8, 141u8, 171u8, 29u8, 161u8, 206u8,
-                            231u8, 245u8, 222u8, 108u8, 86u8, 228u8, 102u8, 107u8, 27u8, 255u8,
-                            218u8,
+                            33u8, 208u8, 59u8, 162u8, 192u8, 246u8, 199u8, 54u8, 108u8, 127u8,
+                            159u8, 6u8, 149u8, 171u8, 6u8, 194u8, 183u8, 90u8, 209u8, 235u8, 208u8,
+                            173u8, 29u8, 49u8, 131u8, 119u8, 133u8, 62u8, 217u8, 245u8, 212u8,
+                            121u8,
                         ],
                     )
                 }
@@ -4312,10 +4317,9 @@ pub mod api {
                         "force_batch",
                         types::ForceBatch { calls },
                         [
-                            190u8, 248u8, 165u8, 44u8, 206u8, 49u8, 253u8, 253u8, 113u8, 89u8,
-                            35u8, 159u8, 17u8, 240u8, 246u8, 129u8, 102u8, 60u8, 136u8, 220u8,
-                            104u8, 10u8, 33u8, 59u8, 241u8, 232u8, 2u8, 239u8, 94u8, 239u8, 212u8,
-                            132u8,
+                            106u8, 92u8, 192u8, 118u8, 15u8, 138u8, 194u8, 36u8, 207u8, 171u8,
+                            197u8, 78u8, 158u8, 74u8, 91u8, 53u8, 177u8, 201u8, 38u8, 110u8, 1u8,
+                            135u8, 109u8, 236u8, 42u8, 70u8, 9u8, 142u8, 49u8, 93u8, 9u8, 199u8,
                         ],
                     )
                 }
@@ -4339,10 +4343,9 @@ pub mod api {
                             weight,
                         },
                         [
-                            158u8, 149u8, 44u8, 28u8, 209u8, 159u8, 46u8, 102u8, 35u8, 241u8, 2u8,
-                            54u8, 162u8, 148u8, 98u8, 128u8, 100u8, 181u8, 96u8, 243u8, 82u8,
-                            218u8, 226u8, 114u8, 73u8, 28u8, 210u8, 210u8, 173u8, 103u8, 69u8,
-                            114u8,
+                            237u8, 124u8, 58u8, 38u8, 189u8, 173u8, 154u8, 207u8, 29u8, 61u8, 78u8,
+                            2u8, 192u8, 162u8, 186u8, 61u8, 87u8, 14u8, 16u8, 129u8, 250u8, 198u8,
+                            181u8, 39u8, 22u8, 177u8, 210u8, 94u8, 166u8, 165u8, 138u8, 186u8,
                         ],
                     )
                 }
@@ -14552,10 +14555,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            211u8, 159u8, 13u8, 8u8, 181u8, 242u8, 205u8, 245u8, 156u8, 63u8,
-                            218u8, 10u8, 108u8, 158u8, 208u8, 58u8, 230u8, 224u8, 124u8, 94u8,
-                            235u8, 255u8, 89u8, 43u8, 93u8, 76u8, 14u8, 160u8, 201u8, 14u8, 235u8,
-                            49u8,
+                            56u8, 170u8, 9u8, 102u8, 82u8, 145u8, 51u8, 17u8, 113u8, 193u8, 187u8,
+                            94u8, 70u8, 162u8, 48u8, 78u8, 135u8, 240u8, 162u8, 107u8, 240u8,
+                            133u8, 235u8, 17u8, 56u8, 115u8, 187u8, 244u8, 38u8, 26u8, 248u8, 65u8,
                         ],
                     )
                 }
@@ -14578,10 +14580,10 @@ pub mod api {
                             weight,
                         },
                         [
-                            80u8, 254u8, 247u8, 168u8, 255u8, 196u8, 82u8, 24u8, 178u8, 195u8,
-                            210u8, 24u8, 78u8, 216u8, 144u8, 98u8, 174u8, 65u8, 193u8, 207u8, 86u8,
-                            117u8, 102u8, 185u8, 125u8, 134u8, 242u8, 238u8, 13u8, 70u8, 236u8,
-                            23u8,
+                            7u8, 126u8, 181u8, 199u8, 157u8, 131u8, 82u8, 212u8, 135u8, 181u8,
+                            14u8, 216u8, 245u8, 190u8, 52u8, 105u8, 160u8, 45u8, 12u8, 184u8,
+                            145u8, 178u8, 212u8, 116u8, 51u8, 232u8, 150u8, 75u8, 244u8, 193u8,
+                            136u8, 190u8,
                         ],
                     )
                 }
@@ -14621,9 +14623,10 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            0u8, 89u8, 96u8, 60u8, 110u8, 97u8, 154u8, 165u8, 179u8, 64u8, 169u8,
-                            95u8, 227u8, 13u8, 54u8, 196u8, 60u8, 47u8, 38u8, 114u8, 22u8, 250u8,
-                            23u8, 247u8, 11u8, 227u8, 172u8, 116u8, 169u8, 20u8, 141u8, 111u8,
+                            93u8, 133u8, 217u8, 240u8, 206u8, 137u8, 121u8, 18u8, 42u8, 97u8, 98u8,
+                            106u8, 204u8, 102u8, 34u8, 53u8, 118u8, 167u8, 132u8, 148u8, 76u8,
+                            167u8, 21u8, 231u8, 122u8, 121u8, 149u8, 29u8, 228u8, 83u8, 181u8,
+                            236u8,
                         ],
                     )
                 }
@@ -15848,9 +15851,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            245u8, 203u8, 202u8, 116u8, 26u8, 128u8, 130u8, 69u8, 226u8, 248u8,
-                            146u8, 67u8, 49u8, 217u8, 254u8, 231u8, 242u8, 84u8, 6u8, 11u8, 201u8,
-                            21u8, 255u8, 56u8, 198u8, 35u8, 45u8, 37u8, 207u8, 66u8, 50u8, 85u8,
+                            76u8, 8u8, 67u8, 119u8, 112u8, 152u8, 148u8, 220u8, 214u8, 52u8, 137u8,
+                            127u8, 138u8, 253u8, 236u8, 162u8, 145u8, 249u8, 163u8, 166u8, 76u8,
+                            222u8, 162u8, 110u8, 242u8, 25u8, 59u8, 10u8, 15u8, 184u8, 232u8, 60u8,
                         ],
                     )
                 }
@@ -15913,10 +15916,9 @@ pub mod api {
                             max_weight,
                         },
                         [
-                            79u8, 73u8, 60u8, 83u8, 185u8, 183u8, 63u8, 87u8, 138u8, 202u8, 124u8,
-                            237u8, 165u8, 234u8, 172u8, 19u8, 185u8, 28u8, 139u8, 209u8, 88u8,
-                            49u8, 87u8, 250u8, 109u8, 234u8, 151u8, 62u8, 215u8, 122u8, 143u8,
-                            72u8,
+                            197u8, 163u8, 84u8, 64u8, 49u8, 101u8, 33u8, 186u8, 124u8, 108u8, 88u8,
+                            105u8, 188u8, 210u8, 44u8, 61u8, 87u8, 108u8, 191u8, 169u8, 46u8, 12u8,
+                            179u8, 235u8, 16u8, 146u8, 76u8, 168u8, 2u8, 38u8, 143u8, 224u8,
                         ],
                     )
                 }
@@ -17232,14 +17234,9 @@ pub mod api {
                 }
                 pub mod create_tables {
                     use super::runtime_types;
-                    pub type Tables =
-                        runtime_types::bounded_collections::bounded_vec::BoundedVec<(
-                            runtime_types::sxt_core::tables::TableIdentifier,
-                            runtime_types::bounded_collections::bounded_vec::BoundedVec<
-                                ::core::primitive::u8,
-                            >,
-                            runtime_types::sxt_core::tables::TableType,
-                        )>;
+                    pub type Tables = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                        runtime_types::pallet_tables::pallet::UpdateTable,
+                    >;
                 }
                 impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for CreateTables {
                     const PALLET: &'static str = "Tables";
@@ -17346,6 +17343,7 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
+                #[doc = "Drop a single table"]
                 pub struct DropTable {
                     pub table_type: drop_table::TableType,
                     pub ident: drop_table::Ident,
@@ -17373,10 +17371,10 @@ pub mod api {
                         "create_tables",
                         types::CreateTables { tables },
                         [
-                            219u8, 154u8, 175u8, 152u8, 164u8, 230u8, 193u8, 171u8, 153u8, 223u8,
-                            104u8, 191u8, 164u8, 63u8, 238u8, 37u8, 115u8, 83u8, 5u8, 171u8, 129u8,
-                            228u8, 0u8, 223u8, 213u8, 123u8, 244u8, 238u8, 165u8, 23u8, 248u8,
-                            140u8,
+                            18u8, 55u8, 209u8, 13u8, 254u8, 184u8, 133u8, 224u8, 168u8, 47u8,
+                            233u8, 59u8, 124u8, 3u8, 138u8, 197u8, 7u8, 205u8, 144u8, 71u8, 104u8,
+                            115u8, 54u8, 177u8, 69u8, 72u8, 249u8, 197u8, 132u8, 153u8, 126u8,
+                            32u8,
                         ],
                     )
                 }
@@ -17442,6 +17440,7 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = "Drop a single table"]
                 pub fn drop_table(
                     &self,
                     table_type: types::drop_table::TableType,
@@ -17507,16 +17506,14 @@ pub mod api {
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
             #[doc = "The schema for a table has been updated"]
-            pub struct SchemaUpdated(pub schema_updated::Field0);
+            pub struct SchemaUpdated(pub schema_updated::Field0, pub schema_updated::Field1);
             pub mod schema_updated {
                 use super::runtime_types;
-                pub type Field0 = runtime_types::bounded_collections::bounded_vec::BoundedVec<(
-                    runtime_types::sxt_core::tables::TableIdentifier,
-                    runtime_types::bounded_collections::bounded_vec::BoundedVec<
-                        ::core::primitive::u8,
-                    >,
-                    runtime_types::sxt_core::tables::TableType,
-                )>;
+                pub type Field0 =
+                    ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>;
+                pub type Field1 = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                    runtime_types::pallet_tables::pallet::UpdateTable,
+                >;
             }
             impl ::subxt::ext::subxt_core::events::StaticEvent for SchemaUpdated {
                 const PALLET: &'static str = "Tables";
@@ -17559,11 +17556,17 @@ pub mod api {
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
             #[doc = "A table has been successfully dropped"]
-            pub struct TableDropped(pub table_dropped::Field0, pub table_dropped::Field1);
+            pub struct TableDropped(
+                pub table_dropped::Field0,
+                pub table_dropped::Field1,
+                pub table_dropped::Field2,
+            );
             pub mod table_dropped {
                 use super::runtime_types;
-                pub type Field0 = runtime_types::sxt_core::tables::TableType;
-                pub type Field1 = runtime_types::sxt_core::tables::TableIdentifier;
+                pub type Field0 =
+                    ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>;
+                pub type Field1 = runtime_types::sxt_core::tables::TableType;
+                pub type Field2 = runtime_types::sxt_core::tables::TableIdentifier;
             }
             impl ::subxt::ext::subxt_core::events::StaticEvent for TableDropped {
                 const PALLET: &'static str = "Tables";
@@ -17634,6 +17637,11 @@ pub mod api {
                 pub mod table_insert_quorums {
                     use super::runtime_types;
                     pub type TableInsertQuorums = runtime_types::sxt_core::tables::InsertQuorumSize;
+                    pub type Param0 = runtime_types::sxt_core::tables::TableIdentifier;
+                }
+                pub mod table_sources {
+                    use super::runtime_types;
+                    pub type TableSources = runtime_types::sxt_core::tables::Source;
                     pub type Param0 = runtime_types::sxt_core::tables::TableIdentifier;
                 }
             }
@@ -18119,6 +18127,53 @@ pub mod api {
                         ],
                     )
                 }
+                pub fn table_sources_iter(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::table_sources::TableSources,
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Tables",
+                        "TableSources",
+                        (),
+                        [
+                            30u8, 89u8, 111u8, 54u8, 120u8, 131u8, 145u8, 95u8, 163u8, 12u8, 136u8,
+                            183u8, 116u8, 88u8, 199u8, 165u8, 146u8, 103u8, 14u8, 153u8, 124u8,
+                            65u8, 46u8, 207u8, 215u8, 124u8, 103u8, 239u8, 228u8, 246u8, 102u8,
+                            215u8,
+                        ],
+                    )
+                }
+                pub fn table_sources(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::table_sources::Param0>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                        types::table_sources::Param0,
+                    >,
+                    types::table_sources::TableSources,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Tables",
+                        "TableSources",
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                            _0.borrow(),
+                        ),
+                        [
+                            30u8, 89u8, 111u8, 54u8, 120u8, 131u8, 145u8, 95u8, 163u8, 12u8, 136u8,
+                            183u8, 116u8, 88u8, 199u8, 165u8, 146u8, 103u8, 14u8, 153u8, 124u8,
+                            65u8, 46u8, 207u8, 215u8, 124u8, 103u8, 239u8, 228u8, 246u8, 102u8,
+                            215u8,
+                        ],
+                    )
+                }
             }
         }
     }
@@ -18271,10 +18326,12 @@ pub mod api {
             #[doc = "Emitted when a system meta table should insert new rows due to some on-chain"]
             #[doc = "action"]
             pub struct SystemTableUpdate {
+                pub table: system_table_update::Table,
                 pub data: system_table_update::Data,
             }
             pub mod system_table_update {
                 use super::runtime_types;
+                pub type Table = runtime_types::sxt_core::tables::TableIdentifier;
                 pub type Data = runtime_types::bounded_collections::bounded_vec::BoundedVec<
                     ::core::primitive::u8,
                 >;
@@ -18282,6 +18339,35 @@ pub mod api {
             impl ::subxt::ext::subxt_core::events::StaticEvent for SystemTableUpdate {
                 const PALLET: &'static str = "Indexing";
                 const EVENT: &'static str = "SystemTableUpdate";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "Emitted any time there's an error while processing a system event"]
+            #[doc = "This message can then be handled offline to initiate retries or remediation"]
+            pub struct SystemTableError {
+                pub table: system_table_error::Table,
+                pub error: system_table_error::Error,
+                pub data: system_table_error::Data,
+            }
+            pub mod system_table_error {
+                use super::runtime_types;
+                pub type Table = runtime_types::sxt_core::tables::TableIdentifier;
+                pub type Error = runtime_types::sp_runtime::DispatchError;
+                pub type Data = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                    ::core::primitive::u8,
+                >;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for SystemTableError {
+                const PALLET: &'static str = "Indexing";
+                const EVENT: &'static str = "SystemTableError";
             }
         }
         pub mod storage {
@@ -19291,16 +19377,28 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "**Remove a Smart Contract Entry**"]
+                #[doc = "Adds a new smart contract and its associated indexing tables to the chain."]
                 #[doc = ""]
-                #[doc = "Deletes a smart contract entry from storage."]
+                #[doc = "This function is permissioned: it can only be called by a signed account or `Root` origin"]
+                #[doc = "with `SmartContractsPallet::UpdateABI` permission. It stores the provided smart contract,"]
+                #[doc = "verifies it doesn’t already exist, emits a `SmartContractAdded` event, and registers any"]
+                #[doc = "associated indexing tables via `pallet_tables::create_tables_inner`."]
                 #[doc = ""]
-                #[doc = "**Parameters:**"]
-                #[doc = "- `origin`: Must be a signed account."]
-                #[doc = "- `source`: The `Source` identifier for the contract."]
-                #[doc = "- `contract_address`: The address of the smart contract."]
+                #[doc = "# Parameters"]
+                #[doc = "- `origin`: Must be either `Root` or a signed user with appropriate smart contract permissions."]
+                #[doc = "- `contract`: The [`Contract`] to be added. Can be a normal or proxy contract."]
+                #[doc = "- `tables`: The list of [`UpdateTable`] entries associated with this contract. Each entry defines"]
+                #[doc = "   a table to be created (including schema, DDL, and type)."]
                 #[doc = ""]
-                #[doc = "**Emits:** `SmartContractRemoved`"]
+                #[doc = "# Emits"]
+                #[doc = "- [`Event::SmartContractAdded`] — when the contract is successfully stored."]
+                #[doc = "- [`Event::SchemaUpdated`] — for each table added via `pallet_tables`."]
+                #[doc = ""]
+                #[doc = "# Errors"]
+                #[doc = "- [`Error::ExistingContractError`] — if a contract with the same `source` and `address` already exists."]
+                #[doc = "- Any error from:"]
+                #[doc = "    - [`pallet_permissions::Pallet::ensure_root_or_permissioned`] if origin is unauthorized."]
+                #[doc = "    - [`pallet_tables::Pallet::create_tables_inner`] if any table creation fails."]
                 pub struct AddSmartcontract {
                     pub contract:
                         ::subxt::ext::subxt_core::alloc::boxed::Box<add_smartcontract::Contract>,
@@ -19309,14 +19407,9 @@ pub mod api {
                 pub mod add_smartcontract {
                     use super::runtime_types;
                     pub type Contract = runtime_types::sxt_core::smartcontracts::Contract;
-                    pub type Tables =
-                        runtime_types::bounded_collections::bounded_vec::BoundedVec<(
-                            runtime_types::sxt_core::tables::TableIdentifier,
-                            runtime_types::bounded_collections::bounded_vec::BoundedVec<
-                                ::core::primitive::u8,
-                            >,
-                            runtime_types::sxt_core::tables::TableType,
-                        )>;
+                    pub type Tables = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                        runtime_types::pallet_tables::pallet::UpdateTable,
+                    >;
                 }
                 impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for AddSmartcontract {
                     const PALLET: &'static str = "Smartcontracts";
@@ -19352,16 +19445,28 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "**Remove a Smart Contract Entry**"]
+                #[doc = "Adds a new smart contract and its associated indexing tables to the chain."]
                 #[doc = ""]
-                #[doc = "Deletes a smart contract entry from storage."]
+                #[doc = "This function is permissioned: it can only be called by a signed account or `Root` origin"]
+                #[doc = "with `SmartContractsPallet::UpdateABI` permission. It stores the provided smart contract,"]
+                #[doc = "verifies it doesn’t already exist, emits a `SmartContractAdded` event, and registers any"]
+                #[doc = "associated indexing tables via `pallet_tables::create_tables_inner`."]
                 #[doc = ""]
-                #[doc = "**Parameters:**"]
-                #[doc = "- `origin`: Must be a signed account."]
-                #[doc = "- `source`: The `Source` identifier for the contract."]
-                #[doc = "- `contract_address`: The address of the smart contract."]
+                #[doc = "# Parameters"]
+                #[doc = "- `origin`: Must be either `Root` or a signed user with appropriate smart contract permissions."]
+                #[doc = "- `contract`: The [`Contract`] to be added. Can be a normal or proxy contract."]
+                #[doc = "- `tables`: The list of [`UpdateTable`] entries associated with this contract. Each entry defines"]
+                #[doc = "   a table to be created (including schema, DDL, and type)."]
                 #[doc = ""]
-                #[doc = "**Emits:** `SmartContractRemoved`"]
+                #[doc = "# Emits"]
+                #[doc = "- [`Event::SmartContractAdded`] — when the contract is successfully stored."]
+                #[doc = "- [`Event::SchemaUpdated`] — for each table added via `pallet_tables`."]
+                #[doc = ""]
+                #[doc = "# Errors"]
+                #[doc = "- [`Error::ExistingContractError`] — if a contract with the same `source` and `address` already exists."]
+                #[doc = "- Any error from:"]
+                #[doc = "    - [`pallet_permissions::Pallet::ensure_root_or_permissioned`] if origin is unauthorized."]
+                #[doc = "    - [`pallet_tables::Pallet::create_tables_inner`] if any table creation fails."]
                 pub fn add_smartcontract(
                     &self,
                     contract: types::add_smartcontract::Contract,
@@ -19376,9 +19481,10 @@ pub mod api {
                             tables,
                         },
                         [
-                            112u8, 245u8, 167u8, 111u8, 124u8, 196u8, 245u8, 55u8, 39u8, 86u8,
-                            40u8, 0u8, 141u8, 241u8, 57u8, 0u8, 7u8, 186u8, 201u8, 17u8, 197u8,
-                            153u8, 22u8, 161u8, 52u8, 110u8, 207u8, 140u8, 83u8, 235u8, 11u8, 14u8,
+                            111u8, 139u8, 217u8, 241u8, 150u8, 15u8, 134u8, 176u8, 45u8, 154u8,
+                            205u8, 240u8, 208u8, 213u8, 54u8, 142u8, 104u8, 54u8, 160u8, 18u8,
+                            189u8, 160u8, 151u8, 96u8, 28u8, 78u8, 61u8, 191u8, 231u8, 162u8, 2u8,
+                            57u8,
                         ],
                     )
                 }
@@ -19400,11 +19506,14 @@ pub mod api {
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
             #[doc = "A smart contract was added to storage."]
             pub struct SmartContractAdded {
+                pub owner: smart_contract_added::Owner,
                 pub source: smart_contract_added::Source,
                 pub address: smart_contract_added::Address,
             }
             pub mod smart_contract_added {
                 use super::runtime_types;
+                pub type Owner =
+                    ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>;
                 pub type Source = runtime_types::sxt_core::tables::Source;
                 pub type Address = runtime_types::bounded_collections::bounded_vec::BoundedVec<
                     ::core::primitive::u8,
@@ -19426,11 +19535,14 @@ pub mod api {
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
             #[doc = "A smart contract was removed from storage."]
             pub struct SmartContractRemoved {
+                pub owner: smart_contract_removed::Owner,
                 pub source: smart_contract_removed::Source,
                 pub address: smart_contract_removed::Address,
             }
             pub mod smart_contract_removed {
                 use super::runtime_types;
+                pub type Owner =
+                    ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>;
                 pub type Source = runtime_types::sxt_core::tables::Source;
                 pub type Address = runtime_types::bounded_collections::bounded_vec::BoundedVec<
                     ::core::primitive::u8,
@@ -19548,6 +19660,90 @@ pub mod api {
         pub type Event = runtime_types::pallet_system_tables::pallet::Event;
         pub mod events {
             use super::runtime_types;
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "This event is emitted whenever a message is received by Substrate from the EVM"]
+            pub struct MessageReceived {
+                pub sender: message_received::Sender,
+                pub payload: message_received::Payload,
+            }
+            pub mod message_received {
+                use super::runtime_types;
+                pub type Sender = [::core::primitive::u8; 20usize];
+                pub type Payload = ::subxt::ext::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for MessageReceived {
+                const PALLET: &'static str = "SystemTables";
+                const EVENT: &'static str = "MessageReceived";
+            }
+        }
+        pub mod storage {
+            use super::runtime_types;
+            pub mod types {
+                use super::runtime_types;
+                pub mod message_nonce {
+                    use super::runtime_types;
+                    pub type MessageNonce = runtime_types::primitive_types::U256;
+                }
+                pub mod last_processed_nonce {
+                    use super::runtime_types;
+                    pub type LastProcessedNonce = runtime_types::primitive_types::U256;
+                }
+            }
+            pub struct StorageApi;
+            impl StorageApi {
+                #[doc = " The last processed message"]
+                pub fn message_nonce(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::message_nonce::MessageNonce,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "SystemTables",
+                        "MessageNonce",
+                        (),
+                        [
+                            30u8, 32u8, 18u8, 2u8, 133u8, 25u8, 163u8, 107u8, 69u8, 156u8, 196u8,
+                            238u8, 26u8, 16u8, 189u8, 149u8, 123u8, 130u8, 15u8, 224u8, 107u8,
+                            105u8, 139u8, 137u8, 110u8, 104u8, 152u8, 227u8, 132u8, 174u8, 193u8,
+                            229u8,
+                        ],
+                    )
+                }
+                pub fn last_processed_nonce(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::last_processed_nonce::LastProcessedNonce,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "SystemTables",
+                        "LastProcessedNonce",
+                        (),
+                        [
+                            71u8, 0u8, 133u8, 181u8, 45u8, 232u8, 96u8, 28u8, 204u8, 25u8, 213u8,
+                            247u8, 161u8, 13u8, 250u8, 133u8, 30u8, 43u8, 230u8, 248u8, 126u8,
+                            19u8, 129u8, 93u8, 131u8, 135u8, 14u8, 117u8, 255u8, 233u8, 248u8,
+                            207u8,
+                        ],
+                    )
+                }
+            }
         }
     }
     pub mod runtime_types {
@@ -22041,6 +22237,17 @@ pub mod api {
                     #[doc = "Emitted when a system meta table should insert new rows due to some on-chain"]
                     #[doc = "action"]
                     SystemTableUpdate {
+                        table: runtime_types::sxt_core::tables::TableIdentifier,
+                        data: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                    },
+                    #[codec(index = 3)]
+                    #[doc = "Emitted any time there's an error while processing a system event"]
+                    #[doc = "This message can then be handled offline to initiate retries or remediation"]
+                    SystemTableError {
+                        table: runtime_types::sxt_core::tables::TableIdentifier,
+                        error: runtime_types::sp_runtime::DispatchError,
                         data: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             ::core::primitive::u8,
                         >,
@@ -22768,27 +22975,35 @@ pub mod api {
                         >,
                     },
                     #[codec(index = 2)]
-                    #[doc = "**Remove a Smart Contract Entry**"]
+                    #[doc = "Adds a new smart contract and its associated indexing tables to the chain."]
                     #[doc = ""]
-                    #[doc = "Deletes a smart contract entry from storage."]
+                    #[doc = "This function is permissioned: it can only be called by a signed account or `Root` origin"]
+                    #[doc = "with `SmartContractsPallet::UpdateABI` permission. It stores the provided smart contract,"]
+                    #[doc = "verifies it doesn’t already exist, emits a `SmartContractAdded` event, and registers any"]
+                    #[doc = "associated indexing tables via `pallet_tables::create_tables_inner`."]
                     #[doc = ""]
-                    #[doc = "**Parameters:**"]
-                    #[doc = "- `origin`: Must be a signed account."]
-                    #[doc = "- `source`: The `Source` identifier for the contract."]
-                    #[doc = "- `contract_address`: The address of the smart contract."]
+                    #[doc = "# Parameters"]
+                    #[doc = "- `origin`: Must be either `Root` or a signed user with appropriate smart contract permissions."]
+                    #[doc = "- `contract`: The [`Contract`] to be added. Can be a normal or proxy contract."]
+                    #[doc = "- `tables`: The list of [`UpdateTable`] entries associated with this contract. Each entry defines"]
+                    #[doc = "   a table to be created (including schema, DDL, and type)."]
                     #[doc = ""]
-                    #[doc = "**Emits:** `SmartContractRemoved`"]
+                    #[doc = "# Emits"]
+                    #[doc = "- [`Event::SmartContractAdded`] — when the contract is successfully stored."]
+                    #[doc = "- [`Event::SchemaUpdated`] — for each table added via `pallet_tables`."]
+                    #[doc = ""]
+                    #[doc = "# Errors"]
+                    #[doc = "- [`Error::ExistingContractError`] — if a contract with the same `source` and `address` already exists."]
+                    #[doc = "- Any error from:"]
+                    #[doc = "    - [`pallet_permissions::Pallet::ensure_root_or_permissioned`] if origin is unauthorized."]
+                    #[doc = "    - [`pallet_tables::Pallet::create_tables_inner`] if any table creation fails."]
                     add_smartcontract {
                         contract: ::subxt::ext::subxt_core::alloc::boxed::Box<
                             runtime_types::sxt_core::smartcontracts::Contract,
                         >,
-                        tables: runtime_types::bounded_collections::bounded_vec::BoundedVec<(
-                            runtime_types::sxt_core::tables::TableIdentifier,
-                            runtime_types::bounded_collections::bounded_vec::BoundedVec<
-                                ::core::primitive::u8,
-                            >,
-                            runtime_types::sxt_core::tables::TableType,
-                        )>,
+                        tables: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            runtime_types::pallet_tables::pallet::UpdateTable,
+                        >,
                     },
                 }
                 #[derive(
@@ -22830,6 +23045,7 @@ pub mod api {
                     #[codec(index = 0)]
                     #[doc = "A smart contract was added to storage."]
                     SmartContractAdded {
+                        owner: ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>,
                         source: runtime_types::sxt_core::tables::Source,
                         address: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             ::core::primitive::u8,
@@ -22838,6 +23054,7 @@ pub mod api {
                     #[codec(index = 1)]
                     #[doc = "A smart contract was removed from storage."]
                     SmartContractRemoved {
+                        owner: ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>,
                         source: runtime_types::sxt_core::tables::Source,
                         address: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             ::core::primitive::u8,
@@ -24029,6 +24246,27 @@ pub mod api {
                     #[codec(index = 2)]
                     #[doc = "Catchall error for sanity checks in parsing (i.e. request was passed to the wrong function)"]
                     InternalError,
+                    #[codec(index = 3)]
+                    #[doc = "The signature of the message was corrupt or invalid"]
+                    InvalidSignature,
+                    #[codec(index = 4)]
+                    #[doc = "The address provided is not the address that signed the message"]
+                    AddressMismatch,
+                    #[codec(index = 5)]
+                    #[doc = "This nonce has already been processed"]
+                    LateNonce,
+                    #[codec(index = 6)]
+                    #[doc = "This nonce is too far in the future"]
+                    FutureNonce,
+                    #[codec(index = 7)]
+                    #[doc = "This message is malformed"]
+                    InvalidMessageFormat,
+                    #[codec(index = 8)]
+                    #[doc = "The session keys provided are malformed"]
+                    InvalidSessionKeys,
+                    #[codec(index = 9)]
+                    #[doc = "The provided validator proof couldn't be verified"]
+                    InvalidValidatorProof,
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -24045,7 +24283,14 @@ pub mod api {
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
                 #[doc = "The `Event` enum of this pallet"]
-                pub enum Event {}
+                pub enum Event {
+                    #[codec(index = 0)]
+                    #[doc = "This event is emitted whenever a message is received by Substrate from the EVM"]
+                    MessageReceived {
+                        sender: [::core::primitive::u8; 20usize],
+                        payload: ::subxt::ext::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    },
+                }
             }
         }
         pub mod pallet_tables {
@@ -24071,13 +24316,9 @@ pub mod api {
                     #[codec(index = 0)]
                     #[doc = "TODO: add docs"]
                     create_tables {
-                        tables: runtime_types::bounded_collections::bounded_vec::BoundedVec<(
-                            runtime_types::sxt_core::tables::TableIdentifier,
-                            runtime_types::bounded_collections::bounded_vec::BoundedVec<
-                                ::core::primitive::u8,
-                            >,
-                            runtime_types::sxt_core::tables::TableType,
-                        )>,
+                        tables: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            runtime_types::pallet_tables::pallet::UpdateTable,
+                        >,
                     },
                     #[codec(index = 1)]
                     #[doc = "Create tables with a known commit and snapshot url from which data can be loaded"]
@@ -24104,11 +24345,28 @@ pub mod api {
                             >,
                     },
                     #[codec(index = 5)]
+                    #[doc = "Drop a single table"]
                     drop_table {
                         table_type: runtime_types::sxt_core::tables::TableType,
                         ident: runtime_types::sxt_core::tables::TableIdentifier,
                     },
                 }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub enum CommitmentCreationCmd {
+                    # [codec (index = 0)] FromSnapshot (runtime_types :: bounded_collections :: bounded_vec :: BoundedVec < :: core :: primitive :: u8 > , runtime_types :: proof_of_sql_commitment_map :: commitment_scheme :: PerCommitmentScheme < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: OptionType < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: ConcreteType < runtime_types :: proof_of_sql_commitment_map :: commitment_storage_map :: TableCommitmentBytes > > > ,) , # [codec (index = 1)] Empty (runtime_types :: proof_of_sql_commitment_map :: commitment_scheme :: CommitmentSchemeFlags ,) , }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
@@ -24167,6 +24425,15 @@ pub mod api {
                     #[codec(index = 8)]
                     #[doc = "The desired table could not be located"]
                     TableNotFound,
+                    #[codec(index = 9)]
+                    #[doc = "missing commitment scheme"]
+                    MissingCommitmentScheme,
+                    #[codec(index = 10)]
+                    #[doc = "Error constructing a bounded vector for the given data"]
+                    BoundedVecError,
+                    #[codec(index = 11)]
+                    #[doc = "Missing snapshot"]
+                    MissingSnapshot,
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -24198,13 +24465,10 @@ pub mod api {
                     #[codec(index = 1)]
                     #[doc = "The schema for a table has been updated"]
                     SchemaUpdated(
-                        runtime_types::bounded_collections::bounded_vec::BoundedVec<(
-                            runtime_types::sxt_core::tables::TableIdentifier,
-                            runtime_types::bounded_collections::bounded_vec::BoundedVec<
-                                ::core::primitive::u8,
-                            >,
-                            runtime_types::sxt_core::tables::TableType,
-                        )>,
+                        ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>,
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            runtime_types::pallet_tables::pallet::UpdateTable,
+                        >,
                     ),
                     #[codec(index = 2)]
                     #[doc = "Tables have been created with known commitments"]
@@ -24217,9 +24481,34 @@ pub mod api {
                     #[codec(index = 3)]
                     #[doc = "A table has been successfully dropped"]
                     TableDropped(
+                        ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>,
                         runtime_types::sxt_core::tables::TableType,
                         runtime_types::sxt_core::tables::TableIdentifier,
                     ),
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub struct UpdateTable {
+                    pub ident: runtime_types::sxt_core::tables::TableIdentifier,
+                    pub create_statement:
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                    pub table_type: runtime_types::sxt_core::tables::TableType,
+                    pub commitment: runtime_types::pallet_tables::pallet::CommitmentCreationCmd,
+                    pub source: runtime_types::sxt_core::tables::Source,
                 }
             }
         }

@@ -13,10 +13,13 @@ use frame_support::pallet_prelude::TypeInfo;
 use frame_support::{assert_err, assert_ok};
 use frame_system::ensure_signed;
 use native_api::Api;
+use pallet_tables::{CommitmentCreationCmd, UpdateTable};
+use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use sp_core::Hasher;
 use sp_runtime::BoundedVec;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{
+    CommitmentScheme,
     CreateStatement,
     InsertQuorumSize,
     QuorumScope,
@@ -111,13 +114,18 @@ fn inserting_data_succeeds_when_data_is_good() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (table_id, test_create) = sample_table_definition();
-        Tables::create_tables(
-            RuntimeOrigin::root(),
-            vec![(table_id.clone(), test_create, TableType::CoreBlockchain)]
-                .try_into()
-                .unwrap(),
-        )
-        .unwrap();
+
+        let request = UpdateTable {
+            ident: table_id.clone(),
+            create_statement: test_create,
+            table_type: TableType::CoreBlockchain,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                hyper_kzg: false,
+                dynamic_dory: true,
+            }),
+            source: sxt_core::tables::Source::Ethereum,
+        };
+        Tables::create_tables(RuntimeOrigin::root(), vec![request].try_into().unwrap()).unwrap();
 
         let signer = RuntimeOrigin::signed(1);
         let who = ensure_signed(signer.clone()).unwrap();
@@ -155,9 +163,18 @@ fn submission_fails_when_data_is_already_submitted() {
         let (table_id, test_create) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(table_id.clone(), test_create, TableType::CoreBlockchain)]
-                .try_into()
-                .unwrap(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement: test_create,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
         )
         .unwrap();
         let signer = RuntimeOrigin::signed(1);
@@ -241,11 +258,16 @@ fn data_is_decided_on_after_required_submissions() {
         let (table_id, create_statement) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                table_id.clone(),
-                create_statement.clone(),
-                TableType::CoreBlockchain,
-            )]
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -318,11 +340,16 @@ fn correct_data_is_decided_on_after_required_submissions() {
         let (table_id, create_statement) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                table_id.clone(),
-                create_statement.clone(),
-                TableType::CoreBlockchain,
-            )]
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -417,11 +444,16 @@ fn inserting_data_fails_when_data_is_empty() {
         let (test_identifier, create_statement) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                test_identifier.clone(),
-                create_statement.clone(),
-                TableType::CoreBlockchain,
-            )]
+            vec![UpdateTable {
+                ident: test_identifier.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -461,11 +493,16 @@ fn inserting_data_fails_when_table_name_is_empty() {
 
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                test_identifier.clone(),
-                create_statement.clone(),
-                TableType::CoreBlockchain,
-            )]
+            vec![UpdateTable {
+                ident: test_identifier.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -502,11 +539,16 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
         };
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                test_identifier.clone(),
-                create_statement.clone(),
-                TableType::CoreBlockchain,
-            )]
+            vec![UpdateTable {
+                ident: test_identifier.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -540,11 +582,16 @@ fn inserting_data_fails_when_batch_id_is_empty() {
 
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                test_identifier.clone(),
-                create_statement.clone(),
-                TableType::CoreBlockchain,
-            )]
+            vec![UpdateTable {
+                ident: test_identifier.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -569,11 +616,16 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
         let (table_id, create_statement) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                table_id.clone(),
-                create_statement.clone(),
-                TableType::CoreBlockchain,
-            )]
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -638,11 +690,16 @@ fn submit_data_with_mothership_key_work() {
         let (test_identifier, test_create) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                test_identifier.clone(),
-                test_create.clone(),
-                TableType::CoreBlockchain,
-            )]
+            vec![UpdateTable {
+                ident: test_identifier.clone(),
+                create_statement: test_create,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -698,14 +755,19 @@ fn we_can_reach_privileged_quorum() {
         let (table_id, create_statement) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                table_id.clone(),
-                create_statement.clone(),
-                TableType::Testing(InsertQuorumSize {
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::Testing(InsertQuorumSize {
                     public: None,
                     privileged: Some(0),
                 }),
-            )]
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -754,14 +816,19 @@ fn we_can_manage_quorum_state_for_both_scopes() {
         let (table_id, create_statement) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                table_id.clone(),
-                create_statement.clone(),
-                TableType::Testing(InsertQuorumSize {
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::Testing(InsertQuorumSize {
                     public: Some(2),
                     privileged: Some(1),
                 }),
-            )]
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -850,14 +917,19 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_one_quorum_reached_ev
         let (table_id, create_statement) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                table_id.clone(),
-                create_statement.clone(),
-                TableType::Testing(InsertQuorumSize {
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::Testing(InsertQuorumSize {
                     public: Some(0),
                     privileged: Some(0),
                 }),
-            )]
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -917,14 +989,19 @@ fn we_cannot_submit_for_table_disabled_quorum_scope() {
         let (table_id, create_statement) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                table_id.clone(),
-                create_statement.clone(),
-                TableType::Testing(InsertQuorumSize {
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::Testing(InsertQuorumSize {
                     public: None,
                     privileged: Some(0),
                 }),
-            )]
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )
@@ -967,14 +1044,19 @@ fn we_cannot_submit_with_privilege_to_different_table() {
         let (table_id, create_statement) = sample_table_definition();
         Tables::create_tables(
             RuntimeOrigin::root(),
-            vec![(
-                table_id.clone(),
-                create_statement.clone(),
-                TableType::Testing(InsertQuorumSize {
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::Testing(InsertQuorumSize {
                     public: None,
                     privileged: Some(0),
                 }),
-            )]
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
             .try_into()
             .unwrap(),
         )

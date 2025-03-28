@@ -320,8 +320,8 @@ impl InsertQuorumSize {
     }
 }
 
-/// TODO: add docs
-pub type UpdateTableCmd = (TableIdentifier, CreateStatement, TableType);
+/// A table commitment
+pub type CommitmentBytes = BoundedVec<u8, ConstU32<8192>>;
 
 #[derive(
     Clone,
@@ -349,9 +349,6 @@ pub struct UpdateTableRequest {
     /// The uuid of the namespace. It will be automatically generated if not supplied
     pub namespace_uuid: Option<TableUuid>,
 }
-
-/// TODO: add docs
-pub type UpdateTableList = BoundedVec<UpdateTableCmd, ConstU32<MAX_TABLES_PER_SCHEMA>>;
 
 /// The maximum number of identifiers allowed per source and mode.
 /// This constant defines an upper limit for the number of `TableIdentifier` elements
@@ -588,6 +585,7 @@ mod tests {
         let sql3 = "CREATE SCHEMA TEST;";
         assert_eq!(extract_schema_uuid(sql3), None);
     }
+
     #[test]
     fn we_can_parse_uuids_from_ddl_statement() {
         let expected_uuid = TableUuid::try_from("abc678".as_bytes().to_vec()).unwrap();
@@ -804,4 +802,25 @@ impl From<TableType> for InsertQuorumSize {
             TableType::Testing(quorum) => quorum,
         }
     }
+}
+
+/// Commitment schemes
+#[derive(
+    Copy,
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Serialize,
+    Deserialize,
+)]
+pub enum CommitmentScheme {
+    /// HyperKzg
+    HyperKzg,
+    /// dynamic dory
+    DynamicDory,
 }

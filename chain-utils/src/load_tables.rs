@@ -18,12 +18,14 @@ use subxt_signer::sr25519::Keypair;
 use subxt_signer::SecretUri;
 use sxt_core::sxt_chain_runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
+use sxt_core::sxt_chain_runtime::api::runtime_types::pallet_tables::pallet::{CommitmentCreationCmd, UpdateTable};
+use sxt_core::sxt_chain_runtime::api::runtime_types::proof_of_sql_commitment_map::commitment_scheme::CommitmentSchemeFlags;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
     IndexerMode,
     InsertQuorumSize,
     Source,
     SourceAndMode,
-    TableIdentifier,
+    TableIdentifier, TableType,
 };
 use sxt_core::sxt_chain_runtime::api::tx;
 use tokio::sync::Mutex;
@@ -46,9 +48,7 @@ fn format_statements(statements: &[sqlparser::ast::Statement]) -> Vec<String> {
     statements.iter().map(|stmt| stmt.to_string()).collect()
 }
 
-fn extract_table_data(
-    statement: &Statement,
-) -> Option<(TableIdentifier, BoundedVec<u8>, InsertQuorumSize)> {
+fn extract_table_data(statement: &Statement) -> Option<UpdateTable> {
     if let Statement::CreateTable { name, .. } = statement {
         info!("Extracting table data from statement: {}", statement);
         let table_id = TableIdentifier {
@@ -58,12 +58,20 @@ fn extract_table_data(
 
         let encoded_schema = BoundedVec(statement.to_string().into_bytes());
 
-        let quorum_size = InsertQuorumSize {
-            public: Some(0u8),
-            privileged: None,
+        let item = UpdateTable {
+            ident: table_id,
+            create_statement: encoded_schema,
+            table_type: TableType::Testing(InsertQuorumSize {
+                public: Some(0),
+                privileged: None,
+            }),
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                hyper_kzg: false,
+                dynamic_dory: true,
+            }),
+            source: Source::Ethereum,
         };
-
-        return Some((table_id, encoded_schema, quorum_size));
+        return Some(item);
     }
     None
 }
@@ -78,13 +86,7 @@ async fn send_to_substrate(
     let table_data: Vec<_> = statements.iter().filter_map(extract_table_data).collect();
 
     let client = client.lock().await;
-    let tx = tx().tables().update_tables(
-        SourceAndMode {
-            source: Source::Ethereum,
-            mode: IndexerMode::Core,
-        },
-        BoundedVec(table_data),
-    );
+    let tx = tx().tables().create_tables(BoundedVec(table_data));
 
     let nonce_value = nonce.load(Ordering::Acquire);
     info!("Submitting transaction with nonce: {}", nonce_value);

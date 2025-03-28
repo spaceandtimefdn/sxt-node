@@ -1,0 +1,33 @@
+[package]
+name = "translation-layer"
+version = "0.1.0"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+sxt-core = { workspace = true, features=["std"] }
+subxt.workspace = true
+tokio = { workspace = true, features=["full"]}
+axum = { workspace = true, default-features = true }
+serde = { workspace = true, features = ["derive"] }
+subxt-signer = { workspace = true, default-features = true}
+tower-http = { workspace = true, features = ["cors"] }
+snafu.workspace = true
+hex = { workspace = true, features = ["std"]}
+arrow = { workspace = true}
+log = { workspace = true }
+env_logger.workspace = true
+utoipa = { workspace = true , features = ["axum_extras", ] }
+utoipa-swagger-ui = { workspace = true, features = ["axum"] }
+utoipa-axum = { workspace = true }
+futures.workspace = true
+linked-list = { workspace = true }
+clap = { workspace = true, features = ["derive", "env"]}
+anyhow.workspace = true
+base64 = { workspace = true, default-features = true }
+
+[lints]
+workspace = true

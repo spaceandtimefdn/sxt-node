@@ -22,7 +22,11 @@ pub mod pallet {
     use frame_support::pallet_prelude::{StorageDoubleMap, ValueQuery, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
-    use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
+    use proof_of_sql_commitment_map::{
+        CommitmentSchemeFlags,
+        TableCommitmentBytes,
+        TableCommitmentBytesPerCommitmentScheme,
+    };
     use sp_runtime::Vec;
     use sxt_core::permissions::*;
     use sxt_core::tables::{
@@ -35,6 +39,8 @@ pub mod pallet {
         uuids_from_create_statement,
         uuids_from_sqlparser,
         ColumnUuidList,
+        CommitmentBytes,
+        CommitmentScheme,
         CreateStatement,
         IdentifierList,
         IndexerMode,
@@ -48,11 +54,47 @@ pub mod pallet {
         TableType,
         TableUuid,
         TableVersion,
-        UpdateTableList,
     };
     use sxt_core::ByteString;
 
     use super::*;
+
+    /// TODO: add docs
+    pub type UpdateTableCmd = (
+        TableIdentifier,
+        CreateStatement,
+        TableType,
+        Option<CommitmentBytes>,
+        Option<SnapshotUrl>,
+        Option<CommitmentScheme>,
+    );
+
+    /// The individual information needed to create (update) a table
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    pub struct UpdateTable {
+        /// Table identifier (name, namespace)
+        pub ident: TableIdentifier,
+        /// DDL statement
+        pub create_statement: CreateStatement,
+        /// Table type
+        pub table_type: TableType,
+        /// Commitment related data
+        pub commitment: CommitmentCreationCmd,
+        /// Source chain
+        pub source: Source,
+    }
+
+    /// A list of tables that we want to create or update
+    pub type UpdateTableList = BoundedVec<UpdateTable, ConstU32<1024>>;
+
+    /// What type of commitment to create
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    pub enum CommitmentCreationCmd {
+        /// From a preexisting commitment
+        FromSnapshot(SnapshotUrl, TableCommitmentBytesPerCommitmentScheme),
+        /// An empty commitment
+        Empty(CommitmentSchemeFlags),
+    }
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -158,6 +200,10 @@ pub mod pallet {
     pub type TableInsertQuorums<T: Config> =
         StorageMap<_, Blake2_128Concat, TableIdentifier, InsertQuorumSize, ValueQuery>;
 
+    #[pallet::storage]
+    pub type TableSources<T: Config> =
+        StorageMap<_, Blake2_128Concat, TableIdentifier, Source, ValueQuery>;
+
     /// A table identifier, a sql statement for table creation, and an initial commitment
     pub type CreateTableCmd = (
         TableIdentifier,
@@ -220,6 +266,15 @@ pub mod pallet {
 
         /// The desired table could not be located
         TableNotFound,
+
+        /// missing commitment scheme
+        MissingCommitmentScheme,
+
+        /// Error constructing a bounded vector for the given data
+        BoundedVecError,
+
+        /// Missing snapshot
+        MissingSnapshot,
     }
 
     #[pallet::call]
@@ -251,6 +306,7 @@ pub mod pallet {
                         table.table_name.clone(),
                         table.ddl.clone(),
                         table.table_type.clone(),
+                        source_and_mode.source.clone(),
                     );
 
                     let statement_with_metadata = Self::insert_initial_commitment(
@@ -397,19 +453,20 @@ pub mod pallet {
         /// Add a UUID for this table
         pub fn insert_table_uuid(
             ident: TableIdentifier,
-            version: u16,
             uuid: TableUuid,
             column_uuids: ColumnUuidList,
-        ) -> Result<(), DispatchError> {
-            if TableVersions::<T>::contains_key(&ident, version) {
-                // Error, this version has already been assigned a UUID
-                return Err(Error::<T>::VersionAlreadyExists.into());
-            }
+        ) -> Result<TableVersion, DispatchError> {
+            let next_version = TableVersions::<T>::iter_prefix(&ident)
+                .map(|(v, _)| v)
+                .max()
+                .map(|v| v + 1)
+                .unwrap_or(0);
 
-            TableVersions::<T>::set(&ident, version, uuid);
-            ColumnVersions::<T>::set(&ident, version, column_uuids);
+            // Insert table and column UUIDs at the computed version
+            TableVersions::<T>::set(&ident, next_version, uuid);
+            ColumnVersions::<T>::set(&ident, next_version, column_uuids);
 
-            Ok(())
+            Ok(next_version)
         }
 
         /// Uodate the schema and commitment for a table and source and mode combo
@@ -417,6 +474,7 @@ pub mod pallet {
             ident: TableIdentifier,
             stmnt: CreateStatement,
             table_type: TableType,
+            source: Source,
         ) {
             let mut identifiers = Identifiers::<T>::get(&table_type);
 
@@ -427,7 +485,8 @@ pub mod pallet {
             Schemas::<T>::insert(namespace, name, stmnt.clone());
             let quorum: InsertQuorumSize = table_type.into();
 
-            TableInsertQuorums::<T>::insert(ident, quorum);
+            TableInsertQuorums::<T>::insert(&ident, quorum);
+            TableSources::<T>::insert(&ident, source);
         }
 
         /// Insert the initial commit for this table using the commitments-sql pallet.
@@ -541,23 +600,36 @@ pub mod pallet {
 
             let tables_with_meta_columns = tables
                 .into_iter()
-                .map(|(identifier, statement, table_type)| {
-                    Self::insert_schema(identifier.clone(), statement.clone(), table_type.clone());
-
-                    let create_table = create_statement_to_sqlparser(statement)
+                .map(|mut table| {
+                    let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(table.create_statement.clone(), table.ident.clone());
+                    Self::insert_table_uuid(table.ident.clone(), table_uuid, column_uuids)?;
+                    Self::insert_schema(
+                        table.ident.clone(),
+                        table.create_statement.clone(),
+                        table.table_type.clone(),
+                        table.source.clone(),
+                    );
+                    let create_table = create_statement_to_sqlparser(table.create_statement.clone())
                         .map_err(|_| Error::<T>::CreateStatementParseError)?;
-
                     let CreateTableAndCommitmentMetadata {
-                    table_with_meta_columns,
-                    ..
-                } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(
-                    create_table,
-                )?;
+                        table_with_meta_columns,
+                        ..
+                    } = match table.commitment {
+                        CommitmentCreationCmd::Empty(scheme) => pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_scheme(create_table, scheme)?,
+                        CommitmentCreationCmd::FromSnapshot(ref snapshot_url, ref per_commitment_scheme) => {
+                            Snapshots::<T>::insert(table.ident.clone(), snapshot_url.clone());
+                                pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
+                                    create_table,
+                                    per_commitment_scheme.clone(),
+                                )?
 
+                        },
+                    };
                     let statement_with_metadata =
                         sqlparser_to_create_statement(table_with_meta_columns)
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
-                    Ok((identifier, statement_with_metadata, table_type))
+                    table.create_statement = statement_with_metadata;
+                    Ok(table)
                 })
                 .collect::<Result<Vec<_>, DispatchError>>()?
                 .try_into()

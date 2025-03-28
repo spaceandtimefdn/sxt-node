@@ -49,6 +49,7 @@ sp-io.workspace = true
 sp-runtime.workspace = true
 native.workspace = true
 arrow.workspace = true
+proof-of-sql-commitment-map.workspace = true
 
 [features]
 default = ["std"]

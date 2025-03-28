@@ -1,0 +1,1592 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "translation-layer",
+        "description": "",
+        "contact": {
+            "name": "Space and Time Labs"
+        },
+        "license": {
+            "name": "MIT-0",
+            "identifier": "MIT-0"
+        },
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/api/mainnet/add_smartcontract": {
+            "post": {
+                "tags": [
+                    "add-smartcontract"
+                ],
+                "summary": "Submits a transaction to add a smart contract to the indexing system.",
+                "description": "This endpoint takes a smart contract configuration, converts it into the appropriate runtime format,\nand submits it as an extrinsic to the blockchain.\n\n# Request Body\n- `source` (String): The source blockchain network.\n- `address` (String): The contract's address on the source chain.\n- `abi` (Option<String>): The optional Application Binary Interface (ABI) of the contract.\n- `starting_block` (Option<u64>): The block number from which to start indexing.\n- `target_schema` (Option<String>): The schema or DDL statement for contract data.\n- `contract_name` (Option<String>): A human-readable name for the contract.\n- `events` (Vec<EventMapping>): List of event mappings (origin event → target table).\n- `ddl_statement` (Option<String>): The DDL statement corresponding to the smart contract.\n\n# Responses\n- **200 OK**: Smart contract successfully added.\n- **400 BAD REQUEST**: Invalid request parameters.\n- **500 INTERNAL SERVER ERROR**: Transaction submission failed.\n\n# Example Usage\n```sh\ncurl -X POST \"http://127.0.0.1:3000/add_smartcontract\" -H \"Content-Type: application/json\" -d '{...}'\n```",
+                "operationId": "add_smartcontract",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AddContractRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Smart contract added successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mainnet/create_table": {
+            "post": {
+                "tags": [
+                    "create-table"
+                ],
+                "summary": "Submits a transaction to create a new table in the indexing system.",
+                "description": "This endpoint constructs a table creation request and submits it as an extrinsic to the blockchain.\n\n# Request Body\n- `schema_name` (String): The schema namespace for the table.\n- `ddl_statement` (String): The Data Definition Language (DDL) statement defining the table structure.\n- `source` (String): The source blockchain network.\n- `mode` (String): The indexing mode for the table.\n- `tables` (Vec<TableRequest>): A list of tables to be created.\n- `table_name` (String): The name of the table.\n\n# Responses\n- **200 OK**: Table successfully created.\n- **400 BAD REQUEST**: Invalid request parameters.\n- **500 INTERNAL SERVER ERROR**: Transaction submission failed.\n\n# Example Usage\n```sh\ncurl -X POST \"http://127.0.0.1:3000/create_table\" -H \"Content-Type: application/json\" -d '{\n    \"schemaName\": \"public\",\n    \"ddlStatement\": \"CREATE TABLE example_table (id SERIAL PRIMARY KEY, data TEXT);\",\n    \"source\": \"Ethereum\",\n    \"mode\": \"indexing\",\n    \"tables\": [\n        {\n            \"tableName\": \"example_table\",\n            \"schemaName\": \"public\",\n            \"ddlStatement\": \"CREATE TABLE example_table (id SERIAL PRIMARY KEY, data TEXT);\"\n        }\n    ],\n    \"tableName\": \"example_table\"\n}'\n```",
+                "operationId": "create_table",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTableRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Table created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mainnet/drop_table": {
+            "post": {
+                "tags": [
+                    "drop-table"
+                ],
+                "summary": "Submits a transaction to drop a table from the indexing system.",
+                "description": "This endpoint allows for the removal of an indexed table from the blockchain storage.\n\n# Request Body\n- `schema_name` (String): The schema namespace of the table.\n- `table_name` (String): The name of the table to be removed.\n- `source` (String): The source blockchain network.\n- `mode` (String): The indexing mode.\n\n# Responses\n- **200 OK**: Table successfully removed.\n- **400 BAD REQUEST**: Invalid request parameters.\n- **500 INTERNAL SERVER ERROR**: Transaction submission failed.\n\n# Example Usage\n```sh\ncurl -X POST \"http://127.0.0.1:3000/drop_table\" -H \"Content-Type: application/json\" -d '{\n    \"schemaName\": \"public\",\n    \"tableName\": \"example_table\",\n    \"source\": \"Ethereum\",\n    \"mode\": \"indexing\"\n}'\n```",
+                "operationId": "drop_table",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DropTableRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Table dropped successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mainnet/get_extrinsic_status": {
+            "get": {
+                "tags": [
+                    "get-extrinsic-status"
+                ],
+                "summary": "Retrieves the status of a transaction within the blockchain.",
+                "description": "This endpoint queries the transaction progress based on its `tx_hash`. It returns detailed status information,\nincluding whether the transaction has been validated, broadcasted, included in a block, finalized, or encountered any errors.\n\n# Query Parameters\n- `tx_hash` (String): The transaction hash to check.\n\n# Responses\n- **200 OK**: The transaction status is retrieved successfully.\n- **404 NOT FOUND**: The transaction was not found.\n- **500 INTERNAL SERVER ERROR**: An error occurred while fetching transaction status.\n\n# Example Usage\n```sh\ncurl -X GET \"http://127.0.0.1:3000/get_extrinsic_status?tx_hash=0x123...\"\n```\n\n# Returned Transaction Status Fields:\n- `validated`: Whether the transaction has been validated.\n- `broadcasted_peers`: Number of peers the transaction was broadcasted to.\n- `in_best_block`: Block hash where the transaction was included.\n- `finalized_in_block`: Block hash where the transaction was finalized.\n- `dropped_message`: If the transaction was dropped, the reason.\n- `invalid_message`: If the transaction was marked invalid, the reason.\n- `error_message`: If the transaction encountered an error, details of the error.",
+                "operationId": "get_extrinsic_status",
+                "parameters": [
+                    {
+                        "name": "tx_hash",
+                        "in": "query",
+                        "description": "Transaction hash",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transaction status retrieved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TxStatusResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Transaction not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mainnet/get_extrinsic_status_in_block": {
+            "get": {
+                "tags": [
+                    "get-extrinsic-status-in-block"
+                ],
+                "summary": "Retrieves the execution status of a transaction within a specific block.",
+                "description": "This endpoint fetches the extrinsics from the specified block and verifies if the given transaction (`tx_hash`)\nwas included in that block. If found, it checks for any failure events associated with the transaction.\n\n# Query Parameters\n- `tx_hash` (String): The transaction hash to check.\n- `block_hash` (String): The hash of the block where the transaction is expected to be found.\n\n# Responses\n- **200 OK**: The transaction execution status is retrieved successfully.\n- **400 BAD REQUEST**: Invalid request parameters (e.g., missing or incorrectly formatted `tx_hash` or `block_hash`).\n- **404 NOT FOUND**: The transaction was not found in the given block.\n- **500 INTERNAL SERVER ERROR**: An error occurred while fetching block data or extrinsics.\n\n# Example Usage\n```sh\ncurl -X GET \"http://127.0.0.1:3000/get_extrinsic_status_in_block?tx_hash=0x123...&block_hash=0xabc...\"\n```",
+                "operationId": "get_extrinsic_status_in_block",
+                "parameters": [
+                    {
+                        "name": "tx_hash",
+                        "in": "query",
+                        "description": "Transaction hash",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "block_hash",
+                        "in": "query",
+                        "description": "Block hash",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transaction status retrieved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TxExecutionStatus"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Transaction not found in the block",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mainnet/get_smartcontract": {
+            "get": {
+                "tags": [
+                    "/get-smartcontract"
+                ],
+                "summary": "Retrieves the details of a specific smart contract.",
+                "description": "This endpoint queries the blockchain storage for a smart contract by its source and address.\n\n# Query Parameters\n- `source` (String): The blockchain network of the smart contract.\n- `address` (String): The address of the smart contract.\n\n# Responses\n- **200 OK**: Successfully retrieved the smart contract details.\n- **404 NOT FOUND**: Smart contract not found.\n- **500 INTERNAL SERVER ERROR**: Error accessing blockchain storage.\n\n# Example Usage\n```sh\ncurl -X GET \"http://127.0.0.1:3000/get_smartcontract?source=Ethereum&address=0x123...\"\n```",
+                "operationId": "get_smartcontract",
+                "parameters": [
+                    {
+                        "name": "source",
+                        "in": "query",
+                        "description": "Source of the smart contract",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "address",
+                        "in": "query",
+                        "description": "Address of the smart contract",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved contract",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GetContractResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Contract not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mainnet/get_smartcontracts": {
+            "get": {
+                "tags": [
+                    "get-smartcontracts"
+                ],
+                "summary": "Retrieves a list of all smart contracts indexed for a given blockchain source.",
+                "description": "This endpoint iterates over the blockchain storage to fetch all smart contracts stored for a specified source.\n\n# Query Parameters\n- `source` (String): The blockchain network whose smart contracts should be retrieved.\n\n# Responses\n- **200 OK**: Successfully retrieved the list of contracts.\n- **404 NOT FOUND**: No contracts found for the given source.\n- **500 INTERNAL SERVER ERROR**: Error accessing blockchain storage.\n\n# Example Usage\n```sh\ncurl -X GET \"http://127.0.0.1:3000/get_smartcontracts?source=Ethereum\"\n```",
+                "operationId": "get_smartcontracts",
+                "parameters": [
+                    {
+                        "name": "source",
+                        "in": "query",
+                        "description": "Source of the smart contracts",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved contracts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GetContractsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No contracts found for the given source",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mainnet/remove_smartcontract": {
+            "post": {
+                "tags": [
+                    "remove-smartcontract"
+                ],
+                "summary": "Submits a transaction to remove a smart contract from the indexing system.",
+                "description": "This endpoint allows for the removal of an indexed smart contract from the blockchain storage.\n\n# Request Body\n- `source` (String): The source blockchain network.\n- `address` (String): The contract's address on the source chain.\n\n# Responses\n- **200 OK**: Smart contract successfully removed.\n- **400 BAD REQUEST**: Invalid request parameters.\n- **500 INTERNAL SERVER ERROR**: Transaction submission failed.\n\n# Example Usage\n```sh\ncurl -X POST \"http://127.0.0.1:3000/remove_smartcontract\" -H \"Content-Type: application/json\" -d '{...}'\n```",
+                "operationId": "remove_smartcontract",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RemoveContractRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Smart contract removed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/testnet/add_smartcontract": {
+            "post": {
+                "tags": [
+                    "add-smartcontract"
+                ],
+                "summary": "Submits a transaction to add a smart contract to the indexing system.",
+                "description": "This endpoint takes a smart contract configuration, converts it into the appropriate runtime format,\nand submits it as an extrinsic to the blockchain.\n\n# Request Body\n- `source` (String): The source blockchain network.\n- `address` (String): The contract's address on the source chain.\n- `abi` (Option<String>): The optional Application Binary Interface (ABI) of the contract.\n- `starting_block` (Option<u64>): The block number from which to start indexing.\n- `target_schema` (Option<String>): The schema or DDL statement for contract data.\n- `contract_name` (Option<String>): A human-readable name for the contract.\n- `events` (Vec<EventMapping>): List of event mappings (origin event → target table).\n- `ddl_statement` (Option<String>): The DDL statement corresponding to the smart contract.\n\n# Responses\n- **200 OK**: Smart contract successfully added.\n- **400 BAD REQUEST**: Invalid request parameters.\n- **500 INTERNAL SERVER ERROR**: Transaction submission failed.\n\n# Example Usage\n```sh\ncurl -X POST \"http://127.0.0.1:3000/add_smartcontract\" -H \"Content-Type: application/json\" -d '{...}'\n```",
+                "operationId": "add_smartcontract",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AddContractRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Smart contract added successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/testnet/create_table": {
+            "post": {
+                "tags": [
+                    "create-table"
+                ],
+                "summary": "Submits a transaction to create a new table in the indexing system.",
+                "description": "This endpoint constructs a table creation request and submits it as an extrinsic to the blockchain.\n\n# Request Body\n- `schema_name` (String): The schema namespace for the table.\n- `ddl_statement` (String): The Data Definition Language (DDL) statement defining the table structure.\n- `source` (String): The source blockchain network.\n- `mode` (String): The indexing mode for the table.\n- `tables` (Vec<TableRequest>): A list of tables to be created.\n- `table_name` (String): The name of the table.\n\n# Responses\n- **200 OK**: Table successfully created.\n- **400 BAD REQUEST**: Invalid request parameters.\n- **500 INTERNAL SERVER ERROR**: Transaction submission failed.\n\n# Example Usage\n```sh\ncurl -X POST \"http://127.0.0.1:3000/create_table\" -H \"Content-Type: application/json\" -d '{\n    \"schemaName\": \"public\",\n    \"ddlStatement\": \"CREATE TABLE example_table (id SERIAL PRIMARY KEY, data TEXT);\",\n    \"source\": \"Ethereum\",\n    \"mode\": \"indexing\",\n    \"tables\": [\n        {\n            \"tableName\": \"example_table\",\n            \"schemaName\": \"public\",\n            \"ddlStatement\": \"CREATE TABLE example_table (id SERIAL PRIMARY KEY, data TEXT);\"\n        }\n    ],\n    \"tableName\": \"example_table\"\n}'\n```",
+                "operationId": "create_table",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTableRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Table created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/testnet/drop_table": {
+            "post": {
+                "tags": [
+                    "drop-table"
+                ],
+                "summary": "Submits a transaction to drop a table from the indexing system.",
+                "description": "This endpoint allows for the removal of an indexed table from the blockchain storage.\n\n# Request Body\n- `schema_name` (String): The schema namespace of the table.\n- `table_name` (String): The name of the table to be removed.\n- `source` (String): The source blockchain network.\n- `mode` (String): The indexing mode.\n\n# Responses\n- **200 OK**: Table successfully removed.\n- **400 BAD REQUEST**: Invalid request parameters.\n- **500 INTERNAL SERVER ERROR**: Transaction submission failed.\n\n# Example Usage\n```sh\ncurl -X POST \"http://127.0.0.1:3000/drop_table\" -H \"Content-Type: application/json\" -d '{\n    \"schemaName\": \"public\",\n    \"tableName\": \"example_table\",\n    \"source\": \"Ethereum\",\n    \"mode\": \"indexing\"\n}'\n```",
+                "operationId": "drop_table",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DropTableRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Table dropped successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/testnet/get_extrinsic_status": {
+            "get": {
+                "tags": [
+                    "get-extrinsic-status"
+                ],
+                "summary": "Retrieves the status of a transaction within the blockchain.",
+                "description": "This endpoint queries the transaction progress based on its `tx_hash`. It returns detailed status information,\nincluding whether the transaction has been validated, broadcasted, included in a block, finalized, or encountered any errors.\n\n# Query Parameters\n- `tx_hash` (String): The transaction hash to check.\n\n# Responses\n- **200 OK**: The transaction status is retrieved successfully.\n- **404 NOT FOUND**: The transaction was not found.\n- **500 INTERNAL SERVER ERROR**: An error occurred while fetching transaction status.\n\n# Example Usage\n```sh\ncurl -X GET \"http://127.0.0.1:3000/get_extrinsic_status?tx_hash=0x123...\"\n```\n\n# Returned Transaction Status Fields:\n- `validated`: Whether the transaction has been validated.\n- `broadcasted_peers`: Number of peers the transaction was broadcasted to.\n- `in_best_block`: Block hash where the transaction was included.\n- `finalized_in_block`: Block hash where the transaction was finalized.\n- `dropped_message`: If the transaction was dropped, the reason.\n- `invalid_message`: If the transaction was marked invalid, the reason.\n- `error_message`: If the transaction encountered an error, details of the error.",
+                "operationId": "get_extrinsic_status",
+                "parameters": [
+                    {
+                        "name": "tx_hash",
+                        "in": "query",
+                        "description": "Transaction hash",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transaction status retrieved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TxStatusResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Transaction not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/testnet/get_extrinsic_status_in_block": {
+            "get": {
+                "tags": [
+                    "get-extrinsic-status-in-block"
+                ],
+                "summary": "Retrieves the execution status of a transaction within a specific block.",
+                "description": "This endpoint fetches the extrinsics from the specified block and verifies if the given transaction (`tx_hash`)\nwas included in that block. If found, it checks for any failure events associated with the transaction.\n\n# Query Parameters\n- `tx_hash` (String): The transaction hash to check.\n- `block_hash` (String): The hash of the block where the transaction is expected to be found.\n\n# Responses\n- **200 OK**: The transaction execution status is retrieved successfully.\n- **400 BAD REQUEST**: Invalid request parameters (e.g., missing or incorrectly formatted `tx_hash` or `block_hash`).\n- **404 NOT FOUND**: The transaction was not found in the given block.\n- **500 INTERNAL SERVER ERROR**: An error occurred while fetching block data or extrinsics.\n\n# Example Usage\n```sh\ncurl -X GET \"http://127.0.0.1:3000/get_extrinsic_status_in_block?tx_hash=0x123...&block_hash=0xabc...\"\n```",
+                "operationId": "get_extrinsic_status_in_block",
+                "parameters": [
+                    {
+                        "name": "tx_hash",
+                        "in": "query",
+                        "description": "Transaction hash",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "block_hash",
+                        "in": "query",
+                        "description": "Block hash",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transaction status retrieved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TxExecutionStatus"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Transaction not found in the block",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/testnet/get_smartcontract": {
+            "get": {
+                "tags": [
+                    "/get-smartcontract"
+                ],
+                "summary": "Retrieves the details of a specific smart contract.",
+                "description": "This endpoint queries the blockchain storage for a smart contract by its source and address.\n\n# Query Parameters\n- `source` (String): The blockchain network of the smart contract.\n- `address` (String): The address of the smart contract.\n\n# Responses\n- **200 OK**: Successfully retrieved the smart contract details.\n- **404 NOT FOUND**: Smart contract not found.\n- **500 INTERNAL SERVER ERROR**: Error accessing blockchain storage.\n\n# Example Usage\n```sh\ncurl -X GET \"http://127.0.0.1:3000/get_smartcontract?source=Ethereum&address=0x123...\"\n```",
+                "operationId": "get_smartcontract",
+                "parameters": [
+                    {
+                        "name": "source",
+                        "in": "query",
+                        "description": "Source of the smart contract",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "address",
+                        "in": "query",
+                        "description": "Address of the smart contract",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved contract",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GetContractResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Contract not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/testnet/get_smartcontracts": {
+            "get": {
+                "tags": [
+                    "get-smartcontracts"
+                ],
+                "summary": "Retrieves a list of all smart contracts indexed for a given blockchain source.",
+                "description": "This endpoint iterates over the blockchain storage to fetch all smart contracts stored for a specified source.\n\n# Query Parameters\n- `source` (String): The blockchain network whose smart contracts should be retrieved.\n\n# Responses\n- **200 OK**: Successfully retrieved the list of contracts.\n- **404 NOT FOUND**: No contracts found for the given source.\n- **500 INTERNAL SERVER ERROR**: Error accessing blockchain storage.\n\n# Example Usage\n```sh\ncurl -X GET \"http://127.0.0.1:3000/get_smartcontracts?source=Ethereum\"\n```",
+                "operationId": "get_smartcontracts",
+                "parameters": [
+                    {
+                        "name": "source",
+                        "in": "query",
+                        "description": "Source of the smart contracts",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved contracts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GetContractsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No contracts found for the given source",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/testnet/remove_smartcontract": {
+            "post": {
+                "tags": [
+                    "remove-smartcontract"
+                ],
+                "summary": "Submits a transaction to remove a smart contract from the indexing system.",
+                "description": "This endpoint allows for the removal of an indexed smart contract from the blockchain storage.\n\n# Request Body\n- `source` (String): The source blockchain network.\n- `address` (String): The contract's address on the source chain.\n\n# Responses\n- **200 OK**: Smart contract successfully removed.\n- **400 BAD REQUEST**: Invalid request parameters.\n- **500 INTERNAL SERVER ERROR**: Transaction submission failed.\n\n# Example Usage\n```sh\ncurl -X POST \"http://127.0.0.1:3000/remove_smartcontract\" -H \"Content-Type: application/json\" -d '{...}'\n```",
+                "operationId": "remove_smartcontract",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RemoveContractRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Smart contract removed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AddContractRequest": {
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "description": "A normal contract",
+                        "required": [
+                            "source",
+                            "address",
+                            "events",
+                            "tables",
+                            "type"
+                        ],
+                        "properties": {
+                            "abi": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "The optional ABI (Application Binary Interface) of the contract."
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "The contract's address on the source chain."
+                            },
+                            "contract_name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "A human-readable name for the contract."
+                            },
+                            "ddl_statement": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "The DDL statement correpsonding to this smart contract"
+                            },
+                            "events": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/EventMapping"
+                                },
+                                "description": "List of event mappings (origin event -> target table)."
+                            },
+                            "source": {
+                                "type": "string",
+                                "description": "The source blockchain network."
+                            },
+                            "starting_block": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "format": "int64",
+                                "description": "The block number from which to start indexing.",
+                                "minimum": 0
+                            },
+                            "tables": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/TableRequest"
+                                },
+                                "description": "The tables to create along with this smartcontract"
+                            },
+                            "target_schema": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "The schema or DDL statement for the contract data."
+                            },
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "normal"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "type": "object",
+                        "description": "A proxy contract that points to an implementation contract.",
+                        "required": [
+                            "source",
+                            "address",
+                            "implementation_address",
+                            "events",
+                            "tables",
+                            "type"
+                        ],
+                        "properties": {
+                            "abi": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "The optional ABI of the contract."
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "The proxy contract's address."
+                            },
+                            "contract_name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "A human-readable name for the contract."
+                            },
+                            "ddl_statement": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "The DDL statement correpsonding to this smart contract"
+                            },
+                            "events": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/EventMapping"
+                                },
+                                "description": "List of event mappings (origin event -> target table)."
+                            },
+                            "implementation_address": {
+                                "type": "string",
+                                "description": "The address of the contract's implementation."
+                            },
+                            "source": {
+                                "type": "string",
+                                "description": "The source blockchain network."
+                            },
+                            "starting_block": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "format": "int64",
+                                "description": "The block number from which to start indexing.",
+                                "minimum": 0
+                            },
+                            "tables": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/TableRequest"
+                                },
+                                "description": "The tables to create along with this smartcontract"
+                            },
+                            "target_schema": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "The schema or DDL statement for the contract data."
+                            },
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "proxy"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "Represents a request to add a smart contract to the indexing system.\nA standard smart contract."
+            },
+            "ApiContract": {
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "description": "A standard smart contract.",
+                        "required": [
+                            "normal"
+                        ],
+                        "properties": {
+                            "normal": {
+                                "type": "object",
+                                "description": "A standard smart contract.",
+                                "required": [
+                                    "source",
+                                    "address",
+                                    "events"
+                                ],
+                                "properties": {
+                                    "abi": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "The optional ABI of the contract."
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "description": "The contract's address on the source chain."
+                                    },
+                                    "contract_name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "A human-readable name for the contract."
+                                    },
+                                    "ddl_statement": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "The DDL statement correpsonding to this smart contract"
+                                    },
+                                    "events": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/EventMapping"
+                                        },
+                                        "description": "A list of events that this smart contract emits that we are interested in indexing"
+                                    },
+                                    "source": {
+                                        "type": "string",
+                                        "description": "The source blockchain network."
+                                    },
+                                    "starting_block": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ],
+                                        "format": "int64",
+                                        "description": "The block number from which to start indexing.",
+                                        "minimum": 0
+                                    },
+                                    "target_schema": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "The schema or DDL statement for the contract data."
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "type": "object",
+                        "description": "A proxy contract that points to an implementation contract.",
+                        "required": [
+                            "proxy"
+                        ],
+                        "properties": {
+                            "proxy": {
+                                "type": "object",
+                                "description": "A proxy contract that points to an implementation contract.",
+                                "required": [
+                                    "source",
+                                    "address",
+                                    "implementation_address",
+                                    "events"
+                                ],
+                                "properties": {
+                                    "abi": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "The optional ABI of the contract."
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "description": "The proxy contract's address."
+                                    },
+                                    "contract_name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "A human-readable name for the contract."
+                                    },
+                                    "ddl_statement": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "The DDL statement correpsonding to this smart contract"
+                                    },
+                                    "events": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/EventMapping"
+                                        },
+                                        "description": "A list of events that this smart contract emits that we are interested in indexing"
+                                    },
+                                    "implementation_address": {
+                                        "type": "string",
+                                        "description": "The address of the contract's implementation."
+                                    },
+                                    "source": {
+                                        "type": "string",
+                                        "description": "The source blockchain network."
+                                    },
+                                    "starting_block": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ],
+                                        "format": "int64",
+                                        "description": "The block number from which to start indexing.",
+                                        "minimum": 0
+                                    },
+                                    "target_schema": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "The schema or DDL statement for the contract data."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "description": "Represents the API response format for retrieving contract details."
+            },
+            "ApiResponse": {
+                "type": "object",
+                "description": "Generic API response structure.",
+                "required": [
+                    "success"
+                ],
+                "properties": {
+                    "errMsg": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "An optional error message in case of failure."
+                    },
+                    "success": {
+                        "type": "boolean",
+                        "description": "Indicates whether the request was successful."
+                    },
+                    "txHash": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The transaction hash associated with the request, if applicable."
+                    }
+                }
+            },
+            "CommitmentScheme": {
+                "type": "string",
+                "enum": [
+                    "HyperKzg",
+                    "DynamicDory"
+                ]
+            },
+            "CreateTableRequest": {
+                "type": "object",
+                "description": "Represents a request to create tables for storing indexed data.",
+                "required": [
+                    "schemaName",
+                    "ddlStatement",
+                    "tables",
+                    "tableName",
+                    "tableType"
+                ],
+                "properties": {
+                    "ddlStatement": {
+                        "type": "string",
+                        "description": "Schema level DDL statement"
+                    },
+                    "schemaName": {
+                        "type": "string",
+                        "description": "Schema name"
+                    },
+                    "tableName": {
+                        "type": "string",
+                        "description": "The table name."
+                    },
+                    "tableType": {
+                        "$ref": "#/components/schemas/TableType",
+                        "description": "The table type"
+                    },
+                    "tables": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TableRequest"
+                        },
+                        "description": "A list of tables to be created."
+                    }
+                }
+            },
+            "DropTableRequest": {
+                "type": "object",
+                "description": "Represents a request to drop a table.",
+                "required": [
+                    "schemaName",
+                    "tableName",
+                    "source",
+                    "mode",
+                    "tableType"
+                ],
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "description": "The indexing mode."
+                    },
+                    "schemaName": {
+                        "type": "string",
+                        "description": "The schema name in which the table exists."
+                    },
+                    "source": {
+                        "type": "string",
+                        "description": "The source blockchain network."
+                    },
+                    "tableName": {
+                        "type": "string",
+                        "description": "The table name to drop."
+                    },
+                    "tableType": {
+                        "$ref": "#/components/schemas/TableType",
+                        "description": "Table type"
+                    }
+                }
+            },
+            "EventMapping": {
+                "type": "object",
+                "description": "Represents an event mapping for a smart contract.",
+                "required": [
+                    "name",
+                    "signature",
+                    "table"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The event name."
+                    },
+                    "signature": {
+                        "type": "string",
+                        "description": "The event signature."
+                    },
+                    "table": {
+                        "type": "string",
+                        "description": "The target table name."
+                    }
+                }
+            },
+            "GetContractResponse": {
+                "type": "object",
+                "description": "Represents the response format when retrieving a contract's details.",
+                "required": [
+                    "success"
+                ],
+                "properties": {
+                    "contract": {
+                        "oneOf": [
+                            {
+                                "type": "null"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ApiContract",
+                                "description": "The retrieved contract details, if found."
+                            }
+                        ]
+                    },
+                    "errMsg": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "An optional error message in case of failure."
+                    },
+                    "success": {
+                        "type": "boolean",
+                        "description": "Indicates whether the request was successful."
+                    }
+                }
+            },
+            "GetContractsResponse": {
+                "type": "object",
+                "description": "Response structure for retrieving multiple smart contracts.\n\nThis struct is returned when querying for all smart contracts associated with a given source.\n\n# Fields\n- `success` (bool): Indicates whether the query was successfully processed.\n- `err_msg` (Option<String>): An optional error message if the request fails.\n- `contracts` (Vec<ApiContract>): A list of retrieved smart contracts.\n\n# Example Response\n```json\n{\n  \"success\": true,\n  \"errMsg\": null,\n  \"contracts\": [\n    {\n      \"source\": \"Ethereum\",\n      \"address\": \"0x1234567890abcdef1234567890abcdef12345678\",\n      \"contractName\": \"TestContract\",\n      \"startingBlock\": 123456,\n      \"abi\": null,\n      \"events\": [\n        {\n          \"name\": \"Transfer\",\n          \"signature\": \"Transfer(indexed address from, indexed address to, uint256 value)\",\n          \"table\": \"event_transfer\"\n        }\n      ]\n    }\n  ]\n}\n```",
+                "required": [
+                    "success",
+                    "contracts"
+                ],
+                "properties": {
+                    "contracts": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ApiContract"
+                        },
+                        "description": "The list of retrieved smart contracts."
+                    },
+                    "errMsg": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "An optional error message in case of failure."
+                    },
+                    "success": {
+                        "type": "boolean",
+                        "description": "Indicates whether the query was successful."
+                    }
+                }
+            },
+            "RemoveContractRequest": {
+                "type": "object",
+                "description": "Represents a request to remove a smart contract from the indexing system.",
+                "required": [
+                    "source",
+                    "address"
+                ],
+                "properties": {
+                    "address": {
+                        "type": "string",
+                        "description": "The contract's address on the source chain."
+                    },
+                    "source": {
+                        "type": "string",
+                        "description": "The source blockchain network."
+                    }
+                }
+            },
+            "TableRequest": {
+                "type": "object",
+                "description": "Represents an individual table entry inside a `CreateTableRequest`.",
+                "required": [
+                    "tableType",
+                    "tableName",
+                    "schemaName",
+                    "ddlStatement",
+                    "commitment",
+                    "snapshotUrl",
+                    "commitmentScheme"
+                ],
+                "properties": {
+                    "commitment": {
+                        "type": "string",
+                        "description": "commitment data"
+                    },
+                    "commitmentScheme": {
+                        "$ref": "#/components/schemas/CommitmentScheme",
+                        "description": "commitment scheme"
+                    },
+                    "ddlStatement": {
+                        "type": "string",
+                        "description": "The Data Definition Language (DDL) statement defining tnkhe table schema."
+                    },
+                    "schemaName": {
+                        "type": "string",
+                        "description": "The namespace of the table."
+                    },
+                    "snapshotUrl": {
+                        "type": "string",
+                        "description": "snapshot location"
+                    },
+                    "tableName": {
+                        "type": "string",
+                        "description": "The table name."
+                    },
+                    "tableType": {
+                        "$ref": "#/components/schemas/TableType",
+                        "description": "table type"
+                    }
+                }
+            },
+            "TableType": {
+                "type": "string",
+                "description": "Represents the type of a table being created or referenced within the translation layer.\n\nThis enum categorizes tables based on their intended usage and ownership model.\nIt is used to determine how data should be interpreted, stored, or indexed\nacross different subsystems.\n\n# Variants\n- `CoreBlockchain`: A default system table directly tied to the core blockchain state.\n- `SCI`: A table used for indexing smart contract events and data (Smart Contract Indexing).\n- `Community`: A table managed or curated by the community or external contributors.",
+                "enum": [
+                    "CoreBlockchain",
+                    "SCI",
+                    "Community"
+                ]
+            },
+            "TxExecutionStatus": {
+                "type": "object",
+                "description": "Represents the execution status of a transaction.\n\nThis struct provides information about whether the transaction was successful\nand, if applicable, additional details regarding its execution.",
+                "required": [
+                    "success"
+                ],
+                "properties": {
+                    "details": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Additional details about the execution, such as error messages if the transaction failed."
+                    },
+                    "success": {
+                        "type": "boolean",
+                        "description": "Indicates whether the transaction was executed successfully."
+                    }
+                }
+            },
+            "TxStatusDetails": {
+                "type": "object",
+                "description": "Provides detailed information about the status of a blockchain transaction.\n\nThis struct contains various transaction state indicators, including whether it has been finalized,\nbroadcasted, dropped, or encountered an error.\n\n# Fields\n- `validated` (bool): Whether the transaction has been validated.\n- `no_longer_in_best_block` (bool): Indicates if the transaction was removed from the best block.\n- `broadcasted_peers` (Option<u32>): The number of peers the transaction was broadcasted to.\n- `in_best_block` (Option<String>): The block hash where the transaction was included.\n- `finalized_in_block` (Option<String>): The block hash where the transaction was finalized.\n- `dropped_message` (Option<String>): If applicable, a message explaining why the transaction was dropped.\n- `invalid_message` (Option<String>): If applicable, a message explaining why the transaction was deemed invalid.\n- `error_message` (Option<String>): If applicable, a message describing any error encountered during execution.\n\n# Example Response\n```json\n{\n  \"validated\": true,\n  \"noLongerInBestBlock\": false,\n  \"broadcastedPeers\": 3,\n  \"inBestBlock\": \"0xabc123...\",\n  \"finalizedInBlock\": \"0xdef456...\",\n  \"droppedMessage\": null,\n  \"invalidMessage\": null,\n  \"errorMessage\": null\n}\n```",
+                "required": [
+                    "validated",
+                    "no_longer_in_best_block"
+                ],
+                "properties": {
+                    "broadcasted_peers": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "format": "int32",
+                        "description": "The number of peers the transaction was broadcasted to.",
+                        "minimum": 0
+                    },
+                    "dropped_message": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "If applicable, a message explaining why the transaction was dropped."
+                    },
+                    "error_message": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "If applicable, a message describing any error encountered during execution."
+                    },
+                    "finalized_in_block": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The block hash where the transaction was finalized."
+                    },
+                    "in_best_block": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The block hash where the transaction was included."
+                    },
+                    "invalid_message": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "If applicable, a message explaining why the transaction was deemed invalid."
+                    },
+                    "no_longer_in_best_block": {
+                        "type": "boolean",
+                        "description": "Specifies if the transaction is no longer in the best block."
+                    },
+                    "validated": {
+                        "type": "boolean",
+                        "description": "Indicates whether the transaction has been validated."
+                    }
+                }
+            },
+            "TxStatusResponse": {
+                "type": "object",
+                "description": "Represents the status response for a transaction.\n\nThis struct provides details about a transaction's state, including whether it has been\nvalidated, finalized, or encountered errors.",
+                "required": [
+                    "success",
+                    "status"
+                ],
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/TxStatusDetails",
+                        "description": "Detailed information about the transaction's status."
+                    },
+                    "success": {
+                        "type": "boolean",
+                        "description": "Indicates whether the query was processed successfully."
+                    }
+                }
+            }
+        }
+    }
+}
