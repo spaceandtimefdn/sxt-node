@@ -1,327 +1,327 @@
--- CREATE SCHEMA IF NOT EXISTS ETHEREUM;
-CREATE TABLE IF NOT EXISTS ETHEREUM.BLOCKS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    BLOCK_HASH BINARY NOT NULL,
-    GAS_LIMIT DECIMAL(75, 0) NOT NULL,
-    GAS_USED DECIMAL(75, 0) NOT NULL,
-    MINER BINARY NOT NULL,
-    PARENT_HASH BINARY NOT NULL,
-    REWARD DECIMAL(75, 0) NOT NULL,
-    SIZE BIGINT NOT NULL,
-    TRANSACTION_COUNT INT NOT NULL,
-    NONCE BINARY NOT NULL,
-    RECEIPTS_ROOT BINARY NOT NULL,
-    SHA3_UNCLES BINARY NOT NULL,
-    STATE_ROOT BINARY NOT NULL,
-    TRANSACTIONS_ROOT BINARY NOT NULL,
-    UNCLES_COUNT BIGINT NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER)
+create schema if not exists ETHEREUM;
+create table if not exists ETHEREUM.BLOCKS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    block_hash bytea not null,
+    gas_limit decimal(75, 0) not null,
+    gas_used decimal(75, 0) not null,
+    miner bytea not null,
+    parent_hash bytea not null,
+    reward decimal(75, 0) not null,
+    size bigint not null,
+    transaction_count int not null,
+    nonce bytea not null,
+    receipts_root bytea not null,
+    sha3_uncles bytea not null,
+    state_root bytea not null,
+    transactions_root bytea not null,
+    uncles_count bigint not null,
+    primary key (block_number)
+);
+create table if not exists ETHEREUM.TRANSACTIONS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    transaction_fee decimal(75, 0) not null,
+    from_address bytea not null,
+    to_address bytea not null,
+    value_ decimal(75, 0) not null,
+    gas bigint not null,
+    receipt_cumulative_gas_used bigint not null,
+    receipt_status boolean not null,
+    primary key (block_number, transaction_hash)
+);
+create table if not exists ETHEREUM.TRANSACTION_DETAILS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    method_id bytea not null,
+    receipt_contract_address bytea not null,
+    type_ int not null,
+    gas_price decimal(75, 0) not null,
+    nonce int not null,
+    receipt_gas_used int not null,
+    max_fee_per_gas decimal(75, 0) not null,
+    max_priority_fee_per_gas decimal(75, 0) not null,
+    receipt_effective_gas_price decimal(75, 0) not null,
+    logs_count int not null,
+    primary key (block_number, transaction_hash)
+);
+create table if not exists ETHEREUM.NATIVE_WALLETS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    wallet_address bytea not null,
+    balance decimal(75, 0) not null,
+    primary key (
+                    block_number,
+                    wallet_address,
+                    balance
+                ),
+);
+create table if not exists ETHEREUM.NATIVE_TOKEN_TRANSFERS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    from_ bytea not null,
+    to_ bytea not null,
+    value_ decimal(75, 0) not null,
+    primary key (block_number, transaction_hash),
 );
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.TRANSACTIONS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    TRANSACTION_FEE DECIMAL(75, 0) NOT NULL,
-    FROM_ADDRESS BINARY NOT NULL,
-    TO_ADDRESS BINARY NOT NULL,
-    VALUE_ DECIMAL(75, 0) NOT NULL,
-    GAS BIGINT NOT NULL,
-    RECEIPT_CUMULATIVE_GAS_USED BIGINT NOT NULL,
-    RECEIPT_STATUS BOOLEAN NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH)
+create table if not exists ETHEREUM.CONTRACTS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    contract_address bytea not null,
+    contract_creator_address bytea not null,
+    primary key (contract_address, transaction_hash),
 );
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.TRANSACTION_DETAILS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    METHOD_ID BINARY NOT NULL,
-    RECEIPT_CONTRACT_ADDRESS ADDRESS NOT NULL,
-    TYPE_ INT NOT NULL,
-    GAS_PRICE DECIMAL(75, 0) NOT NULL,
-    NONCE INT NOT NULL,
-    RECEIPT_GAS_USED INT NOT NULL,
-    MAX_FEE_PER_GAS DECIMAL(75, 0) NOT NULL,
-    MAX_PRIORITY_FEE_PER_GAS DECIMAL(75, 0) NOT NULL,
-    RECEIPT_EFFECTIVE_GAS_PRICE DECIMAL(75, 0) NOT NULL,
-    LOGS_COUNT INT NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH)
+create table if not exists ETHEREUM.TOKEN_ERC20_CONTRACTS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    contract_address bytea not null,
+    name varchar not null,
+    symbol varchar not null,
+    decimals int not null,
+    primary key (transaction_hash, contract_address),
 );
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.NATIVE_WALLETS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    WALLET_ADDRESS ADDRESS NOT NULL,
-    BALANCE DECIMAL(75, 0) NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, WALLET_ADDRESS, BALANCE)
+create table if not exists ETHEREUM.TOKEN_ERC20_TRANSFERS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    contract_address bytea not null,
+    from_ bytea not null,
+    to_ bytea not null,
+    value_ decimal(75, 0) not null,
+    primary key (block_number, transaction_hash, event_index),
 );
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.NATIVE_TOKEN_TRANSFERS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    FROM_ ADDRESS NOT NULL,
-    TO_ ADDRESS NOT NULL,
-    VALUE_ DECIMAL(75, 0) NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.NFT_ERC721_CONTRACTS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    contract_address bytea not null,
+    name varchar not null,
+    symbol varchar not null,
+    primary key (transaction_hash, contract_address),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.CONTRACTS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    CONTRACT_CREATOR_ADDRESS ADDRESS NOT NULL,
-    PRIMARY KEY (CONTRACT_ADDRESS, TRANSACTION_HASH)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.NFT_ERC1155_CONTRACTS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    contract_address bytea not null,
+    primary key (transaction_hash, contract_address),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.TOKEN_ERC20_CONTRACTS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    NAME VARCHAR NOT NULL,
-    SYMBOL VARCHAR NOT NULL,
-    DECIMALS SMALLINT NOT NULL,
-    PRIMARY KEY (TRANSACTION_HASH, CONTRACT_ADDRESS)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.NFT_ERC1155_TRANSFER (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    contract_address bytea not null,
+    operator bytea not null,
+    from_ bytea not null,
+    to_ bytea not null,
+    id bytea not null,
+    value_ decimal(75, 0) not null,
+    primary key (block_number, transaction_hash, event_index),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.TOKEN_ERC20_TRANSFERS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    FROM_ ADDRESS NOT NULL,
-    TO_ ADDRESS NOT NULL,
-    VALUE_ DECIMAL(75, 0) NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.NFT_ERC721_APPROVAL (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    contract_address bytea not null,
+    owner bytea not null,
+    approved bytea not null,
+    token_id bytea not null,
+    primary key (block_number, transaction_hash, event_index),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.NFT_ERC721_CONTRACTS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    NAME VARCHAR NOT NULL,
-    SYMBOL VARCHAR NOT NULL,
-    PRIMARY KEY (TRANSACTION_HASH, CONTRACT_ADDRESS)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.NFT_ERC721_APPROVAL_FOR_ALL (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    contract_address bytea not null,
+    owner bytea not null,
+    operator bytea not null,
+    approved boolean not null,
+    primary key (block_number, transaction_hash, event_index),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.NFT_ERC1155_CONTRACTS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    PRIMARY KEY (TRANSACTION_HASH, CONTRACT_ADDRESS)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.NFT_ERC721_TRANSFER (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    contract_address bytea not null,
+    from_ bytea not null,
+    to_ bytea not null,
+    token_id bytea not null,
+    primary key (block_number, transaction_hash, event_index),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.NFT_ERC1155_TRANSFER (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    OPERATOR ADDRESS NOT NULL,
-    FROM_ ADDRESS NOT NULL,
-    TO_ ADDRESS NOT NULL,
-    ID BINARY NOT NULL,
-    VALUE_ DECIMAL(75, 0) NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.ERC173_OWNERSHIP_TRANSFERRED (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    contract_address bytea not null,
+    previous_owner bytea not null,
+    new_owner bytea not null,
+    primary key (block_number, transaction_hash, event_index),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.NFT_ERC721_APPROVAL (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    OWNER ADDRESS NOT NULL,
-    APPROVED ADDRESS NOT NULL,
-    TOKEN_ID BINARY NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.PROXY_ERC1967_UPGRADES (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    proxy_contract bytea not null,
+    implementation_contract bytea not null,
+    primary key (transaction_hash, event_index),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.NFT_ERC721_APPROVAL_FOR_ALL (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    OWNER ADDRESS NOT NULL,
-    OPERATOR ADDRESS NOT NULL,
-    APPROVED BOOLEAN NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.PROXY_ERC1967_ADMIN_CHANGES (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    proxy_contract bytea not null,
+    previous_admin bytea not null,
+    new_admin bytea not null,
+    primary key (transaction_hash, event_index),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.NFT_ERC721_TRANSFER (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    FROM_ ADDRESS NOT NULL,
-    TO_ ADDRESS NOT NULL,
-    TOKEN_ID BINARY NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.PROXY_NON_ERC_UPGRADES (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    proxy_contract bytea not null,
+    implementation_contract bytea not null,
+    primary key (transaction_hash, event_index),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.ERC173_OWNERSHIP_TRANSFERRED (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    PREVIOUS_OWNER ADDRESS NOT NULL,
-    NEW_OWNER ADDRESS NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.TOKEN_ERC20_WALLET_BALANCES (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    wallet_address bytea not null,
+    token_address bytea not null,
+    balance decimal(75, 0) not null,
+    primary key (
+        block_number,
+        wallet_address,
+        token_address,
+        balance
+    ),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.PROXY_ERC1967_UPGRADES (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    PROXY_CONTRACT ADDRESS NOT NULL,
-    IMPLEMENTATION_CONTRACT ADDRESS NOT NULL,
-    PRIMARY KEY (TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.TOKEN_ERC20_APPROVAL (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    contract_address bytea not null,
+    owner bytea not null,
+    spender bytea not null,
+    value_ decimal(75, 0) not null,
+    primary key (block_number, transaction_hash, event_index),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.PROXY_ERC1967_ADMIN_CHANGES (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    PROXY_CONTRACT ADDRESS NOT NULL,
-    PREVIOUS_ADMIN ADDRESS NOT NULL,
-    NEW_ADMIN ADDRESS NOT NULL,
-    PRIMARY KEY (TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.NFT_ERC721_OWNERS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    contract_address bytea not null,
+    token_id bytea not null,
+    owner bytea not null,
+    balance decimal(75, 0) not null,
+    primary key (
+        block_number,
+        contract_address,
+        token_id,
+        owner,
+        balance
+    ),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.PROXY_NON_ERC_UPGRADES (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    PROXY_CONTRACT ADDRESS NOT NULL,
-    IMPLEMENTATION_CONTRACT ADDRESS NOT NULL,
-    PRIMARY KEY (TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.NFT_ERC1155_OWNERS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    contract_address bytea not null,
+    owner bytea not null,
+    token_id bytea not null,
+    balance decimal(75, 0) not null,
+    primary key (block_number, contract_address, owner, token_id),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.TOKEN_ERC20_WALLET_BALANCES (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    WALLET_ADDRESS ADDRESS NOT NULL,
-    TOKEN_ADDRESS ADDRESS NOT NULL,
-    BALANCE DECIMAL(75, 0) NOT NULL,
-    PRIMARY KEY (
-                    BLOCK_NUMBER,
-                    WALLET_ADDRESS,
-                    TOKEN_ADDRESS,
-                    BALANCE
-                )
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.LOGS (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    event_index int not null,
+    contract_address bytea not null,
+    topic_0 bytea not null,
+    topic_1 bytea not null,
+    topic_2 bytea not null,
+    topic_3 bytea not null,
+    status boolean not null,
+    raw_data varchar not null,
+    primary key (block_number, transaction_hash, event_index),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.TOKEN_ERC20_APPROVAL (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    OWNER ADDRESS NOT NULL,
-    SPENDER ADDRESS NOT NULL,
-    VALUE_ DECIMAL(75, 0) NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.STORAGE_SLOT_UPDATES (
+    block_number bigint not null,
+    time_stamp timestamp not null,
+    transaction_hash varchar not null,
+    transaction_index int not null,
+    contract_address varchar not null,
+    slot_position varchar not null,
+    slot_value varchar not null,
+    primary key (block_number, contract_address),
+);
 
-CREATE TABLE IF NOT EXISTS ETHEREUM.NFT_ERC721_OWNERS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    TOKEN_ID BINARY NOT NULL,
-    OWNER ADDRESS NOT NULL,
-    BALANCE DECIMAL(75, 0) NOT NULL,
-    PRIMARY KEY (
-                    BLOCK_NUMBER,
-                    CONTRACT_ADDRESS,
-                    TOKEN_ID,
-                    OWNER,
-                    BALANCE
-                )
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
-
-CREATE TABLE IF NOT EXISTS ETHEREUM.NFT_ERC1155_OWNERS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    OWNER ADDRESS NOT NULL,
-    TOKEN_ID BINARY NOT NULL,
-    BALANCE DECIMAL(75, 0) NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, CONTRACT_ADDRESS, OWNER, TOKEN_ID)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
-
-CREATE TABLE IF NOT EXISTS ETHEREUM.LOGS (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    EVENT_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS ADDRESS NOT NULL,
-    TOPIC_0 BINARY,
-    TOPIC_1 BINARY,
-    TOPIC_2 BINARY,
-    TOPIC_3 BINARY,
-    STATUS BOOLEAN,
-    RAW_DATA VARCHAR NOT NULL,
-    PRIMARY KEY (BLOCK_NUMBER, TRANSACTION_HASH, EVENT_INDEX)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
-
-CREATE TABLE IF NOT EXISTS ETHEREUM.STORAGE_SLOT_UPDATES (
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TIME_STAMP TIMESTAMP NOT NULL,
-    TRANSACTION_HASH VARCHAR NOT NULL,
-    TRANSACTION_INDEX INT NOT NULL,
-    CONTRACT_ADDRESS VARCHAR NOT NULL,
-    SLOT_POSITION VARCHAR NOT NULL,
-    SLOT_VALUE VARCHAR,
-    PRIMARY KEY (BLOCK_NUMBER, CONTRACT_ADDRESS)
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
-
-CREATE TABLE IF NOT EXISTS ETHEREUM.SXT_VALUE_OVERFLOW (
-    TIME_STAMP TIMESTAMP NOT NULL,
-    BLOCK_NUMBER BIGINT NOT NULL,
-    TRANSACTION_HASH BINARY,
-    TRANSACTION_INDEX INT,
-    SCHEMA VARCHAR NOT NULL,
-    TABLE_NAME VARCHAR NOT NULL,
-    COLUMN_NAME VARCHAR NOT NULL,
-    ORIGINAL_VALUE VARCHAR NOT NULL,
-    PRIMARY KEY (
-        BLOCK_NUMBER,
-        TRANSACTION_HASH,
-        TRANSACTION_INDEX,
-        SCHEMA,
-        TABLE_NAME,
-        COLUMN_NAME,
-        ORIGINAL_VALUE
-    )
-) WITH "AFFINITY_KEY=TODO,TEMPLATE=deltastore,public_key=d088d3cdfc56cec28bbefa467a1e37207a44c698d532d7bd65b5dead98214484,columnar_storage=true,immutable=true,access_type=public_read,cdcEnabled=false,partition_cols=year(TIME_STAMP)|month(TIME_STAMP),CACHE_INTERNAL_ID=ffffffff-ffff-ffff-ffff-ffffffffffff,data_region=external";
+create table if not exists ETHEREUM.SXT_VALUE_OVERFLOW (
+    time_stamp timestamp not null,
+    block_number bigint not null,
+    transaction_hash bytea not null,
+    transaction_index int not null,
+    schema varchar not null,
+    table_name varchar not null,
+    column_name varchar not null,
+    original_value varchar not null,
+    primary key (
+        block_number,
+        transaction_hash,
+        transaction_index,
+        schema,
+        table_name,
+        column_name,
+        original_value
+    ),
+);

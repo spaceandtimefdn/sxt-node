@@ -125,6 +125,18 @@ pub mod pallet {
         /// Emitted when a system meta table should insert new rows due to some on-chain
         /// action
         SystemTableUpdate {
+            /// The table that was updated
+            table: TableIdentifier,
+            /// The postcard serialized OnChainTable bytes for the system table insert
+            data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
+        },
+        /// Emitted any time there's an error while processing a system event
+        /// This message can then be handled offline to initiate retries or remediation
+        SystemTableError {
+            /// The table that had an error
+            table: TableIdentifier,
+            /// The error received while processing the insert
+            error: DispatchError,
             /// The postcard serialized OnChainTable bytes for the system table insert
             data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
         },
@@ -363,10 +375,11 @@ pub mod pallet {
             oc_table.clone(),
         )?;
 
-        let on_chain_table_bytes = postcard::to_allocvec(&insert_with_meta_columns)
-            .map_err(|_| Error::<T, I>::TableSerializationError)?
-            .try_into()
-            .map_err(|_| Error::<T, I>::TableSerializationError)?;
+        let on_chain_table_bytes: BoundedVec<u8, ConstU32<DATA_MAX_LEN>> =
+            postcard::to_allocvec(&insert_with_meta_columns)
+                .map_err(|_| Error::<T, I>::TableSerializationError)?
+                .try_into()
+                .map_err(|_| Error::<T, I>::TableSerializationError)?;
 
         let block_number = oc_table.max_block_number();
 
@@ -374,16 +387,30 @@ pub mod pallet {
             BlockNumbers::<T, I>::insert(&quorum.table, block_number);
         }
 
-        // check if this oc_table is for a system table and needs special handling/parsing
-        if quorum.table.is_staking_table() {
-            pallet_system_tables::Pallet::<T>::process_system_table(quorum.table.clone(), oc_table);
-        }
-
         // Emit an event.
         Pallet::<T, I>::deposit_event(Event::QuorumReached {
-            quorum,
-            data: on_chain_table_bytes,
+            quorum: quorum.clone(),
+            data: on_chain_table_bytes.clone(),
         });
+
+        // check if this oc_table is for a system table and needs special handling/parsing
+        if quorum.table.is_staking_table() {
+            if let Err(e) = pallet_system_tables::Pallet::<T>::process_system_table(
+                quorum.table.clone(),
+                oc_table,
+            ) {
+                Pallet::<T, I>::deposit_event(Event::SystemTableError {
+                    table: quorum.table.clone(),
+                    error: e,
+                    data: on_chain_table_bytes,
+                });
+            } else {
+                Pallet::<T, I>::deposit_event(Event::SystemTableUpdate {
+                    table: quorum.table.clone(),
+                    data: on_chain_table_bytes,
+                });
+            }
+        }
 
         Ok(())
     }
