@@ -66,11 +66,26 @@ pub async fn add_smartcontract(
     let mut table_creator = TableCreator::new();
 
     for table in request.iter() {
+        let decoded_commitment = match base64::decode(&table.commitment) {
+            Ok(bytes) => bytes,
+            Err(_) => {
+                return Json(ApiResponse {
+                    success: false,
+                    err_msg: Some("Invalid base64 commitment".into()),
+                    tx_hash: None,
+                });
+            }
+        };
+
         table_creator
             .add_table()
             .identifier(&table.table_name, &table.schema_name)
             .ddl_statement(&table.ddl_statement)
             .table_type(table.table_type.clone().into())
+            .commitment_scheme(table.commitment_scheme.clone())
+            .commitment(&decoded_commitment)
+            .source(table.source.clone())
+            .snapshot_url(&table.snapshot_url)
             .add();
     }
     let tables = BoundedVec(table_creator.tables());

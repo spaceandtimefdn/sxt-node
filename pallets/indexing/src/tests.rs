@@ -123,6 +123,7 @@ fn inserting_data_succeeds_when_data_is_good() {
                 hyper_kzg: false,
                 dynamic_dory: true,
             }),
+            source: sxt_core::tables::Source::Ethereum,
         };
         Tables::create_tables(RuntimeOrigin::root(), vec![request].try_into().unwrap()).unwrap();
 
@@ -170,6 +171,7 @@ fn submission_fails_when_data_is_already_submitted() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -264,6 +266,7 @@ fn data_is_decided_on_after_required_submissions() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -345,6 +348,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -448,6 +452,7 @@ fn inserting_data_fails_when_data_is_empty() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -496,6 +501,7 @@ fn inserting_data_fails_when_table_name_is_empty() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -541,6 +547,7 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -583,6 +590,7 @@ fn inserting_data_fails_when_batch_id_is_empty() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -616,6 +624,7 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -689,6 +698,7 @@ fn submit_data_with_mothership_key_work() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -756,6 +766,7 @@ fn we_can_reach_privileged_quorum() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -816,6 +827,7 @@ fn we_can_manage_quorum_state_for_both_scopes() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -916,6 +928,7 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_one_quorum_reached_ev
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -987,6 +1000,7 @@ fn we_cannot_submit_for_table_disabled_quorum_scope() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),
@@ -1041,6 +1055,7 @@ fn we_cannot_submit_with_privilege_to_different_table() {
                     hyper_kzg: false,
                     dynamic_dory: true,
                 }),
+                source: sxt_core::tables::Source::Ethereum,
             }]
             .try_into()
             .unwrap(),

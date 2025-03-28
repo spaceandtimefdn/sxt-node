@@ -69,6 +69,7 @@ fn extract_table_data(statement: &Statement) -> Option<UpdateTable> {
                 hyper_kzg: false,
                 dynamic_dory: true,
             }),
+            source: Source::Ethereum,
         };
         return Some(item);
     }

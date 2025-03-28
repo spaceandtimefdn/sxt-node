@@ -179,6 +179,8 @@ pub struct TableRequest {
     pub snapshot_url: String,
     /// commitment scheme
     pub commitment_scheme: CommitmentScheme,
+    /// Source chain
+    pub source: ApiSource,
 }
 
 /// Represents quorum settings for table creation.
@@ -471,4 +473,42 @@ pub enum CommitmentScheme {
     /// dynamic dory
     #[default]
     DynamicDory,
+}
+
+/// Translation layer version of sxt-core/src/tables.rs Source
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")] // Optional: camelCase variant names in JSON
+pub enum ApiSource {
+    /// Ethereum mainnet
+    Ethereum,
+
+    /// Ethereum testnet
+    Sepolia,
+
+    /// Bitcoin mainnet
+    Bitcoin,
+
+    /// Polygon mainnet
+    Polygon,
+
+    /// zkSync Era
+    ZkSyncEra,
+
+    /// A user-defined chain
+    UserCreated(String),
+}
+
+use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::Source as RuntimeSource;
+
+impl From<ApiSource> for RuntimeSource {
+    fn from(api: ApiSource) -> Self {
+        match api {
+            ApiSource::Ethereum => RuntimeSource::Ethereum,
+            ApiSource::Sepolia => RuntimeSource::Sepolia,
+            ApiSource::Bitcoin => RuntimeSource::Bitcoin,
+            ApiSource::Polygon => RuntimeSource::Polygon,
+            ApiSource::ZkSyncEra => RuntimeSource::ZkSyncEra,
+            ApiSource::UserCreated(s) => RuntimeSource::UserCreated(BoundedVec(s.into_bytes())),
+        }
+    }
 }

@@ -80,6 +80,7 @@ pub async fn create_table(
             .table_type(table.table_type.clone().into())
             .commitment_scheme(table.commitment_scheme.clone())
             .commitment(&decoded_commitment)
+            .source(table.source.clone())
             .snapshot_url(&table.snapshot_url)
             .add();
     }

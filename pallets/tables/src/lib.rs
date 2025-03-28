@@ -80,6 +80,8 @@ pub mod pallet {
         pub table_type: TableType,
         /// Commitment related data
         pub commitment: CommitmentCreationCmd,
+        /// Source chain
+        pub source: Source,
     }
 
     /// A list of tables that we want to create or update
@@ -198,6 +200,10 @@ pub mod pallet {
     pub type TableInsertQuorums<T: Config> =
         StorageMap<_, Blake2_128Concat, TableIdentifier, InsertQuorumSize, ValueQuery>;
 
+    #[pallet::storage]
+    pub type TableSources<T: Config> =
+        StorageMap<_, Blake2_128Concat, TableIdentifier, Source, ValueQuery>;
+
     /// A table identifier, a sql statement for table creation, and an initial commitment
     pub type CreateTableCmd = (
         TableIdentifier,
@@ -300,6 +306,7 @@ pub mod pallet {
                         table.table_name.clone(),
                         table.ddl.clone(),
                         table.table_type.clone(),
+                        source_and_mode.source.clone(),
                     );
 
                     let statement_with_metadata = Self::insert_initial_commitment(
@@ -467,6 +474,7 @@ pub mod pallet {
             ident: TableIdentifier,
             stmnt: CreateStatement,
             table_type: TableType,
+            source: Source,
         ) {
             let mut identifiers = Identifiers::<T>::get(&table_type);
 
@@ -477,7 +485,8 @@ pub mod pallet {
             Schemas::<T>::insert(namespace, name, stmnt.clone());
             let quorum: InsertQuorumSize = table_type.into();
 
-            TableInsertQuorums::<T>::insert(ident, quorum);
+            TableInsertQuorums::<T>::insert(&ident, quorum);
+            TableSources::<T>::insert(&ident, source);
         }
 
         /// Insert the initial commit for this table using the commitments-sql pallet.
@@ -598,6 +607,7 @@ pub mod pallet {
                         table.ident.clone(),
                         table.create_statement.clone(),
                         table.table_type.clone(),
+                        table.source.clone(),
                     );
                     let create_table = create_statement_to_sqlparser(table.create_statement.clone())
                         .map_err(|_| Error::<T>::CreateStatementParseError)?;
