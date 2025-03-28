@@ -321,7 +321,7 @@ impl InsertQuorumSize {
 }
 
 /// TODO: add docs
-pub type UpdateTableCmd = (TableIdentifier, CreateStatement, InsertQuorumSize);
+pub type UpdateTableCmd = (TableIdentifier, CreateStatement, TableType);
 
 #[derive(
     Clone,
@@ -758,5 +758,50 @@ mod tests {
             *some_insert_quorum_size.of_scope(&QuorumScope::Privileged),
             Some(0)
         );
+    }
+}
+
+/// The type of table that we are indexing
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Default,
+    Serialize,
+    Deserialize,
+)]
+pub enum TableType {
+    /// Core Blockchain table
+    #[default]
+    CoreBlockchain,
+
+    /// Smart Contract Indexing
+    SCI,
+
+    /// Community Owned Table
+    Community,
+
+    /// Testing type
+    Testing(InsertQuorumSize),
+}
+
+impl From<TableType> for InsertQuorumSize {
+    fn from(table_type: TableType) -> Self {
+        match table_type {
+            TableType::CoreBlockchain | TableType::SCI => InsertQuorumSize {
+                public: Some(3),
+                privileged: None,
+            },
+            TableType::Community => InsertQuorumSize {
+                public: None,
+                privileged: Some(0),
+            },
+            TableType::Testing(quorum) => quorum,
+        }
     }
 }

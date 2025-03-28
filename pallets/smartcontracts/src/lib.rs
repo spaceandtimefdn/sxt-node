@@ -18,12 +18,13 @@ pub use weights::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    use frame_support::pallet_prelude::*;
+    use frame_support::pallet_prelude::{OptionQuery, StorageDoubleMap, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
+    use scale_info::prelude::boxed::Box;
     use sxt_core::permissions::{PermissionLevel, SmartContractsPalletPermission};
-    use sxt_core::smartcontracts::{ContractABI, ContractAddress};
-    use sxt_core::tables::Source;
+    use sxt_core::smartcontracts::{Contract, ContractAddress};
+    use sxt_core::tables::{Source, UpdateTableList};
 
     use super::*;
 
@@ -33,7 +34,9 @@ pub mod pallet {
 
     /// Pallet Configuration Trait
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_permissions::Config {
+    pub trait Config:
+        frame_system::Config + pallet_permissions::Config + pallet_tables::Config
+    {
         /// The overarching runtime event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
@@ -41,21 +44,16 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
     }
 
-    /// Storage: Smart Contracts Mapping
-    ///
-    /// This `StorageDoubleMap` allows mapping:
-    /// - `Source` → `ContractAddress` → `ContractABI`
     #[pallet::storage]
-    #[pallet::getter(fn foo)]
-    pub type Contracts<T> = StorageNMap<
+    #[pallet::getter(fn normal_contracts)]
+    pub type ContractStorage<T: Config> = StorageDoubleMap<
         _,
-        (
-            NMapKey<Blake2_128Concat, Source>,
-            NMapKey<Blake2_128Concat, ContractAddress>,
-            NMapKey<Twox64Concat, u64>,
-        ),
-        ContractABI,
-        ValueQuery,
+        Blake2_128Concat,
+        Source,
+        Blake2_128Concat,
+        ContractAddress,
+        Contract,
+        OptionQuery,
     >;
 
     /// Events for the Pallet
@@ -63,7 +61,9 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// A smart contract was added to storage.
-        SmartContractSet {
+        SmartContractAdded {
+            /// owner
+            owner: Option<T::AccountId>,
             /// Source chain
             source: Source,
             /// Address
@@ -72,6 +72,8 @@ pub mod pallet {
 
         /// A smart contract was removed from storage.
         SmartContractRemoved {
+            /// owner
+            owner: Option<T::AccountId>,
             /// Source chain
             source: Source,
             /// Address
@@ -81,49 +83,14 @@ pub mod pallet {
 
     /// Errors for the Pallet (Not used yet but reserved for future use)
     #[pallet::error]
-    pub enum Error<T> {}
+    pub enum Error<T> {
+        /// A contract already exists for the source and address you requested
+        ExistingContractError,
+    }
 
     /// Callable Functions (Extrinsics)
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// **Set a Smart Contract Entry**
-        ///
-        /// Adds or updates a smart contract entry in storage.
-        ///
-        /// **Parameters:**
-        /// - `origin`: Must be a signed account.
-        /// - `source`: The `Source` identifier for the contract.
-        /// - `contract_address`: The address of the smart contract.
-        /// - `contract_abi`: The ABI (interface) of the smart contract.
-        ///
-        /// **Emits:** `SmartContractSet`
-        #[pallet::call_index(0)]
-        #[pallet::weight(<T as pallet::Config>::WeightInfo::set_smartcontract())]
-        pub fn set_smartcontract(
-            origin: OriginFor<T>,
-            source: Source,
-            contract_address: ContractAddress,
-            version: u64,
-            contract_abi: ContractABI,
-        ) -> DispatchResult {
-            // Ensure the caller is a signed user with proper permissions
-            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin,
-                &PermissionLevel::SmartContractsPallet(SmartContractsPalletPermission::UpdateABI),
-            )?;
-
-            // Insert the contract details into storage
-            Contracts::<T>::insert((&source, &contract_address, version), contract_abi);
-
-            // Emit an event indicating the contract was set
-            Self::deposit_event(Event::SmartContractSet {
-                source,
-                address: contract_address,
-            });
-
-            Ok(())
-        }
-
         /// **Remove a Smart Contract Entry**
         ///
         /// Deletes a smart contract entry from storage.
@@ -139,24 +106,87 @@ pub mod pallet {
         pub fn remove_smartcontract(
             origin: OriginFor<T>,
             source: Source,
-            contract_address: ContractAddress,
-            version: u64,
+            address: ContractAddress,
         ) -> DispatchResult {
             // Ensure the caller is a signed user with proper permissions
-            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin,
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
                 &PermissionLevel::SmartContractsPallet(SmartContractsPalletPermission::UpdateABI),
             )?;
 
             // Remove the contract from storage
-            Contracts::<T>::remove((&source, &contract_address, version));
+            ContractStorage::<T>::remove(&source, &address);
 
             // Emit an event indicating the contract was removed
             Self::deposit_event(Event::SmartContractRemoved {
+                owner,
                 source,
-                address: contract_address,
+                address,
             });
 
+            Ok(())
+        }
+
+        /// Adds a new smart contract and its associated indexing tables to the chain.
+        ///
+        /// This function is permissioned: it can only be called by a signed account or `Root` origin
+        /// with `SmartContractsPallet::UpdateABI` permission. It stores the provided smart contract,
+        /// verifies it doesn’t already exist, emits a `SmartContractAdded` event, and registers any
+        /// associated indexing tables via `pallet_tables::create_tables_inner`.
+        ///
+        /// # Parameters
+        /// - `origin`: Must be either `Root` or a signed user with appropriate smart contract permissions.
+        /// - `contract`: The [`Contract`] to be added. Can be a normal or proxy contract.
+        /// - `tables`: The list of [`UpdateTable`] entries associated with this contract. Each entry defines
+        ///    a table to be created (including schema, DDL, and type).
+        ///
+        /// # Emits
+        /// - [`Event::SmartContractAdded`] — when the contract is successfully stored.
+        /// - [`Event::SchemaUpdated`] — for each table added via `pallet_tables`.
+        ///
+        /// # Errors
+        /// - [`Error::ExistingContractError`] — if a contract with the same `source` and `address` already exists.
+        /// - Any error from:
+        ///     - [`pallet_permissions::Pallet::ensure_root_or_permissioned`] if origin is unauthorized.
+        ///     - [`pallet_tables::Pallet::create_tables_inner`] if any table creation fails.
+        #[pallet::call_index(2)]
+        #[pallet::weight(<T as pallet::Config>::WeightInfo::add_smartcontract())]
+        pub fn add_smartcontract(
+            origin: OriginFor<T>,
+            contract: Box<Contract>,
+            tables: UpdateTableList,
+        ) -> DispatchResult {
+            // Ensure the caller is a signed user with proper permissions
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::SmartContractsPallet(SmartContractsPalletPermission::UpdateABI),
+            )?;
+
+            let (source, address) = match *contract.clone() {
+                Contract::Normal(normal_contract) => (
+                    normal_contract.details.source,
+                    normal_contract.details.address,
+                ),
+                Contract::Proxy(proxy_contract) => (
+                    proxy_contract.details.source,
+                    proxy_contract.details.address,
+                ),
+            };
+
+            ensure!(
+                !ContractStorage::<T>::contains_key(source.clone(), address.clone()),
+                Error::<T>::ExistingContractError
+            );
+
+            ContractStorage::<T>::insert(source.clone(), address.clone(), contract);
+
+            Self::deposit_event(Event::SmartContractAdded {
+                owner,
+                source,
+                address,
+            });
+
+            pallet_tables::Pallet::<T>::create_tables_inner(origin, tables)?;
             Ok(())
         }
     }

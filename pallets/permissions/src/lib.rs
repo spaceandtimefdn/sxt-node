@@ -169,20 +169,33 @@ pub mod pallet {
                 .any(|x| *x == *p)
         }
 
-        /// Returns Ok() if the origin is root or if the origin has permissions `p`
+        /// Checks whether the origin is either `Root` or a signed account with the required permission level.
+        ///
+        /// Returns:
+        /// - `Ok(None)` if the origin is `Root` (system-level access),
+        /// - `Ok(Some(account_id))` if the origin is a signed account with the required permission,
+        /// - `Err(UnsignedTransaction)` if the origin is neither signed nor root,
+        /// - `Err(InsufficientPermissions)` if the signed account lacks the required permission.
+        ///
+        /// # Parameters
+        /// - `origin`: The origin of the call (can be signed, root, or other).
+        /// - `permission`: The [`PermissionLevel`] required to perform the action.
+        /// ```
         pub fn ensure_root_or_permissioned(
             origin: OriginFor<T>,
             permission: &PermissionLevel,
-        ) -> Result<(), DispatchError> {
-            ensure_root(origin.clone()).or_else(|_| {
-                ensure_signed(origin.clone())
-                    .map_err(|_| Error::<T>::UnsignedTransaction.into())
-                    .and_then(|c| {
-                        Self::has_permissions(&c, permission)
-                            .then_some(())
-                            .ok_or(Error::<T>::InsufficientPermissions.into())
-                    })
-            })
+        ) -> Result<Option<T::AccountId>, DispatchError> {
+            match origin.into() {
+                Ok(frame_system::RawOrigin::Root) => Ok(None),
+                Ok(frame_system::RawOrigin::Signed(who)) => {
+                    if Self::has_permissions(&who, permission) {
+                        Ok(Some(who))
+                    } else {
+                        Err(Error::<T>::InsufficientPermissions.into())
+                    }
+                }
+                _ => Err(Error::<T>::UnsignedTransaction.into()),
+            }
         }
     }
 }

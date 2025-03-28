@@ -45,6 +45,7 @@ pub mod pallet {
         TableIdentifier,
         TableName,
         TableNamespace,
+        TableType,
         TableUuid,
         TableVersion,
         UpdateTableList,
@@ -80,7 +81,7 @@ pub mod pallet {
         },
 
         /// The schema for a table has been updated
-        SchemaUpdated(SourceAndMode, UpdateTableList),
+        SchemaUpdated(Option<T::AccountId>, UpdateTableList),
 
         /// Tables have been created with known commitments
         TablesCreatedWithCommitments {
@@ -89,6 +90,9 @@ pub mod pallet {
             /// A list of tables and their DDL Statements
             table_list: CreateTableList,
         },
+
+        /// A table has been successfully dropped
+        TableDropped(Option<T::AccountId>, TableType, TableIdentifier),
     }
 
     /// A Map of Column UUIDs by Table Identifier and Version
@@ -130,19 +134,11 @@ pub mod pallet {
         ValueQuery,
     >;
 
-    /// A double map connecting an identifier (name, namespace) and a (source, mode) to a Schema, allowing us to interate over all tables in a namespace
-    /// ValueQuery is used so when we insert the identifiers if none have been set we get an empty bounded vec to append to
+    /// Map of TableTypes to Identifiers
     #[pallet::storage]
     #[pallet::getter(fn identifiers)]
-    pub type Identifiers<T: Config> = StorageDoubleMap<
-        _,
-        Blake2_128Concat,
-        Source,
-        Blake2_128Concat,
-        IndexerMode,
-        IdentifierList,
-        ValueQuery,
-    >;
+    pub type Identifiers<T: Config> =
+        StorageMap<_, Blake2_128Concat, TableType, IdentifierList, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn schemas)]
@@ -188,8 +184,8 @@ pub mod pallet {
         pub commitment: TableCommitmentBytesPerCommitmentScheme,
         /// The url of the historical data parquet files
         pub snapshot_url: SnapshotUrl,
-        /// The quorum size to use for this table's indexing
-        pub insert_quorum_size: InsertQuorumSize,
+        /// Table Type
+        pub table_type: TableType,
     }
 
     /// A bounded vec of create table commands, used to create tables from a known starting commit
@@ -221,6 +217,9 @@ pub mod pallet {
 
         /// Not all commitments were removed
         NotAllCommitmentsRemovedError,
+
+        /// The desired table could not be located
+        TableNotFound,
     }
 
     #[pallet::call]
@@ -228,44 +227,8 @@ pub mod pallet {
         #[pallet::call_index(0)]
         #[pallet::weight(<T as Config>::WeightInfo::update_tables())]
         /// TODO: add docs
-        pub fn update_tables(
-            origin: OriginFor<T>,
-            source_and_mode: SourceAndMode,
-            tables: UpdateTableList,
-        ) -> DispatchResult {
-            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin,
-                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
-            )?;
-
-            let tables_with_meta_columns = tables.into_iter().map(|(identifier, statement, insert_quorum_size)| {
-                let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(statement.clone(), identifier.clone());
-
-                Self::insert_table_uuid(identifier.clone(), 0, table_uuid, column_uuids)?;
-
-                Self::insert_schema(source_and_mode.clone(), identifier.clone(), statement.clone(), insert_quorum_size);
-
-                let create_table = create_statement_to_sqlparser(statement)
-                    .map_err(|_| Error::<T>::CreateStatementParseError)?;
-
-                let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(
-                    create_table,
-                )?;
-
-                let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
-                    .map_err(|_| Error::<T>::CreateStatementParseError)?;
-                Ok((identifier, statement_with_metadata, insert_quorum_size))
-            })
-                .collect::<Result<Vec<_>, DispatchError>>()?
-                .try_into()
-                .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
-
-            Self::deposit_event(Event::<T>::SchemaUpdated(
-                source_and_mode,
-                tables_with_meta_columns,
-            ));
-
-            Ok(())
+        pub fn create_tables(origin: OriginFor<T>, tables: UpdateTableList) -> DispatchResult {
+            Self::create_tables_inner(origin, tables)
         }
 
         /// Create tables with a known commit and snapshot url from which data can be loaded
@@ -285,10 +248,9 @@ pub mod pallet {
                 .into_iter()
                 .map(|table| {
                     Self::insert_schema(
-                        source_and_mode.clone(),
                         table.table_name.clone(),
                         table.ddl.clone(),
-                        table.insert_quorum_size,
+                        table.table_type.clone(),
                     );
 
                     let statement_with_metadata = Self::insert_initial_commitment(
@@ -305,7 +267,7 @@ pub mod pallet {
                         ddl: statement_with_metadata,
                         commitment: table.commitment,
                         snapshot_url: table.snapshot_url,
-                        insert_quorum_size: table.insert_quorum_size,
+                        table_type: table.table_type,
                     };
                     Ok(out)
                 })
@@ -394,6 +356,25 @@ pub mod pallet {
             });
             Ok(())
         }
+
+        /// Drop a single table
+        #[pallet::call_index(5)]
+        #[pallet::weight(<T as Config>::WeightInfo::drop_table())]
+        pub fn drop_table(
+            origin: OriginFor<T>,
+            table_type: TableType,
+            ident: TableIdentifier,
+        ) -> DispatchResult {
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            )?;
+
+            Self::drop_single_table(table_type.clone(), ident.clone())?;
+            Self::deposit_event(Event::<T>::TableDropped(owner, table_type, ident));
+
+            Ok(())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -433,21 +414,20 @@ pub mod pallet {
 
         /// Uodate the schema and commitment for a table and source and mode combo
         pub fn insert_schema(
-            sm: SourceAndMode,
             ident: TableIdentifier,
             stmnt: CreateStatement,
-            insert_quorum_size: InsertQuorumSize,
+            table_type: TableType,
         ) {
-            let SourceAndMode { source, mode } = sm.clone();
-            let mut identifiers = Identifiers::<T>::get(source.clone(), mode.clone());
+            let mut identifiers = Identifiers::<T>::get(&table_type);
 
             identifiers.try_push(ident.clone());
-            Identifiers::<T>::insert(source, mode, identifiers);
+            Identifiers::<T>::insert(&table_type, identifiers);
 
             let TableIdentifier { name, namespace } = ident.clone();
             Schemas::<T>::insert(namespace, name, stmnt.clone());
+            let quorum: InsertQuorumSize = table_type.into();
 
-            TableInsertQuorums::<T>::insert(ident, insert_quorum_size);
+            TableInsertQuorums::<T>::insert(ident, quorum);
         }
 
         /// Insert the initial commit for this table using the commitments-sql pallet.
@@ -517,6 +497,75 @@ pub mod pallet {
             };
 
             (table_uuid, column_uuids)
+        }
+
+        /// Drop a single table
+        pub fn drop_single_table(table_type: TableType, ident: TableIdentifier) -> DispatchResult {
+            // Retrieve the current list of table identifiers for this source and mode.
+            let mut identifiers = Identifiers::<T>::get(&table_type);
+
+            // Retain all identifiers that are not equal to `ident`
+            identifiers.retain(|id| id != &ident);
+
+            if identifiers.len() < Identifiers::<T>::get(&table_type).len() {
+                Identifiers::<T>::insert(&table_type, identifiers);
+            } else {
+                return Err(Error::<T>::TableNotFound.into());
+            }
+
+            // Remove the schema definition.
+            let TableIdentifier { name, namespace } = ident.clone();
+            if Schemas::<T>::contains_key(&namespace, &name) {
+                Schemas::<T>::remove(&namespace, &name);
+            } else {
+                return Err(Error::<T>::TableNotFound.into());
+            }
+
+            // Remove the insert quorum size entry.
+            if TableInsertQuorums::<T>::contains_key(&ident) {
+                TableInsertQuorums::<T>::remove(&ident);
+            }
+
+            Ok(())
+        }
+
+        /// Create a table. Exactly the same as the extrinsic but available to other pallets
+        pub fn create_tables_inner(
+            origin: OriginFor<T>,
+            tables: UpdateTableList,
+        ) -> DispatchResult {
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            )?;
+
+            let tables_with_meta_columns = tables
+                .into_iter()
+                .map(|(identifier, statement, table_type)| {
+                    Self::insert_schema(identifier.clone(), statement.clone(), table_type.clone());
+
+                    let create_table = create_statement_to_sqlparser(statement)
+                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+                    let CreateTableAndCommitmentMetadata {
+                    table_with_meta_columns,
+                    ..
+                } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments(
+                    create_table,
+                )?;
+
+                    let statement_with_metadata =
+                        sqlparser_to_create_statement(table_with_meta_columns)
+                            .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                    Ok((identifier, statement_with_metadata, table_type))
+                })
+                .collect::<Result<Vec<_>, DispatchError>>()?
+                .try_into()
+                .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
+
+            Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
+
+            Ok(())
         }
     }
 }
