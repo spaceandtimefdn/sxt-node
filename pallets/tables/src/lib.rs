@@ -69,7 +69,7 @@ pub mod pallet {
         Option<CommitmentScheme>,
     );
 
-    /// todo 
+    /// todo
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct UpdateTable {
         pub ident: TableIdentifier,
@@ -81,7 +81,7 @@ pub mod pallet {
     /// TODO: add docs
     pub type UpdateTableList = BoundedVec<UpdateTable, ConstU32<1024>>;
 
-    /// todo 
+    /// todo
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum CommitmentCreationCmd {
         FromSnapshot(SnapshotUrl, TableCommitmentBytesPerCommitmentScheme),
@@ -440,19 +440,20 @@ pub mod pallet {
         /// Add a UUID for this table
         pub fn insert_table_uuid(
             ident: TableIdentifier,
-            version: u16,
             uuid: TableUuid,
             column_uuids: ColumnUuidList,
-        ) -> Result<(), DispatchError> {
-            if TableVersions::<T>::contains_key(&ident, version) {
-                // Error, this version has already been assigned a UUID
-                return Err(Error::<T>::VersionAlreadyExists.into());
-            }
+        ) -> Result<TableVersion, DispatchError> {
+            let next_version = TableVersions::<T>::iter_prefix(&ident)
+                .map(|(v, _)| v)
+                .max()
+                .map(|v| v + 1)
+                .unwrap_or(0);
 
-            TableVersions::<T>::set(&ident, version, uuid);
-            ColumnVersions::<T>::set(&ident, version, column_uuids);
+            // Insert table and column UUIDs at the computed version
+            TableVersions::<T>::set(&ident, next_version, uuid);
+            ColumnVersions::<T>::set(&ident, next_version, column_uuids);
 
-            Ok(())
+            Ok(next_version)
         }
 
         /// Uodate the schema and commitment for a table and source and mode combo
@@ -585,15 +586,15 @@ pub mod pallet {
             let tables_with_meta_columns = tables
                 .into_iter()
                 .map(|mut table| {
+                    let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(table.create_statement.clone(), table.ident.clone());
+                    Self::insert_table_uuid(table.ident.clone(), table_uuid, column_uuids)?;
                     Self::insert_schema(
                         table.ident.clone(),
                         table.create_statement.clone(),
                         table.table_type.clone(),
                     );
-
                     let create_table = create_statement_to_sqlparser(table.create_statement.clone())
                         .map_err(|_| Error::<T>::CreateStatementParseError)?;
-
                     let CreateTableAndCommitmentMetadata {
                         table_with_meta_columns,
                         ..
@@ -601,7 +602,6 @@ pub mod pallet {
                         CommitmentCreationCmd::Empty(scheme) => pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_scheme(create_table, scheme)?,
                         CommitmentCreationCmd::FromSnapshot(ref snapshot_url, ref per_commitment_scheme) => {
                             Snapshots::<T>::insert(table.ident.clone(), snapshot_url.clone());
-             
                                 pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
                                     create_table,
                                     per_commitment_scheme.clone(),
@@ -609,13 +609,10 @@ pub mod pallet {
 
                         },
                     };
-
                     let statement_with_metadata =
                         sqlparser_to_create_statement(table_with_meta_columns)
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
-
                     table.create_statement = statement_with_metadata;
-                    
                     Ok(table)
                 })
                 .collect::<Result<Vec<_>, DispatchError>>()?
