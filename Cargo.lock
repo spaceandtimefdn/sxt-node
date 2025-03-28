@@ -19380,7 +19380,7 @@ dependencies = [
  "arrow 54.2.1",
  "axum 0.8.1",
  "base64 0.21.7",
- "clap 4.5.31",
+ "clap 4.5.32",
  "env_logger 0.11.6",
  "futures",
  "hex",
