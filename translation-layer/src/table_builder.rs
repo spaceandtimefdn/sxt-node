@@ -63,7 +63,7 @@ impl<'a> TableBuilder<'a> {
 
     /// scheme
     pub fn commitment_scheme(mut self, scheme: CommitmentScheme) -> Self {
-        self.commitment_scheme = Some(scheme.into());
+        self.commitment_scheme = Some(scheme);
         self
     }
 

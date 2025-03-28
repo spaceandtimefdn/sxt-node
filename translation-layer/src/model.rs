@@ -463,6 +463,7 @@ impl From<RuntimeTableType> for TableType {
     }
 }
 
+/// Parsable commitment schemes
 #[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone)]
 pub enum CommitmentScheme {
     /// HyperKzg

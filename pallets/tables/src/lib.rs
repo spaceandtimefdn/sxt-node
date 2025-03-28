@@ -69,22 +69,28 @@ pub mod pallet {
         Option<CommitmentScheme>,
     );
 
-    /// todo
+    /// The individual information needed to create (update) a table
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct UpdateTable {
+        /// Table identifier (name, namespace)
         pub ident: TableIdentifier,
+        /// DDL statement
         pub create_statement: CreateStatement,
+        /// Table type
         pub table_type: TableType,
+        /// Commitment related data
         pub commitment: CommitmentCreationCmd,
     }
 
-    /// TODO: add docs
+    /// A list of tables that we want to create or update
     pub type UpdateTableList = BoundedVec<UpdateTable, ConstU32<1024>>;
 
-    /// todo
+    /// What type of commitment to create
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum CommitmentCreationCmd {
+        /// From a preexisting commitment
         FromSnapshot(SnapshotUrl, TableCommitmentBytesPerCommitmentScheme),
+        /// An empty commitment
         Empty(CommitmentSchemeFlags),
     }
 

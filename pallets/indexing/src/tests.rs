@@ -258,7 +258,7 @@ fn data_is_decided_on_after_required_submissions() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: table_id.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::CoreBlockchain,
                 commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
                     hyper_kzg: false,
@@ -339,7 +339,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: table_id.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::CoreBlockchain,
                 commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
                     hyper_kzg: false,
@@ -442,7 +442,7 @@ fn inserting_data_fails_when_data_is_empty() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: test_identifier.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::CoreBlockchain,
                 commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
                     hyper_kzg: false,
@@ -490,7 +490,7 @@ fn inserting_data_fails_when_table_name_is_empty() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: test_identifier.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::CoreBlockchain,
                 commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
                     hyper_kzg: false,
@@ -535,7 +535,7 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: test_identifier.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::CoreBlockchain,
                 commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
                     hyper_kzg: false,
@@ -577,7 +577,7 @@ fn inserting_data_fails_when_batch_id_is_empty() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: test_identifier.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::CoreBlockchain,
                 commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
                     hyper_kzg: false,
@@ -610,7 +610,7 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: table_id.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::CoreBlockchain,
                 commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
                     hyper_kzg: false,
@@ -747,7 +747,7 @@ fn we_can_reach_privileged_quorum() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: table_id.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::Testing(InsertQuorumSize {
                     public: None,
                     privileged: Some(0),
@@ -807,7 +807,7 @@ fn we_can_manage_quorum_state_for_both_scopes() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: table_id.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::Testing(InsertQuorumSize {
                     public: Some(2),
                     privileged: Some(1),
@@ -907,7 +907,7 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_one_quorum_reached_ev
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: table_id.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::Testing(InsertQuorumSize {
                     public: Some(0),
                     privileged: Some(0),
@@ -978,7 +978,7 @@ fn we_cannot_submit_for_table_disabled_quorum_scope() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: table_id.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::Testing(InsertQuorumSize {
                     public: None,
                     privileged: Some(0),
@@ -1032,7 +1032,7 @@ fn we_cannot_submit_with_privilege_to_different_table() {
             RuntimeOrigin::root(),
             vec![UpdateTable {
                 ident: table_id.clone(),
-                create_statement: create_statement,
+                create_statement,
                 table_type: TableType::Testing(InsertQuorumSize {
                     public: None,
                     privileged: Some(0),
