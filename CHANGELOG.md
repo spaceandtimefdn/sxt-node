@@ -1,3 +1,12 @@
+## [0.94.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.2...v0.94.3) (2025-03-31)
+
+
+### Bug Fixes
+
+* add source to create namespace ([a3b3e78](https://github.com/spaceandtimelabs/sxt-node/commit/a3b3e78657a1e1cb2fb3da237621fd8fede79832))
+
+
+
 ## [0.94.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.1...v0.94.2) (2025-03-31)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * Fix system table error handling and message parsing ([f36a59b](https://github.com/spaceandtimelabs/sxt-node/commit/f36a59b24a6532dd7907f06003a0509e6f53a924))
-
-
-
-# [0.93.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.92.0...v0.93.0) (2025-03-29)
-
-
-### Features
-
-* Update Chainspecs and Runtime to 201 ([b1ed57f](https://github.com/spaceandtimelabs/sxt-node/commit/b1ed57f44e8ed498ccc34b7517f877e1bca1f0e6))
 
 
 
