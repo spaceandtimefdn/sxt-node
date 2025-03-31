@@ -2,7 +2,7 @@ use frame_support::assert_ok;
 use pallet_permissions::Pallet;
 use sp_runtime::BoundedVec;
 use sxt_core::permissions::{PermissionLevel, PermissionList, TablesPalletPermission};
-use sxt_core::tables::{SourceAndMode, TableType};
+use sxt_core::tables::{Source, SourceAndMode, TableType};
 
 use crate::mock::*;
 use crate::{CreateTableList, UpdateTableList};
@@ -111,6 +111,7 @@ fn create_namespace_should_work() {
         )
         .unwrap();
         let table_type = TableType::CoreBlockchain;
+        let source = Source::Ethereum;
 
         assert_ok!(Tables::create_namespace(
             RuntimeOrigin::root(),
@@ -118,6 +119,7 @@ fn create_namespace_should_work() {
             version,
             create_statement,
             table_type,
+            source
         ));
     })
 }
