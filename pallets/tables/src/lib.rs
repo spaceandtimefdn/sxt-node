@@ -277,6 +277,12 @@ pub mod pallet {
 
         /// Missing snapshot
         MissingSnapshot,
+
+        /// Error parsing the schema name as utf8
+        SchemaNameParseError,
+
+        /// Error with a generated uuid
+        GeneratedUuidError,
     }
 
     #[pallet::call]
@@ -395,13 +401,19 @@ pub mod pallet {
             )?;
             let raw_sql =
                 from_utf8(&create_statement).map_err(|_| Error::<T>::CreateStatementParseError)?;
+
             let block_number = <frame_system::Pallet<T>>::block_number();
+
+            let schema_name_s =
+                from_utf8(&schema_name).map_err(|_| Error::<T>::SchemaNameParseError)?;
+
+            let generated_uuid = generate_namespace_uuid(block_number.into(), schema_name_s)?; // TODO generate this
             let generated_uuid =
-                generate_namespace_uuid(block_number.into(), from_utf8(&schema_name).unwrap())?; // TODO generate this
+                from_utf8(&generated_uuid).map_err(|_| Error::<T>::GeneratedUuidError)?;
 
             let namespace_uuid = TableUuid::try_from(
                 extract_schema_uuid(raw_sql)
-                    .unwrap_or(from_utf8(&generated_uuid).unwrap())
+                    .unwrap_or(generated_uuid)
                     .as_bytes()
                     .to_vec(),
             )
