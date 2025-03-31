@@ -182,7 +182,7 @@ pub mod pallet {
 
     /// Process a Nominate SystemRequest
     pub fn process_nominating<T: Config>(request: SystemRequest) -> DispatchResult {
-        if request.request_type != SystemRequestType::Staking(StakingSystemRequest::Stake) {
+        if request.request_type != SystemRequestType::Staking(StakingSystemRequest::Nominate) {
             return Err(Error::<T>::InternalError.into());
         }
         // List of staker ids
