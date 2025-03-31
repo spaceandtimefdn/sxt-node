@@ -6,22 +6,37 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use k256::ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey};
 use scale_info::TypeInfo;
+use serde::{Serialize, Serializer};
 use sha3::digest::core_api::CoreWrapper;
 use sha3::{Digest, Keccak256, Keccak256Core};
 use snafu::{ResultExt, Snafu};
 pub use sp_core::hashing::{blake2_128, blake2_256};
-use sp_core::ConstU32;
+use sp_core::{Bytes, ConstU32};
 pub use sp_core::{RuntimeDebug, H256};
 use sp_runtime::{format, BoundedVec};
+
+/// Hex serialization function.
+///
+/// Can be used in `#[serde(serialize_with = "")]` attributes for any `AsRef<[u8]>` type.
+fn serialize_bytes_hex<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    Bytes(bytes.to_vec()).serialize(serializer)
+}
 
 /// Represents an Ethereum-style ECDSA signature, broken into its components.
 ///
 /// Wrapper around the [`k256::ecdsa::Signature`] type.
-#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Serialize,
+)]
 pub struct EthereumSignature {
     /// The `r` component of the signature.
+    #[serde(serialize_with = "serialize_bytes_hex")]
     pub r: [u8; 32],
     /// The `s` component of the signature.
+    #[serde(serialize_with = "serialize_bytes_hex")]
     pub s: [u8; 32],
     /// The recovery ID, usually 27 or 28 for Ethereum.
     pub v: u8,
@@ -271,17 +286,24 @@ fn slice_to_scalar(slice: &[u8]) -> Option<[u8; 32]> {
 pub type AttestationStateRoot = BoundedVec<u8, ConstU32<64>>;
 
 /// Represents attestations stored on-chain.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Serialize,
+)]
+#[serde(untagged)]
 pub enum Attestation {
     /// An Ethereum-style attestation.
+    #[serde(rename_all = "camelCase")]
     EthereumAttestation {
         /// The signature.
         signature: EthereumSignature,
         /// The public key used to sign the attestation.
+        #[serde(serialize_with = "serialize_bytes_hex")]
         proposed_pub_key: [u8; 33],
         /// The ethereum address for this public key
+        #[serde(serialize_with = "serialize_bytes_hex")]
         address20: Address20,
         /// The state root included in the attestation.
+        #[serde(serialize_with = "serialize_bytes_hex")]
         state_root: AttestationStateRoot,
         /// The block number that was attested
         block_number: u32,
@@ -351,5 +373,29 @@ mod tests {
             ),
             "Expected SignatureMismatchError, but got a different error or success"
         );
+    }
+
+    #[test]
+    fn we_can_serialize_bytes_as_hex() {
+        #[derive(Serialize)]
+        struct TestSerialize {
+            #[serde(serialize_with = "serialize_bytes_hex")]
+            array: [u8; 3],
+            #[serde(serialize_with = "serialize_bytes_hex")]
+            vec: Vec<u8>,
+        }
+
+        let actual = serde_json::to_value(TestSerialize {
+            array: [0, 1, 2],
+            vec: vec![1, 255],
+        })
+        .unwrap();
+
+        let expected = serde_json::json!({
+            "array": "0x000102",
+            "vec": "0x01ff",
+        });
+
+        assert_eq!(actual, expected);
     }
 }
