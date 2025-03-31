@@ -575,6 +575,52 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_generate_namespace_uuid_deterministic() {
+        let block_number = U256::from(123456u64);
+        let namespace = "my-namespace";
+
+        let uuid1 = generate_namespace_uuid(block_number, namespace).unwrap();
+        let uuid2 = generate_namespace_uuid(block_number, namespace).unwrap();
+
+        assert_eq!(
+            uuid1, uuid2,
+            "UUIDs should be deterministic for the same input"
+        );
+    }
+
+    #[test]
+    fn test_generate_namespace_uuid_diff_block_numbers() {
+        let namespace = "static-ns";
+
+        let uuid1 = generate_namespace_uuid(U256::from(1u64), namespace).unwrap();
+        let uuid2 = generate_namespace_uuid(U256::from(2u64), namespace).unwrap();
+
+        assert_ne!(
+            uuid1, uuid2,
+            "Different block numbers should yield different UUIDs"
+        );
+    }
+
+    #[test]
+    fn test_generate_namespace_uuid_diff_namespaces() {
+        let block_number = U256::from(42u64);
+
+        let uuid1 = generate_namespace_uuid(block_number, "ns1").unwrap();
+        let uuid2 = generate_namespace_uuid(block_number, "ns2").unwrap();
+
+        assert_ne!(
+            uuid1, uuid2,
+            "Different namespaces should yield different UUIDs"
+        );
+    }
+
+    #[test]
+    fn test_uuid_has_correct_length() {
+        let uuid = generate_namespace_uuid(U256::from(9999), "check-len").unwrap();
+        assert_eq!(uuid.len(), 32, "UUID must be 32 bytes long");
+    }
+
+    #[test]
     fn we_can_parse_schema_uuid_from_create_schema() {
         let sql = "CREATE SCHEMA SOUTH WITH (SCHEMA_UUID=ABC123);";
         assert_eq!(extract_schema_uuid(sql), Some("ABC123"));

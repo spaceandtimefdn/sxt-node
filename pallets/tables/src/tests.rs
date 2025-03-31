@@ -1,7 +1,8 @@
 use frame_support::assert_ok;
 use pallet_permissions::Pallet;
+use sp_runtime::BoundedVec;
 use sxt_core::permissions::{PermissionLevel, PermissionList, TablesPalletPermission};
-use sxt_core::tables::SourceAndMode;
+use sxt_core::tables::{SourceAndMode, TableType};
 
 use crate::mock::*;
 use crate::{CreateTableList, UpdateTableList};
@@ -93,5 +94,30 @@ fn create_tables_should_work_when_permissioned() {
             ),
             ()
         );
+    })
+}
+
+#[test]
+fn create_namespace_should_work() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let schema_name = BoundedVec::try_from("TEST_GEORGE".as_bytes().to_vec()).unwrap();
+        let version = 1;
+        let create_statement = BoundedVec::try_from(
+            "CREATE SCHEMA IF NOT EXISTS TEST_GEORGE;"
+                .as_bytes()
+                .to_vec(),
+        )
+        .unwrap();
+        let table_type = TableType::CoreBlockchain;
+
+        assert_ok!(Tables::create_namespace(
+            RuntimeOrigin::root(),
+            schema_name,
+            version,
+            create_statement,
+            table_type,
+        ));
     })
 }

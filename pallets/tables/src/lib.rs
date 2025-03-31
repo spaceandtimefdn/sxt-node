@@ -283,6 +283,9 @@ pub mod pallet {
 
         /// Error with a generated uuid
         GeneratedUuidError,
+
+        /// Table uuid error
+        TableUUIDError,
     }
 
     #[pallet::call]
@@ -407,17 +410,12 @@ pub mod pallet {
             let schema_name_s =
                 from_utf8(&schema_name).map_err(|_| Error::<T>::SchemaNameParseError)?;
 
-            let generated_uuid = generate_namespace_uuid(block_number.into(), schema_name_s)?; // TODO generate this
-            let generated_uuid =
-                from_utf8(&generated_uuid).map_err(|_| Error::<T>::GeneratedUuidError)?;
+            let namespace_uuid = match extract_schema_uuid(raw_sql) {
+                Some(uuid) => TableUuid::try_from(uuid.as_bytes().to_vec())
+                    .map_err(|_| Error::<T>::TableUUIDError)?,
+                None => generate_namespace_uuid(block_number.into(), schema_name_s)?,
+            };
 
-            let namespace_uuid = TableUuid::try_from(
-                extract_schema_uuid(raw_sql)
-                    .unwrap_or(generated_uuid)
-                    .as_bytes()
-                    .to_vec(),
-            )
-            .unwrap();
             Self::insert_namespace_uuid(schema_name, version, namespace_uuid.clone())?;
 
             Self::deposit_event(Event::<T>::NamespaceCreated {
