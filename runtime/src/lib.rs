@@ -157,12 +157,22 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 201,
+    spec_version: 202,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
     state_version: 1,
 };
+
+macro_rules! prod_or_dev {
+    ($prod: expr, $dev: expr) => {
+        if cfg!(feature = "fast-runtime") {
+            $dev
+        } else {
+            $prod
+        }
+    };
+}
 
 /// Since BABE is probabilistic this is the average expected block time that
 /// we are targeting. Blocks will be produced at a minimum duration defined
@@ -208,13 +218,7 @@ pub const DAYS: BlockNumber = HOURS * 24;
 pub const MAX_AUTHORITIES: u32 = 100_000u32;
 
 /// Each epoch is 4 hours
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = 4 * HOURS;
-
-pub const EPOCH_DURATION_IN_SLOTS: u64 = {
-    const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
-
-    (EPOCH_DURATION_IN_BLOCKS as f64 * SLOT_FILL_RATE) as u64
-};
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = prod_or_dev!(4 * HOURS, 20);
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]

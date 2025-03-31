@@ -40,8 +40,8 @@ fn get_register_keys_message(eth_wallet: &str, session_keys: &str, nonce: U256) 
         "SENDER".to_string(),
         SystemFieldValue::Varchar(ETH_TEST_WALLET.to_string()),
     );
-    let message_field = SystemTableField::with_value(
-        "MESSAGE".to_string(),
+    let body_field = SystemTableField::with_value(
+        "BODY".to_string(),
         SystemFieldValue::Varchar(session_keys.to_string()),
     );
     let nonce_field =
@@ -50,7 +50,7 @@ fn get_register_keys_message(eth_wallet: &str, session_keys: &str, nonce: U256) 
     SystemRequest {
         request_type: SystemRequestType::Message,
         table_id: TableIdentifier::from_str_unchecked("MESSAGE", "SXT_SYSTEM_STAKING"),
-        fields: vec![sender_field, message_field, nonce_field],
+        fields: vec![sender_field, body_field, nonce_field],
     }
 }
 

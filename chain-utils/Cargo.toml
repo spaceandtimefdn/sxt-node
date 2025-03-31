@@ -17,6 +17,8 @@ log.workspace = true
 env_logger.workspace = true
 anyhow.workspace = true
 hex.workspace = true
+on-chain-table.workspace = true
+proof-of-sql.workspace = true
 arrow = {workspace = true, features = ["prettyprint"] }
 clap = { workspace = true, features = ["derive"] }
 url = "2.5.4"

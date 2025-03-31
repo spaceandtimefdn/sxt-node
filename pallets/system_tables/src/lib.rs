@@ -66,6 +66,11 @@ pub mod pallet {
             /// The message payload received
             payload: Vec<u8>,
         },
+        /// There was an error processing an evm message
+        MessageProcessingError {
+            /// The error received
+            error: DispatchError,
+        },
     }
 
     #[pallet::error]
@@ -210,7 +215,8 @@ pub mod pallet {
                 let staking_balance: T::CurrencyBalance = T::CurrencyBalance::from(
                     UniqueSaturatedInto::<u64>::unique_saturated_into(raw_balance),
                 );
-                let _ = pallet_staking::Pallet::<T>::unbond(staker_signer, staking_balance);
+                pallet_staking::Pallet::<T>::unbond(staker_signer, staking_balance)
+                    .map_err(|e| e.error)?;
             }
             Ok(())
         });
@@ -230,7 +236,8 @@ pub mod pallet {
                     UniqueSaturatedInto::<u64>::unique_saturated_into(raw_balance),
                 );
 
-                let _ = pallet_staking::Pallet::<T>::rebond(staker_signer, staking_balance);
+                pallet_staking::Pallet::<T>::rebond(staker_signer, staking_balance)
+                    .map_err(|e| e.error)?;
             }
             Ok(())
         });
@@ -247,23 +254,33 @@ pub mod pallet {
         for row in request.rows() {
             if let (
                 Some(SystemFieldValue::Varchar(sender)),
-                Some(SystemFieldValue::Varchar(message)),
+                Some(SystemFieldValue::Varchar(body)),
                 Some(SystemFieldValue::Decimal(nonce)),
-            ) = (row.get("SENDER"), row.get("MESSAGE"), row.get("NONCE"))
+            ) = (row.get("SENDER"), row.get("BODY"), row.get("NONCE"))
             {
                 let eth_sender = sxt_core::utils::eth_address_to_substrate_account_id::<T>(sender)?;
 
                 let nonce: U256 = *nonce;
                 let expected = LastProcessedNonce::<T>::get() + 1;
                 if nonce < expected {
-                    return Err(Error::<T>::LateNonce.into());
+                    Pallet::<T>::deposit_event(Event::<T>::MessageProcessingError {
+                        error: Error::<T>::LateNonce.into(),
+                    });
+                    continue;
                 } else if nonce > expected {
-                    return Err(Error::<T>::FutureNonce.into());
+                    Pallet::<T>::deposit_event(Event::<T>::MessageProcessingError {
+                        error: Error::<T>::FutureNonce.into(),
+                    });
+                    continue;
                 }
 
                 LastProcessedNonce::<T>::put(nonce);
 
-                return messages::handle_message::<T>(eth_sender, message.as_bytes().to_vec());
+                messages::handle_message::<T>(eth_sender, body.as_bytes().to_vec())?;
+            } else {
+                Pallet::<T>::deposit_event(Event::<T>::MessageProcessingError {
+                    error: Error::<T>::MissingExpectedField.into(),
+                });
             }
         }
 
