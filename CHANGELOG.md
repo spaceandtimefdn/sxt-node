@@ -1,3 +1,12 @@
+## [0.93.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.93.0...v0.93.1) (2025-03-31)
+
+
+### Bug Fixes
+
+* Fix system table error handling and message parsing ([f36a59b](https://github.com/spaceandtimelabs/sxt-node/commit/f36a59b24a6532dd7907f06003a0509e6f53a924))
+
+
+
 # [0.93.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.92.0...v0.93.0) (2025-03-29)
 
 
@@ -53,10 +62,6 @@
 * Implement evm-messages for registering session keys ([50beef6](https://github.com/spaceandtimelabs/sxt-node/commit/50beef6fc45da6bec4837acdc112fb4142e4025d))
 * Update mocks in system_tables pallet ([1004ce7](https://github.com/spaceandtimelabs/sxt-node/commit/1004ce7db8c8da28a7acc1dece50e0b2803c298a))
 * Utility for uploading Tables from a DDL to the chain ([40a5b5c](https://github.com/spaceandtimelabs/sxt-node/commit/40a5b5cb8d4176452c406001a1b31b1baebc8bf4))
-
-
-
-## [0.89.4](https://github.com/spaceandtimelabs/sxt-node/compare/v0.89.3...v0.89.4) (2025-03-26)
 
 
 
