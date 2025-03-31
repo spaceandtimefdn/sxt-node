@@ -8,7 +8,9 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+attestation_tree = { workspace = true }
 clap = { version = "4.0", features = ["derive", "env"] }
+frame-support = { workspace = true, features = ["std"] }
 tokio = { version = "1.0", features = ["full"] }
 subxt = { version = "0.38.0" , features = ["jsonrpsee", "native", "default", "substrate-compat"]}
 subxt-signer = { version = "0.38"}
@@ -20,16 +22,12 @@ futures = "0.3.31"
 k256 = "0.13.4"
 sha3 = "0.10.8"
 sxt-core = { workspace = true, features = ["std"]}
+sxt-runtime = { workspace = true, features = ["std"] }
 sp-core = { workspace = true, features = ["std"]}
 prometheus = "0.12.0"
 ratatui = "=0.23.0"
 crossterm = "0.28.1"
 snafu = { workspace = true }
-codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
-    "derive", "std",
-] }
-proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
-eth_merkle_tree = "=0.1.1"
 
 [lints]
 workspace = true

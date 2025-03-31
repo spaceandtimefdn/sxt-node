@@ -15,12 +15,19 @@
 use std::sync::Arc;
 
 use alloy::network::EthereumWallet;
-use alloy::primitives::{Address, FixedBytes, Uint, U256};
+use alloy::primitives::{Address, FixedBytes, Uint};
 use alloy::sol;
 use async_trait::async_trait;
+use attestation_tree::{
+    attestation_tree_from_prefixes,
+    prove_leaf_pair,
+    AccountPrefixFoliate,
+    AttestationTreeError,
+    AttestationTreeProofError,
+};
+use codec::{Decode, Encode};
 use eth_merkle_tree::tree::MerkleTree;
-use eth_merkle_tree::utils::errors::BytesError;
-use eth_merkle_tree::utils::keccak::keccak256;
+use frame_system::AccountInfo;
 use log::{error, info};
 use snafu::{ResultExt, Snafu};
 use sp_core::crypto::AccountId32;
@@ -31,6 +38,7 @@ use sxt_core::sxt_chain_runtime::api::attestations::events::BlockAttested;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::Attestation::EthereumAttestation;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::EthereumSignature as RuntimeEthereumSignature;
 use sxt_core::sxt_chain_runtime::api::staking::events::Unbonded;
+use sxt_runtime::Runtime;
 use tokio::sync::mpsc;
 use watcher::attestation;
 
@@ -225,23 +233,6 @@ impl BlockProcessor for EventForwarderProcessor {
     }
 }
 
-/// generate a proof from the tree
-fn generate_proof(
-    tree: &attestation::merkle_tree::MerkleTree,
-    account_hex: &str,
-) -> Result<Vec<FixedBytes<32>>, Error> {
-    let account_leaf = keccak256(account_hex).context(KeccakSnafu)?;
-    let account_leaf = keccak256(&account_leaf).context(KeccakSnafu)?;
-
-    let leaf_index = tree
-        .locate_leaf(&account_leaf)
-        .ok_or(Error::LocateLeafError)?;
-
-    let proof = tree.generate_proof(leaf_index);
-
-    block_processing::convert_proof(proof).map_err(|_| Error::InvalidProofLength)
-}
-
 async fn process_unbondings(
     api: &API,
     contract: &EventForwarderInstance,
@@ -262,9 +253,8 @@ async fn process_unbondings(
             .await
             .context(FetchCommitmentsAndAccountsSnafu)?;
 
-    let tree = block_processing::build_merkle_tree(commitments.clone(), accounts.clone())
-        .await
-        .context(BlockProcessingSnafu)?;
+    let tree = attestation_tree_from_prefixes::<_, _, Runtime>(commitments, accounts)
+        .context(ConstructingMerkleTreeSnafu)?;
 
     let state_root = extract_state_root(&tree)?;
 
@@ -354,7 +344,7 @@ async fn process_unstake(
     attested_block: &Block,
 ) -> Result<(), Error> {
     let balance_query = sxt_chain_runtime::api::storage().system().account(stash);
-    let balance = api
+    let account_info = api
         .storage()
         .at(attested_block.hash())
         .fetch(&balance_query)
@@ -366,15 +356,18 @@ async fn process_unstake(
             account_id: stash.clone(),
         })?;
 
-    let free_balance = balance.data.free;
-
     let staker = Address::from_slice(&stash.0.as_ref()[12..32]);
     let stash = sp_core::crypto::AccountId32::from_slice(&stash.0).expect("should always work");
-    let encoded_leaf =
-        watcher::attestation::fetch::encode_account_leaf(stash.clone(), free_balance);
-    let proof = generate_proof(tree, &encoded_leaf)?;
+    let account_info = AccountInfo::<
+        <Runtime as frame_system::Config>::Nonce,
+        <Runtime as frame_system::Config>::AccountData,
+    >::decode(&mut account_info.encode().as_slice())
+    .expect("should always work");
+    let amount = Uint::from(account_info.data.free);
 
-    let amount = Uint::from(free_balance);
+    let proof = prove_leaf_pair::<AccountPrefixFoliate<Runtime>>(tree, (stash,), account_info)
+        .context(AccountBalanceProofSnafu)?;
+    let proof = block_processing::convert_proof(proof).map_err(|_| Error::InvalidProofLength)?;
 
     match contract
         .sxtFulfillUnstake(
@@ -449,16 +442,6 @@ pub enum Error {
         source: attestation::fetch::FetchError,
     },
 
-    /// Error hashing data for the Merkle tree.
-    ///
-    /// - **Cause:** A problem occurred during hashing operations using Keccak.
-    /// - **Solution:** Ensure data being hashed is correctly formatted.
-    #[snafu(display("Error hashing data: {source}"))]
-    HashingData {
-        /// source error
-        source: attestation::merkle_tree::MerkleTreeError,
-    },
-
     /// Error constructing the Merkle tree.
     ///
     /// - **Cause:** The input data might be invalid or malformed.
@@ -466,7 +449,7 @@ pub enum Error {
     #[snafu(display("Error constructing Merkle tree: {source}"))]
     ConstructingMerkleTree {
         /// source error
-        source: attestation::merkle_tree::MerkleTreeError,
+        source: AttestationTreeError,
     },
 
     /// The Merkle tree has an empty state root.
@@ -514,22 +497,14 @@ pub enum Error {
         account_id: AccountId32,
     },
 
-    /// Error during Keccak hashing.
-    ///
-    /// - **Cause:** An invalid byte sequence or hashing operation failure.
-    /// - **Solution:** Ensure the input data is correctly formatted before hashing.
-    #[snafu(display("There was an error hashing the data: {source}"))]
-    KeccakError {
-        /// The source error
-        source: BytesError,
+    /// Error proving that attestation tree contains the claimed account balance.
+    #[snafu(display(
+        "Encountered error when proving that merkle tree contains account balance: {source}"
+    ))]
+    AccountBalanceProof {
+        /// The source attestation tree proof error.
+        source: AttestationTreeProofError,
     },
-
-    /// Error locating a specific Merkle tree leaf.
-    ///
-    /// - **Cause:** The Merkle tree might not contain the given leaf.
-    /// - **Solution:** Ensure the correct data was used for Merkle tree insertion.
-    #[snafu(display("The leaf was unable to be located"))]
-    LocateLeafError,
 
     /// Error in formatting cryptographic proof data.
     ///

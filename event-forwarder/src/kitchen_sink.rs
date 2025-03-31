@@ -10,6 +10,15 @@ use alloy::rpc::types::TransactionRequest;
 use alloy::signers::local::PrivateKeySigner;
 use alloy::sol;
 use async_trait::async_trait;
+use attestation_tree::{
+    attestation_tree_from_prefixes,
+    decode_storage_key_and_value,
+    prove_leaf_pair,
+    AccountPrefixFoliate,
+    AttestationTreeError,
+    AttestationTreeProofError,
+    DecodeStorageError,
+};
 use codec::{Decode, Encode};
 use eth_merkle_tree::utils::keccak::keccak256;
 use log::{error, info};
@@ -26,6 +35,7 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::Atte
 use sxt_core::sxt_chain_runtime::api::staking::events::Unbonded;
 use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
 use sxt_core::ByteString;
+use sxt_runtime::Runtime;
 use tokio::sync::mpsc;
 use watcher::attestation;
 
@@ -81,18 +91,27 @@ pub enum KitchenSinkProcessorError {
         source: attestation::fetch::FetchError,
     },
 
-    /// Error hashing data for the Merkle tree.
-    #[snafu(display("Error hashing data: {source}"))]
-    HashingData {
-        /// todo
-        source: attestation::merkle_tree::MerkleTreeError,
+    /// Error decoding fetched account storage bytes.
+    #[snafu(display("Error decoding fetched account storage bytes: {source}"))]
+    DecodeStorageAccount {
+        /// The source decode .
+        source: DecodeStorageError,
     },
 
     /// Error constructing the Merkle tree.
     #[snafu(display("Error constructing Merkle tree: {source}"))]
     ConstructingMerkleTree {
-        /// todo
-        source: attestation::merkle_tree::MerkleTreeError,
+        /// The source attestation tree error.
+        source: AttestationTreeError,
+    },
+
+    /// Error proving that attestation tree contains the claimed account balance.
+    #[snafu(display(
+        "Encountered error when proving that merkle tree contains account balance: {source}"
+    ))]
+    AccountBalanceProof {
+        /// The source attestation tree proof error.
+        source: AttestationTreeProofError,
     },
 
     /// Merkle tree generated an empty state root.
@@ -258,18 +277,31 @@ impl KitchenSinkProcessor {
                 .await
                 .context(FetchCommitmentsAndAccountsSnafu)?;
 
-        let tree = block_processing::build_merkle_tree(commitments.clone(), accounts.clone())
-            .await
-            .context(BlockProcessingSnafu)?;
-
-        let contract = Arc::new(Verifier::new(self.address, self.provider.clone()));
-        let first_account = accounts
+        let (first_account_key_bytes, first_account_data_bytes) = accounts
             .first()
             .ok_or_else(|| KitchenSinkProcessorError::InvalidProofLength)?;
 
-        let (account_id, balance) = self.extract_account_data(first_account)?;
+        let (first_account_key, first_account_data) =
+            decode_storage_key_and_value::<AccountPrefixFoliate<Runtime>>(
+                first_account_key_bytes,
+                first_account_data_bytes,
+            )
+            .context(DecodeStorageAccountSnafu)?;
 
-        let proof = self.generate_proof(&tree, first_account)?;
+        let tree = attestation_tree_from_prefixes::<_, _, Runtime>(commitments, accounts)
+            .context(ConstructingMerkleTreeSnafu)?;
+
+        let contract = Arc::new(Verifier::new(self.address, self.provider.clone()));
+
+        let proof = prove_leaf_pair::<AccountPrefixFoliate<Runtime>>(
+            &tree,
+            first_account_key.clone(),
+            first_account_data.clone(),
+        )
+        .context(AccountBalanceProofSnafu)?;
+
+        let proof = block_processing::convert_proof(proof)
+            .map_err(|_| KitchenSinkProcessorError::InvalidProofLength)?;
 
         let state_root = hex::decode(tree.root.as_ref().unwrap().data.clone())
             .expect("could not decode state root");
@@ -315,9 +347,11 @@ impl KitchenSinkProcessor {
         let v = vec![v];
         let expected_addresses = vec![address];
 
+        let balance = first_account_data.data.free;
+
         match contract
             .processUnstake(
-                account_id,
+                FixedBytes(first_account_key.0.into()),
                 balance,
                 *block_number,
                 state_root,
@@ -351,51 +385,6 @@ impl KitchenSinkProcessor {
         block_processing::send_channel_update(&self.channel).await;
 
         Ok(())
-    }
-
-    /// todo
-    fn extract_account_data(
-        &self,
-        account_hex: &String,
-    ) -> Result<(FixedBytes<32>, u128), KitchenSinkProcessorError> {
-        let decoded_bytes = hex::decode(account_hex).context(HexDecodingSnafu)?;
-
-        if decoded_bytes.len() != 48 {
-            return Err(KitchenSinkProcessorError::InvalidProofLength);
-        }
-
-        let account_id_bytes: [u8; 32] = decoded_bytes[0..32]
-            .try_into()
-            .map_err(|_| KitchenSinkProcessorError::InvalidProofLength)?;
-
-        let balance_bytes: [u8; 16] = decoded_bytes[32..48]
-            .try_into()
-            .map_err(|_| KitchenSinkProcessorError::InvalidProofLength)?;
-
-        let balance = u128::from_be_bytes(balance_bytes);
-
-        Ok((FixedBytes::<32>::from(account_id_bytes), balance))
-    }
-
-    /// todo
-    fn generate_proof(
-        &self,
-        tree: &attestation::merkle_tree::MerkleTree,
-        account_hex: &str,
-    ) -> Result<Vec<FixedBytes<32>>, KitchenSinkProcessorError> {
-        let account_leaf =
-            keccak256(account_hex).map_err(|_| KitchenSinkProcessorError::LocateLeafError)?;
-        let account_leaf =
-            keccak256(&account_leaf).map_err(|_| KitchenSinkProcessorError::LocateLeafError)?;
-
-        let leaf_index = tree
-            .locate_leaf(&account_leaf)
-            .ok_or(KitchenSinkProcessorError::LocateLeafError)?;
-
-        let proof = tree.generate_proof(leaf_index);
-
-        block_processing::convert_proof(proof)
-            .map_err(|_| KitchenSinkProcessorError::InvalidProofLength)
     }
 
     /// todo
@@ -473,33 +462,6 @@ impl BlockProcessor for KitchenSinkProcessor {
             );
         }
     }
-}
-
-/// todo
-pub fn decode_commitment_data(
-    commitment_hex: &str,
-) -> Result<(TableName, TableNamespace, CommitmentScheme, Vec<u8>), KitchenSinkProcessorError> {
-    // Convert hex string to bytes
-    let decoded_bytes = hex::decode(commitment_hex).context(HexDecodingSnafu)?;
-
-    // Convert to a readable input slice
-    let mut input = &decoded_bytes[..];
-
-    let name = ByteString::decode(&mut input).context(TableNameDecodeSnafu)?;
-
-    let namespace = ByteString::decode(&mut input).context(TableNamespaceDecodeSnafu)?;
-
-    // Decode CommitmentScheme
-    let commitment_scheme =
-        CommitmentScheme::decode(&mut input).context(CommitmentSchemeDecodeSnafu)?;
-
-    // Remaining bytes are the commitment
-    let commitment = input.to_vec();
-    if commitment.is_empty() {
-        return Err(KitchenSinkProcessorError::CommitmentDataError);
-    }
-
-    Ok((name, namespace, commitment_scheme, commitment))
 }
 
 /// todo

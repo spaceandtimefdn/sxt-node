@@ -8,12 +8,15 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+attestation_tree = { workspace = true }
 eth_merkle_tree = { workspace = true }
+frame-system = { workspace = true, features = ["std"] }
 clap = { workspace = true, features = ["derive", "env"] }
 tokio = { workspace = true, features = ["full"] }
 subxt = { workspace = true, features = ["jsonrpsee", "native", "default", "substrate-compat"] }
 subxt-signer = { workspace = true }
 sxt-core = { workspace = true, features = ["std"] }
+sxt-runtime = { workspace = true, features = ["std"] }
 hex = { workspace = true }
 sp-core = { workspace = true, features = ["std"] }
 codec = { workspace = true, package = "parity-scale-codec", default-features = false, features = ["derive", "std"] }
