@@ -62,14 +62,14 @@ fn extract_table_data(statement: &Statement) -> Option<UpdateTable> {
             ident: table_id,
             create_statement: encoded_schema,
             table_type: TableType::Testing(InsertQuorumSize {
-                public: Some(0),
-                privileged: None,
+                public: None,
+                privileged: Some(0),
             }),
             commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
                 hyper_kzg: false,
                 dynamic_dory: true,
             }),
-            source: Source::Ethereum,
+            source: Source::Sepolia,
         };
         return Some(item);
     }

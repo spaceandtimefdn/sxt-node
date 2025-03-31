@@ -3369,6 +3369,8 @@ dependencies = [
  "env_logger 0.11.6",
  "hex",
  "log",
+ "on-chain-table",
+ "proof-of-sql",
  "sqlparser",
  "subxt",
  "subxt-signer",

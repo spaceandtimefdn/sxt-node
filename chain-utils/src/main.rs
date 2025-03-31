@@ -5,6 +5,7 @@ mod common;
 mod fetch_submissions;
 mod load_tables;
 mod print_batch;
+mod test_staking;
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -76,6 +77,24 @@ enum Commands {
         #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
         rpc: url::Url,
     },
+    /// Submit staking + session keys message for a test validator (Sepolia impersonation)
+    TestStaking {
+        /// Private key URI to sign transactions
+        #[arg(short, long)]
+        private_key: String,
+
+        /// Node RPC endpoint
+        #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
+        rpc: url::Url,
+
+        /// Session keys from rotateKeys
+        #[arg(short = 's', long)]
+        session_keys: String,
+
+        /// Ethereum wallet address to impersonate
+        #[arg(short = 'e', long)]
+        eth_wallet: String,
+    },
 }
 
 #[tokio::main]
@@ -102,6 +121,18 @@ async fn main() {
         Commands::FetchSubmissions { block, rpc } => {
             if let Err(e) = fetch_submissions::fetch_submissions(block, &rpc).await {
                 error!("Failed to fetch submissions: {}", e);
+            }
+        }
+        Commands::TestStaking {
+            private_key,
+            rpc,
+            session_keys,
+            eth_wallet,
+        } => {
+            if let Err(e) =
+                test_staking::test_staking(&private_key, &rpc, &session_keys, &eth_wallet).await
+            {
+                error!("Test staking failed: {}", e);
             }
         }
     }
