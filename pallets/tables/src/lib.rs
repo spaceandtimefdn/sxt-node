@@ -120,6 +120,8 @@ pub mod pallet {
             version: TableVersion,
             /// The uuid of the namespace
             namespace_uuid: TableUuid,
+            /// Table type
+            table_type: TableType,
         },
 
         /// The schema for a table has been updated
@@ -385,6 +387,7 @@ pub mod pallet {
             schema_name: ByteString,
             version: TableVersion,
             create_statement: CreateStatement,
+            table_type: TableType,
         ) -> DispatchResult {
             pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin,
@@ -409,6 +412,7 @@ pub mod pallet {
                 create_schema: create_statement,
                 version,
                 namespace_uuid,
+                table_type,
             });
             Ok(())
         }
