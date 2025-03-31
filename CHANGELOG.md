@@ -1,3 +1,12 @@
+## [0.94.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.0...v0.94.1) (2025-03-31)
+
+
+### Bug Fixes
+
+* remove unwraps from runtime ([700a88e](https://github.com/spaceandtimelabs/sxt-node/commit/700a88ef55a25929c2924ddd25ec36ddda9020d8))
+
+
+
 # [0.94.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.93.1...v0.94.0) (2025-03-31)
 
 
@@ -44,21 +53,6 @@
 * reintroduce source ([f7b33b0](https://github.com/spaceandtimelabs/sxt-node/commit/f7b33b008287737579a620025867c9854ca306a9))
 * update create tables api ([f9512a4](https://github.com/spaceandtimelabs/sxt-node/commit/f9512a4d163e9c29ccb670c95c2859b9edd284ed))
 * update create_tables interface ([9c27dae](https://github.com/spaceandtimelabs/sxt-node/commit/9c27dae4b2e83f80fd2898822f1d23788e1aac77))
-
-
-
-# [0.91.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.90.0...v0.91.0) (2025-03-28)
-
-
-### Bug Fixes
-
-* fix failing tests ([446cce9](https://github.com/spaceandtimelabs/sxt-node/commit/446cce92be8932559f4325f9d3440b32577cb54f))
-
-
-### Features
-
-* add owner to tables and smart contract events ([2133b56](https://github.com/spaceandtimelabs/sxt-node/commit/2133b56dfabc320968261ce285e03258dfe651fb))
-* upgrade smart contract functionality and prepare chain for translation layer ([5492b2e](https://github.com/spaceandtimelabs/sxt-node/commit/5492b2e22b456d5cb99c33c2d15e04e45db8e401))
 
 
 
