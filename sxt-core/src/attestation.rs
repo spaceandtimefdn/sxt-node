@@ -290,7 +290,7 @@ pub type AttestationStateRoot = BoundedVec<u8, ConstU32<64>>;
     Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Serialize,
 )]
 #[serde(untagged)]
-pub enum Attestation {
+pub enum Attestation<BH> {
     /// An Ethereum-style attestation.
     #[serde(rename_all = "camelCase")]
     EthereumAttestation {
@@ -308,7 +308,7 @@ pub enum Attestation {
         /// The block number that was attested
         block_number: u32,
         /// The hash of the block that was attested
-        block_hash: H256,
+        block_hash: BH,
     },
 }
 

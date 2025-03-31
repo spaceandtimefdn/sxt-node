@@ -21,7 +21,6 @@ mod benchmarks {
         AttestationKey,
         EthereumSignature,
         RegisterExternalAddress,
-        H256,
     };
     use sxt_core::permissions::{AttestationPalletPermission, PermissionLevel, PermissionList};
 
@@ -104,7 +103,7 @@ mod benchmarks {
         let address20 =
             sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
 
-        let block_hash = H256::zero();
+        let block_hash = T::Hash::default();
         let attestation = Attestation::EthereumAttestation {
             signature,
             proposed_pub_key: public_key,
