@@ -1,3 +1,12 @@
+# [0.94.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.93.1...v0.94.0) (2025-03-31)
+
+
+### Features
+
+* update create namespace tx to include tabletype ([64107ff](https://github.com/spaceandtimelabs/sxt-node/commit/64107ffc1b4f5ae3125c9461526a5cb1126d5440))
+
+
+
 ## [0.93.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.93.0...v0.93.1) (2025-03-31)
 
 
@@ -50,18 +59,6 @@
 
 * add owner to tables and smart contract events ([2133b56](https://github.com/spaceandtimelabs/sxt-node/commit/2133b56dfabc320968261ce285e03258dfe651fb))
 * upgrade smart contract functionality and prepare chain for translation layer ([5492b2e](https://github.com/spaceandtimelabs/sxt-node/commit/5492b2e22b456d5cb99c33c2d15e04e45db8e401))
-
-
-
-# [0.90.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.89.4...v0.90.0) (2025-03-28)
-
-
-### Features
-
-* Add Bytes Column Support to OnChainTable getters ([16dfeef](https://github.com/spaceandtimelabs/sxt-node/commit/16dfeef83545a150ada480c37cd0bae73a6354af))
-* Implement evm-messages for registering session keys ([50beef6](https://github.com/spaceandtimelabs/sxt-node/commit/50beef6fc45da6bec4837acdc112fb4142e4025d))
-* Update mocks in system_tables pallet ([1004ce7](https://github.com/spaceandtimelabs/sxt-node/commit/1004ce7db8c8da28a7acc1dece50e0b2803c298a))
-* Utility for uploading Tables from a DDL to the chain ([40a5b5c](https://github.com/spaceandtimelabs/sxt-node/commit/40a5b5cb8d4176452c406001a1b31b1baebc8bf4))
 
 
 
