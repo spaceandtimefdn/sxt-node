@@ -12,9 +12,13 @@ codec.workspace = true
 impl-trait-for-tuples.workspace = true
 frame-support = { workspace = true, features = ["std"] }
 snafu.workspace = true
+sxt-core = { workspace = true, features = ["std"] }
+pallet-commitments = { workspace = true, features = ["std"] }
+proof-of-sql-commitment-map = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
 sp-core = { workspace = true, features = ["std"] }
+sxt-runtime = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true

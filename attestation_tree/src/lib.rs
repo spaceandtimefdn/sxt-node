@@ -10,3 +10,6 @@ pub use prefix_foliate::{
     DecodeStorageError,
     PrefixFoliate,
 };
+
+mod commitment_map_prefix_foliate;
+pub use commitment_map_prefix_foliate::CommitmentMapPrefixFoliate;

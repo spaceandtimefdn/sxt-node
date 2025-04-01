@@ -2296,7 +2296,10 @@ dependencies = [
  "impl-trait-for-tuples",
  "pallet-commitments",
  "parity-scale-codec",
+ "proof-of-sql-commitment-map",
  "snafu",
+ "sxt-core",
+ "sxt-runtime",
 ]
 
 [[package]]
