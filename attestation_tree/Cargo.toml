@@ -8,6 +8,12 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+codec.workspace = true
+impl-trait-for-tuples.workspace = true
+frame-support = { workspace = true, features = ["std"] }
+
+[dev-dependencies]
+sp-core = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true
