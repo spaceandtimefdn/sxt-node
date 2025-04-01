@@ -7,6 +7,7 @@ edition = "2021"
 
 [workspace]
 members = [
+    "attestation_tree",
     "node",
     "rpc",
     "watcher",
