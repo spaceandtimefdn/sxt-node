@@ -89,25 +89,21 @@ type Result<T, E = EventForwarderError> = std::result::Result<T, E>;
 )]
 struct Cli {
     /// The RPC URL of the Ethereum node
-    #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
+    #[arg(long, default_value = "ws://127.0.0.1:9944")]
     rpc_url: String,
 
     /// The contract address
-    #[arg(
-        short,
-        long,
-        default_value = "0xd27Da90dfaabE287B572919A6f0aeEBc79a2Ed7e"
-    )]
+    #[arg(long, default_value = "0xd27Da90dfaabE287B572919A6f0aeEBc79a2Ed7e")]
     contract_address: String,
 
     /// Path to the Ethereum key file
-    #[arg(short, long, default_value = ".eth")]
+    #[arg(long, default_value = ".eth")]
     eth_key_path: String,
 
     /// The file path to the Substrate SR25519 private key.
     ///
     /// This key is used to submit transactions to the blockchain.
-    #[arg(short, long, default_value = ".substrate")]
+    #[arg(long, default_value = ".substrate")]
     substrate_key_path: String,
 
     /// Subcommands (e.g., integration-test)
@@ -115,7 +111,7 @@ struct Cli {
     command: Option<Commands>,
 
     /// The substrate rpc url
-    #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
+    #[arg(long, default_value = "ws://127.0.0.1:9944")]
     substrate_rpc_url: String,
 }
 
