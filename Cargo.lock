@@ -2296,6 +2296,7 @@ dependencies = [
  "impl-trait-for-tuples",
  "pallet-commitments",
  "parity-scale-codec",
+ "snafu",
 ]
 
 [[package]]

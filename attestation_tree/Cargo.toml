@@ -11,6 +11,7 @@ edition.workspace = true
 codec.workspace = true
 impl-trait-for-tuples.workspace = true
 frame-support = { workspace = true, features = ["std"] }
+snafu.workspace = true
 
 [dev-dependencies]
 sp-core = { workspace = true, features = ["std"] }
