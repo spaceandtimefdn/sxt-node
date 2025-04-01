@@ -11,8 +11,10 @@ edition.workspace = true
 codec.workspace = true
 impl-trait-for-tuples.workspace = true
 frame-support = { workspace = true, features = ["std"] }
+frame-system = { workspace = true, features = ["std"] }
 snafu.workspace = true
 sxt-core = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = ["std"] }
 pallet-commitments = { workspace = true, features = ["std"] }
 proof-of-sql-commitment-map = { workspace = true, features = ["std"] }
 

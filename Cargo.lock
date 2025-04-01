@@ -2293,11 +2293,14 @@ name = "attestation_tree"
 version = "0.1.0"
 dependencies = [
  "frame-support",
+ "frame-system",
  "impl-trait-for-tuples",
+ "pallet-balances",
  "pallet-commitments",
  "parity-scale-codec",
  "proof-of-sql-commitment-map",
  "snafu",
+ "sp-core",
  "sxt-core",
  "sxt-runtime",
 ]
