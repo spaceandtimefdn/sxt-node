@@ -16,3 +16,11 @@ pub use commitment_map_prefix_foliate::CommitmentMapPrefixFoliate;
 
 mod account_prefix_foliate;
 pub use account_prefix_foliate::AccountPrefixFoliate;
+
+mod attestation_tree;
+pub use attestation_tree::{
+    attestation_tree_from_prefixes,
+    prove_leaf_pair,
+    AttestationTreeError,
+    AttestationTreeProofError,
+};
