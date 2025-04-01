@@ -1,3 +1,7 @@
+## [0.94.5](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.4...v0.94.5) (2025-04-01)
+
+
+
 ## [0.94.4](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.3...v0.94.4) (2025-03-31)
 
 
@@ -31,15 +35,6 @@
 ### Bug Fixes
 
 * remove unwraps from runtime ([700a88e](https://github.com/spaceandtimelabs/sxt-node/commit/700a88ef55a25929c2924ddd25ec36ddda9020d8))
-
-
-
-# [0.94.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.93.1...v0.94.0) (2025-03-31)
-
-
-### Features
-
-* update create namespace tx to include tabletype ([64107ff](https://github.com/spaceandtimelabs/sxt-node/commit/64107ffc1b4f5ae3125c9461526a5cb1126d5440))
 
 
 
