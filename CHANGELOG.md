@@ -1,3 +1,12 @@
+## [0.95.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.95.0...v0.95.1) (2025-04-02)
+
+
+### Bug Fixes
+
+* fetch block using jsonrpsee instead of reqwest ([ba858a7](https://github.com/spaceandtimelabs/sxt-node/commit/ba858a79c405832c81ec9c151f4fb09faf772073))
+
+
+
 # [0.95.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.6...v0.95.0) (2025-04-02)
 
 
@@ -36,15 +45,6 @@
 ### Bug Fixes
 
 * Fix Process Nominate system request ([6d0f8e5](https://github.com/spaceandtimelabs/sxt-node/commit/6d0f8e5c1f92a6de71291315053abe50a7004a0d))
-
-
-
-## [0.94.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.2...v0.94.3) (2025-03-31)
-
-
-### Bug Fixes
-
-* add source to create namespace ([a3b3e78](https://github.com/spaceandtimelabs/sxt-node/commit/a3b3e78657a1e1cb2fb3da237621fd8fede79832))
 
 
 
