@@ -5,6 +5,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use ::sxt_core::attestation::sign_eth_message;
+use attestation_tree::attestation_tree_from_prefixes;
 use clap::{Parser, Subcommand};
 use crossterm::event::{read, Event, KeyCode};
 use crossterm::execute;
@@ -31,6 +32,7 @@ use subxt_signer::sr25519::Keypair;
 use sxt_core::attestation::{verify_eth_signature, EthereumSignature, RegisterExternalAddress};
 use sxt_core::sxt_chain_runtime as runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
+use sxt_runtime::Runtime;
 use thiserror::Error;
 use watcher::attestation;
 
@@ -141,10 +143,6 @@ pub enum AttestationError {
     /// Error fetching commitments and accounts from the chain.
     #[error("FetchError: {0}")]
     FetchError(#[from] attestation::fetch::FetchError),
-
-    /// Error constructing a merkle tree from the data.
-    #[error("MerkleTreeError: {0}")]
-    MerkleTreeError(#[from] attestation::merkle_tree::MerkleTreeError),
 }
 
 /// Command-line arguments for the CLI
@@ -339,22 +337,10 @@ impl AttestationClient {
                 }
             };
 
-        let mut data: Vec<String> = Vec::new();
-        data.extend(commitments);
-        data.extend(accounts);
-
-        let hashed_data = match attestation::merkle_tree::hash_data(data) {
-            Ok(hashed) => hashed,
+        let tree = match attestation_tree_from_prefixes::<_, _, Runtime>(commitments, accounts) {
+            Ok(result) => result,
             Err(e) => {
-                log::error!("Error hashing data: {}", e);
-                return Ok(());
-            }
-        };
-
-        let tree = match attestation::merkle_tree::build_merkle_tree(&hashed_data) {
-            Ok(tree) => tree,
-            Err(e) => {
-                log::error!("Error constructing Merkle tree: {}", e);
+                log::error!("Error creating attestation tree: {}", e);
                 return Ok(());
             }
         };

@@ -25,7 +25,6 @@
 //! - [`fetch_unbonding_events`] - Fetches unbonding events from a block.
 //!
 //! ### Merkle Tree Processing
-//! - [`build_merkle_tree`] - Constructs a Merkle tree from commitments and accounts.
 //! - [`convert_proof`] - Converts hex-encoded proofs to `FixedBytes<32>` format.
 //!
 //! ### Transaction Handling
@@ -113,26 +112,6 @@ pub async fn fetch_block_attestations(block: &Block) -> Result<Vec<BlockAttested
 /// Fetches unbonding events from a block.
 pub async fn fetch_unbonding_events(block: &Block) -> Result<Vec<Unbonded>, Error> {
     fetch_events::<Unbonded>(block).await
-}
-
-/// create the merkle tree
-pub async fn build_merkle_tree(
-    commitments: Vec<String>,
-    accounts: Vec<String>,
-) -> Result<attestation::merkle_tree::MerkleTree, Error> {
-    let mut data: Vec<String> = Vec::new();
-    data.extend(commitments);
-    data.extend(accounts);
-
-    let hashed_data = attestation::merkle_tree::hash_data(data).context(HashingDataSnafu)?;
-    let tree = attestation::merkle_tree::build_merkle_tree(&hashed_data)
-        .context(ConstructingMerkleTreeSnafu)?;
-
-    if tree.root.is_none() {
-        return Err(Error::EmptyMerkleRoot);
-    }
-
-    Ok(tree)
 }
 
 /// Converts a list of hex-encoded Merkle proof elements into `FixedBytes<32>`.
@@ -326,26 +305,6 @@ pub enum Error {
     FetchCommitmentsAndAccounts {
         /// source error
         source: attestation::fetch::FetchError,
-    },
-
-    /// Error hashing data for the Merkle tree.
-    ///
-    /// - **Cause:** A problem occurred during hashing operations using Keccak.
-    /// - **Solution:** Ensure data being hashed is correctly formatted.
-    #[snafu(display("Error hashing data: {source}"))]
-    HashingData {
-        /// source error
-        source: attestation::merkle_tree::MerkleTreeError,
-    },
-
-    /// Error constructing the Merkle tree.
-    ///
-    /// - **Cause:** The input data might be invalid or malformed.
-    /// - **Solution:** Ensure the commitments and accounts are correctly formatted.
-    #[snafu(display("Error constructing Merkle tree: {source}"))]
-    ConstructingMerkleTree {
-        /// source error
-        source: attestation::merkle_tree::MerkleTreeError,
     },
 
     /// The Merkle tree has an empty state root.

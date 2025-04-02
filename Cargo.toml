@@ -7,6 +7,7 @@ edition = "2021"
 
 [workspace]
 members = [
+    "attestation_tree",
     "node",
     "rpc",
     "watcher",
@@ -45,6 +46,7 @@ tokio = { version = "1.41.0", default-features = false }
 ahash = { version = "0.8.11", default-features = false }
 ark-serialize = { version = "0.5.0", default-features = false }
 arrow = { version = "54.2.1", default-features = false }
+attestation_tree = { path = "./attestation_tree/", default-features = false }
 bigdecimal = { version = "0.4.5", default-features = false }
 bincode = { version = "2.0.0", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
@@ -184,6 +186,7 @@ sc-network-statement = { version = "0.27.0", default-features = false }
 sc-storage-monitor = { version = "0.22.0", default-features = false }
 sc-network-sync = { version = "0.44.0", default-features = false }
 pallet-staking-reward-curve = { version = "12.0.0", default-features = false }
+impl-trait-for-tuples = { version = "0.2.3" }
 
 k256 = { version = "0.13.4", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
