@@ -31,6 +31,8 @@ use std::time::Duration;
 
 use async_stream::stream;
 use async_trait::async_trait;
+use jsonrpsee::core::client::ClientT;
+use jsonrpsee::ws_client::WsClientBuilder;
 use log::{error, info};
 use reqwest::Client;
 use serde_json::json;
@@ -206,8 +208,6 @@ pub struct IncrementingBlockStream {
 impl IncrementingBlockStream {
     /// Creates a new `IncrementingBlockStream` starting from a given block number.
     pub fn new(start_block: u32, receiver: Receiver<bool>, substrate_rpc_url: String) -> Self {
-        let substrate_rpc_url = convert_ws_to_https(&substrate_rpc_url);
-
         Self {
             start_block,
             receiver: Arc::new(Mutex::new(receiver)),
@@ -216,25 +216,14 @@ impl IncrementingBlockStream {
     }
 
     /// Fetches the block hash for a given block number using JSON-RPC.
-    async fn get_block_hash(&self, block_number: u32) -> Result<Option<String>, reqwest::Error> {
-        let client = Client::new();
-
-        let payload = json!({
-            "jsonrpc": "2.0",
-            "method": "chain_getBlockHash",
-            "params": [block_number],
-            "id": 1
-        });
-
-        let response = client
-            .post(self.substrate_rpc_url.clone())
-            .json(&payload)
-            .send()
-            .await?
-            .json::<serde_json::Value>()
+    pub async fn get_block_hash(&self, block_number: u32) -> anyhow::Result<Option<String>> {
+        let client = WsClientBuilder::default()
+            .build(&self.substrate_rpc_url)
             .await?;
 
-        Ok(response["result"].as_str().map(|s| s.to_string()))
+        let result: Option<String> = client.request("chain_getBlockHash", [block_number]).await?;
+
+        Ok(result)
     }
 
     async fn fetch_block(
