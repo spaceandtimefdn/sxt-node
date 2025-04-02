@@ -1,3 +1,12 @@
+## [0.94.6](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.5...v0.94.6) (2025-04-02)
+
+
+### Bug Fixes
+
+* Update nonce handling to match deployed messag contract ([9fee315](https://github.com/spaceandtimelabs/sxt-node/commit/9fee315d6488dab3131099c9ae17d7bb49482dad))
+
+
+
 ## [0.94.5](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.4...v0.94.5) (2025-04-01)
 
 
@@ -26,15 +35,6 @@
 ### Bug Fixes
 
 * namespace cleanup ([a0ac7eb](https://github.com/spaceandtimelabs/sxt-node/commit/a0ac7ebe4c95485b07099dca842142d354fd23b5))
-
-
-
-## [0.94.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.0...v0.94.1) (2025-03-31)
-
-
-### Bug Fixes
-
-* remove unwraps from runtime ([700a88e](https://github.com/spaceandtimelabs/sxt-node/commit/700a88ef55a25929c2924ddd25ec36ddda9020d8))
 
 
 
