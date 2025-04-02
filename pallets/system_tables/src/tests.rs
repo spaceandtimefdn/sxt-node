@@ -113,6 +113,8 @@ fn registering_keys_without_bonding_first_causes_error() {
 #[test]
 fn nonce_increments_on_successful_messages() {
     new_test_ext().execute_with(|| {
+        let eth_sender = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
         // We have to bond an amount to establish the stash/controller accounts
         let test_amount = 100;
         let bonding = get_staked_message(ETH_TEST_WALLET, test_amount.into());
@@ -124,7 +126,10 @@ fn nonce_increments_on_successful_messages() {
         assert_ok!(crate::process_evm_message::<Test>(request.clone()));
 
         // The last processed should be 1 now
-        assert_eq!(crate::LastProcessedNonce::<Test>::get(), first_nonce);
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(eth_sender),
+            Some(first_nonce)
+        );
 
         // Send another valid message with a higher nonce
         let next_nonce = U256::from(2);
@@ -132,13 +137,18 @@ fn nonce_increments_on_successful_messages() {
         assert_ok!(crate::process_evm_message::<Test>(request));
 
         // Ensure the last processed is now 2
-        assert_eq!(crate::LastProcessedNonce::<Test>::get(), next_nonce);
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(eth_sender),
+            Some(next_nonce)
+        );
     });
 }
 
 #[test]
 fn message_with_duplicate_nonce_should_fail() {
     new_test_ext().execute_with(|| {
+        let eth_sender = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
         // We have to bond an amount to establish the stash/controller accounts
         let test_amount = 100;
         let bonding = get_staked_message(ETH_TEST_WALLET, test_amount.into());
@@ -150,39 +160,43 @@ fn message_with_duplicate_nonce_should_fail() {
         assert_ok!(crate::process_evm_message::<Test>(request.clone()));
 
         // The last processed should be 1 now
-        assert_eq!(crate::LastProcessedNonce::<Test>::get(), test_nonce);
-
-        // Send the same message, which should fail because of nonce re-use
-        assert_err!(
-            crate::process_evm_message::<Test>(request),
-            crate::Error::<Test>::LateNonce
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(eth_sender),
+            Some(test_nonce)
         );
 
+        // Send the same message, which should succeed but emit an error event and not be
+        // processed
+        assert_ok!(crate::process_evm_message::<Test>(request));
+
         // Ensure the last processed is still 1
-        assert_eq!(crate::LastProcessedNonce::<Test>::get(), test_nonce);
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(eth_sender),
+            Some(test_nonce)
+        );
     });
 }
 
 #[test]
 fn message_with_a_future_nonce_should_fail() {
     new_test_ext().execute_with(|| {
+        let eth_sender = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
         // We have to bond an amount to establish the stash/controller accounts
         let test_amount = 100;
         let bonding = get_staked_message(ETH_TEST_WALLET, test_amount.into());
         assert_ok!(crate::process_staking::<Test>(bonding));
 
         let expected_nonce = U256::from(0);
-        assert_eq!(crate::LastProcessedNonce::<Test>::get(), expected_nonce);
+        assert_eq!(crate::LastProcessedUserNonce::<Test>::get(eth_sender), None);
 
         // Now try to register with a nonce that is 2 in the future
         let request =
             get_register_keys_message(ETH_TEST_WALLET, ALICE_SESSION_KEYS, expected_nonce + 2);
-        assert_err!(
-            crate::process_evm_message::<Test>(request.clone()),
-            crate::Error::<Test>::FutureNonce
-        );
+
+        // The message should succeed, but emit an error event and not get processed
+        assert_ok!(crate::process_evm_message::<Test>(request.clone()));
 
         // Ensure the last processed nonce has not changed
-        assert_eq!(crate::LastProcessedNonce::<Test>::get(), expected_nonce);
+        assert_eq!(crate::LastProcessedUserNonce::<Test>::get(eth_sender), None);
     });
 }

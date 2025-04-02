@@ -6,6 +6,8 @@
 extern crate alloc;
 extern crate core;
 
+use alloc::string::String;
+
 pub use pallet::*;
 
 #[cfg(test)]
@@ -33,6 +35,7 @@ pub mod pallet {
     use sp_runtime::{AccountId32, BoundedVec, SaturatedConversion};
     use sxt_core::permissions::{PermissionLevel, PermissionList};
     use sxt_core::tables::{extract_schema_uuid, TableIdentifier, TableName, TableNamespace};
+    use sxt_core::utils::eth_address_to_substrate_account_id;
 
     use super::*;
     use crate::parse::{StakingSystemRequest, SystemFieldValue, SystemRequestType};
@@ -95,6 +98,23 @@ pub mod pallet {
         InvalidSessionKeys,
         /// The provided validator proof couldn't be verified
         InvalidValidatorProof,
+    }
+
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {
+        /// Sudo call to set the last nonce manually
+        #[pallet::call_index(0)]
+        #[pallet::weight(Weight::from_parts(0, 0))]
+        pub fn set_last_nonce(
+            origin: OriginFor<T>,
+            eth_wallet: String,
+            new_nonce: u64,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            let eth_sender = eth_address_to_substrate_account_id::<T>(&eth_wallet)?;
+            LastProcessedUserNonce::<T>::set(eth_sender, Some(U256::from(new_nonce)));
+            Ok(())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -248,6 +268,11 @@ pub mod pallet {
     #[pallet::getter(fn last_processed_nonce)]
     pub(super) type LastProcessedNonce<T: Config> = StorageValue<_, U256, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn last_processed_user_nonce)]
+    pub(super) type LastProcessedUserNonce<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, U256>;
+
     /// Process a message received from our EVM contract
     #[allow(clippy::comparison_chain)]
     pub fn process_evm_message<T: Config>(request: SystemRequest) -> DispatchResult {
@@ -261,7 +286,9 @@ pub mod pallet {
                 let eth_sender = sxt_core::utils::eth_address_to_substrate_account_id::<T>(sender)?;
 
                 let nonce: U256 = *nonce;
-                let expected = LastProcessedNonce::<T>::get() + 1;
+                let expected = LastProcessedUserNonce::<T>::get(&eth_sender)
+                    .unwrap_or(U256::from(0))
+                    + U256::from(1);
                 if nonce < expected {
                     Pallet::<T>::deposit_event(Event::<T>::MessageProcessingError {
                         error: Error::<T>::LateNonce.into(),
@@ -274,7 +301,7 @@ pub mod pallet {
                     continue;
                 }
 
-                LastProcessedNonce::<T>::put(nonce);
+                LastProcessedUserNonce::<T>::set(&eth_sender, Some(nonce));
 
                 messages::handle_message::<T>(eth_sender, body.as_bytes().to_vec())?;
             } else {
