@@ -19,8 +19,8 @@ USER root
 # Install PostgreSQL
 ARG DEBIAN_FRONTEND=noninteractive
 RUN useradd -m -u 1001 -U -s /bin/sh -d /sxtuser sxtuser && \
-    mkdir -p  /data /pg_data /logs/postgres /sxtuser/.local/share && \
-    chown -R sxtuser:sxtuser /data  /pg_data /logs/postgres  && \
+    mkdir -p  /data /key /pg_data /logs/postgres /sxtuser/.local/share && \
+    chown -R sxtuser:sxtuser /data /key /pg_data /logs/postgres  && \
     ln -s /data /sxtuser/.local/share/sxtuser && \
     apt-get update && \
     apt-get install -y \
@@ -77,7 +77,7 @@ EXPOSE 30333 9933 9944 9615
 
 # Set volume.
 # TO DO - Add Volume mounts for Postgres Data, Logs etc.
-VOLUME ["/data"]
+VOLUME ["/data", "/key"]
 
 
 # Set Defautl logging in Env
