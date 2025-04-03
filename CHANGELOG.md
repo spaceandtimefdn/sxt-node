@@ -1,3 +1,12 @@
+## [0.95.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.95.1...v0.95.2) (2025-04-03)
+
+
+### Bug Fixes
+
+* ensure /key is owned by sxtuser ([eeb4feb](https://github.com/spaceandtimelabs/sxt-node/commit/eeb4feb1c2094ea2a6d2242b4f5ca86c611ac435))
+
+
+
 ## [0.95.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.95.0...v0.95.1) (2025-04-02)
 
 
@@ -36,15 +45,6 @@
 
 
 ## [0.94.5](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.4...v0.94.5) (2025-04-01)
-
-
-
-## [0.94.4](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.3...v0.94.4) (2025-03-31)
-
-
-### Bug Fixes
-
-* Fix Process Nominate system request ([6d0f8e5](https://github.com/spaceandtimelabs/sxt-node/commit/6d0f8e5c1f92a6de71291315053abe50a7004a0d))
 
 
 
