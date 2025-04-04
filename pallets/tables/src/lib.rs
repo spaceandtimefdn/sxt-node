@@ -445,13 +445,37 @@ pub mod pallet {
             )?;
 
             Self::drop_single_table(table_type.clone(), ident.clone())?;
+            Self::remove_commits(ident.clone());
             Self::deposit_event(Event::<T>::TableDropped(owner, table_type, ident));
+
+            Ok(())
+        }
+
+        /// TODO remove this function
+        #[pallet::call_index(6)]
+        #[pallet::weight(<T as Config>::WeightInfo::drop_table())]
+        pub fn drop_invalid_commits(
+            origin: OriginFor<T>,
+            ident: TableIdentifier,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+
+            Self::remove_commits(ident);
 
             Ok(())
         }
     }
 
     impl<T: Config> Pallet<T> {
+        /// Remove commits based on identifier
+        fn remove_commits(ident: TableIdentifier) {
+            for (k1, k2, _) in pallet_commitments::CommitmentStorageMap::<T>::iter() {
+                if k1 == ident {
+                    pallet_commitments::CommitmentStorageMap::<T>::remove(&ident, k2);
+                }
+            }
+        }
+
         /// Insert a given Namespace's UUID along with the corresponding version
         pub fn insert_namespace_uuid(
             namespace_name: TableNamespace,
