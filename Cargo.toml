@@ -81,7 +81,7 @@ lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
 on-chain-table = { path = "./proof-of-sql/on-chain-table/", default-features = false }
 postcard = { version = "1.0.10", default-features = false }
 primitive-types = { version = "0.12.2", default-features = false }
-proof-of-sql = { version = "0.86.0", default-features = false }
+proof-of-sql = { version = "0.91.6", default-features = false }
 proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
 proof-of-sql-static-setups = { path = "./proof-of-sql/static-setups/", default-features = false }
 rand = { version = "0.8.5", default-features = false }
@@ -223,6 +223,6 @@ clippy.missing_docs_in_private_items = "warn"
 # required until sqlparser releases a similar update and proof-of-sql upgrades to it.
 sqlparser = { git = "https://github.com/tlovell-sxt/datafusion-sqlparser-rs.git", rev = "a828cbea22cf19bb6b4596f902bdd6f4d14a00b8" }
 # Patch the utoipa crates until they fix the zip2 downstream bug
-utoipa = { git = "https://github.com/zachfrederick/utoipa.git", rev = "323fc4af3df0dc0f1763aec25587642f0200b8bf" }
-utoipa-axum = { git = "https://github.com/zachfrederick/utoipa.git", rev = "323fc4af3df0dc0f1763aec25587642f0200b8bf" }
-utoipa-swagger-ui = { git = "https://github.com/zachfrederick/utoipa.git", rev = "323fc4af3df0dc0f1763aec25587642f0200b8bf" }
+utoipa = { git = "https://github.com/tversteeg/utoipa.git", rev = "5863f93651f2bf50aae34c3e9498232f3747cf02" }
+utoipa-axum = { git = "https://github.com/tversteeg/utoipa.git", rev = "5863f93651f2bf50aae34c3e9498232f3747cf02" }
+utoipa-swagger-ui = { git = "https://github.com/tversteeg/utoipa.git", rev = "5863f93651f2bf50aae34c3e9498232f3747cf02" }
