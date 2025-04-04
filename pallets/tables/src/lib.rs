@@ -471,7 +471,7 @@ pub mod pallet {
         fn remove_commits(ident: TableIdentifier) {
             for (k1, k2, _) in pallet_commitments::CommitmentStorageMap::<T>::iter() {
                 if k1 == ident {
-                    pallet_commitments::CommitmentStorageMap::<T>::remove(&ident, &k2);
+                    pallet_commitments::CommitmentStorageMap::<T>::remove(&ident, k2);
                 }
             }
         }
