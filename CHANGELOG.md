@@ -1,3 +1,7 @@
+## [0.95.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.95.2...v0.95.3) (2025-04-04)
+
+
+
 ## [0.95.2](https://github.com/spaceandtimelabs/sxt-node/compare/v0.95.1...v0.95.2) (2025-04-03)
 
 
@@ -41,10 +45,6 @@
 ### Bug Fixes
 
 * Update nonce handling to match deployed messag contract ([9fee315](https://github.com/spaceandtimelabs/sxt-node/commit/9fee315d6488dab3131099c9ae17d7bb49482dad))
-
-
-
-## [0.94.5](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.4...v0.94.5) (2025-04-01)
 
 
 
