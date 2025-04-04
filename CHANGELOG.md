@@ -1,3 +1,17 @@
+# [0.96.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.95.3...v0.96.0) (2025-04-04)
+
+
+### Bug Fixes
+
+* update api ([bbbe9ce](https://github.com/spaceandtimelabs/sxt-node/commit/bbbe9ce5ba6a8c5d8ab7317a74e18edaaab76460))
+
+
+### Features
+
+* update spec version ([28094d5](https://github.com/spaceandtimelabs/sxt-node/commit/28094d525bcc19dbd87547964c8f717eb31fa50e))
+
+
+
 ## [0.95.3](https://github.com/spaceandtimelabs/sxt-node/compare/v0.95.2...v0.95.3) (2025-04-04)
 
 
@@ -36,15 +50,6 @@
 * add HashAndKey and HashAndKeyTuple traits to attestation_tree ([2cf040e](https://github.com/spaceandtimelabs/sxt-node/commit/2cf040ea0d74b3bfa74f390f9835003da99c78be))
 * add merkle tree creation and proving utilities to attestation_tree ([2b116f6](https://github.com/spaceandtimelabs/sxt-node/commit/2b116f637413b0529f8d00a124967f5287cba5ca))
 * add PrefixFoliate trait to attestation_tree ([642e555](https://github.com/spaceandtimelabs/sxt-node/commit/642e555c17414abec3b1a68128ad0920247afd13))
-
-
-
-## [0.94.6](https://github.com/spaceandtimelabs/sxt-node/compare/v0.94.5...v0.94.6) (2025-04-02)
-
-
-### Bug Fixes
-
-* Update nonce handling to match deployed messag contract ([9fee315](https://github.com/spaceandtimelabs/sxt-node/commit/9fee315d6488dab3131099c9ae17d7bb49482dad))
 
 
 
