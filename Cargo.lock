@@ -431,7 +431,7 @@ dependencies = [
  "derive_more 2.0.1",
  "foldhash",
  "hashbrown 0.15.2",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "itoa",
  "k256",
  "keccak-asm",
@@ -751,7 +751,7 @@ dependencies = [
  "alloy-sol-macro-input",
  "const-hex",
  "heck 0.5.0",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "proc-macro-error2",
  "proc-macro2",
  "quote",
@@ -1787,7 +1787,7 @@ dependencies = [
  "arrow-schema 53.4.0",
  "chrono",
  "half",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "lexical-core",
  "num",
  "serde",
@@ -3602,7 +3602,7 @@ dependencies = [
  "ahash 0.8.11",
  "const_format",
  "data-compliance-please-deprecate-me",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "itertools 0.12.1",
  "on-chain-table",
  "primitive-types 0.12.2",
@@ -4523,7 +4523,7 @@ version = "0.1.0"
 dependencies = [
  "arrow 54.2.1",
  "bigdecimal 0.4.7",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "num-bigint",
  "snafu",
  "sqlparser",
@@ -6313,7 +6313,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http 0.2.12",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "slab",
  "tokio",
  "tokio-util 0.7.13",
@@ -6332,7 +6332,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "http 1.2.0",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "slab",
  "tokio",
  "tokio-util 0.7.13",
@@ -7110,9 +7110,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.7.1"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c9c992b02b5b4c94ea26e32fe5bccb7aa7d9f390ab5c1221ff895bc7ea8b652"
+checksum = "3954d50fe15b02142bf25d3b8bdadb634ec3948f103d04ffe3031bc8fe9d7058"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.2",
@@ -8272,7 +8272,7 @@ dependencies = [
  "futures",
  "futures-timer",
  "hex-literal",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "libc",
  "mockall 0.12.1",
  "multiaddr 0.17.1",
@@ -9335,7 +9335,7 @@ version = "0.1.0"
 dependencies = [
  "ahash 0.8.11",
  "arrow 54.2.1",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "primitive-types 0.12.2",
  "proof-of-sql",
  "serde",
@@ -11944,7 +11944,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
  "fixedbitset 0.4.2",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
 ]
 
 [[package]]
@@ -11954,7 +11954,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3672b37090dbd86368a4145bc067582552b29c27377cad4e0a306c97f9bd7772"
 dependencies = [
  "fixedbitset 0.5.7",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
 ]
 
 [[package]]
@@ -13062,9 +13062,9 @@ dependencies = [
 
 [[package]]
 name = "proof-of-sql"
-version = "0.86.0"
+version = "0.91.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5398fba84871b94f87e2fb5cf6d4a22e7e0347abcb63e36af7dd509da4a6b91a"
+checksum = "b52e09e4f1ed9f48a18f7d30c8e4742cf90937a6820293e6902b5d559bc37c62"
 dependencies = [
  "ahash 0.8.11",
  "ark-bls12-381 0.5.0",
@@ -13087,7 +13087,7 @@ dependencies = [
  "curve25519-dalek",
  "derive_more 0.99.19",
  "enum_dispatch",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "itertools 0.13.0",
  "num-bigint",
  "num-traits",
@@ -13130,9 +13130,9 @@ dependencies = [
 
 [[package]]
 name = "proof-of-sql-parser"
-version = "0.86.0"
+version = "0.91.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d702bd28207f036db216824c39ccae00257db4f0ce8a09d45091d2a03a14764"
+checksum = "6dfa21d9a743d0edf960c0bbedd8a574a66559bf4de43c9f250ef952a78b0938"
 dependencies = [
  "arrayvec 0.7.6",
  "bigdecimal 0.4.7",
@@ -19219,7 +19219,7 @@ version = "0.22.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17b4795ff5edd201c7cd6dca065ae59972ce77d1b80fa0a84d94950ece7d1474"
 dependencies = [
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "serde",
  "serde_spanned",
  "toml_datetime",
@@ -19772,9 +19772,9 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "utoipa"
 version = "5.3.1"
-source = "git+https://github.com/zachfrederick/utoipa.git?rev=323fc4af3df0dc0f1763aec25587642f0200b8bf#323fc4af3df0dc0f1763aec25587642f0200b8bf"
+source = "git+https://github.com/tversteeg/utoipa.git?rev=5863f93651f2bf50aae34c3e9498232f3747cf02#5863f93651f2bf50aae34c3e9498232f3747cf02"
 dependencies = [
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "serde",
  "serde_json",
  "utoipa-gen",
@@ -19783,7 +19783,7 @@ dependencies = [
 [[package]]
 name = "utoipa-axum"
 version = "0.2.0"
-source = "git+https://github.com/zachfrederick/utoipa.git?rev=323fc4af3df0dc0f1763aec25587642f0200b8bf#323fc4af3df0dc0f1763aec25587642f0200b8bf"
+source = "git+https://github.com/tversteeg/utoipa.git?rev=5863f93651f2bf50aae34c3e9498232f3747cf02#5863f93651f2bf50aae34c3e9498232f3747cf02"
 dependencies = [
  "axum 0.8.1",
  "paste",
@@ -19795,7 +19795,7 @@ dependencies = [
 [[package]]
 name = "utoipa-gen"
 version = "5.3.1"
-source = "git+https://github.com/zachfrederick/utoipa.git?rev=323fc4af3df0dc0f1763aec25587642f0200b8bf#323fc4af3df0dc0f1763aec25587642f0200b8bf"
+source = "git+https://github.com/tversteeg/utoipa.git?rev=5863f93651f2bf50aae34c3e9498232f3747cf02#5863f93651f2bf50aae34c3e9498232f3747cf02"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -19806,7 +19806,7 @@ dependencies = [
 [[package]]
 name = "utoipa-swagger-ui"
 version = "9.0.0"
-source = "git+https://github.com/zachfrederick/utoipa.git?rev=323fc4af3df0dc0f1763aec25587642f0200b8bf#323fc4af3df0dc0f1763aec25587642f0200b8bf"
+source = "git+https://github.com/tversteeg/utoipa.git?rev=5863f93651f2bf50aae34c3e9498232f3747cf02#5863f93651f2bf50aae34c3e9498232f3747cf02"
 dependencies = [
  "axum 0.8.1",
  "base64 0.22.1",
@@ -21197,15 +21197,15 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "2.5.0"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27c03817464f64e23f6f37574b4fdc8cf65925b5bfd2b0f2aedf959791941f88"
+checksum = "febbe83a485467affa75a75d28dc7494acd2f819e549536c47d46b3089b56164"
 dependencies = [
  "arbitrary",
  "crc32fast",
  "crossbeam-utils",
  "flate2",
- "indexmap 2.7.1",
+ "indexmap 2.8.0",
  "memchr",
  "zopfli",
 ]
