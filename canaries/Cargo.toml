@@ -1,0 +1,45 @@
+[package]
+name = "canaries"
+version = "0.1.0"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+event-forwarder.workspace = true
+attestation_tree = { workspace = true }
+eth_merkle_tree = { workspace = true }
+frame-system = { workspace = true, features = ["std"] }
+clap = { workspace = true, features = ["derive", "env"] }
+tokio = { workspace = true, features = ["full"] }
+subxt = { workspace = true, features = ["jsonrpsee", "native", "default", "substrate-compat"] }
+subxt-signer = { workspace = true }
+sxt-core = { workspace = true, features = ["std"] }
+sxt-runtime = { workspace = true, features = ["std"] }
+hex = { workspace = true }
+sp-core = { workspace = true, features = ["std"] }
+codec = { workspace = true, package = "parity-scale-codec", default-features = false, features = ["derive", "std"] }
+proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
+anyhow = { workspace = true }
+k256 = { workspace = true, features = ["ecdsa"] }
+rand_core = { workspace = true, features = ["std"] }
+sha3 = { workspace = true, features = ["std"] }
+log = { workspace = true }
+async-trait = { workspace = true }
+serde_json = { workspace = true, default-features = false, features = ["alloc"] }
+snafu = { workspace = true }
+env_logger = { workspace = true }
+alloy = { workspace = true, features = ["full", "node-bindings", "json-rpc", "rpc-client"] }
+watcher = { workspace = true }
+url = { workspace = true }
+reqwest = { workspace = true, features = ["json", "blocking"] }
+async-stream = { workspace = true }
+jsonrpsee = { workspace = true, features = ["ws-client", "async-client"] }
+lazy_static.workspace = true
+prometheus.workspace = true
+axum = { workspace = true, default-features = true }
+
+[lints]
+workspace = true

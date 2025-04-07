@@ -84,7 +84,7 @@ pub async fn fetch_attested_block(api: &API, attestation: &BlockAttested) -> Res
 }
 
 /// Fetches events of type `T` from a block.
-async fn fetch_events<T: subxt::events::StaticEvent + 'static>(
+pub async fn fetch_events<T: subxt::events::StaticEvent + 'static>(
     block: &Block,
 ) -> Result<Vec<T>, Error> {
     Ok(block

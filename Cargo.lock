@@ -3262,6 +3262,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "canaries"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "async-stream",
+ "async-trait",
+ "attestation_tree",
+ "axum 0.8.1",
+ "clap 4.5.32",
+ "env_logger 0.11.6",
+ "eth_merkle_tree",
+ "event-forwarder",
+ "frame-system",
+ "hex",
+ "jsonrpsee",
+ "k256",
+ "lazy_static",
+ "log",
+ "parity-scale-codec",
+ "prometheus 0.14.0",
+ "proof-of-sql-commitment-map",
+ "rand_core 0.6.4",
+ "reqwest 0.11.27",
+ "serde_json",
+ "sha3",
+ "snafu",
+ "sp-core",
+ "subxt",
+ "subxt-signer",
+ "sxt-core",
+ "sxt-runtime",
+ "tokio",
+ "url",
+ "watcher",
+]
+
+[[package]]
 name = "cargo-platform"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13042,7 +13080,7 @@ dependencies = [
  "lazy_static",
  "memchr",
  "parking_lot 0.11.2",
- "protobuf",
+ "protobuf 2.28.0",
  "thiserror 1.0.69",
 ]
 
@@ -13058,6 +13096,21 @@ dependencies = [
  "memchr",
  "parking_lot 0.12.3",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "prometheus"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ca5326d8d0b950a9acd87e6a3f94745394f62e4dae1b1ee22b2bc0c394af43a"
+dependencies = [
+ "cfg-if",
+ "fnv",
+ "lazy_static",
+ "memchr",
+ "parking_lot 0.12.3",
+ "protobuf 3.7.2",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -13355,6 +13408,26 @@ name = "protobuf"
 version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
+
+[[package]]
+name = "protobuf"
+version = "3.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d65a1d4ddae7d8b5de68153b48f6aa3bba8cb002b243dbdbc55a5afbc98f99f4"
+dependencies = [
+ "once_cell",
+ "protobuf-support",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "protobuf-support"
+version = "3.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e36c2f31e0a47f9280fb347ef5e461ffcd2c52dd520d8e216b52f93b0b0d7d6"
+dependencies = [
+ "thiserror 1.0.69",
+]
 
 [[package]]
 name = "psm"

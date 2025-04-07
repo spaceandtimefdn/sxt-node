@@ -33,7 +33,8 @@ members = [
     "event-forwarder", 
     "chain-utils",
     "translation-layer",
-    "pallets/system-contracts"
+    "pallets/system-contracts",
+    "canaries"
 ]
 exclude = [
     "utoipa",  
@@ -41,6 +42,7 @@ exclude = [
 resolver = "2"
 
 [workspace.dependencies]
+event-forwarder = { path = "./event-forwarder"}
 watcher = { path = "./watcher"}
 translation-layer = { path = "./translation-layer"}
 tokio = { version = "1.41.0", default-features = false }
@@ -215,7 +217,11 @@ utoipa-swagger-ui = { version = "9.0.1", default-features = false}
 utoipa-axum = { version = "0.2.0", default-features = false }
 linked-list = { version = "0.1.0", default-features = false }
 base64 = { version = "0.21", default-features = false }
+<<<<<<< HEAD
 regex = { version = "1.11.1", default-features = false }
+=======
+prometheus = "0.14.0"
+>>>>>>> 828ecc4 (feat: canary prototype)
 
 [workspace.lints]
 rust.missing_docs = "warn"
