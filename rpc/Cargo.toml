@@ -16,7 +16,10 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+codec.workspace = true
+frame-support.workspace = true
 jsonrpsee = { features = ["server"], workspace = true }
+pallet-attestation = { workspace = true, default-features = false, features = ["std"] }
 pallet-transaction-payment-rpc = { workspace = true, default-features = true }
 sc-chain-spec = { workspace = true, default-features = true }
 sc-client-api = { workspace = true, default-features = true }
@@ -27,15 +30,17 @@ sc-consensus-grandpa-rpc = { workspace = true, default-features = true }
 sc-rpc = { workspace = true, default-features = true }
 sc-sync-state-rpc = { workspace = true, default-features = true }
 sc-transaction-pool-api = { workspace = true, default-features = true }
-sp-api = { workspace = true, default-features = true }
+serde = { workspace = true }
+snafu = { workspace = true }
+sp-api = { workspace = true, default-features = true, features = ["std"] }
 sp-block-builder = { workspace = true, default-features = true }
 sp-blockchain = { workspace = true, default-features = true }
 sp-consensus = { workspace = true, default-features = true }
 sp-consensus-babe = { workspace = true, default-features = true }
 sp-keystore = { workspace = true, default-features = true }
 sp-runtime = { workspace = true, default-features = true }
-sp-application-crypto = { workspace = true, default-features = true }
 sp-statement-store = { workspace = true, default-features = true }
 substrate-frame-rpc-system = { workspace = true, default-features = true }
 substrate-state-trie-migration-rpc = { workspace = true, default-features = true }
-sxt-runtime = { workspace = true, default-features = false }
+sxt-core = { workspace = true }
+sxt-runtime = { workspace = true, default-features = false, features = ["std"] }

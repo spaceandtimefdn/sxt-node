@@ -71,7 +71,7 @@ pub mod pallet {
             block_number: BlockNumber,
 
             /// The attestation details, including signature, public key, and state root.
-            attestation: Attestation,
+            attestation: Attestation<T::Hash>,
 
             /// The account ID of the attestor who submitted the attestation.
             who: T::AccountId,
@@ -95,7 +95,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         BlockNumber,
-        BoundedVec<Attestation, ConstU32<64>>,
+        BoundedVec<Attestation<T::Hash>, ConstU32<64>>,
         ValueQuery,
     >;
 
@@ -152,7 +152,7 @@ pub mod pallet {
         pub fn attest_block(
             origin: OriginFor<T>,
             block_number: BlockNumber,
-            attestation: Attestation,
+            attestation: Attestation<T::Hash>,
         ) -> DispatchResult {
             let who = ensure_signed(origin.clone())?;
 
@@ -282,7 +282,7 @@ pub mod pallet {
         /// # Errors
         /// * [`Error::AttestationAlreadyRecordedError`] - If the attestor has already submitted an attestation.
         pub fn must_not_have_submitted_attestation(
-            attestations_for_block: &BoundedVec<Attestation, ConstU32<64>>,
+            attestations_for_block: &BoundedVec<Attestation<T::Hash>, ConstU32<64>>,
             attestor_key: &[u8; 33],
         ) -> DispatchResult {
             ensure!(

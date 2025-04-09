@@ -3,10 +3,13 @@
 #![warn(missing_docs)]
 #![warn(unused_crate_dependencies)]
 
+mod attestation;
+
 use std::sync::Arc;
 
+use attestation::{AttestationApiImpl, AttestationApiServer};
 use jsonrpsee::RpcModule;
-use sc_client_api::AuxStore;
+use sc_client_api::{AuxStore, StorageProvider};
 use sc_consensus_babe::BabeWorkerHandle;
 use sc_consensus_grandpa::{
     FinalityProofProvider,
@@ -14,7 +17,6 @@ use sc_consensus_grandpa::{
     SharedAuthoritySet,
     SharedVoterState,
 };
-use sc_rpc::DenyUnsafe;
 pub use sc_rpc::SubscriptionTaskExecutor;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
@@ -24,7 +26,7 @@ use sp_consensus::SelectChain;
 use sp_consensus_babe::BabeApi;
 use sp_keystore::KeystorePtr;
 use sxt_runtime::opaque::Block;
-use sxt_runtime::{AccountId, Balance, BlockNumber, Hash, Nonce};
+use sxt_runtime::{AccountId, Balance, BlockNumber, Hash, Nonce, Runtime};
 
 /// Extra dependencies for BABE.
 pub struct BabeDeps {
@@ -87,6 +89,7 @@ where
         + HeaderBackend<Block>
         + AuxStore
         + HeaderMetadata<Block, Error = BlockChainError>
+        + StorageProvider<Block, B>
         + Sync
         + Send
         + 'static,
@@ -158,9 +161,11 @@ where
     )?;
 
     io.merge(StateMigration::new(client.clone(), backend).into_rpc())?;
-    io.merge(Dev::new(client).into_rpc())?;
+    io.merge(Dev::new(client.clone()).into_rpc())?;
     let statement_store = sc_rpc::statement::StatementStore::new(statement_store).into_rpc();
     io.merge(statement_store)?;
+
+    io.merge(AttestationApiImpl::<_, _, _, Runtime>::new(client.clone()).into_rpc())?;
 
     Ok(io)
 }

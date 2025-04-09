@@ -9025,8 +9025,11 @@ checksum = "b93853da6d84c2e3c7d730d6473e8817692dd89be387eb01b94d7f108ecb5b8c"
 name = "node-rpc"
 version = "0.1.0"
 dependencies = [
+ "frame-support",
  "jsonrpsee",
+ "pallet-attestation",
  "pallet-transaction-payment-rpc",
+ "parity-scale-codec",
  "sc-chain-spec",
  "sc-client-api",
  "sc-consensus-babe",
@@ -9036,8 +9039,9 @@ dependencies = [
  "sc-rpc",
  "sc-sync-state-rpc",
  "sc-transaction-pool-api",
+ "serde",
+ "snafu",
  "sp-api",
- "sp-application-crypto",
  "sp-block-builder",
  "sp-blockchain",
  "sp-consensus",
@@ -9047,6 +9051,7 @@ dependencies = [
  "sp-statement-store",
  "substrate-frame-rpc-system",
  "substrate-state-trie-migration-rpc",
+ "sxt-core",
  "sxt-runtime",
 ]
 
