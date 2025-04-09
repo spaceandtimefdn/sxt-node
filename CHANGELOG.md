@@ -1,3 +1,13 @@
+# [0.97.0](https://github.com/spaceandtimelabs/sxt-node/compare/v0.96.1...v0.97.0) (2025-04-09)
+
+
+### Features
+
+* add attestation rpcs ([bad5203](https://github.com/spaceandtimelabs/sxt-node/commit/bad520328acedccaca95bf5007041c5c8e575368))
+* implement Serialize for sxt-core Attestation ([a7a0863](https://github.com/spaceandtimelabs/sxt-node/commit/a7a08632a0272191c4d29c36600ee27790ad7e89))
+
+
+
 ## [0.96.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.96.0...v0.96.1) (2025-04-07)
 
 
@@ -31,15 +41,6 @@
 ### Bug Fixes
 
 * ensure /key is owned by sxtuser ([eeb4feb](https://github.com/spaceandtimelabs/sxt-node/commit/eeb4feb1c2094ea2a6d2242b4f5ca86c611ac435))
-
-
-
-## [0.95.1](https://github.com/spaceandtimelabs/sxt-node/compare/v0.95.0...v0.95.1) (2025-04-02)
-
-
-### Bug Fixes
-
-* fetch block using jsonrpsee instead of reqwest ([ba858a7](https://github.com/spaceandtimelabs/sxt-node/commit/ba858a79c405832c81ec9c151f4fb09faf772073))
 
 
 
