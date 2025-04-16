@@ -10959,6 +10959,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hex",
+ "itertools 0.12.1",
  "native",
  "native-api",
  "on-chain-table",

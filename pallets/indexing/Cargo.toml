@@ -23,6 +23,7 @@ scale-info = { features = [
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
+itertools.workspace = true
 pallet-commitments.workspace = true
 pallet-permissions.workspace = true
 pallet-tables.workspace = true
