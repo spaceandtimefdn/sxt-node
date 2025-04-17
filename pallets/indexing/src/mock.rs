@@ -1,7 +1,8 @@
 use frame_election_provider_support::bounds::{ElectionBounds, ElectionBoundsBuilder};
 use frame_election_provider_support::{onchain, SequentialPhragmen};
-use frame_support::pallet_prelude::ConstU32;
-use frame_support::traits::{ConstU128, VariantCountOf};
+use frame_support::migrations::MultiStepMigrator;
+use frame_support::pallet_prelude::{ConstU32, Weight};
+use frame_support::traits::{ConstU128, OnFinalize, OnInitialize, VariantCountOf};
 use frame_support::{derive_impl, parameter_types};
 use native_api::Api;
 use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
@@ -25,6 +26,7 @@ frame_support::construct_runtime!(
         SystemTables: pallet_system_tables,
         Balances: pallet_balances,
         Staking: pallet_staking,
+        Migrator: pallet_migrations,
     }
 );
 
@@ -40,6 +42,22 @@ impl frame_system::Config for Test {
     type Block = Block;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Hash = H256;
+    type MultiBlockMigrator = Migrator;
+}
+
+frame_support::parameter_types! {
+    pub storage MigratorServiceWeight: Weight = Weight::from_parts(100, 100); // do not use in prod
+}
+
+#[derive_impl(pallet_migrations::config_preludes::TestDefaultConfig)]
+impl pallet_migrations::Config for Test {
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type Migrations = (
+        crate::migrations::v1::LazyMigrationV1<Test, crate::weights::SubstrateWeight<Test>, Api>,
+    );
+    #[cfg(feature = "runtime-benchmarks")]
+    type Migrations = pallet_migrations::mock_helpers::MockedMigrations;
+    type MaxServiceWeight = MigratorServiceWeight;
 }
 
 impl pallet_balances::Config for Test {
@@ -190,4 +208,17 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     storage.into()
+}
+
+#[allow(dead_code)]
+pub fn run_to_block(n: u64) {
+    assert!(System::block_number() < n);
+    while System::block_number() < n {
+        let b = System::block_number();
+        AllPalletsWithSystem::on_finalize(b);
+        // Done by Executive:
+        <Test as frame_system::Config>::MultiBlockMigrator::step();
+        System::set_block_number(b + 1);
+        AllPalletsWithSystem::on_initialize(b + 1);
+    }
 }

@@ -31,6 +31,8 @@ mod error_conversions;
 /// Native wrapper around the indexing pallet.
 pub mod native_pallet;
 
+pub mod migrations;
+
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {

@@ -10965,6 +10965,7 @@ dependencies = [
  "on-chain-table",
  "pallet-balances",
  "pallet-commitments",
+ "pallet-migrations",
  "pallet-permissions",
  "pallet-session",
  "pallet-staking",
