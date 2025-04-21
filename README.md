@@ -114,158 +114,6 @@ docker run -it --rm \
   -R sxtuser:sxtuser /key
 ```
 
-## SXT Chain Testnet: NPoS Staking Instructions
-
-> [!NOTE]
-> Please see the FAQ section at the end of this document if you have additional questions about onboarding as a validator
-
----
-
-### Validators
-Validators are the ones running the hardware that is creating blocks and participating in Consensus. Validators have their own stake in addition to anyone nominating them.
-
-### Nominators
-Nominators can allocate their stake towards an existing validator and participate in a portion of staking rewards without having to run their own hardware. In the event that a Validator is slashed for acting badly, the nominators will also be slashed. Nominators can nominate multiple validators.
-
-### Eras
-Every Era the elected set changes based on the distribution of stake from validators and nominators. Eras rotate every 24 hours.
-
-### Epochs
-Every Epoch new block slots are assigned to the previously elected validator set.
-
-### Elections
-Elections take place in the last block of the next-to-last Epoch. For example, SXT Chain has 24 Hour Eras consisting of six 4 hour long Epochs.
-At the last block of Epoch 5 in each era, the election will take place and keys for the new validators will be queued to become active at the start of the next Era.
-
-
-### Testnet Contract Addresses (Sepolia):
-
-- **Testnet Staking Contract**
-  [0xca755ce69181d2d33097a24ce5ddc030a0b87f2c](https://sepolia.etherscan.io/address/0xca755ce69181d2d33097a24ce5ddc030a0b87f2c#writeContract)
-
-
-- **Testnet Token Contract**
-  [0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0](https://sepolia.etherscan.io/token/0xdb5ffd69fa8022e20cf7d66c36c961a2949f4da0#writeContract)
-
-- **Testnet SessionKey Registration Contract**
-  [0x82840556980bfbCc08e3e7c61AA44E1a4EAb5471](https://sepolia.etherscan.io/address/0x82840556980bfbcc08e3e7c61aa44e1a4eab5471#writeContract)
-
----
-
-### Pre-Requisites
-
-- Ethereum wallet with Sepolia ETH
-- A minimum balance of **0.05 Sepolia ETH**
-- Synced **SXT Chain validator node**
----
-
-## Steps
-
-### Step 1: Request Testnet Tokens
-- Send your Sepolia ETH address in an email to readiness@sxt.foundation. 
-  - NOTE: This must be different per validator that you are running
-  - NOTE: To ensure that this is not a dead wallet, we will be checking that at least one transaciton has been submitted through this wallet
-- The given address will receive 100 tokens which can be used to start staking
----
-
-### Step 2: Approve Token Spend
-Send a transaction to the token contract to approve the staking contract to spend your test tokens:
-- [0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0](https://sepolia.etherscan.io/address/0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0)
-- Send an `approve` transaction with:
-  - The **staking contract address** 0xca755ce69181d2d33097a24ce5ddc030a0b87f2c
-  - The **token limit** to approve
-  ![Etherscan Approval Transaction](./assets/approve.png)
----
-
-### Step 3: Stake Tokens
-Stake your desired amount using the **staking contract**. You must stake a minimum of 100 SXT or 100000000000000000000 units
-- [0xca755ce69181d2d33097a24ce5ddc030a0b87f2c](https://sepolia.etherscan.io/address/0xca755ce69181d2d33097a24ce5ddc030a0b87f2c)
-  ![Etherscan Stake Transaction](./assets/stake.png)
----
-
-## Validators Only
-
-### Register Your Session Keys
-
-Use the message transaction to submit your session keys.
-
-Call `rotateKeys()` RPC on your node:
-
-```bash
-curl -X POST http://localhost:9944 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "author_rotateKeys",
-    "params": [],
-    "id": 1
-  }'
-```
-
-You’ll receive a response like:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": "0x3084486e870e12fc551eacc173291f0d75ac5fed823aeb1e158bc98db215936202a555f88490d19f7fbacac7078fc87886084efd8227187a73ad05aee6da8ad38edd8739daa5689e9e118eb3be0330bbf80a30ad7639d4f0d70970dbccff9c4a"
-}
-```
-
-- Copy the `result` hex string.
-- Paste it into the `body` field of the **message transaction**.
-- This also triggers `validate()` to activate your node.
-  ![Etherscan Register Keys Transaction](./assets/message.png)
-
-> [!IMPORTANT]
-> You might see the following error due to file permissions. If that's the case, follow these [workaround instructions](#validator-keys-permission-workaround):
-```
-{
-   "error" : {
-      "code" : 1040,
-      "message" : "Client error: Execution failed: Execution aborted due to trap: host code panicked while being called by the runtime: `sr25519_generate` failed: Other(\"Permission denied (os error 13)\")\nWASM backtrace:\nerror while executing at wasm backtrace:\n    0: 0x1a38d8 - sxt_runtime.wasm!sp_io::crypto::extern_host_function_impls::sr25519_generate::hd241fcbcc7fb892e\n    1: 0x58547a - sxt_runtime.wasm!sxt_runtime::opaque::SessionKeys::generate::hfa56532150c4f3a1\n    2: 0x4e21b0 - sxt_runtime.wasm!SessionKeys_generate_session_keys"
-   },
-   "id" : 1,
-   "jsonrpc" : "2.0"
-}
-```
-
----
-
-## How to Nominate (Optional)
-
-This is an optional step; in order to nominate someone, they must be an active validator. You can nominate validators by submitting their **hexadecimal** form of the wallet address as it appears on Substrate to the staking contract. This can be found from the validator list and then converted from SS58 to Hexadecimal.
-
-In order to generate the hexadecimal value from the SS58 value, one can run the following commands:
-
-```bash
-SS58_KEY=<The SS58 public wallet address of the validator you want to nominate>
-docker run -it --rm \
-  --platform linux/amd64 \
-  -v sxt-node-key:/data \
-  --entrypoint=/usr/local/bin/sxt-node \
-  ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.107.0 \
-  key inspect --chain /opt/chainspecs/testnet-spec.json $SS58_KEY 
-```
-
-The SS58_KEY can be obtained from the address list of validators in the [Staking Dashboard](https://polkadot.js.org/apps/?rpc=wss://new-rpc.testnet.sxt.network/#/staking)
-
-**You MUST use Hex format. Do NOT use SS58 format**:
-
-❌ Invalid (SS58):
-`5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY`
-
-✅ Valid (Hex):
-`0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d`
-
-You can enter **multiple nominations** like this:
-
-```js
-[0x1234, 0x3456, 0x5678]
-```
-  ![Etherscan Nominate Transaction](./assets/nominate.png)
----
-
 ## II. Validator Setup Using Docker
 
 Here we assume the setup uses the following volumes: `sxt-testnet-data` is the block storage volume and the volume where the generated node key is stored is `sxt-node-key`.
@@ -365,6 +213,159 @@ and then start the sxt-testnet-node with command below:
 ```bash
 docker compose -f ./docker-compose.yaml up -d
 ```
+
+## III. SXT Chain Testnet: NPoS Staking Instructions
+
+> [!NOTE]
+> Please see the FAQ section at the end of this document if you have additional questions about onboarding as a validator
+
+---
+
+### Validators
+Validators are the ones running the hardware that is creating blocks and participating in Consensus. Validators have their own stake in addition to anyone nominating them.
+
+### Nominators
+Nominators can allocate their stake towards an existing validator and participate in a portion of staking rewards without having to run their own hardware. In the event that a Validator is slashed for acting badly, the nominators will also be slashed. Nominators can nominate multiple validators.
+
+### Eras
+Every Era the elected set changes based on the distribution of stake from validators and nominators. Eras rotate every 24 hours.
+
+### Epochs
+Every Epoch new block slots are assigned to the previously elected validator set.
+
+### Elections
+Elections take place in the last block of the next-to-last Epoch. For example, SXT Chain has 24 Hour Eras consisting of six 4 hour long Epochs.
+At the last block of Epoch 5 in each era, the election will take place and keys for the new validators will be queued to become active at the start of the next Era.
+
+
+### Testnet Contract Addresses (Sepolia):
+
+- **Testnet Staking Contract**
+  [0xca755ce69181d2d33097a24ce5ddc030a0b87f2c](https://sepolia.etherscan.io/address/0xca755ce69181d2d33097a24ce5ddc030a0b87f2c#writeContract)
+
+
+- **Testnet Token Contract**
+  [0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0](https://sepolia.etherscan.io/token/0xdb5ffd69fa8022e20cf7d66c36c961a2949f4da0#writeContract)
+
+- **Testnet SessionKey Registration Contract**
+  [0x82840556980bfbCc08e3e7c61AA44E1a4EAb5471](https://sepolia.etherscan.io/address/0x82840556980bfbcc08e3e7c61aa44e1a4eab5471#writeContract)
+
+---
+
+### Pre-Requisites
+
+- Ethereum wallet with Sepolia ETH
+- A minimum balance of **0.05 Sepolia ETH**
+- Synced **SXT Chain validator node**
+---
+
+## Steps
+
+### Step 1: Request Testnet Tokens
+- Send your Sepolia ETH address in an email to readiness@sxt.foundation.
+  - NOTE: This must be different per validator that you are running
+  - NOTE: To ensure that this is not a dead wallet, we will be checking that at least one transaciton has been submitted through this wallet
+- The given address will receive 100 tokens which can be used to start staking
+---
+
+### Step 2: Approve Token Spend
+Send a transaction to the token contract to approve the staking contract to spend your test tokens:
+- [0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0](https://sepolia.etherscan.io/address/0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0)
+- Send an `approve` transaction with:
+  - The **staking contract address** 0xca755ce69181d2d33097a24ce5ddc030a0b87f2c
+  - The **token limit** to approve
+  ![Etherscan Approval Transaction](./assets/approve.png)
+---
+
+### Step 3: Stake Tokens
+Stake your desired amount using the **staking contract**. You must stake a minimum of 100 SXT or 100000000000000000000 units
+- [0xca755ce69181d2d33097a24ce5ddc030a0b87f2c](https://sepolia.etherscan.io/address/0xca755ce69181d2d33097a24ce5ddc030a0b87f2c)
+  ![Etherscan Stake Transaction](./assets/stake.png)
+---
+
+## Validators Only
+
+### Register Your Session Keys
+
+Use the message transaction to submit your session keys.
+
+Call `rotateKeys()` RPC on your node:
+
+```bash
+curl -X POST http://localhost:9944 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "author_rotateKeys",
+    "params": [],
+    "id": 1
+  }'
+```
+
+You’ll receive a response like:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": "0x3084486e870e12fc551eacc173291f0d75ac5fed823aeb1e158bc98db215936202a555f88490d19f7fbacac7078fc87886084efd8227187a73ad05aee6da8ad38edd8739daa5689e9e118eb3be0330bbf80a30ad7639d4f0d70970dbccff9c4a"
+}
+```
+
+- Copy the `result` hex string.
+- Paste it into the `body` field of the **message transaction**.
+- This also triggers `validate()` to activate your node.
+  ![Etherscan Register Keys Transaction](./assets/message.png)
+
+> [!IMPORTANT]
+> You might see the following error due to file permissions. If that's the case, follow these [workaround instructions](#validator-keys-permission-workaround):
+```
+{
+   "error" : {
+      "code" : 1040,
+      "message" : "Client error: Execution failed: Execution aborted due to trap: host code panicked while being called by the runtime: `sr25519_generate` failed: Other(\"Permission denied (os error 13)\")\nWASM backtrace:\nerror while executing at wasm backtrace:\n    0: 0x1a38d8 - sxt_runtime.wasm!sp_io::crypto::extern_host_function_impls::sr25519_generate::hd241fcbcc7fb892e\n    1: 0x58547a - sxt_runtime.wasm!sxt_runtime::opaque::SessionKeys::generate::hfa56532150c4f3a1\n    2: 0x4e21b0 - sxt_runtime.wasm!SessionKeys_generate_session_keys"
+   },
+   "id" : 1,
+   "jsonrpc" : "2.0"
+}
+```
+
+---
+
+## How to Nominate (Optional)
+
+This is an optional step; in order to nominate someone, they must be an active validator. You can nominate validators by submitting their **hexadecimal** form of the wallet address as it appears on Substrate to the staking contract. This can be found from the validator list and then converted from SS58 to Hexadecimal.
+
+In order to generate the hexadecimal value from the SS58 value, one can run the following commands:
+
+```bash
+SS58_KEY=<The SS58 public wallet address of the validator you want to nominate>
+docker run -it --rm \
+  --platform linux/amd64 \
+  -v sxt-node-key:/data \
+  --entrypoint=/usr/local/bin/sxt-node \
+  ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.107.0 \
+  key inspect --chain /opt/chainspecs/testnet-spec.json $SS58_KEY
+```
+
+The SS58_KEY can be obtained from the address list of validators in the [Staking Dashboard](https://polkadot.js.org/apps/?rpc=wss://new-rpc.testnet.sxt.network/#/staking)
+
+**You MUST use Hex format. Do NOT use SS58 format**:
+
+❌ Invalid (SS58):
+`5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY`
+
+✅ Valid (Hex):
+`0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d`
+
+You can enter **multiple nominations** like this:
+
+```js
+[0x1234, 0x3456, 0x5678]
+```
+  ![Etherscan Nominate Transaction](./assets/nominate.png)
+---
+
 
 # FAQ (More Coming Soon)
 
