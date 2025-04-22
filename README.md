@@ -292,6 +292,7 @@ Use the message transaction to submit your session keys.
 Call `rotateKeys()` RPC on your node:
 
 ```bash
+docker exec -ti $(docker ps -q -f volume=sxt-testnet-data) \
 curl -X POST http://localhost:9944 \
   -H "Content-Type: application/json" \
   -d '{
