@@ -241,14 +241,14 @@ At the last block of Epoch 5 in each era, the election will take place and keys 
 ### Testnet Contract Addresses (Sepolia):
 
 - **Testnet Staking Contract**
-  [0xca755ce69181d2d33097a24ce5ddc030a0b87f2c](https://sepolia.etherscan.io/address/0xca755ce69181d2d33097a24ce5ddc030a0b87f2c#writeContract)
+  [0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab](https://sepolia.etherscan.io/address/0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab#writeContract) (Staking)
 
 
 - **Testnet Token Contract**
-  [0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0](https://sepolia.etherscan.io/token/0xdb5ffd69fa8022e20cf7d66c36c961a2949f4da0#writeContract)
+  [0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839](https://sepolia.etherscan.io/token/0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839#writeContract) (SpaceAndTime)
 
 - **Testnet SessionKey Registration Contract**
-  [0x82840556980bfbCc08e3e7c61AA44E1a4EAb5471](https://sepolia.etherscan.io/address/0x82840556980bfbcc08e3e7c61aa44e1a4eab5471#writeContract)
+  [0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118](https://sepolia.etherscan.io/address/0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118#writeContract) (SXTChainMessaging)
 
 ---
 
@@ -274,16 +274,16 @@ At the last block of Epoch 5 in each era, the election will take place and keys 
 
 ### Step 2: Approve Token Spend
 Send a transaction to the token contract to approve the staking contract to spend your test tokens:
-- [0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0](https://sepolia.etherscan.io/address/0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0)
+- [0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839](https://sepolia.etherscan.io/address/0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839) (SpaceAndTime)
 - Send an `approve` transaction with:
-  - The **staking contract address** 0xca755ce69181d2d33097a24ce5ddc030a0b87f2c
+  - The **staking contract address** 0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab (Staking)
   - The **token limit** to approve
   ![Etherscan Approval Transaction](./assets/approve.png)
 ---
 
 ### Step 3: Stake Tokens
 Stake your desired amount using the **staking contract**. You must stake a minimum of 100 SXT or 100000000000000000000 units
-- [0xca755ce69181d2d33097a24ce5ddc030a0b87f2c](https://sepolia.etherscan.io/address/0xca755ce69181d2d33097a24ce5ddc030a0b87f2c)
+- [0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab](https://sepolia.etherscan.io/address/0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab) (Staking)
   ![Etherscan Stake Transaction](./assets/stake.png)
 ---
 
