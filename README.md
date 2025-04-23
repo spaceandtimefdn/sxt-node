@@ -262,9 +262,13 @@ At the last block of Epoch 5 in each era, the election will take place and keys 
 ## Steps
 
 ### Step 1: Request Testnet Tokens
-- Send your Sepolia ETH address in an email to readiness@sxt.foundation.
+- Send your Sepolia ETH address in an email to the sxt foundation.
   - NOTE: This must be different per validator that you are running
   - NOTE: To ensure that this is not a dead wallet, we will be checking that at least one transaciton has been submitted through this wallet
+```yaml
+  to: readiness@sxt.foundation
+  subject: [NOP name] - Testnet ETH Wallet Address
+```
 - The given address will receive 100 tokens which can be used to start staking
 ---
 
