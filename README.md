@@ -22,7 +22,7 @@
 * **Participation Requirements**: Validators are expected to actively participate, with a response SLA of 48 hours for notifications around actions needed from validator operators, chain upgrades, changes to testing schedule, etc.
 * **Incentive Structure**: We may choose to provide rewards to eligible Testnet participants for completing certain activities, including running nodes, performing other critical services related to the SxT Chain, and meeting certain performance criteria or other requirements. Additional details will be provided to you from time to time via Testnet-related websites and developer documentation.
 
-**Discord information**: We have set up a Testnet Nodes channel in the SXT discord (https://discord.com/invite/spaceandtimeDB) to manage all communications and Q&A with node operators during testnet.
+**Discord information**: We have set up a Testnet Nodes channel in the [SXT Discord](https://discord.com/invite/spaceandtimeDB) to manage all communications and Q&A with node operators during testnet.
 
 ![image1](./assets/image1.png)
 
@@ -51,14 +51,14 @@ On Azure cloud, this is equivalent to SKU `Standard_D8as_v5` with storage SKU of
 Assuming Docker Desktop is installed and working on your computer. The SXT Node Docker image can be downloaded with `docker pull` command.
 
 ```bash
-docker pull ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.107.0
-docker images --digests ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.107.0
+docker pull ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.112.0
+docker images --digests ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.112.0
 ```
 
 When each new docker image is released we will also be sharing the full `sha256` hash of the image. Please confirm that hash against the image pulled down by docker with an extra docker `images` argument `--digests` to make sure that you are pulling the right one.
 
 > [!NOTE]
-> Note: While the above references the `sxt-node:testnet-v0.107.0` docker image, this will change; please reference the "Resources" channel in the Testnet Nodes section of the [SXT Discord](https://discord.gg/spaceandtimeDB) or this [GitHub repository](https://github.com/orgs/spaceandtimelabs/packages/container/package/sxt-node) for the latest docker image.
+> Note: While the above references the `sxt-node:testnet-v0.112.0` docker image, this will change; please reference the "Resources" channel in the Testnet Nodes section of the [SXT Discord](https://discord.gg/spaceandtimeDB) or this [GitHub repository](https://github.com/orgs/spaceandtimelabs/packages/container/package/sxt-node) for the latest docker image.
 
 #### 1.2.2. Testnet Chainspecs
 SXT testnet chainspecs are part of the docker images mentioned in [section 1.2.1](#121-docker-image). To inspect the chainspecs that come with the docker image, please run the following:
@@ -66,20 +66,20 @@ SXT testnet chainspecs are part of the docker images mentioned in [section 1.2.1
 ```bash
 docker run -it --rm \
   --platform linux/amd64 \
-  --entrypoint=bash ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.107.0 \
+  --entrypoint=bash ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.112.0 \
   -c "cat /opt/chainspecs/testnet-spec.json"
 ```
 
 > [!NOTE]
-> Note: While the above references the `sxt-node:testnet-v0.107.0` docker image, this will change; please reference the "Resources" channel in the Testnet Nodes section of the [SXT Discord](https://discord.gg/spaceandtimeDB) or this [GitHub repository](https://github.com/orgs/spaceandtimelabs/packages/container/package/sxt-node) for the latest docker image.
+> Note: While the above references the `sxt-node:testnet-v0.112.0` docker image, this will change; please reference the "Resources" channel in the Testnet Nodes section of the [SXT Discord](https://discord.gg/spaceandtimeDB) or this [GitHub repository](https://github.com/orgs/spaceandtimelabs/packages/container/package/sxt-node) for the latest docker image.
 
 ### 1.3. Testnet Bootnodes
 Bootnodes on SXT networks are trusted peers on the network that a new node will first connect to and find more peers to download blocks from. The three bootnodes listed below are hosted by Space and Time:
 
 ```
-/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWDV5kmYUR5nxruFBfdGX2ZMR43iSe3SfmopZ3sLBFvZzc
-/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWGAQAg7iZgyn8wnnT8nkDo9NVAPbfubpMgL1mYTRNgjdD
-/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWLLf8tW3PPbj9MCda9rfypNN5xyZRi1bKoLj8s9UkeJDZ
+/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWFSan1dfyXvyJkGoTf3Jyk7pLmWJpHEMriSYSt5JoqmDB
+/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWLcAKtSNC2fQM8SEPwsLSrNijfihQ7ENFdb3TpqS2WCas
+/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWHEJSqiT9KGVdU3HC7dvodY2DG8E8cHoVkSevA4ZVaM2d
 ```
 ### 1.4. Node Keys
 Because the SxT Chain relies on EVM contracts for staking, node operators will need an Ethereum wallet (or Sepolia for Testnet) to interact with the staking contracts. The wallet you're using should have at least 0.05 ETH for transaction fees on the networks.
@@ -96,25 +96,113 @@ docker run -it --rm \
   --platform linux/amd64 \
   -v sxt-node-key:/data \
   --entrypoint=/usr/local/bin/sxt-node \
-  ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.107.0 \
+  ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.112.0 \
   key generate-node-key --chain /opt/chainspecs/testnet-spec.json --file /data/subkey.key
 ```
 
 The generated key should now be in a file called `subkey.key` in the sxt-node-key volume. Note that from the command line output it should also show you the peer id of the node.
 
-#### Validator Keys Permission Workaround
-A workaround to fix a permission issue in the sxt-validator-key volume needs to be applied as well. This will be fixed in a future release:
+## II. Validator Setup Using Docker
+
+Here we assume the setup uses the following volumes: `sxt-testnet-data` is the block storage volume and the volume where the generated node key is stored is `sxt-node-key`.
+
+### 2.1. Docker Run
 ```bash
-docker run -it --rm \
+docker run -d --restart always \
   --platform linux/amd64 \
+  -v sxt-testnet-data:/data \
   -v sxt-validator-key:/key \
-  --user root \
-  --entrypoint=chown \
-  ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.107.0 \
-  -R sxtuser:sxtuser /key
+  -v sxt-node-key:/node-key \
+  -p 30333:30333/tcp \
+  -p 9615:9615/tcp \
+  -p 9944:9944/tcp \
+  --env HYPER_KZG_PUBLIC_SETUP_DIRECTORY=/data \
+  ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.112.0 \
+  --base-path /data \
+  --prometheus-port 9615 \
+  --prometheus-external \
+  --pool-limit 10240 \
+  --pool-kbytes 1024000 \
+  --chain /opt/chainspecs/testnet-spec.json \
+  --keystore-path /key \
+  --node-key-file /node-key/subkey.key \
+  --bootnodes "/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWFSan1dfyXvyJkGoTf3Jyk7pLmWJpHEMriSYSt5JoqmDB" \
+  --bootnodes "/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWLcAKtSNC2fQM8SEPwsLSrNijfihQ7ENFdb3TpqS2WCas" \
+  --bootnodes "/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWHEJSqiT9KGVdU3HC7dvodY2DG8E8cHoVkSevA4ZVaM2d" \
+  --validator \
+  --port 30333 \
+  --log info \
+  --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5' \
+  --no-private-ipv4 \
+  --name ValidatorName \
+  # only do the following if local RPC is desired
+  --rpc-external \
+  --rpc-cors all \
+  --rpc-port 9944
 ```
 
-## SXT Chain Testnet: NPoS Staking Instructions
+### 2.2. Docker Compose
+Prepare a `docker-compose.yaml` file as follows:
+
+```yaml
+---
+name: 'sxt-testnet-node'
+
+services:
+  sxt-testnet:
+    platform: linux/amd64
+    restart: unless-stopped
+    image: ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.112.0
+    ports:
+      - '9615:9615' # metrics
+      - '9944:9944' # rpc
+      - '30333:30333' # p2p
+    volumes:
+      - sxt-testnet-data:/data
+      - sxt-validator-key:/key
+      - sxt-node-key:/node-key
+    pid: host
+    environment:
+      HYPER_KZG_PUBLIC_SETUP_DIRECTORY: /data
+    command: >
+      --base-path /data
+      --prometheus-port 9615
+      --prometheus-external
+      --pool-limit 10240
+      --pool-kbytes 1024000
+      --chain /opt/chainspecs/testnet-spec.json
+      --keystore-path /key
+      --node-key-file /node-key/subkey.key
+      --bootnodes "/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWFSan1dfyXvyJkGoTf3Jyk7pLmWJpHEMriSYSt5JoqmDB"
+      --bootnodes "/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWLcAKtSNC2fQM8SEPwsLSrNijfihQ7ENFdb3TpqS2WCas"
+      --bootnodes "/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWHEJSqiT9KGVdU3HC7dvodY2DG8E8cHoVkSevA4ZVaM2d"
+      --validator
+      --port 30333
+      --log info
+      --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5'
+      --no-private-ipv4
+      --name ValidatorName
+      # only do the following if local RPC is desired
+      --rpc-external
+      --rpc-cors all
+      --rpc-port 9944
+
+volumes:
+  sxt-testnet-data:
+    external: true
+  sxt-validator-key:
+    external: true
+  sxt-node-key:
+    external: true
+```
+
+and then start the sxt-testnet-node with command below:
+
+```bash
+docker compose -f ./docker-compose.yaml up -d
+```
+
+## III. SXT Chain Testnet: NPoS Staking Instructions
 
 > [!NOTE]
 > Please see the FAQ section at the end of this document if you have additional questions about onboarding as a validator
@@ -141,14 +229,14 @@ At the last block of Epoch 5 in each era, the election will take place and keys 
 ### Testnet Contract Addresses (Sepolia):
 
 - **Testnet Staking Contract**
-  [0xca755ce69181d2d33097a24ce5ddc030a0b87f2c](https://sepolia.etherscan.io/address/0xca755ce69181d2d33097a24ce5ddc030a0b87f2c#writeContract)
+  [0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab](https://sepolia.etherscan.io/address/0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab#writeContract) (Staking)
 
 
 - **Testnet Token Contract**
-  [0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0](https://sepolia.etherscan.io/token/0xdb5ffd69fa8022e20cf7d66c36c961a2949f4da0#writeContract)
+  [0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839](https://sepolia.etherscan.io/token/0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839#writeContract) (SpaceAndTime)
 
 - **Testnet SessionKey Registration Contract**
-  [0x82840556980bfbCc08e3e7c61AA44E1a4EAb5471](https://sepolia.etherscan.io/address/0x82840556980bfbcc08e3e7c61aa44e1a4eab5471#writeContract)
+  [0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118](https://sepolia.etherscan.io/address/0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118#writeContract) (SXTChainMessaging)
 
 ---
 
@@ -162,22 +250,28 @@ At the last block of Epoch 5 in each era, the election will take place and keys 
 ## Steps
 
 ### Step 1: Request Testnet Tokens
-- You can use the faucet to receive Testnet SXT periodically: https://sxtchaintestnetfaucet.vercel.app/
-
+- Send your Sepolia ETH address in an email to the sxt foundation.
+  - NOTE: This must be different per validator that you are running
+  - NOTE: To ensure that this is not a dead wallet, we will be checking that at least one transaciton has been submitted through this wallet
+```yaml
+  to: readiness@sxt.foundation
+  subject: [NOP name] - Testnet Sepolia ETH Wallet Address
+```
+- The given address will receive 100 tokens which can be used to start staking
 ---
 
 ### Step 2: Approve Token Spend
 Send a transaction to the token contract to approve the staking contract to spend your test tokens:
-- [0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0](https://sepolia.etherscan.io/address/0xdB5FFD69Fa8022e20cf7d66C36c961a2949f4Da0)
+- [0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839](https://sepolia.etherscan.io/address/0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839) (SpaceAndTime)
 - Send an `approve` transaction with:
-  - The **staking contract address** 0xca755ce69181d2d33097a24ce5ddc030a0b87f2c
+  - The **staking contract address** 0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab (Staking)
   - The **token limit** to approve
   ![Etherscan Approval Transaction](./assets/approve.png)
 ---
 
 ### Step 3: Stake Tokens
 Stake your desired amount using the **staking contract**. You must stake a minimum of 100 SXT or 100000000000000000000 units
-- [0xca755ce69181d2d33097a24ce5ddc030a0b87f2c](https://sepolia.etherscan.io/address/0xca755ce69181d2d33097a24ce5ddc030a0b87f2c)
+- [0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab](https://sepolia.etherscan.io/address/0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab) (Staking)
   ![Etherscan Stake Transaction](./assets/stake.png)
 ---
 
@@ -190,6 +284,7 @@ Use the message transaction to submit your session keys.
 Call `rotateKeys()` RPC on your node:
 
 ```bash
+docker exec -ti $(docker ps -q -f volume=sxt-testnet-data) \
 curl -X POST http://localhost:9944 \
   -H "Content-Type: application/json" \
   -d '{
@@ -215,19 +310,6 @@ You’ll receive a response like:
 - This also triggers `validate()` to activate your node.
   ![Etherscan Register Keys Transaction](./assets/message.png)
 
-> [!IMPORTANT]
-> You might see the following error due to file permissions. If that's the case, follow these [workaround instructions](#validator-keys-permission-workaround):
-```
-{
-   "error" : {
-      "code" : 1040,
-      "message" : "Client error: Execution failed: Execution aborted due to trap: host code panicked while being called by the runtime: `sr25519_generate` failed: Other(\"Permission denied (os error 13)\")\nWASM backtrace:\nerror while executing at wasm backtrace:\n    0: 0x1a38d8 - sxt_runtime.wasm!sp_io::crypto::extern_host_function_impls::sr25519_generate::hd241fcbcc7fb892e\n    1: 0x58547a - sxt_runtime.wasm!sxt_runtime::opaque::SessionKeys::generate::hfa56532150c4f3a1\n    2: 0x4e21b0 - sxt_runtime.wasm!SessionKeys_generate_session_keys"
-   },
-   "id" : 1,
-   "jsonrpc" : "2.0"
-}
-```
-
 ---
 
 ## How to Nominate (Optional)
@@ -242,8 +324,8 @@ docker run -it --rm \
   --platform linux/amd64 \
   -v sxt-node-key:/data \
   --entrypoint=/usr/local/bin/sxt-node \
-  ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.107.0 \
-  key inspect --chain /opt/chainspecs/testnet-spec.json $SS58_KEY 
+  ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.112.0 \
+  key inspect --chain /opt/chainspecs/testnet-spec.json $SS58_KEY
 ```
 
 The SS58_KEY can be obtained from the address list of validators in the [Staking Dashboard](https://polkadot.js.org/apps/?rpc=wss://new-rpc.testnet.sxt.network/#/staking)
@@ -264,105 +346,6 @@ You can enter **multiple nominations** like this:
   ![Etherscan Nominate Transaction](./assets/nominate.png)
 ---
 
-## II. Validator Setup Using Docker
-
-Here we assume the setup uses the following volumes: `sxt-testnet-data` is the block storage volume and the volume where the generated node key is stored is `sxt-node-key`.
-
-### 2.1. Docker Run
-```bash
-docker run -d --restart always \
-  --platform linux/amd64 \
-  -v sxt-testnet-data:/data \
-  -v sxt-validator-key:/key \
-  -v sxt-node-key:/node-key \
-  -p 30333:30333/tcp \
-  -p 9615:9615/tcp \
-  -p 9944:9944/tcp \
-  --env HYPER_KZG_PUBLIC_SETUP_DIRECTORY=/data \
-  ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.107.0 \
-  --base-path /data \
-  --prometheus-port 9615 \
-  --prometheus-external \
-  --pool-limit 10240 \
-  --pool-kbytes 1024000 \
-  --chain /opt/chainspecs/testnet-spec.json \
-  --keystore-path /key \
-  --node-key-file /node-key/subkey.key \
-  --bootnodes "/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWDV5kmYUR5nxruFBfdGX2ZMR43iSe3SfmopZ3sLBFvZzc" \
-  --bootnodes "/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWGAQAg7iZgyn8wnnT8nkDo9NVAPbfubpMgL1mYTRNgjdD" \
-  --bootnodes "/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWLLf8tW3PPbj9MCda9rfypNN5xyZRi1bKoLj8s9UkeJDZ" \
-  --validator \
-  --port 30333 \
-  --log info \
-  --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5' \
-  --no-private-ipv4 \
-  --name ValidatorName \
-  # only do the following if local RPC is desired
-  --rpc-external \
-  --rpc-cors all \
-  --rpc-port 9944
-```
-
-### 2.2. Docker Compose
-Prepare a `docker-compose.yaml` file as follows:
-
-```yaml
----
-name: 'sxt-testnet-node'
-
-services:
-  sxt-testnet:
-    platform: linux/amd64
-    restart: unless-stopped
-    image: ghcr.io/spaceandtimelabs/sxt-node:testnet-v0.107.0
-    ports:
-      - '9615:9615' # metrics
-      - '9944:9944' # rpc
-      - '30333:30333' # p2p
-    volumes:
-      - sxt-testnet-data:/data
-      - sxt-validator-key:/key
-      - sxt-node-key:/node-key
-    pid: host
-    environment:
-      HYPER_KZG_PUBLIC_SETUP_DIRECTORY: /data
-    command: >
-      --base-path /data
-      --prometheus-port 9615
-      --prometheus-external
-      --pool-limit 10240
-      --pool-kbytes 1024000
-      --chain /opt/chainspecs/testnet-spec.json
-      --keystore-path /key
-      --node-key-file /node-key/subkey.key
-      --bootnodes "/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWDV5kmYUR5nxruFBfdGX2ZMR43iSe3SfmopZ3sLBFvZzc"
-      --bootnodes "/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWGAQAg7iZgyn8wnnT8nkDo9NVAPbfubpMgL1mYTRNgjdD"
-      --bootnodes "/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWLLf8tW3PPbj9MCda9rfypNN5xyZRi1bKoLj8s9UkeJDZ"
-      --validator
-      --port 30333
-      --log info
-      --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5'
-      --no-private-ipv4
-      --name ValidatorName
-      # only do the following if local RPC is desired
-      --rpc-external
-      --rpc-cors all
-      --rpc-port 9944
-
-volumes:
-  sxt-testnet-data:
-    external: true
-  sxt-validator-key:
-    external: true
-  sxt-node-key:
-    external: true
-```
-
-and then start the sxt-testnet-node with command below:
-
-```bash
-docker compose -f ./docker-compose.yaml up -d
-```
 
 # FAQ (More Coming Soon)
 
