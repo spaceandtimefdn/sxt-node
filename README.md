@@ -77,9 +77,9 @@ docker run -it --rm \
 Bootnodes on SXT networks are trusted peers on the network that a new node will first connect to and find more peers to download blocks from. The three bootnodes listed below are hosted by Space and Time:
 
 ```
-/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWDV5kmYUR5nxruFBfdGX2ZMR43iSe3SfmopZ3sLBFvZzc
-/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWGAQAg7iZgyn8wnnT8nkDo9NVAPbfubpMgL1mYTRNgjdD
-/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWLLf8tW3PPbj9MCda9rfypNN5xyZRi1bKoLj8s9UkeJDZ
+/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWFSan1dfyXvyJkGoTf3Jyk7pLmWJpHEMriSYSt5JoqmDB
+/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWLcAKtSNC2fQM8SEPwsLSrNijfihQ7ENFdb3TpqS2WCas
+/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWHEJSqiT9KGVdU3HC7dvodY2DG8E8cHoVkSevA4ZVaM2d
 ```
 ### 1.4. Node Keys
 Because the SxT Chain relies on EVM contracts for staking, node operators will need an Ethereum wallet (or Sepolia for Testnet) to interact with the staking contracts. The wallet you're using should have at least 0.05 ETH for transaction fees on the networks.
@@ -138,9 +138,9 @@ docker run -d --restart always \
   --chain /opt/chainspecs/testnet-spec.json \
   --keystore-path /key \
   --node-key-file /node-key/subkey.key \
-  --bootnodes "/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWDV5kmYUR5nxruFBfdGX2ZMR43iSe3SfmopZ3sLBFvZzc" \
-  --bootnodes "/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWGAQAg7iZgyn8wnnT8nkDo9NVAPbfubpMgL1mYTRNgjdD" \
-  --bootnodes "/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWLLf8tW3PPbj9MCda9rfypNN5xyZRi1bKoLj8s9UkeJDZ" \
+  --bootnodes "/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWFSan1dfyXvyJkGoTf3Jyk7pLmWJpHEMriSYSt5JoqmDB" \
+  --bootnodes "/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWLcAKtSNC2fQM8SEPwsLSrNijfihQ7ENFdb3TpqS2WCas" \
+  --bootnodes "/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWHEJSqiT9KGVdU3HC7dvodY2DG8E8cHoVkSevA4ZVaM2d" \
   --validator \
   --port 30333 \
   --log info \
@@ -185,9 +185,9 @@ services:
       --chain /opt/chainspecs/testnet-spec.json
       --keystore-path /key
       --node-key-file /node-key/subkey.key
-      --bootnodes "/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWDV5kmYUR5nxruFBfdGX2ZMR43iSe3SfmopZ3sLBFvZzc"
-      --bootnodes "/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWGAQAg7iZgyn8wnnT8nkDo9NVAPbfubpMgL1mYTRNgjdD"
-      --bootnodes "/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWLLf8tW3PPbj9MCda9rfypNN5xyZRi1bKoLj8s9UkeJDZ"
+      --bootnodes "/dns/new-validator0.testnet.sxt.network/tcp/30333/p2p/12D3KooWFSan1dfyXvyJkGoTf3Jyk7pLmWJpHEMriSYSt5JoqmDB"
+      --bootnodes "/dns/new-validator1.testnet.sxt.network/tcp/30333/p2p/12D3KooWLcAKtSNC2fQM8SEPwsLSrNijfihQ7ENFdb3TpqS2WCas"
+      --bootnodes "/dns/new-validator2.testnet.sxt.network/tcp/30333/p2p/12D3KooWHEJSqiT9KGVdU3HC7dvodY2DG8E8cHoVkSevA4ZVaM2d"
       --validator
       --port 30333
       --log info
