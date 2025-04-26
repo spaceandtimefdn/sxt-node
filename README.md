@@ -134,11 +134,7 @@ docker run -d --restart always \
   --log info \
   --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5' \
   --no-private-ipv4 \
-  --name ValidatorName \
-  # only do the following if local RPC is desired
-  --rpc-external \
-  --rpc-cors all \
-  --rpc-port 9944
+  --name ValidatorName
 ```
 
 ### 2.2. Docker Compose
@@ -182,10 +178,6 @@ services:
       --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5'
       --no-private-ipv4
       --name ValidatorName
-      # only do the following if local RPC is desired
-      --rpc-external
-      --rpc-cors all
-      --rpc-port 9944
 
 volumes:
   sxt-testnet-data:
