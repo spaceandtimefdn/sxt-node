@@ -107,6 +107,9 @@ The generated key should now be in a file called `subkey.key` in the sxt-node-ke
 Here we assume the setup uses the following volumes: `sxt-testnet-data` is the block storage volume and the volume where the generated node key is stored is `sxt-node-key`.
 
 ### 2.1. Docker Run
+
+Make sure to set VALIDATOR_NAME to make it easier to identify your node in the telemetry dashboard.
+
 ```bash
 docker run -d --restart always \
   --platform linux/amd64 \
@@ -134,11 +137,7 @@ docker run -d --restart always \
   --log info \
   --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5' \
   --no-private-ipv4 \
-  --name ValidatorName \
-  # only do the following if local RPC is desired
-  --rpc-external \
-  --rpc-cors all \
-  --rpc-port 9944
+  --name ${VALIDATOR_NAME?}
 ```
 
 ### 2.2. Docker Compose
@@ -181,11 +180,6 @@ services:
       --log info
       --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5'
       --no-private-ipv4
-      --name ValidatorName
-      # only do the following if local RPC is desired
-      --rpc-external
-      --rpc-cors all
-      --rpc-port 9944
 
 volumes:
   sxt-testnet-data:
