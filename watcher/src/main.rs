@@ -1,8 +1,6 @@
 //! todo
 use std::fs::File;
 use std::io::{self, Read};
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
 
 use ::sxt_core::attestation::sign_eth_message;
 use attestation_tree::attestation_tree_from_prefixes;
@@ -14,8 +12,7 @@ use env_logger::Env;
 use futures::StreamExt;
 use hex::FromHex;
 use k256::ecdsa::SigningKey;
-use log::{error, info, warn};
-use prometheus::core::{Atomic, AtomicU64};
+use log::{error, info};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Style};
@@ -24,9 +21,9 @@ use ratatui::Terminal;
 use runtime::api::runtime_types::sxt_core::attestation::Attestation;
 use sha3::digest::generic_array::GenericArray;
 use subxt::blocks::Block as BlockT;
-use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;
 use subxt::config::substrate::{BlakeTwo256, SubstrateHeader};
 use subxt::config::Header;
+use subxt::tx::{TxProgress, TxStatus};
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
@@ -40,6 +37,8 @@ use sxt_core::sxt_chain_runtime as runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
 use sxt_runtime::Runtime;
 use thiserror::Error;
+use tokio::sync::mpsc;
+use translation_layer::tx_submitter::TxSubmitter;
 use watcher::attestation;
 
 type SxtConfig = PolkadotConfig;
@@ -149,6 +148,10 @@ pub enum AttestationError {
     /// Error fetching commitments and accounts from the chain.
     #[error("FetchError: {0}")]
     FetchError(#[from] attestation::fetch::FetchError),
+
+    /// TxSubmitterError
+    #[error("TxSubmitterError")]
+    TxSubmitterError(#[from] translation_layer::error::Error),
 }
 
 /// Command-line arguments for the CLI
@@ -214,12 +217,78 @@ async fn main() {
             block_process_concurrency,
         } => {
             // Use an async block instead of .and_then() to handle async operations
+            let (tx_sender, mut tx_receiver) = tokio::sync::mpsc::channel::<(
+                TxProgress<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+                H256,
+                Option<u64>,
+            )>(100);
+
+            // 2. Spawn logging task
+            tokio::spawn(async move {
+                while let Some((mut progress, tx_hash, Some(block_number))) =
+                    tx_receiver.recv().await
+                {
+                    log::info!(
+                        "📨 Attestation for block #{block_number}: submitted tx {tx_hash:?}"
+                    );
+
+                    tokio::spawn(async move {
+                        use subxt::tx::TxStatus;
+
+                        while let Some(status) = progress.next().await {
+                            match status {
+                                Ok(TxStatus::Validated) => {
+                                    log::info!(
+                                        "📄 Attestation for block #{block_number}: validated."
+                                    );
+                                }
+                                Ok(TxStatus::Broadcasted { num_peers }) => {
+                                    log::info!("📡 Attestation for block #{block_number}: broadcasted to {num_peers} peers");
+                                }
+                                Ok(TxStatus::InBestBlock(details)) => {
+                                    log::info!(
+                                        "📦 Attestation for block #{block_number}: in best block {:?}",
+                                        details.block_hash()
+                                    );
+                                }
+                                Ok(TxStatus::InFinalizedBlock(details)) => {
+                                    log::info!(
+                                        "✅ Attestation for block #{block_number}: finalized in block {:?}",
+                                        details.block_hash()
+                                    );
+                                }
+                                Ok(TxStatus::Dropped { message }) => {
+                                    log::warn!("⚠️ Attestation for block #{block_number}: dropped: {message}");
+                                }
+                                Ok(TxStatus::Invalid { message }) => {
+                                    log::error!("❌ Attestation for block #{block_number}: invalid: {message}");
+                                }
+                                Ok(TxStatus::Error { message }) => {
+                                    log::error!("❌ Attestation for block #{block_number}: error: {message}");
+                                }
+                                Ok(TxStatus::NoLongerInBestBlock) => {
+                                    log::warn!("⚠️ Attestation for block #{block_number}: no longer in best block");
+                                }
+                                Err(e) => {
+                                    log::error!(
+                                        "❌ Attestation for block #{block_number}: progress error: {}",
+                                        e
+                                    );
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
             if let Err(err) = async {
                 let client = AttestationClient::new(
                     &args.websocket,
                     &args.eth_key_path,
                     &args.substrate_key_path,
                     block_process_concurrency,
+                    tx_sender,
                 )
                 .await?;
                 client.run().await
@@ -247,11 +316,6 @@ async fn main() {
 /// This struct manages the connection to the blockchain, signing keys, and tracking nonces for transactions.
 #[derive(Debug)]
 struct AttestationClient {
-    /// The WebSocket URL used to connect to the Substrate blockchain node.
-    ///
-    /// This URL is typically in the format `ws://127.0.0.1:9944` for local nodes or a remote URL for production.
-    websocket: String,
-
     /// The file path to the Ethereum private key.
     ///
     /// This key is used to sign attestations for the SxT network.
@@ -267,14 +331,11 @@ struct AttestationClient {
     /// This client provides access to blocks, storage, and transaction submission.
     api: OnlineClient<SxtConfig>,
 
-    /// The current transaction nonce for the associated account.
-    ///
-    /// This is used to ensure that transactions are sequentially ordered and prevent replay attacks.
-    /// Wrapped in an `Arc` for shared access and updated atomically.
-    nonce: Arc<AtomicU64>,
-
     /// The number of blocks to process concurrently.
     block_process_concurrency: usize,
+
+    /// Tx submitter/nonce handler/connection reset manager
+    tx_submitter: TxSubmitter,
 }
 
 impl AttestationClient {
@@ -283,38 +344,27 @@ impl AttestationClient {
         eth_key_path: &str,
         substrate_key_path: &str,
         block_process_concurrency: usize,
+        sender: mpsc::Sender<(
+            TxProgress<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+            H256,
+            Option<u64>,
+        )>,
     ) -> Result<Self, AttestationError> {
         let api = OnlineClient::<PolkadotConfig>::from_insecure_url(websocket).await?;
 
         info!("Connected to chain at {}", websocket);
 
-        let initial_nonce =
-            AttestationClient::fetch_initial_nonce(&api, substrate_key_path).await?;
-        let nonce = Arc::new(AtomicU64::new(initial_nonce));
+        let keypair = load_substrate_key(substrate_key_path)?;
+        let tx_submitter =
+            TxSubmitter::new(api.clone(), keypair, sender, websocket.to_owned()).await?;
 
         Ok(Self {
-            websocket: websocket.to_string(),
             eth_key_path: eth_key_path.to_string(),
             substrate_key_path: substrate_key_path.to_string(),
+            tx_submitter,
             api,
-            nonce,
             block_process_concurrency,
         })
-    }
-
-    async fn fetch_initial_nonce(
-        api: &OnlineClient<SxtConfig>,
-        substrate_key_path: &str,
-    ) -> Result<u64, AttestationError> {
-        let substrate_key = load_substrate_key(substrate_key_path)?;
-        let account_id = substrate_key.public_key();
-        let addr = runtime::api::storage()
-            .system()
-            .account(account_id.to_account_id());
-
-        let account_info = api.storage().at_latest().await?.fetch(&addr).await?;
-
-        Ok(account_info.map_or(0, |info| info.nonce as u64))
     }
 
     async fn run(&self) -> Result<(), AttestationError> {
@@ -418,50 +468,37 @@ impl AttestationClient {
         &self,
         block: BlockT<PolkadotConfig, OnlineClient<SxtConfig>>,
         private_key: &SigningKey,
-        keypair: &Keypair,
+        _keypair: &Keypair, // no longer needed here, handled inside tx_submitter
         signature: EthereumSignature,
         state_root: Vec<u8>,
     ) -> Result<(), AttestationError> {
         let header = block.header();
-        let mut attempt = 0;
 
-        loop {
-            let attestation =
-                create_attestation(header, private_key, signature, state_root.clone())?;
+        let attestation = create_attestation(header, private_key, signature, state_root.clone())?;
 
-            let tx_params = Params::new().nonce(self.nonce.get()).build();
-            let tx = runtime::api::tx()
-                .attestations()
-                .attest_block(block.number(), attestation);
+        let tx = runtime::api::tx()
+            .attestations()
+            .attest_block(block.number(), attestation);
 
-            match self
-                .api
-                .tx()
-                .sign_and_submit_then_watch(&tx, keypair, tx_params)
-                .await
-            {
-                Ok(_) => {
-                    self.nonce.inc_by_with_ordering(1, Ordering::SeqCst);
-                    info!(
-                        "Transaction for block {:?} succeeded on attempt {}",
-                        block.number(),
-                        attempt + 1
-                    );
-                    return Ok(());
-                }
-                Err(err) if attempt < 1 => {
-                    attempt += 1;
-                    self.nonce.dec_by(1);
-                    warn!("Retry attempt {} due to error: {}", attempt, err);
-                }
-                Err(err) => return Err(AttestationError::TransactionFailed(err.to_string())),
+        match self
+            .tx_submitter
+            .clone()
+            .submit_tx_get_hash_with_mortality(&tx, block.header(), 32)
+            .await
+        {
+            Ok(tx_hash) => {
+                info!(
+                    "✅ Successfully submitted attestation for block {} with tx hash {:?}",
+                    block.number(),
+                    tx_hash
+                );
+                Ok(())
+            }
+            Err(err) => {
+                error!("❌ Failed to submit attestation: {}", err);
+                Err(AttestationError::TransactionFailed(err.to_string()))
             }
         }
-    }
-
-    /// Get the websocket url
-    pub fn websocket(&self) -> String {
-        self.websocket.clone()
     }
 }
 

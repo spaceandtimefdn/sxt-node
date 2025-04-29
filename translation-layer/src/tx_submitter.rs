@@ -5,6 +5,7 @@ use log::{error, info, warn};
 use snafu::ResultExt;
 use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;
 use subxt::tx::{DefaultPayload, TxProgress, TxStatus};
+use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
 use sxt_core::sxt_chain_runtime;
@@ -15,9 +16,12 @@ use crate::error::{Error, FetchEventsSnafu, FetchInitialNonceSnafu, Result};
 
 const MAX_RETRIES: usize = 3;
 
+pub type DefaultHeader =
+    subxt::config::substrate::SubstrateHeader<u32, subxt::config::substrate::BlakeTwo256>;
+
 /// A struct responsible for submitting transactions to a Substrate-based blockchain,
 /// managing nonces, and handling retries for failed transactions.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TxSubmitter {
     /// A shared client for interacting with the blockchain.
     pub client: Arc<Mutex<OnlineClient<PolkadotConfig>>>,
@@ -26,7 +30,11 @@ pub struct TxSubmitter {
     /// A mutex-protected nonce value for tracking transaction sequence numbers.
     nonce: Arc<Mutex<u64>>,
     /// Sender for pushing transaction progress to `TxProgressDb`.
-    tx_sender: mpsc::Sender<TxProgress<PolkadotConfig, OnlineClient<PolkadotConfig>>>,
+    tx_sender: mpsc::Sender<(
+        TxProgress<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+        H256,
+        Option<u64>,
+    )>,
     /// RPC url
     rpc_url: String,
 }
@@ -45,7 +53,11 @@ impl TxSubmitter {
     pub async fn new(
         client: OnlineClient<PolkadotConfig>,
         signer: Keypair,
-        tx_sender: mpsc::Sender<TxProgress<PolkadotConfig, OnlineClient<PolkadotConfig>>>,
+        tx_sender: mpsc::Sender<(
+            TxProgress<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+            H256,
+            Option<u64>,
+        )>,
         rpc_url: String,
     ) -> Result<Self> {
         let nonce = fetch_initial_nonce(&client, &signer).await?;
@@ -192,23 +204,56 @@ impl TxSubmitter {
         Err(Error::ExtrinsicFailed)
     }
 
-    /// Submits a transaction and returns its hash if successful.
+    /// Submit a transaction and return its hash.
+    /// No mortality limit (immortal transaction).
     pub async fn submit_tx_get_hash<T: subxt::ext::scale_encode::EncodeAsFields>(
         &mut self,
         tx: &DefaultPayload<T>,
     ) -> Result<subxt::utils::H256> {
+        self.submit_tx_get_hash_inner(tx, None).await
+    }
+
+    /// Submit a transaction with optional mortality.
+    /// `Some(mortal_block_lifespan)` -> mortal tx, `None` -> immortal.
+    pub async fn submit_tx_get_hash_with_mortality<T: subxt::ext::scale_encode::EncodeAsFields>(
+        &mut self,
+        tx: &DefaultPayload<T>,
+        from_block: &subxt::config::substrate::SubstrateHeader<
+            u32,
+            subxt::config::substrate::BlakeTwo256,
+        >,
+        for_n_blocks: u64,
+    ) -> Result<subxt::utils::H256> {
+        self.submit_tx_get_hash_inner(tx, Some((from_block.clone(), for_n_blocks)))
+            .await
+    }
+
+    /// Shared inner logic that accepts an Option<u64> for mortality.
+    async fn submit_tx_get_hash_inner<T: subxt::ext::scale_encode::EncodeAsFields>(
+        &mut self,
+        tx: &DefaultPayload<T>,
+        mortality: Option<(DefaultHeader, u64)>,
+    ) -> Result<subxt::utils::H256> {
         for attempt in 0..=MAX_RETRIES {
             let mut nonce_guard = self.nonce.lock().await;
             let nonce_value = *nonce_guard;
-            let tx_params = Params::new().nonce(nonce_value).build();
 
-            // 🔐 Lock client once and release early
+            let mut params = Params::new().nonce(nonce_value);
+
+            let mut block_number = None;
+            if let Some((ref header, lifespan)) = mortality {
+                params = params.mortal(header, lifespan);
+                block_number = Some(header.number.into());
+            }
+
+            let tx_params = params.build();
+
             let client = self.client.lock().await;
             let tx_result = client
                 .tx()
                 .sign_and_submit_then_watch(tx, &self.signer, tx_params)
                 .await;
-            drop(client); // ✅ explicitly drop the guard
+            drop(client);
 
             match tx_result {
                 Ok(tx_progress) => {
@@ -218,7 +263,7 @@ impl TxSubmitter {
                     let hash = tx_progress.extrinsic_hash();
                     info!("✅ Transaction submitted successfully: {:?}", hash);
 
-                    if let Err(err) = self.tx_sender.send(tx_progress).await {
+                    if let Err(err) = self.tx_sender.send((tx_progress, hash, block_number)).await {
                         error!("❌ Failed to send transaction progress: {}", err);
                     }
 
@@ -228,7 +273,6 @@ impl TxSubmitter {
                 Err(err) if attempt < MAX_RETRIES => {
                     let err_str = err.to_string();
 
-                    // Handle stale nonce case
                     if is_stale_nonce_error(&err_str) {
                         warn!(
                             "🔁 Nonce likely stale (attempt {}): {}",
@@ -246,20 +290,15 @@ impl TxSubmitter {
                                 return Err(fetch_err);
                             }
                         }
-                    }
-                    // Handle background connection task failure
-                    else if is_background_disconnect(&err_str) {
+                    } else if is_background_disconnect(&err_str) {
                         warn!(
                             "🔌 Connection dropped (attempt {}): {}. Reconnecting...",
                             attempt + 1,
                             err_str
                         );
-                        drop(nonce_guard); // release early
-
+                        drop(nonce_guard);
                         self.reconnect_and_refresh_nonce().await?;
-                    }
-                    // Unhandled transient error
-                    else {
+                    } else {
                         warn!(
                             "⚠️ Transient failure (attempt {}): {}. Retrying...",
                             attempt + 1,
