@@ -1,0 +1,27 @@
+[package]
+name = "chain-utils"
+version = "0.1.0"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+sqlparser.workspace = true
+subxt.workspace = true
+subxt-signer.workspace = true
+sxt-core.workspace = true
+tokio.workspace = true
+log.workspace = true
+env_logger.workspace = true
+anyhow.workspace = true
+hex.workspace = true
+on-chain-table.workspace = true
+proof-of-sql.workspace = true
+arrow = {workspace = true, features = ["prettyprint"] }
+clap = { workspace = true, features = ["derive"] }
+url = "2.5.4"
+
+[lints]
+workspace = true

@@ -1,0 +1,27 @@
+[package]
+name = "attestation_tree"
+version = "0.1.0"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+codec.workspace = true
+hex.workspace = true
+impl-trait-for-tuples.workspace = true
+frame-support = { workspace = true, features = ["std"] }
+eth_merkle_tree.workspace = true
+snafu.workspace = true
+sxt-core = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = ["std"] }
+pallet-commitments = { workspace = true, features = ["std"] }
+proof-of-sql-commitment-map = { workspace = true, features = ["std"] }
+
+[dev-dependencies]
+sp-core = { workspace = true, features = ["std"] }
+sxt-runtime = { workspace = true, features = ["std"] }
+
+[lints]
+workspace = true

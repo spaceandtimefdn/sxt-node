@@ -1,0 +1,27 @@
+[package]
+name = "commit-grouper"
+version = "0.1.0"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+snafu = { workspace = true }
+proof-of-sql-commitment-map = { workspace = true, features=["substrate"]}
+frame-support = { workspace = true }
+postcard = "1.0"
+sxt-core = { workspace = true, default-features = false, features=["std"]}
+codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
+    "derive",
+    "std",
+] }
+scale-info = { workspace = true, default-features = false, features = ["derive", "std"] }
+serde = { version = "1.0", default-features = false, features = ["derive"]}
+serde_json = "1.0"
+glob = "0.3"
+clap = { version = "4.1", features = ["derive"] }
+
+[lints]
+workspace = true

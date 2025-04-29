@@ -1,0 +1,33 @@
+[package]
+name = "data-loader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-postgres = { version = "0.7", features = ["with-uuid-1", "with-serde_json-1", "with-chrono-0_4",] }
+deadpool-postgres = { version = "0.14", features = ["rt_tokio_1"] }
+arrow = "53.0.0"
+arrow-array = "53.0.0"
+env_logger = "0.11"
+log = "0.4"
+bytes = "1.7.2"
+object_store = { version = "0.11.0", features = ["azure"] }
+parquet = "53.0.0"
+serde = { features = ["derive"], workspace = true }
+futures =  { features = [], workspace = true }
+tokio-stream = "0.1"
+tokio-util = "0.6"
+serde_json = { features = [], workspace = true }
+futures-lite = "1.13.0"
+url = "2.5.2"
+tonic = { version = "0.12.0", features = ["tls", "tls-roots"] }
+uuid = { version = "1", features = ["v4"] }
+rust_decimal = { version = "1.35.0", features = ["db-tokio-postgres"] }
+pg_bigdecimal = "0.1.5"
+snafu =  { features = [], workspace = true }
+chrono = "0.4"
+num-bigint = "0.4.6"
+regex = "1.11.0"
+lazy_static = "1.5.0"
+anyhow = "1.0.86"

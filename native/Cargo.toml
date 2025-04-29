@@ -1,0 +1,53 @@
+[package]
+name = "native"
+description = "Provide a native implementation bridge for wasm executor"
+version = "0.2.0"
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+codec = { workspace = true }
+commitment-sql = { workspace = true, optional = true, features = ["cpu-perf"] }
+log = "0.4.11"
+sp-runtime-interface = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false}
+frame-support = { workspace = true, default-features = false}
+on-chain-table = { workspace = true, default-features = false, features = ["arrow"], optional=true}
+scale-info = { workspace = true, default-features = false, features = ["derive"] }
+frame-benchmarking = { workspace = true, default-features = false, optional = true }
+frame-system = { workspace = true, default-features = false }
+sp-core = { workspace = true, default-features = false}
+tonic = { workspace = true, optional = true }
+arrow = { workspace = true, optional = true, features = ["ipc"]}
+arrow-flight = { workspace = true, optional = true, features = ["flight-sql-experimental"] }
+proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
+proof-of-sql-static-setups = { workspace = true, optional = true, features = ["io"] }
+futures = { features = ["thread-pool"], workspace = true, optional = true }
+
+sxt-core.workspace = true
+
+[dev-dependencies]
+proof-of-sql = { workspace = true }
+sqlparser.workspace = true
+
+[features]
+default = ["std"]
+std = [
+    "codec/std",
+    "sp-runtime-interface/std",
+    "dep:arrow", # <------- put std dependencies here
+    "dep:commitment-sql",
+    "dep:on-chain-table",
+    "dep:proof-of-sql-static-setups",
+    "dep:arrow-flight",
+    "dep:tonic",
+    "dep:futures",
+    "sp-runtime/std",
+    "frame-support/std",
+    "frame-system/std",
+    "sp-core/std",
+    "proof-of-sql/cpu-perf",
+    "sxt-core/std",
+]

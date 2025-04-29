@@ -1,0 +1,39 @@
+[package]
+name = "proof-of-sql-static-setups"
+version = "0.1.0"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+ark-serialize.workspace = true
+lazy_static.workspace = true
+handlebars = { workspace = true, optional = true }
+hex = { workspace = true, optional = true, features = ["std"] }
+futures = { workspace = true, optional = true, features = ["std"] }
+log = { workspace = true, optional = true }
+num_cpus = { workspace = true, optional = true }
+proof-of-sql.workspace = true
+proof-of-sql-commitment-map.workspace = true
+url = { workspace = true, optional = true }
+clap = { workspace = true, optional = true, features = ["env", "derive"] }
+rayon = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true, features = ["default", "stream"] }
+serde = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true, features = ["std"] }
+snafu = { workspace = true, optional = true, features = ["std"] }
+tokio = { workspace = true, optional = true, features = ["fs", "macros"] }
+
+[dev-dependencies]
+rand = { workspace = true, features = ["std"] }
+
+[features]
+default = ["io"]
+std = []
+baked = []
+io = ["std", "proof-of-sql/std", "dep:clap", "dep:url", "dep:hex", "dep:reqwest", "dep:sha2", "dep:snafu", "dep:tokio", "dep:futures", "dep:num_cpus", "dep:log", "dep:rayon", "dep:handlebars", "dep:serde"]
+
+[lints]
+workspace = true

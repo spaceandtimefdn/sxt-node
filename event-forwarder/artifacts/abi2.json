@@ -1,0 +1,227 @@
+[
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "leaf",
+                "type": "bytes32"
+            }
+        ],
+        "name": "LogLeaf",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "messageHash",
+                "type": "bytes32"
+            }
+        ],
+        "name": "LogMessageHash",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "recovered",
+                "type": "address"
+            }
+        ],
+        "name": "LogRecovered",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "accountId",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint128",
+                "name": "freeBalance",
+                "type": "uint128"
+            },
+            {
+                "internalType": "uint32",
+                "name": "blockNumber",
+                "type": "uint32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "rootArg",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32[]",
+                "name": "proof",
+                "type": "bytes32[]"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "r",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "s",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint8",
+                "name": "v",
+                "type": "uint8"
+            },
+            {
+                "internalType": "address",
+                "name": "expectedAddress",
+                "type": "address"
+            }
+        ],
+        "name": "processUnstake",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "rootArg",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32[]",
+                "name": "proof",
+                "type": "bytes32[]"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "accountId",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint128",
+                "name": "freeBalance",
+                "type": "uint128"
+            }
+        ],
+        "name": "verifyAccountProof",
+        "outputs": [],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "rootArg",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32[]",
+                "name": "proof",
+                "type": "bytes32[]"
+            },
+            {
+                "internalType": "bytes",
+                "name": "name",
+                "type": "bytes"
+            },
+            {
+                "internalType": "bytes",
+                "name": "namespace",
+                "type": "bytes"
+            },
+            {
+                "internalType": "bytes1",
+                "name": "scheme",
+                "type": "bytes1"
+            },
+            {
+                "internalType": "bytes",
+                "name": "commitment",
+                "type": "bytes"
+            }
+        ],
+        "name": "verifyCommitmentProof",
+        "outputs": [],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "treeRoot",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint32",
+                "name": "blockNumber",
+                "type": "uint32"
+            },
+            {
+                "internalType": "uint8",
+                "name": "v",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "r",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "s",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "address",
+                "name": "expectedAddress",
+                "type": "address"
+            }
+        ],
+        "name": "verifyStateRootSignature",
+        "outputs": [],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32[]",
+                "name": "proof",
+                "type": "bytes32[]"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "leaf",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "rootArg",
+                "type": "bytes32"
+            }
+        ],
+        "name": "verifyWithRoot",
+        "outputs": [],
+        "stateMutability": "pure",
+        "type": "function"
+    }
+]

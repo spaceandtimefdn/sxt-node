@@ -1,0 +1,22 @@
+[package]
+name = "on-chain-table"
+version = "0.1.0"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+ahash = { workspace = true }
+arrow = { workspace = true, optional = true }
+primitive-types = { workspace = true, features = ["impl-serde"] }
+indexmap.workspace = true
+proof-of-sql.workspace = true
+serde = { workspace = true, features = ["alloc"] }
+snafu.workspace = true
+sqlparser = { workspace = true }
+
+[features]
+std = []
+arrow = ["std", "dep:arrow"]

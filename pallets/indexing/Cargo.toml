@@ -1,0 +1,86 @@
+[package]
+name = "pallet-indexing"
+description = "FRAME pallet template for defining custom runtime logic. (polkadot v1.15.0)"
+version = "0.1.0"
+license = "Unlicense"
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+publish = false
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = [
+	"derive",
+], workspace = true }
+commitment-sql.workspace = true
+scale-info = { features = [
+	"derive",
+], workspace = true }
+frame-benchmarking = { optional = true, workspace = true }
+frame-support.workspace = true
+frame-system.workspace = true
+pallet-commitments.workspace = true
+pallet-permissions.workspace = true
+pallet-tables.workspace = true
+pallet-system-tables.workspace = true
+pallet-session.workspace = true
+hex.workspace = true
+sxt-core.workspace = true
+sp-runtime = { workspace = true, default-features = false }
+sp-core = { workspace = true, default-features = false }
+native-api = { workspace = true, default-features = false}
+postcard.workspace = true
+proof-of-sql-static-setups = { workspace = true, features = ["io"], optional = true }
+on-chain-table = { workspace = true, default-features = false }
+proof-of-sql-commitment-map = { workspace = true, optional = true }
+
+[dev-dependencies]
+sp-staking.workspace = true
+frame-election-provider-support.workspace = true
+pallet-staking-reward-curve.workspace = true
+pallet-timestamp.workspace = true
+pallet-balances.workspace = true
+pallet-staking.workspace = true
+proof-of-sql-static-setups = { workspace = true, features = ["io"] }
+sp-core.workspace = true
+sp-io.workspace = true
+sp-runtime.workspace = true
+native.workspace = true
+arrow.workspace = true
+proof-of-sql-commitment-map.workspace = true
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"frame-benchmarking?/std",
+	"frame-support/std",
+	"frame-system/std",
+	"scale-info/std",
+	"native/std",
+	"native-api/std",
+	"on-chain-table/std",
+	"pallet-commitments/std",
+	"pallet-tables/std",
+	"pallet-session/std",
+	"pallet-balances/std",
+	"pallet-staking/std",
+	"pallet-system-tables/std",
+]
+runtime-benchmarks = [
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"pallet-staking/runtime-benchmarks",
+	"pallet-system-tables/runtime-benchmarks",
+	"sp-staking/runtime-benchmarks",
+	"dep:proof-of-sql-commitment-map",
+]
+try-runtime = [
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+]

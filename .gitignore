@@ -1,0 +1,7 @@
+target/
+.idea
+.env
+*.bin
+**.key
+**.substrate
+**.eth
