@@ -38,7 +38,7 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounde
 use sxt_runtime::Runtime;
 use thiserror::Error;
 use tokio::sync::mpsc;
-use translation_layer::tx_submitter::TxSubmitter;
+use translation_layer::tx_submitter::{TxSubmitter, TxUpdate};
 use watcher::attestation;
 
 type SxtConfig = PolkadotConfig;
@@ -344,11 +344,7 @@ impl AttestationClient {
         eth_key_path: &str,
         substrate_key_path: &str,
         block_process_concurrency: usize,
-        sender: mpsc::Sender<(
-            TxProgress<PolkadotConfig, OnlineClient<PolkadotConfig>>,
-            H256,
-            Option<u64>,
-        )>,
+        sender: mpsc::Sender<TxUpdate>,
     ) -> Result<Self, AttestationError> {
         let api = OnlineClient::<PolkadotConfig>::from_insecure_url(websocket).await?;
 

@@ -6,6 +6,8 @@ use log::error;
 use subxt::{OnlineClient, PolkadotConfig};
 use tokio::sync::{mpsc, Mutex};
 
+use crate::tx_submitter::TxUpdate;
+
 /// Alias for transaction status type in a Substrate-based blockchain.
 pub type TxStatus = subxt::tx::TxStatus<PolkadotConfig, OnlineClient<PolkadotConfig>>;
 
@@ -25,7 +27,7 @@ pub struct TxProgressDb {
     /// Shared map containing transaction progress history.
     tx_map: Arc<Mutex<TxDb>>,
     /// Asynchronous receiver for transaction status updates.
-    rx: Mutex<mpsc::Receiver<TxProgress>>,
+    rx: Mutex<mpsc::Receiver<TxUpdate>>,
 }
 
 impl TxProgressDb {
@@ -36,7 +38,7 @@ impl TxProgressDb {
     ///
     /// # Returns
     /// A new instance of `TxProgressDb`.
-    pub fn new(rx: mpsc::Receiver<TxProgress>) -> Self {
+    pub fn new(rx: mpsc::Receiver<TxUpdate>) -> Self {
         Self {
             tx_map: Arc::new(Mutex::new(HashMap::new())),
             rx: Mutex::new(rx),
@@ -51,7 +53,7 @@ impl TxProgressDb {
     pub async fn run(self: Arc<Self>) {
         let mut rx = self.rx.lock().await; // Lock receiver
 
-        while let Some(progress) = rx.recv().await {
+        while let Some((progress, _, _)) = rx.recv().await {
             let tx_hash = format!("{:#x}", progress.extrinsic_hash());
             let tx_map = Arc::clone(&self.tx_map);
 

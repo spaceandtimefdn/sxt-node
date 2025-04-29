@@ -16,8 +16,16 @@ use crate::error::{Error, FetchEventsSnafu, FetchInitialNonceSnafu, Result};
 
 const MAX_RETRIES: usize = 3;
 
+/// The default header type for our chain
 pub type DefaultHeader =
     subxt::config::substrate::SubstrateHeader<u32, subxt::config::substrate::BlakeTwo256>;
+
+/// A tuple containing information about an attestation update
+pub type TxUpdate = (
+    TxProgress<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+    H256,
+    Option<u64>,
+);
 
 /// A struct responsible for submitting transactions to a Substrate-based blockchain,
 /// managing nonces, and handling retries for failed transactions.
@@ -30,11 +38,7 @@ pub struct TxSubmitter {
     /// A mutex-protected nonce value for tracking transaction sequence numbers.
     nonce: Arc<Mutex<u64>>,
     /// Sender for pushing transaction progress to `TxProgressDb`.
-    tx_sender: mpsc::Sender<(
-        TxProgress<PolkadotConfig, OnlineClient<PolkadotConfig>>,
-        H256,
-        Option<u64>,
-    )>,
+    tx_sender: mpsc::Sender<TxUpdate>,
     /// RPC url
     rpc_url: String,
 }
@@ -53,11 +57,7 @@ impl TxSubmitter {
     pub async fn new(
         client: OnlineClient<PolkadotConfig>,
         signer: Keypair,
-        tx_sender: mpsc::Sender<(
-            TxProgress<PolkadotConfig, OnlineClient<PolkadotConfig>>,
-            H256,
-            Option<u64>,
-        )>,
+        tx_sender: mpsc::Sender<TxUpdate>,
         rpc_url: String,
     ) -> Result<Self> {
         let nonce = fetch_initial_nonce(&client, &signer).await?;
