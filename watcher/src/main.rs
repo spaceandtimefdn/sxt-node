@@ -226,31 +226,34 @@ async fn main() {
             tokio::spawn(spawn_tx_progress_logger(tx_receiver, restart_tx.clone()));
 
             loop {
-                // Run the attestation client
-                match async {
-                    let client = AttestationClient::new(
-                        &args.websocket,
-                        &args.eth_key_path,
-                        &args.substrate_key_path,
-                        block_process_concurrency,
-                        tx_sender.clone(),
-                    )
-                    .await?;
-
-                    client.run().await
-                }
+                // Construct new client on every restart
+                let client = match AttestationClient::new(
+                    &args.websocket,
+                    &args.eth_key_path,
+                    &args.substrate_key_path,
+                    block_process_concurrency,
+                    tx_sender.clone(),
+                )
                 .await
                 {
-                    Ok(_) => break,
+                    Ok(c) => c,
                     Err(e) => {
-                        error!("Client error: {:?}", e);
+                        error!("❌ Failed to initialize client: {e}");
+                        break;
                     }
-                }
+                };
 
-                // Wait until the tx logger sends a restart signal
+                let handle = tokio::spawn(async move {
+                    if let Err(err) = client.run().await {
+                        error!("❌ Client error: {:?}", err);
+                    }
+                });
+
                 info!("🔁 Waiting for restart trigger...");
                 if restart_rx.changed().await.is_ok() {
                     log::warn!("🔁 Restarting attestation client due to tx failure...");
+                    handle.abort(); // Gracefully stop old run
+                    continue; // Restart
                 }
             }
         }
