@@ -12,7 +12,6 @@ event-forwarder.workspace = true
 clap = { workspace = true, features = ["derive", "env"] }
 tokio = { workspace = true, features = ["full"] }
 subxt = { workspace = true, features = ["jsonrpsee", "native", "default", "substrate-compat"] }
-subxt-signer = { workspace = true }
 sxt-core = { workspace = true, features = ["std"] }
 sxt-runtime = { workspace = true, features = ["std"] }
 log = { workspace = true }

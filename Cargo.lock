@@ -3276,7 +3276,6 @@ dependencies = [
  "prometheus 0.14.0",
  "snafu",
  "subxt",
- "subxt-signer",
  "sxt-core",
  "sxt-runtime",
  "tokio",
