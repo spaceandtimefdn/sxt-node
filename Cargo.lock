@@ -3265,38 +3265,20 @@ dependencies = [
 name = "canaries"
 version = "0.1.0"
 dependencies = [
- "alloy",
- "anyhow",
- "async-stream",
- "async-trait",
- "attestation_tree",
  "axum 0.8.1",
  "clap 4.5.32",
  "env_logger 0.11.6",
- "eth_merkle_tree",
  "event-forwarder",
- "frame-system",
- "hex",
- "jsonrpsee",
- "k256",
  "lazy_static",
  "log",
- "parity-scale-codec",
  "prometheus 0.14.0",
- "proof-of-sql-commitment-map",
- "rand_core 0.6.4",
- "reqwest 0.11.27",
- "serde_json",
- "sha3",
  "snafu",
- "sp-core",
  "subxt",
  "subxt-signer",
  "sxt-core",
  "sxt-runtime",
  "tokio",
  "url",
- "watcher",
 ]
 
 [[package]]

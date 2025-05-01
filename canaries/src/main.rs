@@ -20,6 +20,7 @@ use subxt::{OnlineClient, PolkadotConfig};
 use sxt_core::sxt_chain_runtime::api::attestations::events::BlockAttested;
 use sxt_core::sxt_chain_runtime::api::indexing::events::{DataSubmitted, QuorumReached};
 use tokio::net::TcpListener;
+use url::Url;
 
 lazy_static! {
     /// Prometheus event counter
@@ -65,7 +66,7 @@ pub struct CanaryConfig {
         env = "CANARY_RPC_URL",
         default_value = "wss://new-rpc.testnet.sxt.network"
     )]
-    pub rpc_url: String,
+    pub rpc_url: Url,
 
     /// Bind address for Prometheus metrics (e.g., 0.0.0.0:9000)
     #[arg(long, env = "CANARY_METRICS_BIND", default_value = "0.0.0.0:9000")]
