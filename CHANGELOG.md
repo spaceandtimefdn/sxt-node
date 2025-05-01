@@ -1,3 +1,12 @@
+## [0.114.7](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.114.6...v0.114.7) (2025-05-01)
+
+
+### Bug Fixes
+
+* increment runtime spec version to 222 ([4635f42](https://github.com/spaceandtimefdn/sxt-node-archive/commit/4635f42008c90ee933ce1ae0db0529c583e8e307))
+
+
+
 ## [0.114.6](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.114.5...v0.114.6) (2025-05-01)
 
 
@@ -21,15 +30,6 @@
 
 
 ## [0.114.3](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.114.2...v0.114.3) (2025-04-29)
-
-
-
-## [0.114.2](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.114.1...v0.114.2) (2025-04-29)
-
-
-### Bug Fixes
-
-* don't panic if message contract body is malformed ([6426369](https://github.com/spaceandtimefdn/sxt-node-archive/commit/6426369580f5b93a585dab6f7f68512f0148f5eb))
 
 
 
