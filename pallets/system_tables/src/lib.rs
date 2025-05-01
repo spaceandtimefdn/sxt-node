@@ -27,19 +27,14 @@ pub mod pallet {
     use frame_support::dispatch::RawOrigin;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
+    use itertools::Itertools;
     use on_chain_table::OnChainTable;
     use pallet_session::historical::IdentificationTuple;
     use parse::{table_to_request, SystemRequest};
     use sp_core::U256;
-    use sp_runtime::traits::{Bounded, Hash, StaticLookup, UniqueSaturatedInto};
-    use sp_runtime::{AccountId32, BoundedVec, Perbill, SaturatedConversion};
-    use sp_staking::offence::{
-        Offence,
-        OffenceDetails,
-        OffenceError,
-        OnOffenceHandler,
-        ReportOffence,
-    };
+    use sp_runtime::traits::{StaticLookup, UniqueSaturatedInto};
+    use sp_runtime::{Perbill, SaturatedConversion};
+    use sp_staking::offence::{OffenceDetails, OnOffenceHandler};
     use sp_staking::SessionIndex;
     use sxt_core::permissions::{PermissionLevel, PermissionList};
     use sxt_core::tables::{extract_schema_uuid, TableIdentifier, TableName, TableNamespace};
@@ -111,6 +106,10 @@ pub mod pallet {
         InvalidSessionKeys,
         /// The provided validator proof couldn't be verified
         InvalidValidatorProof,
+        /// Error parsing the list of nominated nodes from the message request
+        ErrorParsingNominations,
+        /// Empty Nomination Set
+        EmptyNominationSet,
     }
 
     #[pallet::call]
@@ -220,21 +219,41 @@ pub mod pallet {
         request
             .rows()
             .map(|row| -> DispatchResult {
-                match (row.get("NOMINATOR"), row.get("NODES")) {
+                match (row.get("NOMINATOR"), row.get("NODESED25519PUBKEYS")) {
                     (
                         Some(SystemFieldValue::Bytes(nominator)),
                         Some(SystemFieldValue::Varchar(nodes)),
                     ) => {
+                        // Parse the input string as a JSON list
+                        let parsed = sxt_core::utils::parse_address_list_json::<T>(nodes)
+                            .map_err(|_| Error::<T>::ErrorParsingNominations)?;
+
+                        let (nominations, errors): (Vec<_>, Vec<_>) =
+                            parsed.into_iter().partition_result();
+
+                        if !errors.is_empty() {
+                            log::warn!(
+                                "❌ {} invalid nominations were skipped: {:?}",
+                                errors.len(),
+                                errors
+                            );
+
+                            errors
+                                .into_iter()
+                                .for_each(|e| emit_for_error::<T>(Result::<(), _>::Err(e)));
+                        }
+
+                        if nominations.is_empty() {
+                            log::warn!("❌ All nominations failed to parse: {}", nodes);
+                            Err(Error::<T>::EmptyNominationSet)?;
+                        }
+
                         let nominator = hex::encode(nominator);
                         let nominator_id =
                             sxt_core::utils::eth_address_to_substrate_account_id::<T>(&nominator)?;
-                        let nominations =
-                            sxt_core::utils::string_to_address_list::<T>(nodes.clone());
                         let nominator_signer: OriginFor<T> = RawOrigin::Signed(nominator_id).into();
-                        pallet_staking::Pallet::<T>::nominate(
-                            nominator_signer,
-                            nominations.clone(),
-                        )?;
+
+                        pallet_staking::Pallet::<T>::nominate(nominator_signer, nominations)?;
                         Ok(())
                     }
                     _ => Err(Error::<T>::MissingExpectedField.into()),

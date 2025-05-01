@@ -131,7 +131,7 @@ fn get_system_templates() -> &'static Vec<SystemRequest> {
                 request_type: Staking(StakingSystemRequest::Nominate),
                 fields: vec![
                     ("NOMINATOR", SystemFieldType::Bytes).into(),
-                    ("NODES", Varchar).into(),
+                    ("NODESED25519PUBKEYS", Varchar).into(),
                 ],
                 table_id: TableIdentifier::from_str_unchecked("NOMINATED", "SXT_SYSTEM_STAKING"),
             },

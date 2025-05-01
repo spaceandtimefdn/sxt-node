@@ -36,6 +36,9 @@ sp-core = { workspace = true, default-features = false }
 spin.workspace = true
 sp-io.workspace = true
 hex.workspace = true
+serde_json = { workspace = true, default-features = false, features = ["alloc"] }
+log.workspace = true
+itertools.workspace = true
 
 [dev-dependencies]
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
@@ -49,6 +52,8 @@ pallet-grandpa.workspace = true
 pallet-babe.workspace = true
 pallet-authority-discovery.workspace = true
 pallet-permissions.workspace = true
+arrow = { workspace = true }
+env_logger.workspace = true
 
 sp-authority-discovery.workspace = true
 sp-consensus-babe.workspace = true
