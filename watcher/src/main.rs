@@ -463,13 +463,7 @@ impl AttestationClient {
         };
 
         if let Err(e) = self
-            .submit_transaction_with_retry(
-                block,
-                private_key,
-                keypair,
-                signature,
-                hex_decoded_state_root,
-            )
+            .submit_transaction_with_retry(block, private_key, signature, hex_decoded_state_root)
             .await
         {
             log::info!("Error submitting tx: {:?}", e);
@@ -482,7 +476,6 @@ impl AttestationClient {
         &self,
         block: BlockT<PolkadotConfig, OnlineClient<SxtConfig>>,
         private_key: &SigningKey,
-        _keypair: &Keypair, // no longer needed here, handled inside tx_submitter
         signature: EthereumSignature,
         state_root: Vec<u8>,
     ) -> Result<(), AttestationError> {
