@@ -22,6 +22,8 @@ url = { workspace = true }
 lazy_static.workspace = true
 prometheus.workspace = true
 axum = { workspace = true, default-features = true }
+anyhow.workspace = true
+async-trait.workspace = true
 
 [lints]
 workspace = true
