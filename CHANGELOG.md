@@ -1,3 +1,12 @@
+## [0.116.2](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.1...v0.116.2) (2025-05-02)
+
+
+### Bug Fixes
+
+* upgrade sci abi size to a max of 32kb ([575db1f](https://github.com/spaceandtimefdn/sxt-node-archive/commit/575db1fabc4bee719e53a009c904dd9640ad45a5))
+
+
+
 ## [0.116.1](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.0...v0.116.1) (2025-05-02)
 
 
@@ -46,15 +55,6 @@
 ### Bug Fixes
 
 * increment runtime spec version to 222 ([4635f42](https://github.com/spaceandtimefdn/sxt-node-archive/commit/4635f42008c90ee933ce1ae0db0529c583e8e307))
-
-
-
-## [0.114.6](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.114.5...v0.114.6) (2025-05-01)
-
-
-### Bug Fixes
-
-* ensure that fields in system tables nomination function match ddl ([a0e9643](https://github.com/spaceandtimefdn/sxt-node-archive/commit/a0e9643fb6f1e5edaa81b4b65176a3c1e9a46485))
 
 
 
