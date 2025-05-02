@@ -1,3 +1,7 @@
+## [0.116.4](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.3...v0.116.4) (2025-05-02)
+
+
+
 ## [0.116.3](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.2...v0.116.3) (2025-05-02)
 
 
@@ -34,22 +38,6 @@
 ### Features
 
 * canary prototype ([2994ce1](https://github.com/spaceandtimefdn/sxt-node-archive/commit/2994ce14db95bc23ecec446f5b881ecbaa3d190b))
-
-
-
-# [0.115.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.114.7...v0.115.0) (2025-05-01)
-
-
-### Bug Fixes
-
-* ensure that attestor restart is correctly handled ([1856794](https://github.com/spaceandtimefdn/sxt-node-archive/commit/18567943a5826313e121df00bd665f7dcbb789aa))
-* ensure that the attestor uses the tx_submitter and has better error tracking and logging ([7c56df4](https://github.com/spaceandtimefdn/sxt-node-archive/commit/7c56df4dd98f5c6d73f564925efdcc896a319700))
-* remove dead code ([f8117d2](https://github.com/spaceandtimefdn/sxt-node-archive/commit/f8117d2dfc2554ead1271fa93477eecb835e1fb8))
-
-
-### Features
-
-* add restart mechanism to attestor ([99e5747](https://github.com/spaceandtimefdn/sxt-node-archive/commit/99e57472748db3b329c692a8ccdadc86764d4737))
 
 
 
