@@ -27,7 +27,7 @@
   subject: [NOP name] - Testnet Sepolia ETH Wallet Address
 ```
 - The given address will receive 100 tokens which can be used to start staking
-  
+
 #### Incentives and Expectations
 * **Participation Requirements**: Validators are expected to actively participate, with a response SLA of 48 hours for notifications around actions needed from validator operators, chain upgrades, changes to testing schedule, etc.
 * **Incentive Structure**: We may choose to provide rewards to eligible Testnet participants for completing certain activities, including running nodes, performing other critical services related to the SxT Chain, and meeting certain performance criteria or other requirements. Additional details will be provided to you from time to time via Testnet-related websites and developer documentation.
@@ -54,7 +54,7 @@ The minimum system requirements for running a SXT validator node are shown in th
 | OS               | Linux           |
 | Network Speed    | 500Mbps up/down |
 
-On Azure cloud, this is equivalent to SKU `Standard_D8as_v5` with storage SKU of `PremiumV2_SSD`.
+On Azure cloud, this is equivalent to SKU `Standard_D16as_v5` with storage SKU of `PremiumV2_SSD`.
 
 ### 1.2. Downloads
 #### 1.2.1. Docker Image
