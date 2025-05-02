@@ -91,7 +91,7 @@ async fn main() -> Result<(), CanaryError> {
     });
 
     // Connect to the Substrate node
-    let api = OnlineClient::<PolkadotConfig>::from_url(&config.rpc_url)
+    let api = OnlineClient::<PolkadotConfig>::from_insecure_url(&config.rpc_url)
         .await
         .context(ApiConnectionSnafu)?;
 
