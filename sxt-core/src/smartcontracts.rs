@@ -34,8 +34,8 @@ pub type ContractAddress = BoundedVec<u8, ConstU32<64>>;
 
 /// A bounded vector representing the ABI (Application Binary Interface) of a smart contract.
 ///
-/// This is stored as a byte array with a maximum length of 8192 bytes.
-pub type ContractABI = BoundedVec<u8, ConstU32<8192>>;
+/// This is stored as a byte array with a maximum length of 32,768 bytes.
+pub type ContractABI = BoundedVec<u8, ConstU32<32_768>>;
 
 /// Represents a smart contract, which can either be:
 /// - `Normal`: A standard smart contract.
