@@ -74,7 +74,7 @@ curve25519-dalek = { version = "4.1.3", default-features = false }
 frame-benchmarking-cli = { version = "43.0.0", default-features = false }
 frame-system = { version = "38.0.0", default-features = false }
 futures = { version = "0.3.30" }
-indexmap = { version = "2.5.0", default-features = false }
+indexmap = { version = "2.8.0", default-features = false }
 itertools = { version = "0.12.1", default-features = false }
 jsonrpsee = { version = "0.24.3" }
 lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
