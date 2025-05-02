@@ -1,3 +1,12 @@
+## [0.116.1](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.0...v0.116.1) (2025-05-02)
+
+
+### Bug Fixes
+
+* allow canaries use insecure url on devnet ([74ae32e](https://github.com/spaceandtimefdn/sxt-node-archive/commit/74ae32eea5ddf39561be4348bba0663b7abf504d))
+
+
+
 # [0.116.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.115.0...v0.116.0) (2025-05-01)
 
 
@@ -46,10 +55,6 @@
 ### Bug Fixes
 
 * ensure that fields in system tables nomination function match ddl ([a0e9643](https://github.com/spaceandtimefdn/sxt-node-archive/commit/a0e9643fb6f1e5edaa81b4b65176a3c1e9a46485))
-
-
-
-## [0.114.5](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.114.4...v0.114.5) (2025-04-30)
 
 
 
