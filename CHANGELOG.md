@@ -1,3 +1,7 @@
+## [0.116.3](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.2...v0.116.3) (2025-05-02)
+
+
+
 ## [0.116.2](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.1...v0.116.2) (2025-05-02)
 
 
@@ -46,15 +50,6 @@
 ### Features
 
 * add restart mechanism to attestor ([99e5747](https://github.com/spaceandtimefdn/sxt-node-archive/commit/99e57472748db3b329c692a8ccdadc86764d4737))
-
-
-
-## [0.114.7](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.114.6...v0.114.7) (2025-05-01)
-
-
-### Bug Fixes
-
-* increment runtime spec version to 222 ([4635f42](https://github.com/spaceandtimefdn/sxt-node-archive/commit/4635f42008c90ee933ce1ae0db0529c583e8e307))
 
 
 
