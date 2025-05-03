@@ -1,3 +1,12 @@
+# [0.117.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.5...v0.117.0) (2025-05-03)
+
+
+### Features
+
+* upgrade spec version to 223 ([63bba2d](https://github.com/spaceandtimefdn/sxt-node-archive/commit/63bba2dada8574bbf8fecfcf05a93efd33c965f1))
+
+
+
 ## [0.116.5](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.4...v0.116.5) (2025-05-03)
 
 
@@ -21,15 +30,6 @@
 ### Bug Fixes
 
 * upgrade sci abi size to a max of 32kb ([575db1f](https://github.com/spaceandtimefdn/sxt-node-archive/commit/575db1fabc4bee719e53a009c904dd9640ad45a5))
-
-
-
-## [0.116.1](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.0...v0.116.1) (2025-05-02)
-
-
-### Bug Fixes
-
-* allow canaries use insecure url on devnet ([74ae32e](https://github.com/spaceandtimefdn/sxt-node-archive/commit/74ae32eea5ddf39561be4348bba0663b7abf504d))
 
 
 
