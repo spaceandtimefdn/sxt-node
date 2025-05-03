@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04-8core, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - if: contains(matrix.os, 'ubuntu')
+        uses: ./.github/actions/free-disk-space
+      - if: contains(matrix.os, 'ubuntu')
+        uses: ./.github/actions/ubuntu-dependencies
+      - if: contains(matrix.os, 'macos')
+        uses: ./.github/actions/macos-dependencies
+       
+      - name: Run fmt
+        run: cargo fmt --all --check -- --config imports_granularity=Module,group_imports=StdExternalCrate,imports_layout=HorizontalVertical
+        timeout-minutes: 30
+
+      - name: Run clippy
+        run: |
+          SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --quiet -- -Dclippy::all -Dmissing_docs
+          SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --workspace --quiet -- -Dclippy::all -Dmissing_docs
+        timeout-minutes: 30
+
+      - name: Run the tests
+        run: SKIP_WASM_BUILD=1 cargo test
+        timeout-minutes: 30
+
+      - name: Run the benchmark tests
+        run: SKIP_WASM_BUILD=1 cargo test --features runtime-benchmarks -- bench
+        timeout-minutes: 30
+
+      - name: Build the docs
+        run: SKIP_WASM_BUILD=1 cargo doc --workspace --no-deps
+        timeout-minutes: 15
+
+      - name: Build the template
+        run: cargo build --release --bin sxt-node
+        timeout-minutes: 90
+
+      - name: Prepare binary for upload
+        run: |
+          mkdir -p artifacts
+          cp ./target/release/sxt-node artifacts/
+
+      - name: Upload built binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: sxt-node-binary-${{ matrix.os }}-${{ github.run_id }}
+          path: artifacts/
+
+
+
+  run-node:
+    runs-on: ${{ matrix.os }}
+    needs: build # Wait for build step to finish
+    strategy:
+      matrix:
+        os: [ubuntu-22.04-8core, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - if: contains(matrix.os, 'ubuntu')
+        uses: ./.github/actions/free-disk-space
+      - if: contains(matrix.os, 'ubuntu')
+        uses: ./.github/actions/ubuntu-dependencies
+      - if: contains(matrix.os, 'macos')
+        uses: ./.github/actions/macos-dependencies
+
+      - name: Download built binary
+        uses: actions/download-artifact@v4
+        with:
+          name: sxt-node-binary-${{ matrix.os }}-${{ github.run_id }}
+          path: ./target/release/
+        
+      - name: Set executable permissions on the binary
+        run: chmod +x ./target/release/sxt-node
+
+      - name: Make sure the node is on and past the genesis change
+        run: |
+          ./target/release/sxt-node --disable-log-color --chain chainspecs/raw/testnet-spec.json 2>&1 | tee out.txt &
+          until curl -s '127.0.0.1:9944'; do sleep 5; done
+          until cat out.txt | grep -s "Idle (0 peers)"; do sleep 5; done
+        env:
+          HYPER_KZG_PUBLIC_SETUP_RELEASE_DEGREE: "02"
+          HYPER_KZG_PUBLIC_SETUP_SHA256: "1821173e2452afb5ad77ff8ef740140cd5e57b9b847d8b6edb81e04897b1efe4"
+        shell: bash
+        timeout-minutes: 5
+
+  build-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/free-disk-space
+      - uses: ./.github/actions/ubuntu-dependencies
+
+      - name: Build the Dockerfile
+        run: |-
+          cargo build --locked --release
+          docker buildx version
+          docker buildx ls
+          docker buildx build -f ./sxtnode.Dockerfile . -t sxt-node
+        timeout-minutes: 90
