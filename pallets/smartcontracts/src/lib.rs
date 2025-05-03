@@ -16,12 +16,16 @@ mod tests;
 pub mod weights;
 pub use weights::*;
 
+/// Native pallet functionality
+pub mod native_pallet;
+
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::pallet_prelude::{OptionQuery, StorageDoubleMap, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
+    use native_api::NativeApi;
     use pallet_tables::UpdateTableList;
     use scale_info::prelude::vec::Vec;
     use sxt_core::permissions::{PermissionLevel, SmartContractsPalletPermission};
@@ -32,15 +36,19 @@ pub mod pallet {
 
     /// Pallet structure (marker type)
     #[pallet::pallet]
-    pub struct Pallet<T>(_);
+    pub struct Pallet<T, I = ()>(_);
 
     /// Pallet Configuration Trait
     #[pallet::config]
-    pub trait Config:
-        frame_system::Config + pallet_permissions::Config + pallet_tables::Config
+    pub trait Config<I: 'static = ()>:
+        frame_system::Config
+        + pallet_permissions::Config
+        + pallet_tables::Config
+        + pallet_indexing::Config<I>
     {
         /// The overarching runtime event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self, I>>
+            + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         /// A type representing the weights required by dispatchable functions of this pallet.
         type WeightInfo: WeightInfo;
@@ -48,7 +56,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn normal_contracts)]
-    pub type ContractStorage<T: Config> = StorageDoubleMap<
+    pub type ContractStorage<T: Config<I>, I: 'static = ()> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         Source,
@@ -60,7 +68,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn contract_tables)]
-    pub type ContractTables<T: Config> = StorageDoubleMap<
+    pub type ContractTables<T: Config<I>, I: 'static = ()> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         Source,
@@ -73,7 +81,7 @@ pub mod pallet {
     /// Events for the Pallet
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config> {
+    pub enum Event<T: Config<I>, I: 'static = ()> {
         /// A smart contract was added to storage.
         SmartContractAdded {
             /// owner
@@ -97,7 +105,7 @@ pub mod pallet {
 
     /// Errors for the Pallet (Not used yet but reserved for future use)
     #[pallet::error]
-    pub enum Error<T> {
+    pub enum Error<T, I = ()> {
         /// A contract already exists for the source and address you requested
         ExistingContractError,
 
@@ -113,7 +121,10 @@ pub mod pallet {
 
     /// Callable Functions (Extrinsics)
     #[pallet::call]
-    impl<T: Config> Pallet<T> {
+    impl<T: Config<I>, I: 'static> Pallet<T, I>
+    where
+        I: NativeApi,
+    {
         /// **Remove a Smart Contract Entry**
         ///
         /// Deletes a smart contract entry from storage.
@@ -125,7 +136,7 @@ pub mod pallet {
         ///
         /// **Emits:** `SmartContractRemoved`
         #[pallet::call_index(1)]
-        #[pallet::weight(<T as pallet::Config>::WeightInfo::remove_smartcontract())]
+        #[pallet::weight(<T as pallet::Config<I>>::WeightInfo::remove_smartcontract())]
         pub fn remove_smartcontract(
             origin: OriginFor<T>,
             source: Source,
@@ -138,9 +149,9 @@ pub mod pallet {
             )?;
 
             // Remove the contract from storage
-            ContractStorage::<T>::remove(&source, &address);
+            ContractStorage::<T, I>::remove(&source, &address);
 
-            if let Some(table_ids) = ContractTables::<T>::take(&source, &address) {
+            if let Some(table_ids) = ContractTables::<T, I>::take(&source, &address) {
                 for (ident, table_type) in table_ids {
                     pallet_tables::Pallet::<T>::drop_single_table(table_type, ident.clone())?;
                     pallet_tables::Pallet::<T>::remove_commits(ident);
@@ -180,7 +191,7 @@ pub mod pallet {
         ///     - [`pallet_permissions::Pallet::ensure_root_or_permissioned`] if origin is unauthorized.
         ///     - [`pallet_tables::Pallet::create_tables_inner`] if any table creation fails.
         #[pallet::call_index(2)]
-        #[pallet::weight(<T as pallet::Config>::WeightInfo::add_smartcontract())]
+        #[pallet::weight(<T as pallet::Config<I>>::WeightInfo::add_smartcontract())]
         pub fn add_smartcontract(
             origin: OriginFor<T>,
             contract: Contract,
@@ -192,39 +203,49 @@ pub mod pallet {
                 &PermissionLevel::SmartContractsPallet(SmartContractsPalletPermission::UpdateABI),
             )?;
 
-            let (source, address, target_schema, ddl_statement) = match contract.clone() {
-                Contract::Normal(normal_contract) => (
-                    normal_contract.details.source,
-                    normal_contract.details.address,
-                    normal_contract.details.target_schema,
-                    normal_contract.details.ddl_statement,
-                ),
-                Contract::Proxy(proxy_contract) => (
-                    proxy_contract.details.source,
-                    proxy_contract.details.address,
-                    proxy_contract.details.target_schema,
-                    proxy_contract.details.ddl_statement,
-                ),
-            };
+            let (source, address, target_schema, ddl_statement, starting_block) =
+                match contract.clone() {
+                    Contract::Normal(normal_contract) => (
+                        normal_contract.details.source,
+                        normal_contract.details.address,
+                        normal_contract.details.target_schema,
+                        normal_contract.details.ddl_statement,
+                        normal_contract.details.starting_block,
+                    ),
+                    Contract::Proxy(proxy_contract) => (
+                        proxy_contract.details.source,
+                        proxy_contract.details.address,
+                        proxy_contract.details.target_schema,
+                        proxy_contract.details.ddl_statement,
+                        proxy_contract.details.starting_block,
+                    ),
+                };
 
             ensure!(
-                !ContractStorage::<T>::contains_key(source.clone(), address.clone()),
-                Error::<T>::ExistingContractError
+                !ContractStorage::<T, I>::contains_key(source.clone(), address.clone()),
+                Error::<T, I>::ExistingContractError
             );
 
-            ContractStorage::<T>::insert(source.clone(), address.clone(), contract);
+            ContractStorage::<T, I>::insert(source.clone(), address.clone(), contract);
 
             let table_ids: BoundedVec<_, _> = tables
                 .iter()
                 .map(|t| (t.ident.clone(), t.table_type.clone()))
                 .collect::<Vec<_>>()
                 .try_into()
-                .map_err(|_| Error::<T>::TooManyTables)?; // Add this error variant if needed
+                .map_err(|_| Error::<T, I>::TooManyTables)?; // Add this error variant if needed
 
-            ContractTables::<T>::insert(&source, &address, table_ids);
+            ContractTables::<T, I>::insert(&source, &address, &table_ids);
 
-            let target_schema = target_schema.ok_or(Error::<T>::MissingTargetSchema)?;
-            let ddl_statement = ddl_statement.ok_or(Error::<T>::MissingDdlStatement)?;
+            // If a starting block is provided, insert it into pallet_indexing for each table
+            if let Some(start_block) = starting_block {
+                for (ident, _) in table_ids.iter() {
+                    pallet_indexing::BlockNumbers::<T, I>::insert(ident, start_block);
+                }
+            }
+
+            let target_schema = target_schema.ok_or(Error::<T, I>::MissingTargetSchema)?;
+            let ddl_statement = ddl_statement.ok_or(Error::<T, I>::MissingDdlStatement)?;
 
             pallet_tables::Pallet::<T>::create_namespace(
                 origin.clone(),

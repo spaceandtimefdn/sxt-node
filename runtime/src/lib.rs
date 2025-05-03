@@ -781,7 +781,7 @@ impl pallet_system_contracts::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
-impl pallet_smartcontracts::Config for Runtime {
+impl pallet_smartcontracts::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_smartcontracts::weights::SubstrateWeight<Runtime>;
 }
@@ -876,7 +876,7 @@ mod runtime {
     #[runtime::pallet_index(105)]
     pub type Keystore = pallet_keystore;
     #[runtime::pallet_index(106)]
-    pub type Smartcontracts = pallet_smartcontracts;
+    pub type Smartcontracts = pallet_smartcontracts::native_pallet::Pallet<Runtime>;
     #[runtime::pallet_index(107)]
     pub type SystemTables = pallet_system_tables;
     #[runtime::pallet_index(108)]

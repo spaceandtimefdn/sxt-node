@@ -11123,17 +11123,31 @@ dependencies = [
 name = "pallet-smartcontracts"
 version = "0.1.0"
 dependencies = [
+ "arrow 54.2.1",
  "frame-benchmarking",
+ "frame-election-provider-support",
  "frame-support",
  "frame-system",
+ "native",
+ "native-api",
+ "pallet-balances",
  "pallet-commitments",
+ "pallet-indexing",
  "pallet-permissions",
+ "pallet-session",
+ "pallet-staking",
+ "pallet-staking-reward-curve",
+ "pallet-system-tables",
  "pallet-tables",
+ "pallet-timestamp",
  "parity-scale-codec",
+ "proof-of-sql-commitment-map",
+ "proof-of-sql-static-setups",
  "scale-info",
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-staking 36.0.0",
  "sxt-core",
 ]
 

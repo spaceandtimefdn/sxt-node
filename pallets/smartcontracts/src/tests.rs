@@ -1,5 +1,6 @@
 use frame_support::storage::bounded_vec::BoundedVec;
 use frame_support::{assert_noop, assert_ok};
+use native_api::Api;
 use sxt_core::permissions::{
     PermissionLevel,
     PermissionList,
@@ -87,7 +88,7 @@ fn add_smartcontract_works() {
 
         // Verify storage
         assert_eq!(
-            ContractStorage::<Test>::get(source.clone(), contract_address.clone()),
+            ContractStorage::<Test, Api>::get(source.clone(), contract_address.clone()),
             Some(normal_contract)
         );
 
@@ -154,7 +155,7 @@ fn add_proxy_smartcontract_works() {
 
         // Verify storage
         assert_eq!(
-            ContractStorage::<Test>::get(source.clone(), proxy_address.clone()),
+            ContractStorage::<Test, Api>::get(source.clone(), proxy_address.clone()),
             Some(proxy_contract)
         );
 
@@ -213,7 +214,7 @@ fn add_existing_smartcontract_fails() {
                 normal_contract.clone(),
                 Default::default(),
             ),
-            Error::<Test>::ExistingContractError
+            Error::<Test, Api>::ExistingContractError
         );
     });
 }
@@ -248,10 +249,14 @@ fn remove_smartcontract_works() {
         });
 
         // Insert contract first
-        ContractStorage::<Test>::insert(source.clone(), contract_address.clone(), normal_contract);
+        ContractStorage::<Test, Api>::insert(
+            source.clone(),
+            contract_address.clone(),
+            normal_contract,
+        );
 
         // Ensure it exists
-        assert!(ContractStorage::<Test>::contains_key(
+        assert!(ContractStorage::<Test, Api>::contains_key(
             &source,
             &contract_address
         ));
@@ -264,7 +269,7 @@ fn remove_smartcontract_works() {
         ));
 
         // Verify removal
-        assert!(!ContractStorage::<Test>::contains_key(
+        assert!(!ContractStorage::<Test, Api>::contains_key(
             &source,
             &contract_address
         ));
@@ -293,7 +298,7 @@ fn remove_nonexistent_smartcontract_does_not_fail() {
         set_permission!(who);
 
         // Ensure it doesn't exist
-        assert!(!ContractStorage::<Test>::contains_key(
+        assert!(!ContractStorage::<Test, Api>::contains_key(
             &source,
             &contract_address
         ));
@@ -306,7 +311,7 @@ fn remove_nonexistent_smartcontract_does_not_fail() {
         ));
 
         // Storage should still be empty
-        assert!(!ContractStorage::<Test>::contains_key(
+        assert!(!ContractStorage::<Test, Api>::contains_key(
             &source,
             &contract_address
         ));

@@ -25,12 +25,26 @@ frame-system.workspace = true
 sxt-core.workspace = true
 pallet-permissions.workspace = true 
 pallet-tables.workspace = true 
+pallet-indexing.workspace = true
+native-api = { workspace = true, default-features = false}
 
 [dev-dependencies]
 pallet-commitments.workspace = true
 sp-core = { default-features = true, workspace = true }
 sp-io = { default-features = true, workspace = true }
 sp-runtime = { default-features = true, workspace = true }
+pallet-system-tables.workspace = true
+sp-staking.workspace = true
+frame-election-provider-support.workspace = true
+pallet-staking-reward-curve.workspace = true
+pallet-timestamp.workspace = true
+pallet-balances.workspace = true
+pallet-staking.workspace = true
+proof-of-sql-static-setups = { workspace = true, features = ["io"] }
+native.workspace = true
+arrow.workspace = true
+proof-of-sql-commitment-map.workspace = true
+pallet-session.workspace = true
 
 [features]
 default = ["std"]
@@ -42,6 +56,9 @@ std = [
 	"scale-info/std",
 	"sxt-core/std",
 	"pallet-permissions/std",
+	"pallet-tables/std",
+	"pallet-indexing/std",
+	"native-api/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
