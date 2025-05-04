@@ -21,29 +21,13 @@ RUN useradd -m -u 1001 -U -s /bin/sh -d /sxtuser sxtuser && \
     rm -rf /var/lib/apt/lists/*
 
 
-# Default environment variables for Flightsql-pg
-# These can be overridden in helm or docker startup.
-# Flightsql relies on Postgres as DB.
-ENV POSTGRES_DB=postgres
-ENV POSTGRES_USER=postgres
-ENV POSTGRES_PASSWORD=postgres
 ENV DATABASE_URL="postgresql://localhost:5432/postgres?user=postgres&password=postgres"
-ENV HOST="127.0.0.1"
-ENV PORT="50555"
-ENV FLIGHTSQL_USER="admin"
-ENV FLIGHTSQL_PASSWORD="admin"
 ENV AZURE_ENDPOINT="https://opspublicblockssandboxst.blob.core.windows.net"
 ENV AZURE_ACCOUNT_NAME="opspublicblockssandboxst"
 ENV AZURE_CONTAINER_NAME="ops-publicblocks-sandbox-stdl-wus2"
 ENV AZURE_BASE_PATH="/v0/ETHEREUM"
 ENV RUST_LOG="info"
 
-
-# Install Flight-SQL
-ARG FLIGHTSQL_PG_SERVICE="https://spaceandtime.jfrog.io/artifactory/dw-generic-local/flightsql-pg/0.1-16d2f5f/x86/flightsql-pg"
-RUN --mount=type=secret,id=ARTIFACTORY_LOGIN  \
-    curl --user $(cat /run/secrets/ARTIFACTORY_LOGIN) $FLIGHTSQL_PG_SERVICE --output /usr/local/bin/flightsql-pg &&  \
-    chmod +x /usr/local/bin/flightsql-pg
 
 # Copy the built application from workspace
 COPY --chmod=755 target/release/sxt-node /usr/local/bin
