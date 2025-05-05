@@ -107,10 +107,6 @@ impl<'a> TableBuilder<'a> {
 
                 CommitmentCreationCmd::FromSnapshot(snapshot, scheme)
             }
-            (None, None, None) => CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
-                hyper_kzg: false,
-                dynamic_dory: true,
-            }),
             _ => CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
                 hyper_kzg: true,
                 dynamic_dory: true,

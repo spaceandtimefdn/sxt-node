@@ -176,11 +176,11 @@ pub struct TableRequest {
     /// The Data Definition Language (DDL) statement defining tnkhe table schema.
     pub ddl_statement: String,
     /// commitment data
-    pub commitment: String,
+    pub commitment: Option<String>,
     /// snapshot location
-    pub snapshot_url: String,
+    pub snapshot_url: Option<String>,
     /// commitment scheme
-    pub commitment_scheme: CommitmentScheme,
+    pub commitment_scheme: Option<CommitmentScheme>,
     /// Source chain
     pub source: ApiSource,
 }

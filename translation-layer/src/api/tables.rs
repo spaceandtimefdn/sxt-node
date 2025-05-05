@@ -62,28 +62,35 @@ pub async fn create_table(
     let mut table_creator = TableCreator::new();
 
     for table in request.iter() {
-        let decoded_commitment = match hex::decode(table.commitment.trim_start_matches("0x")) {
-            Ok(bytes) => bytes,
-            Err(_) => {
-                return Json(ApiResponse {
-                    success: false,
-                    err_msg: Some("Invalid hex commitment".into()),
-                    tx_hash: None,
-                });
-            }
-        };
-
-        table_creator
+        let mut builder = table_creator
             .add_table()
             .identifier(&table.table_name, &table.schema_name)
             .ddl_statement(&table.ddl_statement)
             .table_type(table.table_type.clone().into())
-            .commitment_scheme(table.commitment_scheme.clone())
-            .commitment(&decoded_commitment)
-            .source(table.source.clone())
-            .snapshot_url(&table.snapshot_url)
-            .add();
+            .source(table.source.clone());
+    
+        if let (Some(commitment_hex), Some(scheme), Some(snapshot)) = (&table.commitment, &table.commitment_scheme, &table.snapshot_url) {
+            match hex::decode(commitment_hex.trim_start_matches("0x")) {
+                Ok(decoded_commitment) => {
+                    builder = builder
+                        .commitment_scheme(scheme.clone())
+                        .commitment(&decoded_commitment)
+                        .snapshot_url(snapshot);
+                }
+                Err(_) => {
+                    return Json(ApiResponse {
+                        success: false,
+                        err_msg: Some("Invalid hex commitment".into()),
+                        tx_hash: None,
+                    });
+                }
+            }
+        }
+    
+        builder.add();
     }
+    
+    
 
     let tx = table_creator.build();
 
