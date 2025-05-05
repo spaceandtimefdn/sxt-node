@@ -82,8 +82,12 @@ pub async fn add_smartcontract(
             .ddl_statement(&table.ddl_statement)
             .table_type(table.table_type.clone().into())
             .source(table.source.clone());
-    
-        if let (Some(commitment_hex), Some(scheme), Some(snapshot)) = (&table.commitment, &table.commitment_scheme, &table.snapshot_url) {
+
+        if let (Some(commitment_hex), Some(scheme), Some(snapshot)) = (
+            &table.commitment,
+            &table.commitment_scheme,
+            &table.snapshot_url,
+        ) {
             match hex::decode(commitment_hex.trim_start_matches("0x")) {
                 Ok(decoded_commitment) => {
                     builder = builder
@@ -100,11 +104,10 @@ pub async fn add_smartcontract(
                 }
             }
         }
-    
+
         builder.add();
     }
-    
-    
+
     let tables = BoundedVec(table_creator.tables());
     let tx = sxt_chain_runtime::api::tx()
         .smartcontracts()
