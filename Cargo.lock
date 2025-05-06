@@ -20486,6 +20486,7 @@ dependencies = [
  "sxt-runtime",
  "thiserror 2.0.12",
  "tokio",
+ "tokio-stream",
  "translation-layer",
 ]
 

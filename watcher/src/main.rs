@@ -40,6 +40,10 @@ use thiserror::Error;
 use tokio::sync::{mpsc, watch};
 use translation_layer::tx_submitter::{TxSubmitter, TxUpdate};
 use watcher::attestation;
+    use tokio::sync::Semaphore;
+    use std::sync::Arc;
+    use tokio::time::{timeout, Duration};
+    
 
 type SxtConfig = PolkadotConfig;
 
@@ -252,8 +256,9 @@ async fn main() {
                 info!("🔁 Waiting for restart trigger...");
                 if restart_rx.changed().await.is_ok() {
                     log::warn!("🔁 Restarting attestation client due to tx failure...");
-                    handle.abort(); // Gracefully stop old run
-                    continue; // Restart
+                    handle.abort(); // Tell the task to stop
+                    let _ = handle.await; 
+                    continue; // Then restart
                 }
             }
         }
@@ -272,8 +277,7 @@ async fn main() {
     }
 }
 
-/// Monitor the incoming tx progress from the tx_receiver
-/// If we receieve in Invalid or Dropped update we send the signal to restart the attestor
+
 async fn spawn_tx_progress_logger(
     mut tx_receiver: tokio::sync::mpsc::Receiver<TxUpdate>,
     restart_trigger: tokio::sync::watch::Sender<()>,
@@ -283,47 +287,62 @@ async fn spawn_tx_progress_logger(
 
         let restart_trigger = restart_trigger.clone();
         tokio::spawn(async move {
-            while let Some(status) = progress.next().await {
-                match status {
-                    Ok(TxStatus::Validated) => {
-                        log::info!("📄 Attestation for block #{block_number}: validated.");
-                    }
-                    Ok(TxStatus::Broadcasted { num_peers }) => {
-                        log::info!("📡 Attestation for block #{block_number}: broadcasted to {num_peers} peers");
-                    }
-                    Ok(TxStatus::InBestBlock(details)) => {
-                        log::info!(
-                            "📦 Attestation for block #{block_number}: in best block {:?}",
-                            details.block_hash()
-                        );
-                    }
-                    Ok(TxStatus::InFinalizedBlock(details)) => {
-                        log::info!(
-                            "✅ Attestation for block #{block_number}: finalized in block {:?}",
-                            details.block_hash()
-                        );
-                    }
-                    Ok(TxStatus::Dropped { message }) => {
-                        log::warn!("⚠️ Attestation for block #{block_number}: dropped: {message}");
-                        let _ = restart_trigger.send(());
-                    }
-                    Ok(TxStatus::Invalid { message }) => {
-                        log::error!("❌ Attestation for block #{block_number}: invalid: {message}");
-                        let _ = restart_trigger.send(());
-                    }
-                    Ok(TxStatus::Error { message }) => {
-                        log::error!("❌ Attestation for block #{block_number}: error: {message}");
-                    }
-                    Ok(TxStatus::NoLongerInBestBlock) => {
-                        log::warn!(
-                            "⚠️ Attestation for block #{block_number}: no longer in best block"
-                        );
-                    }
-                    Err(e) => {
+            loop {
+                match timeout(Duration::from_secs(30), progress.next()).await {
+                    Ok(Some(Ok(status))) => match status {
+                        TxStatus::Validated => {
+                            log::info!("📄 Attestation for block #{block_number}: validated.");
+                        }
+                        TxStatus::Broadcasted { num_peers } => {
+                            log::info!("📡 Attestation for block #{block_number}: broadcasted to {num_peers} peers");
+                        }
+                        TxStatus::InBestBlock(details) => {
+                            log::info!(
+                                "📦 Attestation for block #{block_number}: in best block {:?}",
+                                details.block_hash()
+                            );
+                        }
+                        TxStatus::InFinalizedBlock(details) => {
+                            log::info!(
+                                "✅ Attestation for block #{block_number}: finalized in block {:?}",
+                                details.block_hash()
+                            );
+                            break; // tx is done
+                        }
+                        TxStatus::Dropped { message } => {
+                            log::warn!("⚠️ Attestation for block #{block_number}: dropped: {message}");
+                            let _ = restart_trigger.send(());
+                            break;
+                        }
+                        TxStatus::Invalid { message } => {
+                            log::error!("❌ Attestation for block #{block_number}: invalid: {message}");
+                            let _ = restart_trigger.send(());
+                            break;
+                        }
+                        TxStatus::Error { message } => {
+                            log::error!("❌ Attestation for block #{block_number}: error: {message}");
+                        }
+                        TxStatus::NoLongerInBestBlock => {
+                            log::warn!("⚠️ Attestation for block #{block_number}: no longer in best block");
+                        }
+                    },
+                    Ok(Some(Err(e))) => {
                         log::error!(
                             "❌ Attestation for block #{block_number}: progress error: {}",
                             e
                         );
+                        break;
+                    }
+                    Ok(None) => {
+                        log::warn!(
+                            "⚠️ Attestation for block #{block_number}: progress stream ended."
+                        );
+                        let _ = restart_trigger.send(());
+                        break;
+                    }
+                    Err(_) => {
+                        log::warn!("⏱️ Timeout waiting for attestation progress on block #{block_number}. Triggering restart.");
+                        let _ = restart_trigger.send(());
                         break;
                     }
                 }
@@ -384,9 +403,11 @@ impl AttestationClient {
         })
     }
 
+
     async fn run(&self) -> Result<(), AttestationError> {
         let eth_signing_key = load_ethereum_key(&self.eth_key_path)?;
         let substrate_key = load_substrate_key(&self.substrate_key_path)?;
+
 
         self.api
             .blocks()
@@ -398,10 +419,10 @@ impl AttestationClient {
                     .await;
             })
             .await;
-
+            
         Ok(())
     }
-
+    
     async fn process_block(
         &self,
         block_result: Result<SxtBlock, subxt::Error>,
