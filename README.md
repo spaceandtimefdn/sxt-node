@@ -304,6 +304,44 @@ You’ll receive a response like:
   ![Etherscan Register Keys Transaction](./assets/message.png)
 
 ---
+### Converting EVM Address to SS58 Format
+
+If you need to derive the **SS58 validator address** from your Ethereum address (e.g., for nomination or validator verification), follow the steps below.
+
+#### Step 1: Construct the Public Key Input
+
+Prepend your Ethereum address with 24 leading zero bytes (48 hex characters: `0x000000000000000000000000`) so that the full length becomes 32 bytes.
+
+For example, if your Ethereum address is:
+
+```
+0xXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+Then the corresponding 32-byte public key input is:
+
+```
+0x000000000000000000000000XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+#### Step 2: Inspect the Key Using `sxt-node`
+
+Use the following Docker command to convert the 32-byte key into the SS58 address format used by the SXT Chain:
+
+```bash
+docker exec -it $(docker ps -q -f volume=sxt-testnet-data) /usr/local/bin/sxt-node key inspect --public 0x000000000000000000000000XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+You will receive output that includes the SS58 address:
+
+```
+SS58 Address: 5FhXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+You can now use this address for validator nomination, monitoring, or other chain operations that require the Substrate-style SS58 format.
+
+> **Note:** This conversion is deterministic and allows direct mapping from Ethereum keys to SXT Chain SS58 keys for interoperability between Ethereum-based staking and Substrate-based identity management.
+---
 
 ## How to Nominate (Optional)
 
