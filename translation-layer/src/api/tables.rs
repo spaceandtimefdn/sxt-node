@@ -171,6 +171,7 @@ pub async fn drop_table(
             name: BoundedVec(request.table_name.into()),
             namespace: BoundedVec(request.schema_name.into()),
         },
+        request.source.into(),
     );
 
     let submitter_opt = match state.network {

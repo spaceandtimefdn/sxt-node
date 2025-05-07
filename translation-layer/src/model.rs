@@ -182,7 +182,7 @@ pub struct TableRequest {
     /// commitment scheme
     pub commitment_scheme: Option<CommitmentScheme>,
     /// Source chain
-    pub source: ApiSource,
+    pub source: ChainSource,
 }
 
 /// Represents quorum settings for table creation.
@@ -464,7 +464,7 @@ pub struct DropTableRequest {
     /// The table name to drop.
     pub table_name: String,
     /// The source blockchain network.
-    pub source: String,
+    pub source: ChainSource,
     /// The indexing mode.
     pub mode: String,
     /// Table type
@@ -621,7 +621,7 @@ pub enum CommitmentScheme {
 /// Translation layer version of sxt-core/src/tables.rs Source
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")] // Optional: camelCase variant names in JSON
-pub enum ApiSource {
+pub enum ChainSource {
     /// Ethereum mainnet
     Ethereum,
 
@@ -643,15 +643,15 @@ pub enum ApiSource {
 
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::Source as RuntimeSource;
 
-impl From<ApiSource> for RuntimeSource {
-    fn from(api: ApiSource) -> Self {
+impl From<ChainSource> for RuntimeSource {
+    fn from(api: ChainSource) -> Self {
         match api {
-            ApiSource::Ethereum => RuntimeSource::Ethereum,
-            ApiSource::Sepolia => RuntimeSource::Sepolia,
-            ApiSource::Bitcoin => RuntimeSource::Bitcoin,
-            ApiSource::Polygon => RuntimeSource::Polygon,
-            ApiSource::ZkSyncEra => RuntimeSource::ZkSyncEra,
-            ApiSource::UserCreated(s) => RuntimeSource::UserCreated(BoundedVec(s.into_bytes())),
+            ChainSource::Ethereum => RuntimeSource::Ethereum,
+            ChainSource::Sepolia => RuntimeSource::Sepolia,
+            ChainSource::Bitcoin => RuntimeSource::Bitcoin,
+            ChainSource::Polygon => RuntimeSource::Polygon,
+            ChainSource::ZkSyncEra => RuntimeSource::ZkSyncEra,
+            ChainSource::UserCreated(s) => RuntimeSource::UserCreated(BoundedVec(s.into_bytes())),
         }
     }
 }

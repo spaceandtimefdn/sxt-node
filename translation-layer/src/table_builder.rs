@@ -10,7 +10,7 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
 };
 use sxt_core::sxt_chain_runtime::api::tables::calls::types::CreateTables;
 
-use crate::model::{ApiSource, CommitmentScheme};
+use crate::model::{ChainSource, CommitmentScheme};
 
 /// A builder for constructing table configurations before adding them to a `TableCreator`.
 pub struct TableBuilder<'a> {
@@ -21,7 +21,7 @@ pub struct TableBuilder<'a> {
     commitment_scheme: Option<CommitmentScheme>,
     snapshot_url: Option<BoundedVec<u8>>,
     commitment: Option<BoundedVec<u8>>,
-    source: ApiSource,
+    source: ChainSource,
 }
 
 impl<'a> TableBuilder<'a> {
@@ -38,12 +38,12 @@ impl<'a> TableBuilder<'a> {
             commitment_scheme: None,
             snapshot_url: None,
             commitment: None,
-            source: ApiSource::Ethereum,
+            source: ChainSource::Ethereum,
         }
     }
 
     /// Sets the source chain for the table
-    pub fn source(mut self, source: ApiSource) -> Self {
+    pub fn source(mut self, source: ChainSource) -> Self {
         self.source = source;
         self
     }
