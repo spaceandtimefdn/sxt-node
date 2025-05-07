@@ -142,7 +142,7 @@ pub mod pallet {
         },
 
         /// A table has been successfully dropped
-        TableDropped(Option<T::AccountId>, TableType, TableIdentifier),
+        TableDropped(Option<T::AccountId>, TableType, TableIdentifier, Source),
     }
 
     /// A Map of Column UUIDs by Table Identifier and Version
@@ -448,6 +448,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             table_type: TableType,
             ident: TableIdentifier,
+            source: Source,
         ) -> DispatchResult {
             let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),
@@ -456,7 +457,7 @@ pub mod pallet {
 
             Self::drop_single_table(table_type.clone(), ident.clone())?;
             Self::remove_commits(ident.clone());
-            Self::deposit_event(Event::<T>::TableDropped(owner, table_type, ident));
+            Self::deposit_event(Event::<T>::TableDropped(owner, table_type, ident, source));
 
             Ok(())
         }
