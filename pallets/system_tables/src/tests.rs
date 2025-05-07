@@ -126,11 +126,10 @@ fn bonding_extra_with_an_account_works() {
 
         // Make sure there are no errors in the events
         let events = System::events();
-        match events.last().map(|e| &e.event) {
-            Some(RuntimeEvent::SystemTables(crate::Event::MessageProcessingError { error })) => {
-                panic!("Expected no errors!");
-            }
-            _ => {}
+        if let Some(RuntimeEvent::SystemTables(crate::Event::MessageProcessingError { error })) =
+            events.last().map(|e| &e.event)
+        {
+            panic!("Expected no errors!");
         }
 
         assert_eq!(
@@ -152,11 +151,10 @@ fn bonding_extra_with_an_account_works() {
 
         // Make sure there are no errors in the events
         let events = System::events();
-        match events.last().map(|e| &e.event) {
-            Some(RuntimeEvent::SystemTables(crate::Event::MessageProcessingError { error })) => {
-                panic!("Expected no errors! Got: {:?}", error);
-            }
-            _ => {}
+        if let Some(RuntimeEvent::SystemTables(crate::Event::MessageProcessingError { error })) =
+            events.last().map(|e| &e.event)
+        {
+            panic!("Expected no errors! Got: {:?}", error);
         }
 
         // Check that the amount is increased
