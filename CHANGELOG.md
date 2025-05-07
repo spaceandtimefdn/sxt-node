@@ -1,3 +1,17 @@
+# [0.119.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.118.1...v0.119.0) (2025-05-07)
+
+
+### Bug Fixes
+
+* add source to drop table api of the translation layer ([7615d55](https://github.com/spaceandtimefdn/sxt-node-archive/commit/7615d55453b2845455a10b674c73f40e0c2cd825))
+
+
+### Features
+
+* add source to table dropped command ([fab2875](https://github.com/spaceandtimefdn/sxt-node-archive/commit/fab287511266906bb16332507308d288f82e1fc5))
+
+
+
 ## [0.118.1](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.118.0...v0.118.1) (2025-05-07)
 
 
@@ -36,15 +50,6 @@
 ### Features
 
 * upgrade spec version to 223 ([63bba2d](https://github.com/spaceandtimefdn/sxt-node-archive/commit/63bba2dada8574bbf8fecfcf05a93efd33c965f1))
-
-
-
-## [0.116.5](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.4...v0.116.5) (2025-05-03)
-
-
-### Bug Fixes
-
-* ensure that sci creation results in block number storage being updated ([d901213](https://github.com/spaceandtimefdn/sxt-node-archive/commit/d901213fbc47b8f896794bc79ffe01e6641e8b9b))
 
 
 
