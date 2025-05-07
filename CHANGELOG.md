@@ -1,3 +1,12 @@
+## [0.118.1](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.118.0...v0.118.1) (2025-05-07)
+
+
+### Bug Fixes
+
+* await handle abort shutdown, add timeout to tx progress loger ([5e1fee9](https://github.com/spaceandtimefdn/sxt-node-archive/commit/5e1fee9621161de3fe11416b4eb492fa8299a6fd))
+
+
+
 # [0.118.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.117.1...v0.118.0) (2025-05-07)
 
 
@@ -36,10 +45,6 @@
 ### Bug Fixes
 
 * ensure that sci creation results in block number storage being updated ([d901213](https://github.com/spaceandtimefdn/sxt-node-archive/commit/d901213fbc47b8f896794bc79ffe01e6641e8b9b))
-
-
-
-## [0.116.4](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.3...v0.116.4) (2025-05-02)
 
 
 
