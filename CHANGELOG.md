@@ -1,3 +1,17 @@
+# [0.118.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.117.1...v0.118.0) (2025-05-07)
+
+
+### Bug Fixes
+
+* Add extra handling for already bonded accounts ([8547536](https://github.com/spaceandtimefdn/sxt-node-archive/commit/8547536196a19857e82f9433d80757c31636b045))
+
+
+### Features
+
+* Bump runtime version to 224 ([1e1bfcf](https://github.com/spaceandtimefdn/sxt-node-archive/commit/1e1bfcfd0e4d3f028c212325c69c73e036a7fc32))
+
+
+
 ## [0.117.1](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.117.0...v0.117.1) (2025-05-05)
 
 
@@ -26,10 +40,6 @@
 
 
 ## [0.116.4](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.3...v0.116.4) (2025-05-02)
-
-
-
-## [0.116.3](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.116.2...v0.116.3) (2025-05-02)
 
 
 
