@@ -3,6 +3,7 @@ use core::str::from_utf8;
 use env_logger::Env;
 use frame_support::{assert_err, assert_ok};
 use frame_system::RawOrigin;
+use log::error;
 use on_chain_table::OnChainTable;
 use sp_core::crypto::AccountId32;
 use sp_core::U256;
@@ -99,6 +100,71 @@ fn bonding_with_an_account_works() {
                 .unwrap()
                 .total,
             test_amount
+        );
+    });
+}
+
+#[test]
+fn bonding_extra_with_an_account_works() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let test_amount = 100;
+        // Create a message to stake 100 using the ethereum address
+        let bonding = get_staked_message(ETH_TEST_WALLET, test_amount.into());
+
+        // Now we do lookups based on the converted address to assure that state is set correctly
+        let transformed_eth_wallet =
+            eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
+        let expect_hex = hex::decode(EXPECTED_TRANSFORMED_ETH_TEST_WALLET_HEX).unwrap();
+        let expected_id = AccountId32::new(expect_hex.try_into().unwrap());
+        let converted_hex = convert_account_id::<Test>(expected_id).unwrap();
+        assert_eq!(transformed_eth_wallet, converted_hex);
+
+        // Process the staking request
+        assert_ok!(crate::process_staking::<Test>(bonding.clone()));
+
+        // Make sure there are no errors in the events
+        let events = System::events();
+        match events.last().map(|e| &e.event) {
+            Some(RuntimeEvent::SystemTables(crate::Event::MessageProcessingError { error })) => {
+                panic!("Expected no errors!");
+            }
+            _ => {}
+        }
+
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::bonded(&transformed_eth_wallet),
+            Some(transformed_eth_wallet.clone())
+        );
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::ledger(transformed_eth_wallet.clone().into())
+                .unwrap()
+                .total,
+            test_amount
+        );
+
+        // Go to the next block
+        System::set_block_number(2);
+
+        // Now bond an additional amount
+        assert_ok!(crate::process_staking::<Test>(bonding));
+
+        // Make sure there are no errors in the events
+        let events = System::events();
+        match events.last().map(|e| &e.event) {
+            Some(RuntimeEvent::SystemTables(crate::Event::MessageProcessingError { error })) => {
+                panic!("Expected no errors! Got: {:?}", error);
+            }
+            _ => {}
+        }
+
+        // Check that the amount is increased
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::ledger(transformed_eth_wallet.into())
+                .unwrap()
+                .total,
+            test_amount * 2
         );
     });
 }

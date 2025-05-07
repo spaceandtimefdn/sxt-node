@@ -199,11 +199,20 @@ pub mod pallet {
                             new_total_balance.saturated_into(),
                         )?;
 
-                        pallet_staking::Pallet::<T>::bond(
-                            staker_signer.clone().into(),
-                            stake_amount,
-                            pallet_staking::RewardDestination::Staked,
-                        )?;
+                        // If the user already had a bonded amount use bond_extra
+                        if balance > 0 {
+                            pallet_staking::Pallet::<T>::bond_extra(
+                                staker_signer.clone().into(),
+                                stake_amount,
+                            )?;
+                        } else {
+                            pallet_staking::Pallet::<T>::bond(
+                                staker_signer.clone().into(),
+                                stake_amount,
+                                pallet_staking::RewardDestination::Staked,
+                            )?;
+                        }
+
                         Ok(())
                     }
                     _ => Err(Error::<T>::MissingExpectedField.into()),
