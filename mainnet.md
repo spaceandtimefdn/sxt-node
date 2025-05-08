@@ -15,15 +15,8 @@
 
 ## I. Prerequisites
 
-#### Request Mainnet Tokens
-- Send your ETH address in an email to the sxt foundation.
-  - NOTE: This must be different per validator that you are running
-  - NOTE: To ensure that this is not a dead wallet, we will be checking that at least one transaciton has been submitted through this wallet
-```yaml
-  to: readiness@sxt.foundation
-  subject: [NOP name] - Mainnet ETH Wallet Address
-```
-- The given address will receive 100 tokens which can be used to start staking
+#### Mainnet Tokens
+- You need at least 100 SXT in order to onboard a validator node.
 
 
 ### 1.1. System Specifications
