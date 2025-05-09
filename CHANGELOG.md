@@ -1,3 +1,12 @@
+## [0.119.2](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.119.1...v0.119.2) (2025-05-09)
+
+
+### Bug Fixes
+
+* use app-token when running checkout ([1d4490b](https://github.com/spaceandtimefdn/sxt-node-archive/commit/1d4490b1b26bd9e94d6a8178da5894933b02d093))
+
+
+
 ## [0.119.1](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.119.0...v0.119.1) (2025-05-07)
 
 
@@ -36,15 +45,6 @@
 ### Features
 
 * Bump runtime version to 224 ([1e1bfcf](https://github.com/spaceandtimefdn/sxt-node-archive/commit/1e1bfcfd0e4d3f028c212325c69c73e036a7fc32))
-
-
-
-## [0.117.1](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v0.117.0...v0.117.1) (2025-05-05)
-
-
-### Bug Fixes
-
-* ensure that we can create smartcontracts with empty commits ([ed7094c](https://github.com/spaceandtimefdn/sxt-node-archive/commit/ed7094c8fb301afbc18f39164d13d23fc31287fe))
 
 
 
