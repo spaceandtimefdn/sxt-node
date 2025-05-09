@@ -1,0 +1,58 @@
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      IMAGE_NAME:
+        required: true
+        type: string
+    secrets:
+      OP_CONNECT_HOST:
+        required: true
+      OP_CONNECT_TOKEN:
+        required: true
+
+jobs:
+  build:
+    name: Build Image
+    runs-on: ubuntu-latest
+    env:
+      SRC_REPO: spaceandtime.jfrog.io/sxtnode-docker-local
+      PUB_REPO: ghcr.io/spaceandtimefdn
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4.1.0
+        with:
+          submodules: true
+          fetch-depth: 0 # download tags, see https://github.com/actions/checkout/issues/100
+          fetch-tags: true
+      - name: Get predefined version
+        run: |
+          cat ${{ inputs.working-directory }}/VERSION >> $GITHUB_ENV
+      - uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: https://${{ secrets.REGISTRY_URL }}
+        with:
+          oidc-provider-name: ${{ secrets.OIDC_PROVIDER_NAME }}
+          oidc-audience: ${{ secrets.OIDC_AUDIENCE }}
+      - name: docker pull from jfrog
+        run: |  
+          jf docker pull ${{ env.SRC_REPO }}/${{ inputs.IMAGE_NAME }}:${{ env.GIT_REVISION }}
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.PUB_REPO }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.working-directory }}
+          push: true
+          tags: ${{ env.PUB_REPO }}/${{ inputs.IMAGE_NAME }}:${{ env.DOCKER_TAG }}
+          labels: ${{ env.DOCKER_TAG }}
+          build-args: |
+            GIT_REVISION=${{ env.GIT_REVISION }}
