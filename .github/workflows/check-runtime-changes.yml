@@ -1,0 +1,21 @@
+---
+  name: Check runtime changes
+
+  on:
+    pull_request:
+      branches:
+        - main
+
+  permissions: read-all
+
+  jobs:
+    check-version:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+
+        - name: Check if spec_version should be modified
+          run: |
+            ./.github/check-version.sh "remotes/origin/$GITHUB_BASE_REF" "$GITHUB_SHA"
