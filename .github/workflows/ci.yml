@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04-8core, macos-latest]
+        os: [large-8-core-32gb-22-04, macos-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +69,7 @@ jobs:
     needs: build # Wait for build step to finish
     strategy:
       matrix:
-        os: [ubuntu-22.04-8core, macos-latest]
+        os: [large-8-core-32gb-22-04, macos-latest]
     steps:
       - uses: actions/checkout@v4
 
