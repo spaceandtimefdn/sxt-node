@@ -42,6 +42,8 @@ use pallet_grandpa::AuthorityId as GrandpaId;
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
+use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
+use proof_of_sql_commitment_map::{AnyCommitmentScheme, TableCommitmentBytes};
 use sp_api::impl_runtime_apis;
 use sp_arithmetic::traits::UniqueSaturatedInto;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -1264,4 +1266,9 @@ impl_runtime_apis! {
         }
     }
 
+    impl pallet_commitments::runtime_api::CommitmentsApi<Block> for Runtime {
+        fn table_commitments_any_scheme(table_identifiers: pallet_commitments::runtime_api::CommitmentsApiBoundedTableIdentifiersList) -> Option<pallet_commitments::AnyTableCommitments> {
+            Commitments::table_commitments_any_scheme(table_identifiers.as_slice())
+        }
+    }
 }

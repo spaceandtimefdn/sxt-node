@@ -9994,6 +9994,7 @@ dependencies = [
  "proof-of-sql-commitment-map",
  "proof-of-sql-static-setups",
  "scale-info",
+ "sp-api",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -18714,6 +18715,7 @@ dependencies = [
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-utility",
  "parity-scale-codec",
+ "proof-of-sql-commitment-map",
  "scale-info",
  "sp-api",
  "sp-arithmetic",
@@ -18735,6 +18737,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
+ "sxt-core",
 ]
 
 [[package]]

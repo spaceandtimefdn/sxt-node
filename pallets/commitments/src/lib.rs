@@ -26,6 +26,7 @@ mod test_table_commitments;
 
 mod error_conversions;
 
+pub mod runtime_api;
 pub use pallet::*;
 
 #[allow(clippy::manual_inspect)]
