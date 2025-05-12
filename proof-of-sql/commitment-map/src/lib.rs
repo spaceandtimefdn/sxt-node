@@ -12,6 +12,7 @@ pub use generic_over_commitment_fn::GenericOverCommitmentFn;
 mod commitment_scheme;
 pub use commitment_scheme::{
     AnyCommitmentScheme,
+    CommitmentId,
     CommitmentScheme,
     CommitmentSchemeFlags,
     PerCommitmentScheme,

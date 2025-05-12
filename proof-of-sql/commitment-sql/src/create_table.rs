@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use core::marker::PhantomData;
 
 use on_chain_table::{OnChainTable, OutOfScalarBounds};
-use proof_of_sql::base::commitment::{Commitment, TableCommitment};
+use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql_commitment_map::generic_over_commitment::{
     AssociatedPublicSetupType,
     GenericOverCommitment,
@@ -12,6 +12,7 @@ use proof_of_sql_commitment_map::generic_over_commitment::{
     TableCommitmentType,
 };
 use proof_of_sql_commitment_map::{
+    CommitmentId,
     CommitmentSchemeFlags,
     GenericOverCommitmentFn,
     PerCommitmentScheme,
@@ -37,7 +38,7 @@ impl<'s> GenericOverCommitmentFn for OnChainTableToTableCommitmentFn<'_, 's> {
     type In = AssociatedPublicSetupType<'s>;
     type Out = ResultOkType<TableCommitmentType, OutOfScalarBounds>;
 
-    fn call<C: Commitment>(
+    fn call<C: CommitmentId>(
         &self,
         input: <Self::In as GenericOverCommitment>::WithCommitment<C>,
     ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
