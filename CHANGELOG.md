@@ -1,3 +1,7 @@
+## [1.0.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.0.0...v1.0.1) (2025-05-12)
+
+
+
 # [1.0.0](https://github.com/spaceandtimefdn/sxt-node/compare/v0.114.3...v1.0.0) (2025-05-10)
 
 
