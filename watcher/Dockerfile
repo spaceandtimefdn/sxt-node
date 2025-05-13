@@ -19,4 +19,6 @@ USER sxtuser
 
 WORKDIR /opt/sxt
 
-COPY --chmod=755 --chown=sxtuser watcher .ENTRYPOINT [ "/opt/sxt/watcher" ]
+COPY --chmod=755 --chown=sxtuser watcher .
+
+ENTRYPOINT [ "/opt/sxt/watcher" ]
