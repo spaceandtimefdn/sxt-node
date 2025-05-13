@@ -21,6 +21,9 @@ mod test_create_table_from_snapshot;
 #[cfg(test)]
 mod test_insert;
 
+#[cfg(test)]
+mod test_table_commitments;
+
 mod error_conversions;
 
 pub use pallet::*;
@@ -28,6 +31,7 @@ pub use pallet::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
+    use alloc::vec::Vec;
     use alloc::{str, vec};
 
     use commitment_sql::{
@@ -39,7 +43,9 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
+    use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
     use proof_of_sql_commitment_map::{
+        AnyCommitmentScheme,
         CommitmentMap,
         CommitmentScheme,
         CommitmentSchemeFlags,
@@ -297,6 +303,41 @@ pub mod pallet {
                 insert_with_meta_columns,
                 meta_table_inserts: vec![],
             })
+        }
+    }
+
+    /// Return type for some APIs, a list of table commitments for any scheme.
+    pub type AnyTableCommitments = AnyCommitmentScheme<ConcreteType<Vec<TableCommitmentBytes>>>;
+
+    impl<T> Pallet<T>
+    where
+        T: Config,
+    {
+        /// Returns the table commitments for the provided tables if and only if all of them exist.
+        pub fn table_commitments<'t>(
+            table_identifiers: impl IntoIterator<Item = &'t TableIdentifier>,
+            commitment_scheme: CommitmentScheme,
+        ) -> Option<Vec<TableCommitmentBytes>> {
+            table_identifiers
+                .into_iter()
+                .map(|table_identifier| Self::table_commitment(table_identifier, commitment_scheme))
+                .collect()
+        }
+
+        /// Returns the table commitments for the provided tables for the first scheme that covers
+        /// all of them.
+        ///
+        /// Returns `None` if no scheme has complete coverage of the provided tables.
+        pub fn table_commitments_any_scheme<'t>(
+            table_identifiers: impl IntoIterator<Item = &'t TableIdentifier> + Copy,
+        ) -> Option<AnyTableCommitments> {
+            CommitmentSchemeFlags::all()
+                .into_iter()
+                .find_map(|commitment_scheme| {
+                    Self::table_commitments(table_identifiers, commitment_scheme).map(
+                        |table_commitments| commitment_scheme.into_any_concrete(table_commitments),
+                    )
+                })
         }
     }
 }
