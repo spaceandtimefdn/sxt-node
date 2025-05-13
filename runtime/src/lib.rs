@@ -60,6 +60,7 @@ use sp_runtime::traits::{
     One,
     OpaqueKeys,
     Verify,
+    Zero,
 };
 use sp_runtime::transaction_validity::{
     TransactionPriority,
@@ -444,8 +445,8 @@ impl pallet_babe::Config for Runtime {
 pub struct EraPayout;
 impl pallet_staking::EraPayout<Balance> for EraPayout {
     fn era_payout(
-        _total_staked: Balance,
-        _total_issuance: Balance,
+        total_staked: Balance,
+        total_issuance: Balance,
         era_duration_millis: u64,
     ) -> (Balance, Balance) {
         const MILLISECONDS_PER_YEAR: u64 = (1000 * 3600 * 24 * 36525) / 100;
@@ -453,20 +454,12 @@ impl pallet_staking::EraPayout<Balance> for EraPayout {
         let relative_era_len =
             FixedU128::from_rational(era_duration_millis.into(), MILLISECONDS_PER_YEAR.into());
 
-        // TI at the time of execution of [Referendum 1139](https://polkadot.subsquare.io/referenda/1139), block hash: `0x39422610299a75ef69860417f4d0e1d94e77699f45005645ffc5e8e619950f9f`.
-        let fixed_total_issuance: i128 = 15_011_657_390_566_252_333;
-        let fixed_inflation_rate = FixedU128::from_rational(8, 100);
-        let yearly_emission = fixed_inflation_rate.saturating_mul_int(fixed_total_issuance);
+        let base_rate = FixedU128::from_rational(79, 1000);
+        let yearly_emission = base_rate.saturating_mul_int(total_staked);
 
         let era_emission = relative_era_len.saturating_mul_int(yearly_emission);
-        // 15% to treasury, as per ref 1139.
-        let to_treasury = FixedU128::from_rational(15, 100).saturating_mul_int(era_emission);
-        let to_stakers = era_emission.saturating_sub(to_treasury);
 
-        (
-            to_stakers.unique_saturated_into(),
-            to_treasury.unique_saturated_into(),
-        )
+        (era_emission.unique_saturated_into(), Balance::zero())
     }
 }
 
