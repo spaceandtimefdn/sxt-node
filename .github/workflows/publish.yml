@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - publish/docker/*
+      - publish/docker/**
   workflow_dispatch:
 
 concurrency:
@@ -23,5 +23,11 @@ jobs:
     uses: ./.github/workflows/publish_shared.yml
     with:
       IMAGE_NAME: sxt-node
-      working-directory: publish/docker
+      working-directory: publish/docker/sxt-node
+    secrets: inherit
+  build_attestor:
+    uses: ./.github/workflows/publish_shared.yml
+    with:
+      IMAGE_NAME: sxt-attestor
+      working-directory: publish/docker/sxt-attestor
     secrets: inherit
