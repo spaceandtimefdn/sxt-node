@@ -22,12 +22,14 @@ jobs:
   build_node:
     uses: ./.github/workflows/publish_shared.yml
     with:
-      IMAGE_NAME: sxt-node
+      SRC_IMAGE_NAME: sxtnode-docker-local/sxt-node
+      PUB_IMAGE_NAME: sxt-node
       working-directory: publish/docker/sxt-node
     secrets: inherit
   build_attestor:
     uses: ./.github/workflows/publish_shared.yml
     with:
-      IMAGE_NAME: sxt-attestor
+      SRC_IMAGE_NAME: sxt-node/watcher
+      PUB_IMAGE_NAME: sxt-attestor
       working-directory: publish/docker/sxt-attestor
     secrets: inherit
