@@ -8,9 +8,11 @@ on:
         required: true
         type: string
     secrets:
-      OP_CONNECT_HOST:
+      REGISTRY_URL:
         required: true
-      OP_CONNECT_TOKEN:
+      OIDC_PROVIDER_NAME:
+        required: true
+      OIDC_AUDIENCE:
         required: true
 
 jobs:
