@@ -1,3 +1,7 @@
+## [1.0.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.0.3...v1.0.4) (2025-05-14)
+
+
+
 ## [1.0.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.0.2...v1.0.3) (2025-05-14)
 
 
@@ -42,10 +46,6 @@
 * Bump runtime version to 224 ([b583d2c](https://github.com/spaceandtimefdn/sxt-node/commit/b583d2c5485803622fda7076252694e7a5680659))
 * canary prototype ([80a34d8](https://github.com/spaceandtimefdn/sxt-node/commit/80a34d8a7782134bc0e4799643e9f4ace5b43031))
 * upgrade spec version to 223 ([f481f17](https://github.com/spaceandtimefdn/sxt-node/commit/f481f176270ca5477a81d8e27b61ed5ef479b21e))
-
-
-
-## 0.114.3 (2025-04-29)
 
 
 
