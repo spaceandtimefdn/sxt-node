@@ -30,7 +30,7 @@ jobs:
           fetch-tags: true
       - name: Get predefined version
         run: |
-          cat ${{ inputs.working-directory }}/VERSION >> $GITHUB_ENV
+          cat ${{ inputs.working-directory }}/../VERSION >> $GITHUB_ENV
       - uses: jfrog/setup-jfrog-cli@v4
         env:
           JF_URL: https://${{ secrets.REGISTRY_URL }}
@@ -38,7 +38,7 @@ jobs:
           oidc-provider-name: ${{ secrets.OIDC_PROVIDER_NAME }}
           oidc-audience: ${{ secrets.OIDC_AUDIENCE }}
       - name: docker pull from jfrog
-        run: |  
+        run: |
           jf docker pull ${{ env.SRC_REPO }}/${{ inputs.IMAGE_NAME }}:${{ env.GIT_REVISION }}
       - name: Log in to the Container registry
         uses: docker/login-action@v3
