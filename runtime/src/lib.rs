@@ -3,6 +3,8 @@
 // runtime construction via `frame_support::runtime` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
+mod tests;
+
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
@@ -162,7 +164,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 225,
+    spec_version: 226,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -464,7 +466,7 @@ impl pallet_staking::EraPayout<Balance> for EraPayout {
 }
 
 parameter_types! {
-    // Six sessions in an era (24 hours).
+    // Twenty-Four sessions in an era (24 hours).
     pub const SessionsPerEra: SessionIndex = 24;
 
     // 7 eras for unbonding (7 days).
