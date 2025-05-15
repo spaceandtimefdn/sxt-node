@@ -1,3 +1,13 @@
+# [1.2.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.1.0...v1.2.0) (2025-05-15)
+
+
+### Features
+
+* Added a simple unit test for the era_payout ([00855f0](https://github.com/spaceandtimefdn/sxt-node/commit/00855f046bf3b3d12d3bf51c4bf1f08e605a6e42))
+* Implement an initial naive reward amount targeting 7.9% annual. ([eff5527](https://github.com/spaceandtimefdn/sxt-node/commit/eff55275eef126d491964682e2585b70546aab99))
+
+
+
 # [1.1.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.0.5...v1.1.0) (2025-05-15)
 
 
@@ -20,10 +30,6 @@
 
 
 ## [1.0.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.0.2...v1.0.3) (2025-05-14)
-
-
-
-## [1.0.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.0.1...v1.0.2) (2025-05-14)
 
 
 
