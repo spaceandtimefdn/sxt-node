@@ -26,6 +26,16 @@ pub enum CommitmentScheme {
     DynamicDory,
 }
 
+impl CommitmentScheme {
+    /// Returns `AnyCommitmentScheme(value)` with the appropriate [`CommitmentScheme`] variant.
+    pub fn into_any_concrete<T>(self, value: T) -> AnyCommitmentScheme<ConcreteType<T>> {
+        match self {
+            CommitmentScheme::HyperKzg => AnyCommitmentScheme::HyperKzg(value),
+            CommitmentScheme::DynamicDory => AnyCommitmentScheme::DynamicDory(value),
+        }
+    }
+}
+
 /// Trait for commitment types that defines their associated [`CommitmentScheme`].
 pub trait CommitmentId: Commitment + Serialize + for<'de> Deserialize<'de> {
     /// The [`CommitmentScheme`] associated with this commitment type.
@@ -720,5 +730,17 @@ mod tests {
 
         let dory_usize = AnyCommitmentScheme::<ConcreteType<usize>>::DynamicDory(456);
         assert_eq!(dory_usize.unwrap(), 456);
+    }
+
+    #[test]
+    fn we_can_convert_commitment_scheme_into_any_commitment_scheme_with_value() {
+        assert_eq!(
+            CommitmentScheme::HyperKzg.into_any_concrete(123),
+            AnyCommitmentScheme::HyperKzg(123)
+        );
+        assert_eq!(
+            CommitmentScheme::DynamicDory.into_any_concrete(456),
+            AnyCommitmentScheme::DynamicDory(456)
+        );
     }
 }
