@@ -10967,6 +10967,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-rewards"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-commitments",
+ "pallet-session",
+ "pallet-staking",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking 36.0.0",
+]
+
+[[package]]
 name = "pallet-root-offences"
 version = "35.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -28,6 +28,7 @@ members = [
     "utils/commit-grouper",
     "watcher",
     "pallets/attestation",
+    "pallets/rewards",
     "pallets/keystore",
     "pallets/smartcontracts",
     "event-forwarder", 
@@ -57,6 +58,7 @@ commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = f
 data-loader = { path = "./data-loader", default-features = false }
 arrow-flight = { version = "54.2.1", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
+pallet-rewards = { path = "./pallets/rewards", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
 pallet-permissions = { path = "pallets/permissions", default-features = false }
 pallet-attestation = { path = "pallets/attestation", default-features = false }
