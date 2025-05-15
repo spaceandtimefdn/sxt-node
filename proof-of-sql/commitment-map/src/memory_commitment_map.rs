@@ -81,6 +81,7 @@ mod tests {
 
     use super::*;
     use crate::{
+        CommitmentId,
         CommitmentMap,
         CommitmentSchemeFlags,
         CommitmentSchemesMismatchError,
@@ -94,12 +95,12 @@ mod tests {
     /// However, generating them for testing requires the blitzar feature.
     /// Enabling the blitzar feature complicates writing substrate-oriented tests.
     #[derive(Copy, Clone, PartialEq, Eq, Default, Debug)]
-    struct TestCommitmentMetadata<C: Commitment> {
+    struct TestCommitmentMetadata<C: CommitmentId> {
         metadata: usize,
         phantom_data: PhantomData<C>,
     }
 
-    impl<C: Commitment> TestCommitmentMetadata<C> {
+    impl<C: CommitmentId> TestCommitmentMetadata<C> {
         /// Construct a new [`TestCommitmentMetadata`].
         fn new(metadata: usize) -> Self {
             TestCommitmentMetadata {
@@ -113,7 +114,7 @@ mod tests {
     struct TestCommitmentMetadataType;
 
     impl GenericOverCommitment for TestCommitmentMetadataType {
-        type WithCommitment<C: Commitment> = TestCommitmentMetadata<C>;
+        type WithCommitment<C: CommitmentId> = TestCommitmentMetadata<C>;
     }
 
     struct CombinationsCommitmentMapRefs {

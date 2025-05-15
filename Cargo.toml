@@ -55,6 +55,7 @@ bincode = { version = "2.0.0", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
 commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
 data-loader = { path = "./data-loader", default-features = false }
+datafusion = { version = "38.0.0", default-features = false }
 arrow-flight = { version = "54.2.1", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
@@ -85,6 +86,7 @@ on-chain-table = { path = "./proof-of-sql/on-chain-table/", default-features = f
 postcard = { version = "1.0.10", default-features = false }
 primitive-types = { version = "0.12.2", default-features = false }
 proof-of-sql = { version = "0.99.0", default-features = false }
+proof-of-sql-planner = { version = "0.99.0", default-features = false }
 proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
 proof-of-sql-static-setups = { path = "./proof-of-sql/static-setups/", default-features = false }
 rand = { version = "0.8.5", default-features = false }

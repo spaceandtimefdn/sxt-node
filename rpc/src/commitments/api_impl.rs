@@ -11,21 +11,32 @@ use attestation_tree::{
 };
 use codec::Decode;
 use frame_support::traits::StorageInstance;
+use pallet_commitments::runtime_api::CommitmentsApi;
 use pallet_system_contracts::_GeneratedPrefixForStorageStakingContract;
 use proof_of_sql::sql::evm_proof_plan::EVMProofPlan;
 use proof_of_sql::sql::proof::ProofPlan;
 use proof_of_sql::sql::proof_plans::DynProofPlan;
 use proof_of_sql_commitment_map::{CommitmentScheme, TableCommitmentBytes};
+use proof_of_sql_planner::statement_with_uppercase_identifiers;
 use sc_client_api::{Backend as BackendT, StorageKey, StorageProvider};
+use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::Bytes;
 use sp_runtime::traits::Block as BlockT;
+use sqlparser::dialect::GenericDialect;
+use sqlparser::parser::Parser;
 use sxt_core::tables::TableIdentifier;
 use sxt_runtime::pallet_commitments;
 
-use crate::commitments::api::{VerifiableCommitment, VerifiableCommitmentsResponse};
+use super::proof_plan_for_query_and_commitments::ProofPlanForQueryAndCommitments;
+use super::statement_and_associated_table_refs::StatementAndAssociatedTableRefs;
+use crate::commitments::api::{
+    ProofPlanResponse,
+    VerifiableCommitment,
+    VerifiableCommitmentsResponse,
+};
 use crate::commitments::error::CommitmentsApiError;
-use crate::commitments::limits::{NUM_TABLES_LIMIT, PROOF_PLAN_SIZE_LIMIT};
+use crate::commitments::limits::{NUM_TABLES_LIMIT, PROOF_PLAN_SIZE_LIMIT, QUERY_SIZE_LIMIT};
 use crate::commitments::CommitmentsApiServer;
 
 /// Deserialize a `DynProofPlan` from a binary representation.
@@ -69,7 +80,13 @@ fn storage_key_for<PF: PrefixFoliate>() -> StorageKey {
 impl<Client, Backend, Block, Config> CommitmentsApiServer<Block::Hash>
     for CommitmentsApiImpl<Client, Backend, Block, Config>
 where
-    Client: Send + Sync + HeaderBackend<Block> + StorageProvider<Block, Backend> + 'static,
+    Client: Send
+        + Sync
+        + HeaderBackend<Block>
+        + StorageProvider<Block, Backend>
+        + ProvideRuntimeApi<Block>
+        + 'static,
+    Client::Api: pallet_commitments::runtime_api::CommitmentsApi<Block>,
     Backend: BackendT<Block> + 'static,
     Block: BlockT + 'static,
     Config: Send
@@ -90,7 +107,8 @@ where
             return Err(CommitmentsApiError::ProofPlanSizeLimit { proof_plan_size });
         }
 
-        let proof_plan = try_from_bincode_as_dyn_proof_plan(&proof_plan)?;
+        let proof_plan = try_from_bincode_as_dyn_proof_plan(&proof_plan)
+            .map_err(|source| CommitmentsApiError::DeserializeProofPlan { source })?;
 
         let table_identifiers = proof_plan
             .get_table_references()
@@ -185,6 +203,99 @@ where
         Ok(VerifiableCommitmentsResponse {
             verifiable_commitments,
             at,
+        })
+    }
+
+    fn v1_proof_plan(
+        &self,
+        query: String,
+        at: Option<Block::Hash>,
+    ) -> Result<ProofPlanResponse<Block::Hash>, CommitmentsApiError> {
+        let query_size = query.len();
+        if query_size > QUERY_SIZE_LIMIT {
+            return Err(CommitmentsApiError::QuerySizeLimit { query_size });
+        }
+
+        let [statement] = Parser::parse_sql(&GenericDialect {}, &query)?
+            .try_into()
+            .map_err(|statements: Vec<_>| {
+                let num_statements = statements.len();
+
+                CommitmentsApiError::NotOneStatement { num_statements }
+            })?;
+
+        let statement = statement_with_uppercase_identifiers(statement);
+
+        let statement_and_associated_table_refs =
+            StatementAndAssociatedTableRefs::try_from(statement)?;
+
+        let num_tables = statement_and_associated_table_refs.table_refs().len();
+        if num_tables > NUM_TABLES_LIMIT {
+            return Err(CommitmentsApiError::NumTablesLimit { num_tables });
+        }
+
+        let table_identifiers = statement_and_associated_table_refs
+            .table_refs()
+            .iter()
+            .cloned()
+            .map(TableIdentifier::try_from)
+            .collect::<Result<Vec<_>, _>>()?
+            .try_into()
+            .expect("We've already verified that there are fewer than 64 tables");
+
+        let at = at.unwrap_or_else(|| self.client.info().best_hash);
+
+        let proof_plan = self
+            .client
+            .runtime_api()
+            .table_commitments_any_scheme(at, table_identifiers)?
+            .ok_or(CommitmentsApiError::IncompleteCommitmentCoverage)?
+            .map(ProofPlanForQueryAndCommitments(
+                statement_and_associated_table_refs,
+            ))
+            .unwrap()?;
+
+        let proof_plan_bytes = bincode::serde::encode_to_vec(
+            &proof_plan,
+            bincode::config::legacy()
+                .with_fixed_int_encoding()
+                .with_big_endian(),
+        )?;
+
+        let proof_plan = Bytes(proof_plan_bytes);
+
+        Ok(ProofPlanResponse { proof_plan, at })
+    }
+
+    fn v1_evm_proof_plan(
+        &self,
+        query: String,
+        at: Option<Block::Hash>,
+    ) -> Result<ProofPlanResponse<Block::Hash>, CommitmentsApiError> {
+        let proof_plan_response = self.v1_proof_plan(query, at)?;
+
+        let (dyn_proof_plan, _) = bincode::serde::decode_from_slice(
+            &proof_plan_response.proof_plan,
+            bincode::config::legacy()
+                .with_fixed_int_encoding()
+                .with_big_endian(),
+        )
+        .map_err(|source| CommitmentsApiError::DeserializeProofPlan { source })?;
+
+        let evm_proof_plan = EVMProofPlan::new(dyn_proof_plan);
+
+        let proof_plan_bytes = bincode::serde::encode_to_vec(
+            &evm_proof_plan,
+            bincode::config::legacy()
+                .with_fixed_int_encoding()
+                .with_big_endian(),
+        )?;
+
+        let proof_plan = Bytes(proof_plan_bytes);
+
+        Ok(ProofPlanResponse {
+            proof_plan,
+            ..proof_plan_response
         })
     }
 }

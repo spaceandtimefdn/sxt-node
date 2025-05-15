@@ -1,6 +1,5 @@
-use proof_of_sql::base::commitment::Commitment;
-
 use crate::generic_over_commitment::GenericOverCommitment;
+use crate::CommitmentId;
 
 /// Trait for writing functions that are generic over commitments.
 ///
@@ -14,7 +13,7 @@ pub trait GenericOverCommitmentFn {
     type Out: GenericOverCommitment;
 
     /// Mapping function that is generic over commitment.
-    fn call<C: Commitment>(
+    fn call<C: CommitmentId>(
         &self,
         input: <Self::In as GenericOverCommitment>::WithCommitment<C>,
     ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C>;
@@ -27,7 +26,7 @@ where
     type In = F::In;
     type Out = F::Out;
 
-    fn call<C: Commitment>(
+    fn call<C: CommitmentId>(
         &self,
         input: <Self::In as GenericOverCommitment>::WithCommitment<C>,
     ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
@@ -39,8 +38,8 @@ where
 pub mod tests {
     use core::marker::PhantomData;
 
-    use curve25519_dalek::RistrettoPoint;
     use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
+    use proof_of_sql::proof_primitive::hyperkzg::HyperKZGCommitment;
 
     use super::*;
     use crate::generic_over_commitment::{CommitmentType, OptionType};
@@ -57,7 +56,7 @@ pub mod tests {
         type In = T;
         type Out = OptionType<T>;
 
-        fn call<C: Commitment>(
+        fn call<C: CommitmentId>(
             &self,
             input: <Self::In as GenericOverCommitment>::WithCommitment<C>,
         ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
@@ -70,7 +69,7 @@ pub mod tests {
         let some_fn = SomeFn::<CommitmentType>::new();
 
         assert_eq!(
-            some_fn.call::<RistrettoPoint>(Default::default()),
+            some_fn.call::<HyperKZGCommitment>(Default::default()),
             Some(Default::default())
         );
 

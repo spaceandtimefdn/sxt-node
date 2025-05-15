@@ -6,7 +6,7 @@ use proof_of_sql_commitment_map::generic_over_commitment::{
     ResultOkType,
     TableCommitmentType,
 };
-use proof_of_sql_commitment_map::{GenericOverCommitmentFn, PerCommitmentScheme};
+use proof_of_sql_commitment_map::{CommitmentId, GenericOverCommitmentFn, PerCommitmentScheme};
 use snafu::Snafu;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 
@@ -20,7 +20,7 @@ impl GenericOverCommitmentFn for TryAddTableCommitmentsFn {
     type In = PairType<TableCommitmentType, TableCommitmentType>;
     type Out = ResultOkType<TableCommitmentType, TableCommitmentArithmeticError>;
 
-    fn call<C: proof_of_sql::base::commitment::Commitment>(
+    fn call<C: CommitmentId>(
             &self,
             input: <Self::In as proof_of_sql_commitment_map::generic_over_commitment::GenericOverCommitment>::WithCommitment<C>,
     ) -> <Self::Out as proof_of_sql_commitment_map::generic_over_commitment::GenericOverCommitment>::WithCommitment<C>{

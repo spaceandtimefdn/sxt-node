@@ -42,6 +42,8 @@ use pallet_grandpa::AuthorityId as GrandpaId;
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
+use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
+use proof_of_sql_commitment_map::{AnyCommitmentScheme, TableCommitmentBytes};
 use sp_api::impl_runtime_apis;
 use sp_arithmetic::traits::UniqueSaturatedInto;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -159,7 +161,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 224,
+    spec_version: 225,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1264,4 +1266,9 @@ impl_runtime_apis! {
         }
     }
 
+    impl pallet_commitments::runtime_api::CommitmentsApi<Block> for Runtime {
+        fn table_commitments_any_scheme(table_identifiers: pallet_commitments::runtime_api::CommitmentsApiBoundedTableIdentifiersList) -> Option<pallet_commitments::AnyTableCommitments> {
+            Commitments::table_commitments_any_scheme(table_identifiers.as_slice())
+        }
+    }
 }
