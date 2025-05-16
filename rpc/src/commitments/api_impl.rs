@@ -26,6 +26,7 @@ use sp_runtime::traits::Block as BlockT;
 use sqlparser::dialect::GenericDialect;
 use sqlparser::parser::Parser;
 use sxt_core::tables::TableIdentifier;
+use sxt_core::utils::proof_of_sql_bincode_config;
 use sxt_runtime::pallet_commitments;
 
 use super::proof_plan_for_query_and_commitments::ProofPlanForQueryAndCommitments;
@@ -45,9 +46,7 @@ use crate::commitments::CommitmentsApiServer;
 fn try_from_bincode_as_dyn_proof_plan(
     bytes: &[u8],
 ) -> Result<DynProofPlan, bincode::error::DecodeError> {
-    let cfg = bincode::config::legacy()
-        .with_fixed_int_encoding()
-        .with_big_endian();
+    let cfg = proof_of_sql_bincode_config::<PROOF_PLAN_SIZE_LIMIT>();
 
     // Attempt parse as EVMProofPlan first
     bincode::serde::decode_from_slice::<EVMProofPlan, _>(bytes, cfg)
@@ -257,9 +256,7 @@ where
 
         let proof_plan_bytes = bincode::serde::encode_to_vec(
             &proof_plan,
-            bincode::config::legacy()
-                .with_fixed_int_encoding()
-                .with_big_endian(),
+            proof_of_sql_bincode_config::<PROOF_PLAN_SIZE_LIMIT>(),
         )?;
 
         let proof_plan = Bytes(proof_plan_bytes);
@@ -274,22 +271,15 @@ where
     ) -> Result<ProofPlanResponse<Block::Hash>, CommitmentsApiError> {
         let proof_plan_response = self.v1_proof_plan(query, at)?;
 
-        let (dyn_proof_plan, _) = bincode::serde::decode_from_slice(
-            &proof_plan_response.proof_plan,
-            bincode::config::legacy()
-                .with_fixed_int_encoding()
-                .with_big_endian(),
-        )
-        .map_err(|source| CommitmentsApiError::DeserializeProofPlan { source })?;
+        let cfg = proof_of_sql_bincode_config::<PROOF_PLAN_SIZE_LIMIT>();
+
+        let (dyn_proof_plan, _) =
+            bincode::serde::decode_from_slice(&proof_plan_response.proof_plan, cfg)
+                .map_err(|source| CommitmentsApiError::DeserializeProofPlan { source })?;
 
         let evm_proof_plan = EVMProofPlan::new(dyn_proof_plan);
 
-        let proof_plan_bytes = bincode::serde::encode_to_vec(
-            &evm_proof_plan,
-            bincode::config::legacy()
-                .with_fixed_int_encoding()
-                .with_big_endian(),
-        )?;
+        let proof_plan_bytes = bincode::serde::encode_to_vec(&evm_proof_plan, cfg)?;
 
         let proof_plan = Bytes(proof_plan_bytes);
 
@@ -297,5 +287,25 @@ where
             proof_plan,
             ..proof_plan_response
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn we_cannot_deserialize_proof_plan_with_capacity_overflow() {
+        let bad_input = u128::MAX.to_be_bytes();
+        assert!(try_from_bincode_as_dyn_proof_plan(bad_input.as_slice()).is_err());
+    }
+
+    #[test]
+    fn we_cannot_deserialize_proof_plan_with_memory_overallocation() {
+        let bad_input = hex::decode(
+            "0000000700000002000000000000001000000000000000000000000a54494d455f5354414d500000",
+        )
+        .unwrap();
+        assert!(try_from_bincode_as_dyn_proof_plan(bad_input.as_slice()).is_err());
     }
 }

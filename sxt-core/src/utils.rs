@@ -67,3 +67,12 @@ where
     T::AccountId::decode(&mut <AccountId32 as AsRef<[u8]>>::as_ref(&account_id32))
         .map_err(|_| DispatchError::Other("Failed to decode AccountId32 into T::AccountId"))
 }
+
+/// Common bincode configuration for encoding/decoding of proof-of-sql objects.
+pub fn proof_of_sql_bincode_config<const ALLOCATION_LIMIT: usize>() -> impl bincode::config::Config
+{
+    bincode::config::legacy()
+        .with_fixed_int_encoding()
+        .with_big_endian()
+        .with_limit::<ALLOCATION_LIMIT>()
+}
