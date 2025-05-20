@@ -8,5 +8,5 @@
 * **Data Integrity**: As the SXT Chain indexes data, it generates cryptographic hashes (commitments) that guarantee the underlying data tables remain untampered. These commitments are essential for later phases, where our SXT Chain prover nodes will employ our Proof of SQL protocol to validate the integrity of the indexed data during ZK-proven SQL execution for client queries.
 
 ## Detailed steps for Validator onboarding on each network
-* [mainnet](mainnet.md)
-* [testnet](testnet.md)
+* [mainnet](docs/mainnet.md)
+* [testnet](docs/testnet.md)
