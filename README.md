@@ -10,3 +10,6 @@
 ## Detailed steps for Validator onboarding on each network
 * [mainnet](docs/mainnet.md)
 * [testnet](docs/testnet.md)
+
+## For developers
+If you would like to contribute to this repository, check out the [CONTRIBUTING.md](CONTRIBUTING.md) document.
