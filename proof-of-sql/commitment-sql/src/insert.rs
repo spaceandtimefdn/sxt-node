@@ -8,7 +8,6 @@ use proof_of_sql::base::commitment::{
     AppendColumnCommitmentsError,
     AppendTableCommitmentError,
     ColumnCommitmentsMismatch,
-    Commitment,
 };
 use proof_of_sql_commitment_map::generic_over_commitment::{
     AssociatedPublicSetupType,
@@ -19,7 +18,7 @@ use proof_of_sql_commitment_map::generic_over_commitment::{
     ResultOkType,
     TableCommitmentType,
 };
-use proof_of_sql_commitment_map::{GenericOverCommitmentFn, PerCommitmentScheme};
+use proof_of_sql_commitment_map::{CommitmentId, GenericOverCommitmentFn, PerCommitmentScheme};
 #[cfg(feature = "cpu-perf")]
 use rayon::prelude::*;
 use snafu::Snafu;
@@ -36,7 +35,7 @@ impl GenericOverCommitmentFn for GetColumnOrderFn {
     type In = TableCommitmentType;
     type Out = PairType<TableCommitmentType, ConcreteType<Vec<Ident>>>;
 
-    fn call<C: Commitment>(
+    fn call<C: CommitmentId>(
         &self,
         input: <Self::In as GenericOverCommitment>::WithCommitment<C>,
     ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
@@ -60,7 +59,7 @@ impl GenericOverCommitmentFn for GetTableCommitmentRangeEndFn {
     type In = TableCommitmentType;
     type Out = PairType<TableCommitmentType, ConcreteType<usize>>;
 
-    fn call<C: Commitment>(
+    fn call<C: CommitmentId>(
         &self,
         input: <Self::In as GenericOverCommitment>::WithCommitment<C>,
     ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
@@ -83,7 +82,7 @@ impl<T: GenericOverCommitment> GenericOverCommitmentFn for SomeFn<T> {
     type In = T;
     type Out = OptionType<T>;
 
-    fn call<C: Commitment>(
+    fn call<C: CommitmentId>(
         &self,
         input: <Self::In as GenericOverCommitment>::WithCommitment<C>,
     ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
@@ -110,7 +109,7 @@ impl<T: GenericOverCommitment, U: GenericOverCommitment> GenericOverCommitmentFn
     type In = PairType<OptionType<T>, OptionType<U>>;
     type Out = OptionType<PairType<T, U>>;
 
-    fn call<C: Commitment>(
+    fn call<C: CommitmentId>(
         &self,
         input: <Self::In as GenericOverCommitment>::WithCommitment<C>,
     ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
@@ -160,7 +159,7 @@ impl<'s> GenericOverCommitmentFn for AppendOnChainTableToTableCommitmentFn<'_, '
     type In = PairType<TableCommitmentType, AssociatedPublicSetupType<'s>>;
     type Out = ResultOkType<TableCommitmentType, AppendOnChainTableError>;
 
-    fn call<C: Commitment>(
+    fn call<C: CommitmentId>(
         &self,
         input: <Self::In as GenericOverCommitment>::WithCommitment<C>,
     ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
