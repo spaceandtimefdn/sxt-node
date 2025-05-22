@@ -99,6 +99,7 @@ pub use {
     pallet_keystore,
     pallet_offences,
     pallet_permissions,
+    pallet_rewards,
     pallet_session,
     pallet_smartcontracts,
     pallet_staking,
@@ -164,7 +165,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 226,
+    spec_version: 227,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -224,8 +225,8 @@ pub const DAYS: BlockNumber = HOURS * 24;
 
 pub const MAX_AUTHORITIES: u32 = 100_000u32;
 
-/// Each epoch is 4 hours
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = prod_or_dev!(HOURS, 5 * MINUTES);
+/// Each epoch is 1 hour
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = prod_or_dev!(HOURS, MINUTES);
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -783,6 +784,12 @@ impl pallet_smartcontracts::Config<native_api::Api> for Runtime {
     type WeightInfo = pallet_smartcontracts::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_rewards::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    // Payout up to 3 pages per block
+    type MaxPayoutsPerBlock = ConstU32<3>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -878,6 +885,8 @@ mod runtime {
     pub type SystemTables = pallet_system_tables;
     #[runtime::pallet_index(108)]
     pub type SystemContracts = pallet_system_contracts;
+    #[runtime::pallet_index(109)]
+    pub type Rewards = pallet_rewards;
 }
 
 /// The address format for describing accounts.

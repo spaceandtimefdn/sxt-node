@@ -11582,6 +11582,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-rewards"
+version = "0.1.0"
+dependencies = [
+ "arrow 54.2.1",
+ "env_logger 0.11.6",
+ "frame-benchmarking",
+ "frame-election-provider-support",
+ "frame-support",
+ "frame-system",
+ "native",
+ "pallet-authority-discovery",
+ "pallet-authorship",
+ "pallet-babe",
+ "pallet-balances",
+ "pallet-commitments",
+ "pallet-grandpa",
+ "pallet-permissions",
+ "pallet-session",
+ "pallet-staking",
+ "pallet-staking-reward-curve",
+ "pallet-tables",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "proof-of-sql-commitment-map",
+ "proof-of-sql-static-setups",
+ "scale-info",
+ "sp-authority-discovery",
+ "sp-consensus-babe",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking 36.0.0",
+]
+
+[[package]]
 name = "pallet-root-offences"
 version = "35.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -19397,6 +19432,7 @@ dependencies = [
  "pallet-multisig",
  "pallet-offences",
  "pallet-permissions",
+ "pallet-rewards",
  "pallet-session",
  "pallet-smartcontracts",
  "pallet-staking",

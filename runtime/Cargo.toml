@@ -59,6 +59,7 @@ pallet-attestation.workspace = true
 pallet-keystore.workspace = true
 pallet-smartcontracts.workspace = true
 
+pallet-rewards.workspace = true
 pallet-system-tables.workspace = true
 pallet-system-contracts.workspace = true
 pallet-staking.workspace = true
@@ -134,6 +135,7 @@ std = [
 	"pallet-election-provider-multi-phase/std",
 	"pallet-babe/std",
 	"pallet-indices/std",
+	"pallet-rewards/std",
 	"sp-consensus-babe/std",
 	"sp-staking/std",
 	"frame-election-provider-support/std",
