@@ -1,3 +1,12 @@
+# [1.3.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v1.2.1...v1.3.0) (2025-05-22)
+
+
+### Features
+
+* Added the rewards pallet for automated payouts ([ce455d2](https://github.com/spaceandtimefdn/sxt-node-archive/commit/ce455d21763ff64c37407ff14550b42ed2bcfef1))
+
+
+
 ## [1.2.1](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v1.2.0...v1.2.1) (2025-05-16)
 
 
@@ -31,10 +40,6 @@
 
 
 ## [1.0.5](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v1.0.4...v1.0.5) (2025-05-14)
-
-
-
-## [1.0.4](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v1.0.3...v1.0.4) (2025-05-14)
 
 
 
