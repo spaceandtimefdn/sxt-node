@@ -178,7 +178,7 @@ impl BlockProcessor for DummyProcessor {
             .await
             .unwrap_or_default()
             .len();
-        let payout_error = fetch_events::<PayoutErro>(&block)
+        let payout_error = fetch_events::<PayoutError>(&block)
             .await
             .unwrap_or_default()
             .len();
@@ -206,19 +206,13 @@ impl BlockProcessor for DummyProcessor {
             .inc_by(quorum_count as u64);
         EVENT_COUNTER
             .with_label_values(&["EraPaid"])
-            .inc_by(era_paid_count as u64);
+            .inc_by(era_paid as u64);
         EVENT_COUNTER
             .with_label_values(&["SetupError"])
             .inc_by(setup_error as u64);
         EVENT_COUNTER
             .with_label_values(&["PayoutError"])
             .inc_by(payout_error as u64);
-        EVENT_COUNTER
-            .with_label_values(&["BlockAttested"])
-            .inc_by(attested_count as u64);
-        EVENT_COUNTER
-            .with_label_values(&["DataSubmitted"])
-            .inc_by(submitted_count as u64);
         EVENT_COUNTER
             .with_label_values(&["Payout"])
             .inc_by(payout as u64);
