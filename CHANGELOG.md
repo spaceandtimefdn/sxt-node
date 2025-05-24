@@ -1,3 +1,18 @@
+# [1.4.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v1.3.0...v1.4.0) (2025-05-24)
+
+
+### Bug Fixes
+
+* correct build errors ([0f74bc7](https://github.com/spaceandtimefdn/sxt-node-archive/commit/0f74bc7c50feed96c4c9c7bb700fe0315677484f))
+
+
+### Features
+
+* add reward rate calculation to canary ([5b99429](https://github.com/spaceandtimefdn/sxt-node-archive/commit/5b99429894f9f39e7ea8deea4d7c10660c619b91))
+* update chain runtime to include new rewards pallet ([bb4a46e](https://github.com/spaceandtimefdn/sxt-node-archive/commit/bb4a46e0c0559f1a2fb1b1bebcdbc65e49ae3685))
+
+
+
 # [1.3.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v1.2.1...v1.3.0) (2025-05-22)
 
 
@@ -36,10 +51,6 @@
 * add proof plan RPCs ([58fe867](https://github.com/spaceandtimefdn/sxt-node-archive/commit/58fe867507aec70e83ed0a205e528b63d8c2075b))
 * add runtime api for reading commitments storage for any scheme ([57809e4](https://github.com/spaceandtimefdn/sxt-node-archive/commit/57809e4437e96371f04edb845e6e6904dd7666d8))
 * read commitments storage for multiple tables and any scheme ([9673c4f](https://github.com/spaceandtimefdn/sxt-node-archive/commit/9673c4f66cbae5fd73a034db31b7fd557a21fdf0))
-
-
-
-## [1.0.5](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v1.0.4...v1.0.5) (2025-05-14)
 
 
 
