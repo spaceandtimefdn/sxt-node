@@ -1,3 +1,13 @@
+# [1.5.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v1.4.0...v1.5.0) (2025-05-28)
+
+
+### Features
+
+* add zkpay to system staking contracts ([4a07a0a](https://github.com/spaceandtimefdn/sxt-node-archive/commit/4a07a0ad40c9ec7e42cc007daa5a5a6e0520fad7))
+* make new namespace for zkpay ([28c77d4](https://github.com/spaceandtimefdn/sxt-node-archive/commit/28c77d47147967b3859486479b128dd5980c126b))
+
+
+
 # [1.4.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v1.3.0...v1.4.0) (2025-05-24)
 
 
@@ -38,19 +48,6 @@
 
 * Added a simple unit test for the era_payout ([00855f0](https://github.com/spaceandtimefdn/sxt-node-archive/commit/00855f046bf3b3d12d3bf51c4bf1f08e605a6e42))
 * Implement an initial naive reward amount targeting 7.9% annual. ([eff5527](https://github.com/spaceandtimefdn/sxt-node-archive/commit/eff55275eef126d491964682e2585b70546aab99))
-
-
-
-# [1.1.0](https://github.com/spaceandtimefdn/sxt-node-archive/compare/v1.0.5...v1.1.0) (2025-05-15)
-
-
-### Features
-
-* add CommitmentId extension trait for commitments ([11581ee](https://github.com/spaceandtimefdn/sxt-node-archive/commit/11581ee76480130535a68425f6cf237b5782aeaa))
-* add CommitmentScheme::into_any_concrete method ([7c44ab7](https://github.com/spaceandtimefdn/sxt-node-archive/commit/7c44ab70c610d53963ac59f10960b2bf9bd8ec70))
-* add proof plan RPCs ([58fe867](https://github.com/spaceandtimefdn/sxt-node-archive/commit/58fe867507aec70e83ed0a205e528b63d8c2075b))
-* add runtime api for reading commitments storage for any scheme ([57809e4](https://github.com/spaceandtimefdn/sxt-node-archive/commit/57809e4437e96371f04edb845e6e6904dd7666d8))
-* read commitments storage for multiple tables and any scheme ([9673c4f](https://github.com/spaceandtimefdn/sxt-node-archive/commit/9673c4f66cbae5fd73a034db31b7fd557a21fdf0))
 
 
 
