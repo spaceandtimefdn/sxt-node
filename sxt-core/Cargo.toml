@@ -42,6 +42,8 @@ hex = { workspace = true, default-features = false }
 alloy = { workspace = true, optional = true, features = ["full"]}
 serde_json = { workspace = true, default-features = false, features = ["alloc"] }
 regex = { workspace = true, default-features = false }
+rand_core = { workspace = true, default-features = false }
+rand_chacha = { workspace = true, default-features = false }
 
 [dev-dependencies]
 rand = "0.8.5"
