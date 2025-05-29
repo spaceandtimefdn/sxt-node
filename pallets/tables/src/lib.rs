@@ -1,4 +1,6 @@
-//! TODO: add docs
+//! The Tables pallet provides functionality related to interacting with tables on
+//! the SXT Chain. It provides support for creating, dropping, and editing tables and
+//! schemas.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
@@ -62,8 +64,10 @@ pub mod pallet {
     use sxt_core::ByteString;
 
     use super::*;
+    use crate::Event::{NamespaceUuidUpdated, TableUuidUpdated};
 
-    /// TODO: add docs
+    /// A wrapper type that contains all the information needed to create a table
+    /// with or without a historical commitment and associated snapshot
     pub type UpdateTableCmd = (
         TableIdentifier,
         CreateStatement,
@@ -107,9 +111,9 @@ pub mod pallet {
     pub trait Config:
         frame_system::Config + pallet_permissions::Config + pallet_commitments::Config
     {
-        /// TODO: add docs
+        /// A runtime event binding to the runtime
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-        /// TODO: add docs
+        /// The weight info to be used for calls
         type WeightInfo: WeightInfo;
     }
 
@@ -129,7 +133,28 @@ pub mod pallet {
             /// Source
             source: Source,
         },
-
+        /// The UUID for a given namespace has been updated
+        NamespaceUuidUpdated {
+            /// The previous UUID of the namespace
+            old_uuid: TableUuid,
+            /// The new UUID of the namespace
+            new_uuid: TableUuid,
+            /// The namespace version that was updated
+            version: TableVersion,
+            /// The namespace that was updated
+            namespace: TableNamespace,
+        },
+        /// The UUID for a given table has been updated
+        TableUuidUpdated {
+            /// The previous UUID of the table
+            old_uuid: TableUuid,
+            /// The new UUID of the table
+            new_uuid: TableUuid,
+            /// The table version that was updated
+            version: TableVersion,
+            /// The table identifier that was updated
+            table: TableIdentifier,
+        },
         /// The schema for a table has been updated
         SchemaUpdated(Option<T::AccountId>, UpdateTableList),
 
@@ -300,6 +325,7 @@ pub mod pallet {
         UUIDGenerationError,
     }
 
+    /// The implementation for the pallet extrinsics
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -472,6 +498,60 @@ pub mod pallet {
             ensure_root(origin)?;
 
             Self::remove_commits(ident);
+
+            Ok(())
+        }
+
+        /// Update the UUID for the specificed namespace and version to the provided UUID
+        #[pallet::call_index(7)]
+        #[pallet::weight(<T as Config>::WeightInfo::update_namespace_uuid())]
+        pub fn update_namespace_uuid(
+            origin: OriginFor<T>,
+            namespace: TableNamespace,
+            version: TableVersion,
+            new_uuid: TableUuid,
+        ) -> DispatchResult {
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            )?;
+
+            let maybe_uuid = NamespaceVersions::<T>::get(&namespace, version);
+            NamespaceVersions::<T>::set(&namespace, version, new_uuid.clone());
+
+            Self::deposit_event(NamespaceUuidUpdated {
+                old_uuid: maybe_uuid,
+                new_uuid,
+                version,
+                namespace,
+            });
+
+            Ok(())
+        }
+
+        /// Update the UUID for the specificed table and version to the provided UUID
+        #[pallet::call_index(8)]
+        #[pallet::weight(<T as Config>::WeightInfo::update_table_uuid())]
+        pub fn update_table_uuid(
+            origin: OriginFor<T>,
+            table: TableIdentifier,
+            version: TableVersion,
+            new_uuid: TableUuid,
+        ) -> DispatchResult {
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            )?;
+
+            let maybe_uuid = TableVersions::<T>::get(&table, version);
+            TableVersions::<T>::set(&table, version, new_uuid.clone());
+
+            Self::deposit_event(TableUuidUpdated {
+                old_uuid: maybe_uuid,
+                new_uuid,
+                version,
+                table,
+            });
 
             Ok(())
         }

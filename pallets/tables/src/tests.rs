@@ -12,8 +12,11 @@ use sxt_core::tables::{
     Source,
     SourceAndMode,
     TableIdentifier,
+    TableName,
+    TableNamespace,
     TableType,
     TableUuid,
+    TableVersion,
 };
 
 use crate::mock::*;
@@ -21,6 +24,7 @@ use crate::{
     CommitmentCreationCmd,
     CreateTableList,
     Event,
+    NamespaceVersions,
     TableVersions,
     UpdateTable,
     UpdateTableList,
@@ -183,7 +187,7 @@ fn create_table_should_handle_withs_properly() {
             commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
             source: Source::Ethereum,
         }])
-        .expect("Table list should fit in BoundedVec");
+            .expect("Table list should fit in BoundedVec");
 
         assert_ok!(Tables::create_tables(RuntimeOrigin::root(), tables.clone()));
 
@@ -252,7 +256,7 @@ fn create_table_should_generate_uuid_and_add_meta_column_without_with_clause() {
             commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
             source: Source::Ethereum,
         }])
-        .expect("Table list should fit in BoundedVec");
+            .expect("Table list should fit in BoundedVec");
 
         assert_ok!(Tables::create_tables(RuntimeOrigin::root(), tables.clone()));
 
@@ -272,6 +276,95 @@ fn create_table_should_generate_uuid_and_add_meta_column_without_with_clause() {
             }
             _ => panic!("Expected SchemaUpdated event not found"),
         }
+    });
+}
+
+#[test]
+fn update_namespace_uuid_works() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let namespace: TableNamespace =
+            TableNamespace::try_from("TEST_NAMESPACE".as_bytes().to_vec()).unwrap();
+        let version = 1;
+        let old_uuid: TableUuid = TableUuid::try_from("TEST-ID-OLD".as_bytes().to_vec()).unwrap();
+        let new_uuid =
+            TableUuid::try_from("F801A872785FAB3F16C51CF7A1969000".as_bytes().to_vec()).unwrap();
+
+        // Simulate original UUID
+        NamespaceVersions::<Test>::insert(&namespace, version, old_uuid.clone());
+
+        // Grant permission
+        let (who, signer) = user(1);
+        set_permission!(who, TablesPalletPermission::EditSchema);
+
+        // Call extrinsic
+        assert_ok!(Tables::update_namespace_uuid(
+            RuntimeOrigin::signed(who),
+            namespace.clone(),
+            version,
+            new_uuid.clone()
+        ));
+
+        // Check storage
+        assert_eq!(
+            NamespaceVersions::<Test>::get(&namespace, version),
+            new_uuid
+        );
+
+        // Check event
+        System::assert_last_event(
+            Event::NamespaceUuidUpdated {
+                old_uuid,
+                new_uuid,
+                version,
+                namespace,
+            }
+            .into(),
+        );
+    });
+}
+
+#[test]
+fn update_table_uuid_works() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let table = TableIdentifier {
+            namespace: TableNamespace::try_from("TEST_NAMESPACE".as_bytes().to_vec()).unwrap(),
+            name: TableName::try_from("TEST_TABLE".as_bytes().to_vec()).unwrap(),
+        };
+        let version = 1;
+
+        let old_uuid: TableUuid = TableUuid::try_from("TEST-ID-OLD".as_bytes().to_vec()).unwrap();
+        let new_uuid =
+            TableUuid::try_from("F801A872785FAB3F16C51CF7A1969000".as_bytes().to_vec()).unwrap();
+
+        // Simulate original UUID
+        TableVersions::<Test>::insert(&table, version, old_uuid.clone());
+
+        // Grant permission
+        let (who, signer) = user(1);
+        set_permission!(who, TablesPalletPermission::EditSchema);
+
+        // Call extrinsic
+        assert_ok!(Tables::update_table_uuid(
+            RuntimeOrigin::signed(who),
+            table.clone(),
+            version,
+            new_uuid.clone()
+        ));
+
+        // Check storage
+        assert_eq!(TableVersions::<Test>::get(&table, version), new_uuid);
+
+        System::assert_last_event(
+            Event::TableUuidUpdated {
+                old_uuid,
+                new_uuid,
+                version,
+                table,
+            }
+            .into(),
+        );
     });
 }
 
