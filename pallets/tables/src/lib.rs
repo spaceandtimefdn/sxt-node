@@ -38,7 +38,6 @@ pub mod pallet {
         create_statement_to_sqlparser_remove_with,
         extract_schema_uuid,
         generate_column_uuid_list,
-        generate_column_uuid_list2,
         generate_namespace_uuid,
         generate_table_uuid,
         sqlparser_to_create_statement,
@@ -452,7 +451,8 @@ pub mod pallet {
             let namespace_uuid = match extract_schema_uuid(raw_sql) {
                 Some(uuid) => TableUuid::try_from(uuid.as_bytes().to_vec())
                     .map_err(|_| Error::<T>::TableUUIDError)?,
-                None => generate_namespace_uuid(block_number.into(), schema_name_s)?,
+                None => generate_namespace_uuid(block_number.into(), schema_name_s)
+                    .ok_or(Error::<T>::UUIDGenerationError)?,
             };
 
             Self::insert_namespace_uuid(schema_name, version, namespace_uuid.clone())?;
@@ -669,30 +669,9 @@ pub mod pallet {
             Ok(statement_with_metadata)
         }
 
-        /// Attempts to extract UUIDs for the provided table, generating new ones if there are none
-        /// present in the DDL
+        /// Attempts to retrieve the UUID for the provided table from the CreateStatement,
+        /// generating UUIDs if that fails.
         pub fn get_or_generate_uuids_for_table(
-            statement: CreateStatement,
-            identifier: TableIdentifier,
-        ) -> (TableUuid, ColumnUuidList) {
-            // Check if this table statement has UUIDs embedded in it
-            let Some((table_uuid, column_uuids)) = uuids_from_create_statement(statement.clone())
-            else {
-                // If not we generate them for the table
-                let block_number = <frame_system::Pallet<T>>::block_number();
-                let namespace = from_utf8(&identifier.namespace).unwrap();
-                let name = from_utf8(&identifier.name).unwrap();
-                return (
-                    generate_table_uuid(block_number.into(), namespace, name).unwrap(),
-                    generate_column_uuid_list(statement),
-                );
-            };
-
-            (table_uuid, column_uuids)
-        }
-
-        /// v2
-        pub fn get_or_generate_uuids_for_table2(
             raw: CreateStatement,
             identifier: TableIdentifier,
         ) -> Result<(TableUuid, ColumnUuidList), DispatchError> {
@@ -714,8 +693,9 @@ pub mod pallet {
             let name = from_utf8(&identifier.name)
                 .map_err(|_| DispatchError::Other("Invalid UTF-8 name"))?;
 
-            let table_uuid = generate_table_uuid(block_number.into(), namespace, name)?;
-            let column_uuids = generate_column_uuid_list2(raw)?;
+            let table_uuid = generate_table_uuid(block_number.into(), namespace, name)
+                .ok_or(Error::<T>::UUIDGenerationError)?;
+            let column_uuids = generate_column_uuid_list(raw)?;
 
             Ok((table_uuid, column_uuids))
         }
@@ -764,11 +744,13 @@ pub mod pallet {
         .into_iter()
         .map(|mut table| {
             // Generate or extract UUIDs
-            let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table2(
+            let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(
                 table.create_statement.clone(),
                 table.ident.clone(),
             )
             .map_err(|_| Error::<T>::UUIDGenerationError)?;
+
+            // TODO Update the create statement to add the UUIDs to the WITH clause
 
             Self::insert_table_uuid(table.ident.clone(), table_uuid, column_uuids)?;
             Self::insert_schema(
