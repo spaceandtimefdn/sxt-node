@@ -11986,7 +11986,6 @@ dependencies = [
 name = "pallet-tables"
 version = "0.1.0"
 dependencies = [
- "bincode 2.0.0",
  "commitment-sql",
  "frame-benchmarking",
  "frame-support",
@@ -11995,6 +11994,8 @@ dependencies = [
  "pallet-permissions",
  "parity-scale-codec",
  "proof-of-sql-commitment-map",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "scale-info",
  "sp-core",
  "sp-io",
@@ -19317,6 +19318,8 @@ dependencies = [
  "postcard",
  "proof-of-sql",
  "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "regex",
  "sc-client-api",
  "scale-info",

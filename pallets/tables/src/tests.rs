@@ -382,7 +382,7 @@ fn test_get_or_generate_uuids_for_table_generates_uuids_if_missing() {
 
         // Act
         let (table_uuid, column_uuids) =
-            Tables::get_or_generate_uuids_for_table2(statement, identifier)
+            Tables::get_or_generate_uuids_for_table(statement, identifier)
                 .expect("should return generated uuids");
 
         // Assert
