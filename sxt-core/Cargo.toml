@@ -8,6 +8,7 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+bincode.workspace = true
 codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
     "derive",
 ] }

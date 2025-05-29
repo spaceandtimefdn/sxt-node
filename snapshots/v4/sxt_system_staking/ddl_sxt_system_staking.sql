@@ -144,3 +144,4 @@ CREATE TABLE IF NOT EXISTS SXT_SYSTEM_STAKING.STAKINGTOKENSET(
     token binary not null,
     primary key (block_number, transaction_hash, event_index)
 );
+

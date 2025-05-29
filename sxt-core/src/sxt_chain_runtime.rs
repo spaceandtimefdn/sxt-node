@@ -6,7 +6,7 @@ pub mod api {
     mod root_mod {
         pub use super::*;
     }
-    pub static PALLETS: [&str; 28usize] = [
+    pub static PALLETS: [&str; 29usize] = [
         "System",
         "Utility",
         "Babe",
@@ -35,8 +35,9 @@ pub mod api {
         "Smartcontracts",
         "SystemTables",
         "SystemContracts",
+        "Rewards",
     ];
-    pub static RUNTIME_APIS: [&str; 15usize] = [
+    pub static RUNTIME_APIS: [&str; 16usize] = [
         "Core",
         "Metadata",
         "BlockBuilder",
@@ -52,6 +53,7 @@ pub mod api {
         "TransactionPaymentCallApi",
         "GenesisBuilder",
         "AuthorityDiscoveryApi",
+        "CommitmentsApi",
     ];
     #[doc = r" The error type that is returned when there is a runtime issue."]
     pub type DispatchError = runtime_types::sp_runtime::DispatchError;
@@ -131,6 +133,9 @@ pub mod api {
                 &self,
             ) -> authority_discovery_api::AuthorityDiscoveryApi {
                 authority_discovery_api::AuthorityDiscoveryApi
+            }
+            pub fn commitments_api(&self) -> commitments_api::CommitmentsApi {
+                commitments_api::CommitmentsApi
             }
         }
         pub mod core {
@@ -1893,9 +1898,9 @@ pub mod api {
                         "query_call_info",
                         types::QueryCallInfo { call, len },
                         [
-                            41u8, 121u8, 104u8, 57u8, 194u8, 190u8, 236u8, 93u8, 152u8, 19u8, 30u8,
-                            72u8, 6u8, 168u8, 189u8, 28u8, 115u8, 176u8, 237u8, 190u8, 104u8,
-                            222u8, 125u8, 185u8, 37u8, 73u8, 66u8, 30u8, 31u8, 99u8, 57u8, 81u8,
+                            64u8, 62u8, 84u8, 62u8, 62u8, 200u8, 201u8, 185u8, 180u8, 132u8, 35u8,
+                            235u8, 49u8, 193u8, 74u8, 143u8, 127u8, 6u8, 181u8, 80u8, 11u8, 38u8,
+                            190u8, 211u8, 78u8, 245u8, 62u8, 152u8, 58u8, 184u8, 9u8, 92u8,
                         ],
                     )
                 }
@@ -1913,9 +1918,9 @@ pub mod api {
                         "query_call_fee_details",
                         types::QueryCallFeeDetails { call, len },
                         [
-                            101u8, 131u8, 28u8, 80u8, 4u8, 225u8, 15u8, 115u8, 249u8, 16u8, 149u8,
-                            226u8, 48u8, 50u8, 124u8, 44u8, 39u8, 11u8, 89u8, 205u8, 79u8, 182u8,
-                            139u8, 121u8, 4u8, 105u8, 133u8, 213u8, 56u8, 73u8, 237u8, 199u8,
+                            196u8, 239u8, 108u8, 149u8, 122u8, 7u8, 222u8, 166u8, 68u8, 115u8,
+                            111u8, 6u8, 199u8, 170u8, 4u8, 194u8, 134u8, 135u8, 65u8, 188u8, 62u8,
+                            211u8, 24u8, 170u8, 74u8, 139u8, 168u8, 13u8, 14u8, 37u8, 119u8, 27u8,
                         ],
                     )
                 }
@@ -2309,6 +2314,71 @@ pub mod api {
                 pub struct Authorities {}
             }
         }
+        pub mod commitments_api {
+            use super::{root_mod, runtime_types};
+            #[doc = " Runtime APIs for reading from pallet-commitments."]
+            pub struct CommitmentsApi;
+            impl CommitmentsApi {
+                #[doc = " Returns the table commitments for the given table identifiers, for the first scheme"]
+                #[doc = " that covers all of them."]
+                #[doc = ""]
+                #[doc = " Returns `None` if no scheme has complete coverage of the given tables."]
+                pub fn table_commitments_any_scheme(
+                    &self,
+                    table_identifiers: types::table_commitments_any_scheme::TableIdentifiers,
+                ) -> ::subxt::ext::subxt_core::runtime_api::payload::StaticPayload<
+                    types::TableCommitmentsAnyScheme,
+                    types::table_commitments_any_scheme::output::Output,
+                > {
+                    ::subxt::ext::subxt_core::runtime_api::payload::StaticPayload::new_static(
+                        "CommitmentsApi",
+                        "table_commitments_any_scheme",
+                        types::TableCommitmentsAnyScheme { table_identifiers },
+                        [
+                            59u8, 54u8, 102u8, 194u8, 116u8, 177u8, 86u8, 117u8, 172u8, 153u8,
+                            206u8, 133u8, 46u8, 103u8, 95u8, 56u8, 174u8, 103u8, 14u8, 227u8,
+                            166u8, 61u8, 253u8, 135u8, 135u8, 217u8, 146u8, 35u8, 48u8, 141u8,
+                            216u8, 204u8,
+                        ],
+                    )
+                }
+            }
+            pub mod types {
+                use super::runtime_types;
+                pub mod table_commitments_any_scheme {
+                    use super::runtime_types;
+                    pub type TableIdentifiers =
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            runtime_types::sxt_core::tables::TableIdentifier,
+                        >;
+                    pub mod output {
+                        use super::runtime_types;
+                        pub type Output = :: core :: option :: Option < runtime_types :: proof_of_sql_commitment_map :: commitment_scheme :: AnyCommitmentScheme < runtime_types :: proof_of_sql_commitment_map :: generic_over_commitment :: ConcreteType < :: subxt :: ext :: subxt_core :: alloc :: vec :: Vec < runtime_types :: proof_of_sql_commitment_map :: commitment_storage_map :: TableCommitmentBytes > > > > ;
+                    }
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub struct TableCommitmentsAnyScheme {
+                    pub table_identifiers: table_commitments_any_scheme::TableIdentifiers,
+                }
+            }
+        }
+    }
+    pub fn view_functions() -> ViewFunctionsApi {
+        ViewFunctionsApi
     }
     pub fn custom() -> CustomValuesApi {
         CustomValuesApi
@@ -2441,6 +2511,9 @@ pub mod api {
         pub fn system_contracts(&self) -> system_contracts::storage::StorageApi {
             system_contracts::storage::StorageApi
         }
+        pub fn rewards(&self) -> rewards::storage::StorageApi {
+            rewards::storage::StorageApi
+        }
     }
     pub struct TransactionApi;
     impl TransactionApi {
@@ -2509,7 +2582,12 @@ pub mod api {
         pub fn system_contracts(&self) -> system_contracts::calls::TransactionApi {
             system_contracts::calls::TransactionApi
         }
+        pub fn rewards(&self) -> rewards::calls::TransactionApi {
+            rewards::calls::TransactionApi
+        }
     }
+    pub struct ViewFunctionsApi;
+    impl ViewFunctionsApi {}
     #[doc = r" check whether the metadata provided is aligned with this statically generated code."]
     pub fn is_codegen_valid_for(metadata: &::subxt::ext::subxt_core::Metadata) -> bool {
         let runtime_metadata_hash = metadata
@@ -2519,9 +2597,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                168u8, 93u8, 43u8, 189u8, 190u8, 225u8, 183u8, 162u8, 30u8, 242u8, 108u8, 120u8,
-                27u8, 126u8, 209u8, 97u8, 255u8, 61u8, 125u8, 155u8, 218u8, 113u8, 45u8, 29u8, 7u8,
-                216u8, 139u8, 108u8, 230u8, 84u8, 133u8, 151u8,
+                208u8, 204u8, 208u8, 151u8, 26u8, 16u8, 129u8, 175u8, 120u8, 135u8, 45u8, 171u8,
+                71u8, 68u8, 199u8, 115u8, 67u8, 245u8, 71u8, 10u8, 216u8, 14u8, 132u8, 118u8,
+                181u8, 75u8, 14u8, 100u8, 89u8, 52u8, 246u8, 166u8,
             ]
     }
     pub mod system {
@@ -3678,9 +3756,10 @@ pub mod api {
                         "Events",
                         (),
                         [
-                            196u8, 1u8, 40u8, 124u8, 59u8, 58u8, 195u8, 136u8, 134u8, 176u8, 12u8,
-                            229u8, 222u8, 45u8, 154u8, 235u8, 123u8, 149u8, 168u8, 61u8, 102u8,
-                            76u8, 10u8, 189u8, 79u8, 96u8, 115u8, 201u8, 212u8, 34u8, 47u8, 87u8,
+                            107u8, 77u8, 17u8, 194u8, 80u8, 29u8, 242u8, 219u8, 237u8, 204u8,
+                            222u8, 61u8, 142u8, 180u8, 110u8, 128u8, 185u8, 3u8, 82u8, 40u8, 73u8,
+                            161u8, 205u8, 212u8, 192u8, 209u8, 93u8, 13u8, 237u8, 49u8, 207u8,
+                            224u8,
                         ],
                     )
                 }
@@ -4270,10 +4349,10 @@ pub mod api {
                         "batch",
                         types::Batch { calls },
                         [
-                            209u8, 51u8, 34u8, 56u8, 111u8, 220u8, 214u8, 22u8, 235u8, 247u8,
-                            246u8, 227u8, 156u8, 55u8, 81u8, 169u8, 208u8, 227u8, 79u8, 144u8,
-                            139u8, 59u8, 185u8, 36u8, 25u8, 173u8, 251u8, 145u8, 77u8, 55u8, 155u8,
-                            65u8,
+                            108u8, 181u8, 78u8, 50u8, 225u8, 208u8, 143u8, 254u8, 31u8, 144u8,
+                            123u8, 26u8, 3u8, 50u8, 60u8, 8u8, 202u8, 37u8, 111u8, 141u8, 117u8,
+                            138u8, 93u8, 232u8, 194u8, 189u8, 148u8, 33u8, 127u8, 228u8, 175u8,
+                            14u8,
                         ],
                     )
                 }
@@ -4304,9 +4383,10 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            230u8, 111u8, 31u8, 11u8, 54u8, 10u8, 125u8, 144u8, 86u8, 105u8, 255u8,
-                            30u8, 228u8, 119u8, 114u8, 181u8, 35u8, 98u8, 170u8, 18u8, 48u8, 222u8,
-                            92u8, 249u8, 57u8, 81u8, 243u8, 193u8, 44u8, 106u8, 202u8, 170u8,
+                            77u8, 109u8, 88u8, 254u8, 139u8, 35u8, 183u8, 141u8, 143u8, 44u8, 67u8,
+                            71u8, 177u8, 100u8, 240u8, 69u8, 178u8, 123u8, 77u8, 212u8, 124u8,
+                            250u8, 177u8, 20u8, 154u8, 69u8, 39u8, 250u8, 236u8, 224u8, 161u8,
+                            23u8,
                         ],
                     )
                 }
@@ -4333,9 +4413,10 @@ pub mod api {
                         "batch_all",
                         types::BatchAll { calls },
                         [
-                            115u8, 197u8, 115u8, 44u8, 208u8, 31u8, 139u8, 212u8, 209u8, 164u8,
-                            1u8, 190u8, 92u8, 52u8, 98u8, 87u8, 154u8, 251u8, 234u8, 63u8, 236u8,
-                            90u8, 42u8, 230u8, 229u8, 137u8, 188u8, 129u8, 2u8, 96u8, 146u8, 82u8,
+                            181u8, 105u8, 16u8, 72u8, 204u8, 231u8, 252u8, 106u8, 51u8, 49u8,
+                            247u8, 216u8, 10u8, 171u8, 55u8, 127u8, 45u8, 227u8, 204u8, 62u8,
+                            121u8, 124u8, 17u8, 141u8, 127u8, 93u8, 99u8, 186u8, 5u8, 188u8, 14u8,
+                            243u8,
                         ],
                     )
                 }
@@ -4359,9 +4440,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            213u8, 36u8, 163u8, 249u8, 70u8, 175u8, 78u8, 214u8, 138u8, 132u8,
-                            240u8, 121u8, 34u8, 91u8, 203u8, 80u8, 194u8, 99u8, 94u8, 104u8, 7u8,
-                            252u8, 5u8, 236u8, 202u8, 125u8, 29u8, 230u8, 43u8, 9u8, 225u8, 41u8,
+                            123u8, 25u8, 161u8, 5u8, 198u8, 139u8, 148u8, 253u8, 181u8, 78u8,
+                            153u8, 175u8, 69u8, 195u8, 164u8, 7u8, 173u8, 131u8, 22u8, 18u8, 228u8,
+                            79u8, 192u8, 126u8, 167u8, 134u8, 96u8, 97u8, 156u8, 42u8, 125u8, 73u8,
                         ],
                     )
                 }
@@ -4388,10 +4469,10 @@ pub mod api {
                         "force_batch",
                         types::ForceBatch { calls },
                         [
-                            14u8, 52u8, 115u8, 139u8, 72u8, 12u8, 68u8, 101u8, 137u8, 96u8, 27u8,
-                            113u8, 149u8, 13u8, 90u8, 156u8, 20u8, 89u8, 218u8, 204u8, 214u8,
-                            227u8, 19u8, 167u8, 78u8, 250u8, 142u8, 48u8, 220u8, 169u8, 79u8,
-                            124u8,
+                            43u8, 62u8, 59u8, 44u8, 177u8, 143u8, 105u8, 121u8, 120u8, 237u8,
+                            225u8, 60u8, 109u8, 55u8, 133u8, 176u8, 63u8, 27u8, 30u8, 141u8, 75u8,
+                            229u8, 10u8, 112u8, 34u8, 225u8, 135u8, 136u8, 229u8, 190u8, 160u8,
+                            95u8,
                         ],
                     )
                 }
@@ -4415,9 +4496,10 @@ pub mod api {
                             weight,
                         },
                         [
-                            4u8, 92u8, 198u8, 6u8, 149u8, 195u8, 17u8, 83u8, 122u8, 138u8, 62u8,
-                            195u8, 221u8, 173u8, 70u8, 21u8, 60u8, 3u8, 136u8, 63u8, 119u8, 229u8,
-                            233u8, 65u8, 24u8, 182u8, 5u8, 201u8, 193u8, 125u8, 86u8, 130u8,
+                            18u8, 15u8, 30u8, 171u8, 240u8, 0u8, 178u8, 22u8, 165u8, 194u8, 64u8,
+                            56u8, 213u8, 77u8, 206u8, 11u8, 243u8, 187u8, 96u8, 128u8, 117u8,
+                            172u8, 144u8, 189u8, 237u8, 75u8, 26u8, 138u8, 177u8, 107u8, 97u8,
+                            89u8,
                         ],
                     )
                 }
@@ -14740,10 +14822,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            71u8, 177u8, 224u8, 102u8, 82u8, 160u8, 238u8, 189u8, 47u8, 183u8,
-                            95u8, 150u8, 150u8, 67u8, 81u8, 46u8, 252u8, 248u8, 185u8, 77u8, 240u8,
-                            29u8, 244u8, 166u8, 166u8, 190u8, 35u8, 252u8, 32u8, 183u8, 144u8,
-                            50u8,
+                            190u8, 217u8, 75u8, 247u8, 7u8, 249u8, 61u8, 25u8, 173u8, 159u8, 20u8,
+                            86u8, 158u8, 114u8, 121u8, 34u8, 155u8, 104u8, 12u8, 207u8, 56u8, 3u8,
+                            212u8, 255u8, 43u8, 139u8, 92u8, 100u8, 96u8, 81u8, 235u8, 181u8,
                         ],
                     )
                 }
@@ -14766,10 +14847,9 @@ pub mod api {
                             weight,
                         },
                         [
-                            116u8, 139u8, 55u8, 209u8, 33u8, 233u8, 246u8, 250u8, 157u8, 94u8,
-                            241u8, 116u8, 139u8, 94u8, 230u8, 69u8, 193u8, 187u8, 155u8, 51u8,
-                            74u8, 96u8, 165u8, 56u8, 225u8, 72u8, 247u8, 133u8, 49u8, 162u8, 54u8,
-                            99u8,
+                            140u8, 223u8, 216u8, 160u8, 243u8, 6u8, 159u8, 21u8, 98u8, 208u8, 10u8,
+                            34u8, 58u8, 220u8, 154u8, 143u8, 232u8, 162u8, 187u8, 98u8, 218u8,
+                            26u8, 161u8, 78u8, 83u8, 189u8, 63u8, 203u8, 223u8, 235u8, 52u8, 54u8,
                         ],
                     )
                 }
@@ -14809,9 +14889,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            185u8, 215u8, 122u8, 60u8, 113u8, 160u8, 191u8, 73u8, 244u8, 228u8,
-                            98u8, 157u8, 131u8, 117u8, 56u8, 250u8, 3u8, 6u8, 27u8, 251u8, 125u8,
-                            140u8, 77u8, 35u8, 38u8, 108u8, 60u8, 6u8, 19u8, 107u8, 179u8, 251u8,
+                            71u8, 135u8, 7u8, 215u8, 211u8, 208u8, 187u8, 18u8, 157u8, 33u8, 27u8,
+                            238u8, 75u8, 108u8, 158u8, 188u8, 22u8, 161u8, 214u8, 129u8, 72u8,
+                            31u8, 30u8, 164u8, 177u8, 157u8, 152u8, 53u8, 45u8, 163u8, 241u8, 50u8,
                         ],
                     )
                 }
@@ -16049,9 +16129,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            127u8, 51u8, 82u8, 147u8, 116u8, 18u8, 113u8, 16u8, 1u8, 156u8, 159u8,
-                            73u8, 91u8, 83u8, 70u8, 218u8, 9u8, 44u8, 48u8, 68u8, 57u8, 1u8, 183u8,
-                            165u8, 105u8, 144u8, 29u8, 131u8, 157u8, 46u8, 109u8, 85u8,
+                            88u8, 43u8, 197u8, 245u8, 214u8, 69u8, 197u8, 80u8, 83u8, 160u8, 72u8,
+                            179u8, 99u8, 30u8, 82u8, 183u8, 83u8, 28u8, 166u8, 25u8, 232u8, 84u8,
+                            101u8, 187u8, 87u8, 177u8, 33u8, 167u8, 140u8, 98u8, 107u8, 200u8,
                         ],
                     )
                 }
@@ -16114,10 +16194,9 @@ pub mod api {
                             max_weight,
                         },
                         [
-                            157u8, 87u8, 246u8, 153u8, 113u8, 226u8, 226u8, 227u8, 243u8, 127u8,
-                            128u8, 172u8, 152u8, 135u8, 188u8, 111u8, 191u8, 48u8, 57u8, 38u8,
-                            88u8, 211u8, 114u8, 193u8, 16u8, 114u8, 2u8, 239u8, 180u8, 201u8,
-                            148u8, 157u8,
+                            8u8, 212u8, 62u8, 65u8, 78u8, 102u8, 106u8, 90u8, 46u8, 32u8, 54u8,
+                            33u8, 244u8, 94u8, 249u8, 11u8, 236u8, 214u8, 128u8, 81u8, 149u8, 96u8,
+                            2u8, 33u8, 253u8, 234u8, 171u8, 20u8, 221u8, 229u8, 114u8, 168u8,
                         ],
                     )
                 }
@@ -20631,6 +20710,273 @@ pub mod api {
             }
         }
     }
+    pub mod rewards {
+        use super::{root_mod, runtime_types};
+        #[doc = "Errors that could occur while processing validator rewards for payout"]
+        pub type Error = runtime_types::pallet_rewards::pallet::Error;
+        #[doc = "Contains a variant per dispatchable extrinsic that this pallet has."]
+        pub type Call = runtime_types::pallet_rewards::pallet::Call;
+        pub mod calls {
+            use super::{root_mod, runtime_types};
+            type DispatchError = runtime_types::sp_runtime::DispatchError;
+            pub mod types {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Set the accountID used to pay out rewards"]
+                pub struct SetPayerAccount {
+                    pub payer: set_payer_account::Payer,
+                }
+                pub mod set_payer_account {
+                    use super::runtime_types;
+                    pub type Payer = ::subxt::ext::subxt_core::utils::AccountId32;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for SetPayerAccount {
+                    const PALLET: &'static str = "Rewards";
+                    const CALL: &'static str = "set_payer_account";
+                }
+            }
+            pub struct TransactionApi;
+            impl TransactionApi {
+                #[doc = "Set the accountID used to pay out rewards"]
+                pub fn set_payer_account(
+                    &self,
+                    payer: types::set_payer_account::Payer,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::SetPayerAccount>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Rewards",
+                        "set_payer_account",
+                        types::SetPayerAccount { payer },
+                        [
+                            34u8, 251u8, 186u8, 92u8, 128u8, 142u8, 249u8, 140u8, 176u8, 189u8,
+                            36u8, 43u8, 225u8, 101u8, 162u8, 142u8, 48u8, 97u8, 114u8, 82u8, 16u8,
+                            87u8, 130u8, 23u8, 171u8, 85u8, 221u8, 186u8, 96u8, 150u8, 62u8, 198u8,
+                        ],
+                    )
+                }
+            }
+        }
+        #[doc = "Events that can be emitted by this pallet"]
+        pub type Event = runtime_types::pallet_rewards::pallet::Event;
+        pub mod events {
+            use super::runtime_types;
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "An era has been fully paid"]
+            pub struct EraPaid {
+                pub index: era_paid::Index,
+            }
+            pub mod era_paid {
+                use super::runtime_types;
+                pub type Index = ::core::primitive::u32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for EraPaid {
+                const PALLET: &'static str = "Rewards";
+                const EVENT: &'static str = "EraPaid";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "A payout of accrued rewards was made automatically by the system"]
+            pub struct Payout {
+                pub validator: payout::Validator,
+            }
+            pub mod payout {
+                use super::runtime_types;
+                pub type Validator = ::subxt::ext::subxt_core::utils::AccountId32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for Payout {
+                const PALLET: &'static str = "Rewards";
+                const EVENT: &'static str = "Payout";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "Events regarding status of payouts"]
+            pub struct Status {
+                pub current_era: status::CurrentEra,
+                pub paying_era: status::PayingEra,
+            }
+            pub mod status {
+                use super::runtime_types;
+                pub type CurrentEra = ::core::primitive::u32;
+                pub type PayingEra = ::core::primitive::u32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for Status {
+                const PALLET: &'static str = "Rewards";
+                const EVENT: &'static str = "Status";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "An error occurred paying out a particular validator"]
+            pub struct PayoutError {
+                pub validator: payout_error::Validator,
+                pub error: payout_error::Error,
+            }
+            pub mod payout_error {
+                use super::runtime_types;
+                pub type Validator = ::subxt::ext::subxt_core::utils::AccountId32;
+                pub type Error = runtime_types::sp_runtime::DispatchError;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for PayoutError {
+                const PALLET: &'static str = "Rewards";
+                const EVENT: &'static str = "PayoutError";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "An error occurred running the payouts"]
+            pub struct SetupError {
+                pub error: setup_error::Error,
+            }
+            pub mod setup_error {
+                use super::runtime_types;
+                pub type Error = runtime_types::sp_runtime::DispatchError;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for SetupError {
+                const PALLET: &'static str = "Rewards";
+                const EVENT: &'static str = "SetupError";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "The account used to payout rewards has been updated"]
+            pub struct PayerUpdated {
+                pub payer: payer_updated::Payer,
+            }
+            pub mod payer_updated {
+                use super::runtime_types;
+                pub type Payer = ::subxt::ext::subxt_core::utils::AccountId32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for PayerUpdated {
+                const PALLET: &'static str = "Rewards";
+                const EVENT: &'static str = "PayerUpdated";
+            }
+        }
+        pub mod storage {
+            use super::runtime_types;
+            pub mod types {
+                use super::runtime_types;
+                pub mod next_paid_era {
+                    use super::runtime_types;
+                    pub type NextPaidEra = ::core::primitive::u32;
+                }
+                pub mod payer_account {
+                    use super::runtime_types;
+                    pub type PayerAccount = ::subxt::ext::subxt_core::utils::AccountId32;
+                }
+            }
+            pub struct StorageApi;
+            impl StorageApi {
+                #[doc = " The next era that we expect to pay out."]
+                pub fn next_paid_era(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::next_paid_era::NextPaidEra,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Rewards",
+                        "NextPaidEra",
+                        (),
+                        [
+                            57u8, 139u8, 198u8, 132u8, 45u8, 114u8, 18u8, 172u8, 45u8, 78u8, 204u8,
+                            121u8, 85u8, 26u8, 71u8, 87u8, 124u8, 208u8, 93u8, 94u8, 70u8, 58u8,
+                            217u8, 187u8, 131u8, 11u8, 106u8, 3u8, 34u8, 39u8, 217u8, 253u8,
+                        ],
+                    )
+                }
+                #[doc = " The account used to pay gas for distributing validator rewards."]
+                pub fn payer_account(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::payer_account::PayerAccount,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Rewards",
+                        "PayerAccount",
+                        (),
+                        [
+                            227u8, 207u8, 134u8, 167u8, 144u8, 52u8, 254u8, 159u8, 132u8, 152u8,
+                            75u8, 11u8, 181u8, 224u8, 237u8, 2u8, 95u8, 148u8, 167u8, 36u8, 54u8,
+                            221u8, 3u8, 97u8, 180u8, 9u8, 81u8, 254u8, 77u8, 150u8, 199u8, 111u8,
+                        ],
+                    )
+                }
+            }
+        }
+    }
     pub mod runtime_types {
         use super::runtime_types;
         pub mod bounded_collections {
@@ -23863,6 +24209,104 @@ pub mod api {
                 }
             }
         }
+        pub mod pallet_rewards {
+            use super::runtime_types;
+            pub mod pallet {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Contains a variant per dispatchable extrinsic that this pallet has."]
+                pub enum Call {
+                    #[codec(index = 0)]
+                    #[doc = "Set the accountID used to pay out rewards"]
+                    set_payer_account {
+                        payer: ::subxt::ext::subxt_core::utils::AccountId32,
+                    },
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Errors that could occur while processing validator rewards for payout"]
+                pub enum Error {
+                    #[codec(index = 0)]
+                    #[doc = "The payer has not been set"]
+                    NoPayerSet,
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Events that can be emitted by this pallet"]
+                pub enum Event {
+                    #[codec(index = 0)]
+                    #[doc = "An era has been fully paid"]
+                    EraPaid { index: ::core::primitive::u32 },
+                    #[codec(index = 1)]
+                    #[doc = "A payout of accrued rewards was made automatically by the system"]
+                    Payout {
+                        validator: ::subxt::ext::subxt_core::utils::AccountId32,
+                    },
+                    #[codec(index = 2)]
+                    #[doc = "Events regarding status of payouts"]
+                    Status {
+                        current_era: ::core::primitive::u32,
+                        paying_era: ::core::primitive::u32,
+                    },
+                    #[codec(index = 3)]
+                    #[doc = "An error occurred paying out a particular validator"]
+                    PayoutError {
+                        validator: ::subxt::ext::subxt_core::utils::AccountId32,
+                        error: runtime_types::sp_runtime::DispatchError,
+                    },
+                    #[codec(index = 4)]
+                    #[doc = "An error occurred running the payouts"]
+                    SetupError {
+                        error: runtime_types::sp_runtime::DispatchError,
+                    },
+                    #[codec(index = 5)]
+                    #[doc = "The account used to payout rewards has been updated"]
+                    PayerUpdated {
+                        payer: ::subxt::ext::subxt_core::utils::AccountId32,
+                    },
+                }
+            }
+        }
         pub mod pallet_session {
             use super::runtime_types;
             pub mod pallet {
@@ -26104,6 +26548,23 @@ pub mod api {
             use super::runtime_types;
             pub mod commitment_scheme {
                 use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub enum AnyCommitmentScheme<_0> {
+                    # [codec (index = 0)] HyperKzg (:: subxt :: ext :: subxt_core :: alloc :: vec :: Vec < runtime_types :: proof_of_sql_commitment_map :: commitment_storage_map :: TableCommitmentBytes > ,) , # [codec (index = 1)] DynamicDory (:: subxt :: ext :: subxt_core :: alloc :: vec :: Vec < runtime_types :: proof_of_sql_commitment_map :: commitment_storage_map :: TableCommitmentBytes > ,) , __Ignore (:: core :: marker :: PhantomData < _0 >) , }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
@@ -29110,6 +29571,8 @@ pub mod api {
                 SystemTables(runtime_types::pallet_system_tables::pallet::Call),
                 #[codec(index = 108)]
                 SystemContracts(runtime_types::pallet_system_contracts::pallet::Call),
+                #[codec(index = 109)]
+                Rewards(runtime_types::pallet_rewards::pallet::Call),
             }
             #[derive(
                 :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -29165,6 +29628,8 @@ pub mod api {
                 Smartcontracts(runtime_types::pallet_smartcontracts::pallet::Error),
                 #[codec(index = 107)]
                 SystemTables(runtime_types::pallet_system_tables::pallet::Error),
+                #[codec(index = 109)]
+                Rewards(runtime_types::pallet_rewards::pallet::Error),
             }
             #[derive(
                 :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -29224,6 +29689,8 @@ pub mod api {
                 SystemTables(runtime_types::pallet_system_tables::pallet::Event),
                 #[codec(index = 108)]
                 SystemContracts(runtime_types::pallet_system_contracts::pallet::Event),
+                #[codec(index = 109)]
+                Rewards(runtime_types::pallet_rewards::pallet::Event),
             }
             #[derive(
                 :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
