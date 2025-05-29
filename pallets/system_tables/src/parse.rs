@@ -28,6 +28,23 @@ pub enum StakingSystemRequest {
     UnstakeCancelled,
 }
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+/// Types of supported ZKpay requests
+pub enum ZKPayRequest {
+    AssetAdded,
+    AssetRemoved,
+    CallbackSucceeded,
+    Initialized,
+    NewQueryPayment,
+    PaymentRefunded,
+    PaymentSettled,
+    QueryCancelled,
+    QueryFulfilled,
+    QueryReceived,
+    SendPayment,
+    TreasurySet,
+}
+
 #[derive(Clone)]
 /// A Wrapper for a system request parsed out of a data submission
 pub struct SystemRequest {
