@@ -23,11 +23,13 @@ scale-info = { features = [
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
+itertools.workspace = true
 pallet-commitments.workspace = true
 pallet-permissions.workspace = true
 pallet-tables.workspace = true
 pallet-system-tables.workspace = true
 pallet-session.workspace = true
+pallet-migrations.workspace = true
 hex.workspace = true
 sxt-core.workspace = true
 sp-runtime = { workspace = true, default-features = false }
@@ -70,6 +72,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-staking/std",
 	"pallet-system-tables/std",
+	"pallet-migrations/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
@@ -78,9 +81,11 @@ runtime-benchmarks = [
 	"pallet-staking/runtime-benchmarks",
 	"pallet-system-tables/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
+	"pallet-migrations/runtime-benchmarks",
 	"dep:proof-of-sql-commitment-map",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
+	"pallet-migrations/try-runtime",
 ]

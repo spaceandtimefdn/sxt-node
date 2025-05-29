@@ -335,7 +335,13 @@ parameter_types! {
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = Migrations;
+    type Migrations = (
+        pallet_indexing::migrations::v1::LazyMigrationV1<
+            Runtime,
+            pallet_indexing::SubstrateWeight<Runtime>,
+            native_api::Api,
+        >,
+    );
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_migrations::mock_helpers::MockedMigrations;

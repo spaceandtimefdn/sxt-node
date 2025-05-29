@@ -3,6 +3,7 @@ use alloc::vec;
 
 use frame_benchmarking::v2::*;
 use frame_system::RawOrigin;
+use sp_core::Hasher;
 
 use super::*;
 #[cfg(test)]
@@ -13,12 +14,15 @@ use crate::Pallet as Indexing;
 #[allow(clippy::multiple_bound_locations)]
 #[instance_benchmarks(where I: NativeApi)]
 mod benchmarks {
+    use frame_support::migrations::SteppedMigration;
+    use frame_support::weights::WeightMeter;
     use native_api::NativeApi;
     use pallet_tables::{CommitmentCreationCmd, UpdateTable};
     use proof_of_sql_commitment_map::CommitmentSchemeFlags;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
     use sxt_core::tables::{
         InsertQuorumSize,
+        QuorumScope,
         Source,
         TableIdentifier,
         TableName,
@@ -160,6 +164,66 @@ mod benchmarks {
             row_data,
         );
         assert!(Indexing::<T, I>::final_data(batch_id).is_some());
+    }
+
+    #[benchmark]
+    fn migration_v0_v1_step() {
+        let submitters_by_scope = (0..MAX_SUBMITTERS * 2)
+            .map(|submitter_num| {
+                let scope = if submitter_num % 2 == 0 {
+                    QuorumScope::Public
+                } else {
+                    QuorumScope::Privileged
+                };
+
+                (account("submitter", submitter_num, 0), scope)
+            })
+            .fold(
+                SubmittersByScope::default(),
+                |submitters_by_scope, (submitter, scope)| {
+                    submitters_by_scope
+                        .with_submitter(submitter, &scope)
+                        .unwrap()
+                },
+            );
+        let hash = <<T as frame_system::Config>::Hashing as Hasher>::hash(&[]);
+        crate::migrations::v1::v0::Submissions::<T, I>::insert(
+            BatchId::default(),
+            hash,
+            submitters_by_scope,
+        );
+        let mut meter = WeightMeter::new();
+
+        #[block]
+        {
+            crate::migrations::v1::LazyMigrationV1::<T, weights::SubstrateWeight<T>, I>::step(
+                None, &mut meter,
+            )
+            .unwrap();
+        }
+
+        // Check that the new storage is decodable:
+        (0..MAX_SUBMITTERS * 2).for_each(|submitter_num| {
+            let scope = if submitter_num % 2 == 0 {
+                QuorumScope::Public
+            } else {
+                QuorumScope::Privileged
+            };
+            assert_eq!(
+                crate::SubmissionsV1::<T, I>::get((
+                    BatchId::default(),
+                    scope,
+                    account::<T::AccountId>("submitter", submitter_num, 0)
+                ))
+                .unwrap(),
+                hash
+            );
+        });
+        // uses twice the weight once for migration and then for checking if there is another key.
+        assert_eq!(
+            meter.consumed(),
+            weights::SubstrateWeight::<T>::migration_v0_v1_step() * 2
+        );
     }
 
     impl_benchmark_test_suite!(

@@ -54,6 +54,11 @@ pub trait WeightInfo {
     /// Storage: `Indexing::BlockNumbers` (r:0 w:1)
     /// Proof: `Indexing::BlockNumbers` (`max_values`: None, `max_size`: Some(156), added: 2631, mode: `MaxEncodedLen`)
     fn submit_data_quorum_reached() -> Weight;
+    /// Storage: UNKNOWN KEY `0x5f0eaa9161a01e3d007e08083fa1748247aabc8065823acc682503190fa1fbd7` (r:2 w:1)
+    /// Proof: UNKNOWN KEY `0x5f0eaa9161a01e3d007e08083fa1748247aabc8065823acc682503190fa1fbd7` (r:2 w:1)
+    /// Storage: `Indexing::SubmissionsV1` (r:0 w:64)
+    /// Proof: `Indexing::SubmissionsV1` (`max_values`: None, `max_size`: Some(150), added: 2625, mode: `MaxEncodedLen`)
+    fn migration_v0_v1_step() -> Weight;
 }
 
 pub struct SubstrateWeight<T>(PhantomData<T>);
@@ -113,5 +118,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
                 .saturating_add(Weight::from_parts(0, 96934))
                 .saturating_add(T::DbWeight::get().reads(7))
                 .saturating_add(T::DbWeight::get().writes(4))
+    }
+    /// Storage: UNKNOWN KEY `0x5f0eaa9161a01e3d007e08083fa1748247aabc8065823acc682503190fa1fbd7` (r:2 w:1)
+    /// Proof: UNKNOWN KEY `0x5f0eaa9161a01e3d007e08083fa1748247aabc8065823acc682503190fa1fbd7` (r:2 w:1)
+    /// Storage: `Indexing::SubmissionsV1` (r:0 w:64)
+    /// Proof: `Indexing::SubmissionsV1` (`max_values`: None, `max_size`: Some(150), added: 2625, mode: `MaxEncodedLen`)
+    fn migration_v0_v1_step() -> Weight {
+        // Proof Size summary in bytes:
+        //  Measured:  `2256`
+        //  Estimated: `8196`
+        // Minimum execution time: 303_120_000 picoseconds.
+        Weight::from_parts(311_376_000, 0)
+            .saturating_add(Weight::from_parts(0, 8196))
+            .saturating_add(T::DbWeight::get().reads(2))
+            .saturating_add(T::DbWeight::get().writes(65))
     }
 }
