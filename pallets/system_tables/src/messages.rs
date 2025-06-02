@@ -21,7 +21,7 @@ pub fn handle_message<T: Config>(sender: T::AccountId, message_bytes: Vec<u8>) -
 
     // Set session keys
     let prefs = ValidatorPrefs {
-        commission: Perbill::from_percent(0), // 0 Commission here, because we calculate it at the end of the era
+        commission: Perbill::from_percent(10), // 0 Commission here, because we calculate it at the end of the era
         blocked: false,
     };
 
