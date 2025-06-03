@@ -30,7 +30,7 @@ use sxt_core::tables::{
 };
 
 use crate::mock::*;
-use crate::{BatchId, Event, RowData};
+use crate::{BatchId, Config, Event, RowData};
 
 /// Used as a convenience wrapper for data we need to submit
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -1448,5 +1448,232 @@ fn submitters_cannot_exceed_maximum() {
             crate::SubmissionsV1::<Test, Api>::get((&batch_id, QuorumScope::Public, &who)).unwrap(),
             data_hash
         );
+    });
+}
+
+#[test]
+fn batches_that_dont_reach_quorum_get_pruned() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_statement) = sample_table_definition();
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all()),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+        let signer = RuntimeOrigin::signed(0);
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+
+        let data = row_data();
+
+        // fill the batch queue, the next submission should prune the first
+        for i in 0..Test::BATCH_QUEUE_CAPACITY {
+            let batch_id = BatchId::try_from(vec![i as u8]).unwrap();
+
+            Indexing::submit_data(signer.clone(), table_id.clone(), batch_id, data.clone())
+                .unwrap();
+        }
+
+        assert_eq!(
+            crate::BatchQueue::<Test, Api>::count(),
+            Test::BATCH_QUEUE_CAPACITY
+        );
+
+        for i in 0..Test::BATCH_QUEUE_CAPACITY {
+            let batch_id = BatchId::try_from(vec![i as u8]).unwrap();
+            assert_eq!(
+                crate::BatchQueue::<Test, Api>::get(i as u64).unwrap(),
+                batch_id
+            );
+            assert_eq!(
+                crate::SubmissionsV1::<Test, Api>::iter_prefix((batch_id,)).count(),
+                1
+            );
+        }
+
+        // reach quorum on the second batch, it should not get pruned
+        let second_batch_id = BatchId::try_from(vec![1]).unwrap();
+
+        for i in 1..4 {
+            let signer = RuntimeOrigin::signed(i);
+            let who = ensure_signed(signer.clone()).unwrap();
+            pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+
+            let data = row_data();
+
+            Indexing::submit_data(
+                signer.clone(),
+                table_id.clone(),
+                second_batch_id.clone(),
+                data.clone(),
+            )
+            .unwrap();
+        }
+
+        assert!(Indexing::final_data(second_batch_id.clone()).is_some());
+        assert_eq!(
+            System::read_events_for_pallet::<Event<Test, Api>>()
+                .into_iter()
+                .filter(|e| matches!(e, Event::QuorumReached { .. }))
+                .count(),
+            1
+        );
+
+        // submit one more batch, oldest batch should be pruned
+        let first_batch_id = BatchId::try_from(vec![0]).unwrap();
+        let new_batch_id = BatchId::try_from(vec![Test::BATCH_QUEUE_CAPACITY as u8]).unwrap();
+
+        Indexing::submit_data(signer.clone(), table_id.clone(), new_batch_id, data.clone())
+            .unwrap();
+
+        assert!(System::read_events_for_pallet::<Event<Test, Api>>()
+            .into_iter()
+            .any(|e| match e {
+                Event::BatchPruned { batch_id } => batch_id == first_batch_id,
+                _ => false,
+            }));
+        assert_eq!(
+            crate::BatchQueue::<Test, Api>::count(),
+            Test::BATCH_QUEUE_CAPACITY
+        );
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((first_batch_id.clone(),)).count(),
+            0
+        );
+        assert!(crate::BatchQueue::<Test, Api>::get(0).is_none());
+
+        // submit one more batch, oldest batch is now the second batch, which reached quorum, so it
+        // is not pruned in the same way
+        let new_batch_id = BatchId::try_from(vec![Test::BATCH_QUEUE_CAPACITY as u8 + 1]).unwrap();
+
+        Indexing::submit_data(signer.clone(), table_id.clone(), new_batch_id, data.clone())
+            .unwrap();
+
+        assert!(System::read_events_for_pallet::<Event<Test, Api>>()
+            .into_iter()
+            .any(|e| match e {
+                Event::BatchPruned { batch_id } => batch_id == second_batch_id,
+                _ => false,
+            }));
+        assert_eq!(
+            crate::BatchQueue::<Test, Api>::count(),
+            Test::BATCH_QUEUE_CAPACITY
+        );
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((second_batch_id,)).count(),
+            0
+        );
+        assert!(crate::BatchQueue::<Test, Api>::get(1).is_none());
+
+        // third batch gets pruned normally
+        let third_batch_id = BatchId::try_from(vec![2]).unwrap();
+        let new_batch_id = BatchId::try_from(vec![Test::BATCH_QUEUE_CAPACITY as u8 + 2]).unwrap();
+
+        Indexing::submit_data(signer.clone(), table_id.clone(), new_batch_id, data.clone())
+            .unwrap();
+
+        assert!(System::read_events_for_pallet::<Event<Test, Api>>()
+            .into_iter()
+            .any(|e| match e {
+                Event::BatchPruned { batch_id } => batch_id == third_batch_id,
+                _ => false,
+            }));
+        assert_eq!(
+            crate::BatchQueue::<Test, Api>::count(),
+            Test::BATCH_QUEUE_CAPACITY
+        );
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((third_batch_id,)).count(),
+            0
+        );
+        assert!(crate::BatchQueue::<Test, Api>::get(0).is_none());
+
+        // we can resubmit the original batch
+        Indexing::submit_data(
+            signer.clone(),
+            table_id.clone(),
+            first_batch_id.clone(),
+            data.clone(),
+        )
+        .unwrap();
+        assert_eq!(
+            crate::BatchQueue::<Test, Api>::count(),
+            Test::BATCH_QUEUE_CAPACITY
+        );
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((first_batch_id.clone(),)).count(),
+            1
+        );
+        assert_eq!(
+            crate::BatchQueue::<Test, Api>::get(Test::BATCH_QUEUE_CAPACITY as u64 + 3).unwrap(),
+            first_batch_id
+        );
+    });
+}
+
+#[test]
+fn batches_pruned_does_not_exceed_maximum() {
+    new_test_ext().execute_with(|| {
+        let (table_id, create_statement) = sample_table_definition();
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all()),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let overflowing_batch_queue_count =
+            Test::BATCH_QUEUE_CAPACITY + (2 * Test::MAX_BATCHES_PRUNED_PER_TRANSACTION);
+        (0..overflowing_batch_queue_count).for_each(|batch_index| {
+            let batch_id = BatchId::try_from(batch_index.to_le_bytes().to_vec()).unwrap();
+            crate::BatchQueue::<Test, Api>::insert(batch_index as u64, batch_id);
+        });
+
+        let signer = RuntimeOrigin::signed(0);
+        let who = ensure_signed(signer.clone()).unwrap();
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+        let data = row_data();
+
+        for new_batch_index in 1..10u32 {
+            let new_batch_id = BatchId::try_from(
+                (overflowing_batch_queue_count + new_batch_index)
+                    .to_le_bytes()
+                    .to_vec(),
+            )
+            .unwrap();
+
+            Indexing::submit_data(signer.clone(), table_id.clone(), new_batch_id, data.clone())
+                .unwrap();
+
+            let expected_count = overflowing_batch_queue_count
+                .saturating_sub(new_batch_index * (Test::MAX_BATCHES_PRUNED_PER_TRANSACTION - 1))
+                .max(Test::BATCH_QUEUE_CAPACITY);
+            assert_eq!(crate::BatchQueue::<Test, Api>::count(), expected_count);
+        }
     });
 }

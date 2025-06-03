@@ -784,6 +784,8 @@ impl pallet_commitments::Config for Runtime {}
 impl pallet_indexing::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
+    const BATCH_QUEUE_CAPACITY: u32 = 3_000_000;
+    const MAX_BATCHES_PRUNED_PER_TRANSACTION: u32 = 5;
 }
 
 impl pallet_attestation::Config for Runtime {

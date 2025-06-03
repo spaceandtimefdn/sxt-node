@@ -44,7 +44,7 @@ pub mod pallet {
     use commitment_sql::InsertAndCommitmentMetadata;
     use frame_support::dispatch::RawOrigin;
     use frame_support::pallet_prelude::*;
-    use frame_support::{Blake2_128, Blake2_128Concat};
+    use frame_support::{Blake2_128, Blake2_128Concat, Identity};
     use frame_system::pallet_prelude::*;
     use hex::FromHex;
     use itertools::{Either, Itertools};
@@ -82,6 +82,20 @@ pub mod pallet {
             + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// The weight info to be used with the extrinsics provided by the pallet
         type WeightInfo: WeightInfo;
+
+        /// The capacity of the batch queue.
+        ///
+        /// Once this is reached, the oldest submissions that were unable to reach quorum will be
+        /// pruned from state.
+        const BATCH_QUEUE_CAPACITY: u32;
+
+        /// The maximum number of batches that can be pruned in a single transaction when the
+        /// `BatchQueue` exceeds its capacity.
+        ///
+        /// This helps ensure that there's a limit on storage writes per transaction in situations
+        /// where the batch queue greatly exceeds its capacity, such as the capacity being reduced
+        /// between runtime upgrades.
+        const MAX_BATCHES_PRUNED_PER_TRANSACTION: u32;
     }
 
     /// Hashed data submissions that have yet to reach quorum.
@@ -96,6 +110,14 @@ pub mod pallet {
         ),
         <T as frame_system::Config>::Hash,
     >;
+
+    /// Mapping of BatchId indexes, ordered by first submission, to their BatchIds.
+    ///
+    /// Primarily used to prune batches that never reached quorum.
+    #[pallet::storage]
+    #[pallet::getter(fn batch_queue)]
+    pub type BatchQueue<T: Config<I>, I: 'static = ()> =
+        CountedStorageMap<_, Identity, u64, BatchId>;
 
     #[pallet::storage]
     #[pallet::getter(fn final_data)]
@@ -155,6 +177,13 @@ pub mod pallet {
             agreements: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
             /// Voters against this quorum
             dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
+        },
+
+        /// A batch has been pruned from the batch queue and submissions storage (as needed) to
+        /// make room for a new submission.
+        BatchPruned {
+            /// The batch that was pruned.
+            batch_id: BatchId,
         },
     }
 
@@ -274,11 +303,14 @@ pub mod pallet {
             can_submit_for_public_quorum || can_submit_for_privileged_quorum,
             Error::<T, I>::UnauthorizedSubmitter
         );
-
         validate_submission::<T, I>(&table, &batch_id, &data)?;
 
         let hash_input = (&data, block_number).encode();
         let data_hash = T::Hashing::hash(&hash_input);
+
+        register_batch_and_prune_submissions::<T, I>(batch_id.clone())
+            .into_iter()
+            .for_each(|batch_id| Pallet::<T, I>::deposit_event(Event::BatchPruned { batch_id }));
 
         let public_data_quorum = if can_submit_for_public_quorum {
             submit_data_and_find_quorum::<T, I>(
@@ -501,5 +533,72 @@ pub mod pallet {
             Error::<T, I>::InvalidTable
         );
         Ok(())
+    }
+
+    /// Push batch to BatchQueue.
+    ///
+    /// If the queue exceeds [`Config::BatchQueueCapacity`], returns the batches that were pruned
+    /// to make room.
+    ///
+    /// Does not check for uniqueness before pushing (caller should check `SubmissionsV1` first).
+    fn push_batch_to_queue_and_prune<T, I>(batch_id: BatchId) -> Vec<BatchId>
+    where
+        T: Config<I>,
+        I: 'static,
+    {
+        let oldest_batch_index = BatchQueue::<T, I>::iter_keys().next().unwrap_or_default();
+
+        let old_batch_queue_size = BatchQueue::<T, I>::count();
+
+        let new_batch_index = oldest_batch_index + old_batch_queue_size as u64;
+
+        let new_batch_queue_size = old_batch_queue_size + 1;
+
+        let overflow = new_batch_queue_size.saturating_sub(T::BATCH_QUEUE_CAPACITY);
+
+        let prune_count = overflow.min(T::MAX_BATCHES_PRUNED_PER_TRANSACTION);
+
+        let (batch_indices_to_prune, batches_to_prune): (Vec<_>, Vec<_>) =
+            BatchQueue::<T, I>::iter()
+                .take(prune_count as usize)
+                .unzip();
+
+        batch_indices_to_prune
+            .iter()
+            .for_each(BatchQueue::<T, I>::remove);
+
+        BatchQueue::<T, I>::insert(new_batch_index, batch_id);
+
+        batches_to_prune
+    }
+
+    /// Checks for the existence of the batch in `SubmissionsV1` before pushing it to the batch
+    /// queue if possible.
+    ///
+    /// If the queue exceeds [`Config::BatchQueueCapacity`], returns the batches that were pruned
+    /// to make room.
+    fn register_batch_and_prune_submissions<T, I>(batch_id: BatchId) -> Vec<BatchId>
+    where
+        T: Config<I>,
+        I: 'static,
+    {
+        if SubmissionsV1::<T, I>::iter_key_prefix((&batch_id,))
+            .next()
+            .is_some()
+        {
+            return vec![];
+        }
+
+        let batches_to_prune = push_batch_to_queue_and_prune::<T, I>(batch_id);
+
+        batches_to_prune.iter().for_each(|batch| {
+            let _ = SubmissionsV1::<T, I>::clear_prefix(
+                (batch,),
+                MAX_SUBMITTERS * QuorumScope::VARIANT_COUNT as u32,
+                None,
+            );
+        });
+
+        batches_to_prune
     }
 }
