@@ -8,7 +8,7 @@ use on_chain_table::OnChainTable;
 use sp_core::crypto::AccountId32;
 use sp_core::U256;
 use sp_runtime::traits::StaticLookup;
-use sp_runtime::DispatchError;
+use sp_runtime::{DispatchError, Perbill};
 use sxt_core::sxt_chain_runtime::api::runtime_types::pallet_system_tables;
 use sxt_core::tables::TableIdentifier;
 use sxt_core::utils::{
@@ -356,5 +356,45 @@ fn nomination_parsed_from_ipc_record_batch_works() {
             pallet_staking::Nominators::<Test>::drain().any(|(nominator, _)| nominator == account);
 
         assert!(found, "Expected nominator not found in staking nominators");
+    });
+}
+
+#[test]
+fn default_commission_is_10_percent() {
+    new_test_ext().execute_with(|| {
+        let eth_sender = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
+        // We have to bond an amount to establish the stash/controller accounts
+        let test_amount = 100;
+        let bonding = get_staked_message(ETH_TEST_WALLET, test_amount.into());
+        assert_ok!(crate::process_staking::<Test>(bonding));
+
+        // Now try to register
+        let first_nonce = U256::from(1);
+        let request = get_register_keys_message(ETH_TEST_WALLET, ALICE_SESSION_KEYS, first_nonce);
+        assert_ok!(crate::process_evm_message::<Test>(request.clone()));
+
+        // The last processed should be 1 now
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(&eth_sender),
+            Some(first_nonce)
+        );
+
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::bonded(&eth_sender),
+            Some(eth_sender.clone())
+        );
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::ledger(eth_sender.clone().into())
+                .unwrap()
+                .total,
+            test_amount
+        );
+
+        // Check that the commission is 10%
+        let prefs = pallet_staking::Pallet::<Test>::validators(&eth_sender);
+        assert_eq!(prefs.commission, Perbill::from_percent(10)); 
+
+        
     });
 }
