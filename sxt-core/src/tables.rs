@@ -9,11 +9,13 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::storage::bounded_vec::BoundedVec;
 use frame_support::traits::ConstU32;
 use proof_of_sql::base::database::TableRef;
+use rand_chacha::ChaCha20Rng;
+use rand_core::{RngCore, SeedableRng};
 use regex::Regex;
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
-use sp_core::{RuntimeDebug, U256};
+use sp_core::{blake2_256, RuntimeDebug, U256};
 use sp_runtime::DispatchError;
 use sp_runtime_interface::pass_by::PassByCodec;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
@@ -620,43 +622,20 @@ pub fn uuids_from_sqlparser(create_table: CreateTableBuilder) -> (TableUuid, Col
 }
 
 /// Generate a new UUID for a given table name and namespace.
-pub fn generate_table_uuid(
-    block_number: U256,
-    namespace: &str,
-    name: &str,
-) -> Result<TableUuid, DispatchError> {
+pub fn generate_table_uuid(block_number: U256, namespace: &str, name: &str) -> Option<TableUuid> {
     let source = format!("{}{}{}", block_number, namespace, name);
     generate_uuid(source)
 }
 
 /// Generate a new UUID for a given namespace
-pub fn generate_namespace_uuid(
-    block_number: U256,
-    namespace: &str,
-) -> Result<TableUuid, DispatchError> {
+pub fn generate_namespace_uuid(block_number: U256, namespace: &str) -> Option<TableUuid> {
     let source = format!("{}{}", block_number, namespace);
     generate_uuid(source)
 }
 
 /// Generate a new UUID for a given column_name. For now we are using the column_name as
 /// the id, until additional support is introduced on the database side.
-pub fn generate_column_uuid_list(create_statement: CreateStatement) -> ColumnUuidList {
-    let builder = create_statement_to_sqlparser(create_statement.clone()).unwrap();
-
-    let uuid_list = builder
-        .columns
-        .iter()
-        .map(|c| ColumnUuid {
-            name: ByteString::try_from(c.name.value.as_bytes().to_vec()).unwrap(),
-            uuid: TableUuid::try_from(c.name.value.as_bytes().to_vec()).unwrap(),
-        })
-        .collect::<Vec<ColumnUuid>>();
-
-    ColumnUuidList::try_from(uuid_list).unwrap()
-}
-
-/// V2
-pub fn generate_column_uuid_list2(
+pub fn generate_column_uuid_list(
     create_statement: CreateStatement,
 ) -> Result<ColumnUuidList, DispatchError> {
     let builder = create_statement_to_sqlparser(create_statement)
@@ -678,10 +657,24 @@ pub fn generate_column_uuid_list2(
 }
 
 /// Generate a new UUID from a given source string
-pub fn generate_uuid(source: String) -> Result<TableUuid, DispatchError> {
-    // Hash the source
-    let hash = sp_core::twox_256(source.as_bytes()).to_vec();
-    Ok(TableUuid::try_from(hash).unwrap())
+pub fn generate_uuid(source: String) -> Option<TableUuid> {
+    let seed = blake2_256(source.as_bytes());
+    let mut rng = ChaCha20Rng::from_seed(seed);
+
+    let part1 = (0b1100_u64 << 60) | rng.next_u64();
+    let part2 = rng.next_u64();
+
+    let mut hex = format!("{:016X}{:016X}", part1, part2);
+
+    if hex.as_bytes()[0].is_ascii_digit() {
+        hex.replace_range(0..1, "A");
+    }
+
+    hex.truncate(32);
+    match TableUuid::try_from(hex.as_bytes().to_vec()) {
+        Ok(uuid) => Some(uuid),
+        Err(_) => None,
+    }
 }
 
 #[cfg(test)]
