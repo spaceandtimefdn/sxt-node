@@ -1,23 +1,4 @@
-# [1.4.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.3.0...v1.4.0) (2025-05-29)
-
-
-### Bug Fixes
-
-* correct build errors ([0f74bc7](https://github.com/spaceandtimefdn/sxt-node/commit/0f74bc7c50feed96c4c9c7bb700fe0315677484f))
-* limit memory allocation when deserializing proof plans ([3d42e2e](https://github.com/spaceandtimefdn/sxt-node/commit/3d42e2e9361bf5f28e7579a95accd1d2d92d9b45))
-
-
-### Features
-
-* add reward rate calculation to canary ([5b99429](https://github.com/spaceandtimefdn/sxt-node/commit/5b99429894f9f39e7ea8deea4d7c10660c619b91))
-* add zkpay to system staking contracts ([4a07a0a](https://github.com/spaceandtimefdn/sxt-node/commit/4a07a0ad40c9ec7e42cc007daa5a5a6e0520fad7))
-* Added the rewards pallet for automated payouts ([ce455d2](https://github.com/spaceandtimefdn/sxt-node/commit/ce455d21763ff64c37407ff14550b42ed2bcfef1))
-* make new namespace for zkpay ([28c77d4](https://github.com/spaceandtimefdn/sxt-node/commit/28c77d47147967b3859486479b128dd5980c126b))
-* update chain runtime to include new rewards pallet ([bb4a46e](https://github.com/spaceandtimefdn/sxt-node/commit/bb4a46e0c0559f1a2fb1b1bebcdbc65e49ae3685))
-
-
-
-# [1.3.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.2.0...v1.3.0) (2025-05-20)
+# [1.6.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.5.0...v1.6.0) (2025-06-05)
 
 
 ### Bug Fixes
@@ -26,6 +7,7 @@
 * add clarification on optional steps for docker vs k8s ([373a50a](https://github.com/spaceandtimefdn/sxt-node/commit/373a50a50cea7a4d41169384f373bb2d1cc511fa))
 * add corrections to command flags passed to docker ([c64d6a4](https://github.com/spaceandtimefdn/sxt-node/commit/c64d6a48e0198b9f9f1c8d544172fca4d3e89326))
 * add explicit instructions about exporting SECRET_SEED ([d869e63](https://github.com/spaceandtimefdn/sxt-node/commit/d869e631b97cb52bd1e7fd7a8706786cb53dba17))
+* add steps to install rustfmt and clippy in macos CI. Changes to the apple rust ecosystem caused previously included components to be removed. These changes are gated to only occur for macos ([4ed747f](https://github.com/spaceandtimefdn/sxt-node/commit/4ed747f5d68b577c7fb09f9c5c29751701effe66))
 * add telemetry-url flag to documentation ([9331deb](https://github.com/spaceandtimefdn/sxt-node/commit/9331debdf51874d2eb3ca193fa098e6dafcc5d9a))
 * add workaround to file permissions issue in validator key volume ([28d78e2](https://github.com/spaceandtimefdn/sxt-node/commit/28d78e2ed1486d4c23a6764dcf98185dc0f3a024))
 * address issue with copy-data instructions ([8e306a9](https://github.com/spaceandtimefdn/sxt-node/commit/8e306a946d7d7a6d6d83c6cd428ed2d5b9c932c7))
@@ -53,6 +35,8 @@
 * add links to other sections in the doc ([a40e3ec](https://github.com/spaceandtimefdn/sxt-node/commit/a40e3ec4065dfbd3666fd9ee7492a4c3750f3b72))
 * add step to copy snapshot in docker container ([84d3868](https://github.com/spaceandtimefdn/sxt-node/commit/84d3868863f207f9051afe61c195efdca16c3b60))
 * add step to download validator snapshot ([480fd3d](https://github.com/spaceandtimefdn/sxt-node/commit/480fd3deef41699f104827222a3c2e85e5d67ce1))
+* bump runtime version to 228 ([554f23c](https://github.com/spaceandtimefdn/sxt-node/commit/554f23c4b4ed6f3dabf2ef38963d66419e281f85))
+* change default validator commission to 10% ([29819dc](https://github.com/spaceandtimefdn/sxt-node/commit/29819dc59d96bbb6325c2bb984492d898047e37f))
 * Create README with testnet validator setup instructions ([7f6de3c](https://github.com/spaceandtimefdn/sxt-node/commit/7f6de3c02f35b6986c43f5272f415b4b0e1af5bc))
 * Remove subkey in favor of using the sxt-node functionality ([eb35663](https://github.com/spaceandtimefdn/sxt-node/commit/eb35663f08b00bfa92108be3dfa56b8164afc71a))
 * Started the FAQ section, more updates to Nominating ([25416bc](https://github.com/spaceandtimefdn/sxt-node/commit/25416bcebf82e927376eeb0b5a8bd6f2837b7c40))
@@ -64,30 +48,46 @@
 
 
 
-# [1.2.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.1.0...v1.2.0) (2025-05-15)
+# [1.5.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.4.0...v1.5.0) (2025-05-28)
 
 
 ### Features
 
-* Added a simple unit test for the era_payout ([00855f0](https://github.com/spaceandtimefdn/sxt-node/commit/00855f046bf3b3d12d3bf51c4bf1f08e605a6e42))
-* Implement an initial naive reward amount targeting 7.9% annual. ([eff5527](https://github.com/spaceandtimefdn/sxt-node/commit/eff55275eef126d491964682e2585b70546aab99))
+* add zkpay to system staking contracts ([4a07a0a](https://github.com/spaceandtimefdn/sxt-node/commit/4a07a0ad40c9ec7e42cc007daa5a5a6e0520fad7))
+* make new namespace for zkpay ([28c77d4](https://github.com/spaceandtimefdn/sxt-node/commit/28c77d47147967b3859486479b128dd5980c126b))
 
 
 
-# [1.1.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.0.5...v1.1.0) (2025-05-15)
+# [1.4.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.3.0...v1.4.0) (2025-05-24)
+
+
+### Bug Fixes
+
+* correct build errors ([0f74bc7](https://github.com/spaceandtimefdn/sxt-node/commit/0f74bc7c50feed96c4c9c7bb700fe0315677484f))
 
 
 ### Features
 
-* add CommitmentId extension trait for commitments ([11581ee](https://github.com/spaceandtimefdn/sxt-node/commit/11581ee76480130535a68425f6cf237b5782aeaa))
-* add CommitmentScheme::into_any_concrete method ([7c44ab7](https://github.com/spaceandtimefdn/sxt-node/commit/7c44ab70c610d53963ac59f10960b2bf9bd8ec70))
-* add proof plan RPCs ([58fe867](https://github.com/spaceandtimefdn/sxt-node/commit/58fe867507aec70e83ed0a205e528b63d8c2075b))
-* add runtime api for reading commitments storage for any scheme ([57809e4](https://github.com/spaceandtimefdn/sxt-node/commit/57809e4437e96371f04edb845e6e6904dd7666d8))
-* read commitments storage for multiple tables and any scheme ([9673c4f](https://github.com/spaceandtimefdn/sxt-node/commit/9673c4f66cbae5fd73a034db31b7fd557a21fdf0))
+* add reward rate calculation to canary ([5b99429](https://github.com/spaceandtimefdn/sxt-node/commit/5b99429894f9f39e7ea8deea4d7c10660c619b91))
+* update chain runtime to include new rewards pallet ([bb4a46e](https://github.com/spaceandtimefdn/sxt-node/commit/bb4a46e0c0559f1a2fb1b1bebcdbc65e49ae3685))
 
 
 
-## [1.0.5](https://github.com/spaceandtimefdn/sxt-node/compare/v1.0.4...v1.0.5) (2025-05-14)
+# [1.3.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.2.1...v1.3.0) (2025-05-22)
+
+
+### Features
+
+* Added the rewards pallet for automated payouts ([ce455d2](https://github.com/spaceandtimefdn/sxt-node/commit/ce455d21763ff64c37407ff14550b42ed2bcfef1))
+
+
+
+## [1.2.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.2.0...v1.2.1) (2025-05-16)
+
+
+### Bug Fixes
+
+* limit memory allocation when deserializing proof plans ([3d42e2e](https://github.com/spaceandtimefdn/sxt-node/commit/3d42e2e9361bf5f28e7579a95accd1d2d92d9b45))
 
 
 
