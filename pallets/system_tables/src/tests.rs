@@ -393,8 +393,6 @@ fn default_commission_is_10_percent() {
 
         // Check that the commission is 10%
         let prefs = pallet_staking::Pallet::<Test>::validators(&eth_sender);
-        assert_eq!(prefs.commission, Perbill::from_percent(10)); 
-
-
+        assert_eq!(prefs.commission, Perbill::from_percent(10));
     });
 }
