@@ -25,6 +25,14 @@ jobs:
       - if: contains(matrix.os, 'macos')
         uses: ./.github/actions/macos-dependencies
 
+      - name: install rustfmt
+        if: contains(matrix.os, 'macos')
+        run: rustup component add rustfmt
+
+      - name: install clippy
+        if: contains(matrix.os, 'macos')
+        run: rustup component add clippy
+
       - name: Run fmt
         run: cargo fmt --all --check -- --config imports_granularity=Module,group_imports=StdExternalCrate,imports_layout=HorizontalVertical
         timeout-minutes: 30
