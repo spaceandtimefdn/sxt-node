@@ -1,3 +1,18 @@
+# [1.7.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.6.0...v1.7.0) (2025-06-06)
+
+
+### Bug Fixes
+
+* slim down watcher image from 1.44GB to ~100MB ([d365f17](https://github.com/spaceandtimefdn/sxt-node/commit/d365f1741d314c143902f5ba65568d781c380ee5))
+
+
+### Features
+
+* create /key as volume for attestor ([65536c0](https://github.com/spaceandtimefdn/sxt-node/commit/65536c017ad8074a65698a772f4591c3829fb530))
+* include subkey in watcher image ([db4e501](https://github.com/spaceandtimefdn/sxt-node/commit/db4e50102116856fcc74b1c4b3006a74c0dda5e1))
+
+
+
 # [1.6.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.5.0...v1.6.0) (2025-06-05)
 
 
@@ -79,15 +94,6 @@
 ### Features
 
 * Added the rewards pallet for automated payouts ([ce455d2](https://github.com/spaceandtimefdn/sxt-node/commit/ce455d21763ff64c37407ff14550b42ed2bcfef1))
-
-
-
-## [1.2.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.2.0...v1.2.1) (2025-05-16)
-
-
-### Bug Fixes
-
-* limit memory allocation when deserializing proof plans ([3d42e2e](https://github.com/spaceandtimefdn/sxt-node/commit/3d42e2e9361bf5f28e7579a95accd1d2d92d9b45))
 
 
 
