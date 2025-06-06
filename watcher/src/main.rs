@@ -19,6 +19,7 @@ use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, Borders, List, ListItem};
 use ratatui::Terminal;
 use runtime::api::runtime_types::sxt_core::attestation::Attestation;
+use sc_cli::{ChainSpec, SubstrateCli};
 use sha3::digest::generic_array::GenericArray;
 use subxt::blocks::Block as BlockT;
 use subxt::config::substrate::{BlakeTwo256, SubstrateHeader};
@@ -187,6 +188,7 @@ struct Cli {
     command: Commands,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// Watch finalized blocks and attest the results
@@ -206,6 +208,41 @@ enum Commands {
         #[arg(short, long)]
         block_number: u32,
     },
+
+    /// Subkey utility CLI
+    #[command(subcommand)]
+    Key(sc_cli::KeySubcommand),
+}
+
+// Implement the SubstrateCli trait
+impl SubstrateCli for Cli {
+    fn impl_name() -> String {
+        todo!()
+    }
+
+    fn impl_version() -> String {
+        todo!()
+    }
+
+    fn description() -> String {
+        todo!()
+    }
+
+    fn author() -> String {
+        todo!()
+    }
+
+    fn support_url() -> String {
+        todo!()
+    }
+
+    fn copyright_start_year() -> i32 {
+        todo!()
+    }
+
+    fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
+        todo!()
+    }
 }
 
 #[tokio::main]
@@ -269,6 +306,13 @@ async fn main() {
         Commands::Verify { block_number } => {
             if let Err(err) = verify(block_number, &args.websocket).await {
                 error!("{:?}", err);
+            }
+        }
+
+        // Add subkey utility to watcher cli
+        Commands::Key(ref cmd) => {
+            if let Err(e) = cmd.run(&args) {
+                error!("{:?}", e);
             }
         }
     }

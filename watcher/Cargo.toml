@@ -30,6 +30,8 @@ ratatui = "=0.23.0"
 crossterm = "0.28.1"
 snafu = { workspace = true }
 translation-layer.workspace = true
+sc-cli.workspace = true
+sp-version.workspace = true
 
 [lints]
 workspace = true
