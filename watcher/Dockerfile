@@ -1,9 +1,12 @@
 FROM parity/subkey AS subkey
 
-FROM rust:1.80
+FROM debian:12-slim
 
 RUN useradd -m -u 1001 -U -s /bin/sh -d /home/sxtuser sxtuser && \
-    mkdir /key && chown -R sxtuser:sxtuser /key
+    mkdir /key && chown -R sxtuser:sxtuser /key && \
+    apt-get update && apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 USER sxtuser
 
 WORKDIR /opt/sxt
