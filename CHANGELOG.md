@@ -1,3 +1,7 @@
+## [1.7.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.7.0...v1.7.1) (2025-06-09)
+
+
+
 # [1.7.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.6.0...v1.7.0) (2025-06-06)
 
 
@@ -85,15 +89,6 @@
 
 * add reward rate calculation to canary ([5b99429](https://github.com/spaceandtimefdn/sxt-node/commit/5b99429894f9f39e7ea8deea4d7c10660c619b91))
 * update chain runtime to include new rewards pallet ([bb4a46e](https://github.com/spaceandtimefdn/sxt-node/commit/bb4a46e0c0559f1a2fb1b1bebcdbc65e49ae3685))
-
-
-
-# [1.3.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.2.1...v1.3.0) (2025-05-22)
-
-
-### Features
-
-* Added the rewards pallet for automated payouts ([ce455d2](https://github.com/spaceandtimefdn/sxt-node/commit/ce455d21763ff64c37407ff14550b42ed2bcfef1))
 
 
 
