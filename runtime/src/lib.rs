@@ -341,6 +341,11 @@ impl pallet_migrations::Config for Runtime {
             pallet_indexing::SubstrateWeight<Runtime>,
             native_api::Api,
         >,
+        pallet_indexing::migrations::v2::LazyMigrationV2<
+            Runtime,
+            pallet_indexing::SubstrateWeight<Runtime>,
+            native_api::Api,
+        >,
     );
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]

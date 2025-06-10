@@ -586,7 +586,7 @@ pub mod pallet {
             .next()
             .is_some()
         {
-            return vec![];
+            return Vec::new();
         }
 
         let batches_to_prune = push_batch_to_queue_and_prune::<T, I>(batch_id);

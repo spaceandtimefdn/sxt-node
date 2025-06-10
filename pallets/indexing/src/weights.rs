@@ -59,6 +59,13 @@ pub trait WeightInfo {
     /// Storage: `Indexing::SubmissionsV1` (r:0 w:64)
     /// Proof: `Indexing::SubmissionsV1` (`max_values`: None, `max_size`: Some(150), added: 2625, mode: `MaxEncodedLen`)
     fn migration_v0_v1_step() -> Weight;
+    /// Storage: `Indexing::SubmissionsV1` (r:65 w:0)
+    /// Proof: `Indexing::SubmissionsV1` (`max_values`: None, `max_size`: Some(150), added: 2625, mode: `MaxEncodedLen`)
+    /// Storage: `Indexing::CounterForBatchQueue` (r:1 w:1)
+    /// Proof: `Indexing::CounterForBatchQueue` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+    /// Storage: `Indexing::BatchQueue` (r:1 w:1)
+    /// Proof: `Indexing::BatchQueue` (`max_values`: None, `max_size`: Some(45), added: 2520, mode: `MaxEncodedLen`)
+    fn migration_v1_v2_step() -> Weight;
 }
 
 pub struct SubstrateWeight<T>(PhantomData<T>);
@@ -132,5 +139,21 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
             .saturating_add(Weight::from_parts(0, 8196))
             .saturating_add(T::DbWeight::get().reads(2))
             .saturating_add(T::DbWeight::get().writes(65))
+    }
+    /// Storage: `Indexing::SubmissionsV1` (r:65 w:0)
+    /// Proof: `Indexing::SubmissionsV1` (`max_values`: None, `max_size`: Some(150), added: 2625, mode: `MaxEncodedLen`)
+    /// Storage: `Indexing::CounterForBatchQueue` (r:1 w:1)
+    /// Proof: `Indexing::CounterForBatchQueue` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+    /// Storage: `Indexing::BatchQueue` (r:1 w:1)
+    /// Proof: `Indexing::BatchQueue` (`max_values`: None, `max_size`: Some(45), added: 2520, mode: `MaxEncodedLen`)
+    fn migration_v1_v2_step() -> Weight {
+        // Proof Size summary in bytes:
+        //  Measured:  `6277`
+        //  Estimated: `171615`
+        // Minimum execution time: 133_010_000 picoseconds.
+        Weight::from_parts(135_916_000, 0)
+            .saturating_add(Weight::from_parts(0, 171615))
+            .saturating_add(T::DbWeight::get().reads(67))
+            .saturating_add(T::DbWeight::get().writes(2))
     }
 }

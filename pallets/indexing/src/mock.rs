@@ -54,6 +54,7 @@ impl pallet_migrations::Config for Test {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type Migrations = (
         crate::migrations::v1::LazyMigrationV1<Test, crate::weights::SubstrateWeight<Test>, Api>,
+        crate::migrations::v2::LazyMigrationV2<Test, crate::weights::SubstrateWeight<Test>, Api>,
     );
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_migrations::mock_helpers::MockedMigrations;

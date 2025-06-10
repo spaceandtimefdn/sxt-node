@@ -226,6 +226,46 @@ mod benchmarks {
         );
     }
 
+    #[benchmark]
+    fn migration_v1_v2_step() {
+        let hash = <<T as frame_system::Config>::Hashing as Hasher>::hash(&[]);
+        let batch_id = BatchId::default();
+        (0..MAX_SUBMITTERS * 2)
+            .map(|submitter_num| {
+                let scope = if submitter_num % 2 == 0 {
+                    QuorumScope::Public
+                } else {
+                    QuorumScope::Privileged
+                };
+
+                (
+                    account::<T::AccountId>("submitter", submitter_num, 0),
+                    scope,
+                )
+            })
+            .for_each(|(account_id, scope)| {
+                crate::SubmissionsV1::<T, I>::insert((&batch_id, scope, account_id), hash);
+            });
+
+        let mut meter = WeightMeter::new();
+
+        #[block]
+        {
+            crate::migrations::v2::LazyMigrationV2::<T, weights::SubstrateWeight<T>, I>::step(
+                None, &mut meter,
+            )
+            .unwrap();
+        }
+
+        // Check that the new storage is decodable:
+        assert_eq!(crate::BatchQueue::<T, I>::get(0).unwrap(), batch_id);
+        // uses twice the weight once for migration and then for checking if there is another key.
+        assert_eq!(
+            meter.consumed(),
+            weights::SubstrateWeight::<T>::migration_v1_v2_step() * 2
+        );
+    }
+
     impl_benchmark_test_suite!(
         PalletWithApi,
         crate::mock::new_test_ext(),

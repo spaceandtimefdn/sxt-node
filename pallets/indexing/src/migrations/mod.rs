@@ -2,6 +2,8 @@
 
 pub mod v1;
 
+pub mod v2;
+
 /// A unique identifier across all pallets.
 ///
 /// This constant represents a unique identifier for the migrations of this pallet.
