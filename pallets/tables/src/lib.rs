@@ -5,6 +5,11 @@
 
 pub use pallet::*;
 
+extern crate alloc;
+extern crate core;
+
+use alloc::string::ToString;
+
 #[cfg(test)]
 mod mock;
 
@@ -31,6 +36,10 @@ pub mod pallet {
         TableCommitmentBytesPerCommitmentScheme,
     };
     use sp_runtime::Vec;
+    use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+    use sqlparser::ast::{Expr, ObjectName, SqlOption, Value};
+    use sqlparser::dialect::PostgreSqlDialect;
+    use sqlparser::parser::Parser;
     use sxt_core::permissions::*;
     use sxt_core::tables::{
         convert_sql_to_ignite_create_statement,
@@ -529,7 +538,7 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Update the UUID for the specificed table and version to the provided UUID
+        /// Update the UUID for the specified table and version to the provided UUID
         #[pallet::call_index(8)]
         #[pallet::weight(<T as Config>::WeightInfo::update_table_uuid())]
         pub fn update_table_uuid(
@@ -545,6 +554,15 @@ pub mod pallet {
 
             let maybe_uuid = TableVersions::<T>::get(&table, version);
             TableVersions::<T>::set(&table, version, new_uuid.clone());
+
+            if let Some(old_create_statement) = Schemas::<T>::get(&table.namespace, &table.name) {
+                let updated = Self::update_uuid_in_create_table_statement(
+                    new_uuid.clone(),
+                    ColumnUuidList::default(),
+                    old_create_statement,
+                )?;
+                Schemas::<T>::set(&table.namespace, &table.name, Some(updated));
+            }
 
             Self::deposit_event(TableUuidUpdated {
                 old_uuid: maybe_uuid,
@@ -669,6 +687,52 @@ pub mod pallet {
             Ok(statement_with_metadata)
         }
 
+        /// Attempts to insert the provided UUID into the WITH clause of the provided create
+        /// statement maintaining any other previously assigned options
+        pub fn update_uuid_in_create_table_statement(
+            uuid: TableUuid,
+            column_uuids: ColumnUuidList,
+            statement: CreateStatement,
+        ) -> Result<CreateStatement, DispatchError> {
+            let table: CreateTableBuilder = create_statement_to_sqlparser(statement)
+                .map_err(|e| Error::<T>::CreateStatementParseError)?;
+
+            let table_uuid_str =
+                from_utf8(uuid.as_slice()).map_err(|e| Error::<T>::UtfConversionError)?;
+
+            // Turn the UUID entries into SqlOption
+            let table_entry = SqlOption {
+                name: "TABLE_UUID".into(),
+                value: Expr::Value(Value::UnQuotedString(table_uuid_str.to_string())),
+            };
+
+            let mut entries: Vec<SqlOption> = column_uuids
+                .iter()
+                .filter_map(|entry| {
+                    match (
+                        from_utf8(entry.name.as_slice()),
+                        from_utf8(entry.uuid.as_slice()),
+                    ) {
+                        (Ok(name), Ok(val)) => Some(SqlOption {
+                            name: name.into(),
+                            value: Expr::Value(Value::UnQuotedString(val.to_string())),
+                        }),
+                        (_, _) => None,
+                    }
+                })
+                .chain(Some(table_entry))
+                .chain(table.clone().with_options)
+                .collect::<Vec<SqlOption>>();
+
+            entries.sort_by(|a, b| a.name.cmp(&b.name));
+            entries.dedup_by(|a, b| a.name == b.name);
+
+            let table = table.with_options(entries);
+
+            sqlparser_to_create_statement(table)
+                .map_err(|e| Error::<T>::CreateStatementParseError.into())
+        }
+
         /// Attempts to retrieve the UUID for the provided table from the CreateStatement,
         /// generating UUIDs if that fails.
         pub fn get_or_generate_uuids_for_table(
@@ -750,19 +814,20 @@ pub mod pallet {
             )
             .map_err(|_| Error::<T>::UUIDGenerationError)?;
 
-            // TODO Update the create statement to add the UUIDs to the WITH clause
+            // Update the create statement to add the UUIDs to the WITH clause
+            let updated_create_statement = pallet::Pallet::<T>::update_uuid_in_create_table_statement(table_uuid.clone(), column_uuids.clone(), table.create_statement.clone())?;
 
             Self::insert_table_uuid(table.ident.clone(), table_uuid, column_uuids)?;
             Self::insert_schema(
                 table.ident.clone(),
-                table.create_statement.clone(),
+                updated_create_statement.clone(),
                 table.table_type.clone(),
                 table.source.clone(),
             );
 
             // Parse and remove WITH clause
             let (create_table, with_options) = create_statement_to_sqlparser_remove_with(
-                table.create_statement.clone(),
+                updated_create_statement,
             )
             .map_err(|_| Error::<T>::CreateStatementParseError)?;
 

@@ -12000,6 +12000,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sqlparser",
  "sxt-core",
 ]
 

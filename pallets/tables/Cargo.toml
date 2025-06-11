@@ -13,6 +13,7 @@ publish = false
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+sqlparser = { workspace = true, default-features = false }
 codec = { features = [
 	"derive",
 ], workspace = true }
