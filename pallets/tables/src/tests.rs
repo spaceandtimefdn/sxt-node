@@ -1,5 +1,3 @@
-use std::str::from_utf8;
-
 use frame_support::assert_ok;
 use frame_support::traits::OriginTrait;
 use pallet_permissions::Pallet;
@@ -16,7 +14,6 @@ use sxt_core::tables::{
     TableNamespace,
     TableType,
     TableUuid,
-    TableVersion,
 };
 
 use crate::mock::*;
@@ -199,15 +196,14 @@ fn create_table_should_handle_withs_properly() {
             expected_uuid
         );
 
-        let expected_sql = "CREATE TABLE IF NOT EXISTS ETHEREUM.BLOCKS (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, BLOCK_HASH BINARY NOT NULL, GAS_LIMIT DECIMAL(75,0) NOT NULL, GAS_USED DECIMAL(75,0) NOT NULL, MINER BINARY NOT NULL, PARENT_HASH BINARY NOT NULL, REWARD DECIMAL(75,0) NOT NULL, SIZE BIGINT NOT NULL, TRANSACTION_COUNT INT NOT NULL, NONCE BINARY NOT NULL, RECEIPTS_ROOT BINARY NOT NULL, SHA3_UNCLES BINARY NOT NULL, STATE_ROOT BINARY NOT NULL, TRANSACTIONS_ROOT BINARY NOT NULL, UNCLES_COUNT BIGINT NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER)) WITH (TABLE_UUID=F801A872785FAB3F16C51CF7A1969000);";
-        let expected_sql: BoundedVec<u8, ConstU32<8192>> = BoundedVec::try_from(expected_sql.as_bytes().to_vec()).unwrap();
-
+        let expected_sql = "CREATE TABLE IF NOT EXISTS ETHEREUM.BLOCKS (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, BLOCK_HASH BINARY NOT NULL, GAS_LIMIT DECIMAL(75,0) NOT NULL, GAS_USED DECIMAL(75,0) NOT NULL, MINER BINARY NOT NULL, PARENT_HASH BINARY NOT NULL, REWARD DECIMAL(75,0) NOT NULL, SIZE BIGINT NOT NULL, TRANSACTION_COUNT INT NOT NULL, NONCE BINARY NOT NULL, RECEIPTS_ROOT BINARY NOT NULL, SHA3_UNCLES BINARY NOT NULL, STATE_ROOT BINARY NOT NULL, TRANSACTIONS_ROOT BINARY NOT NULL, UNCLES_COUNT BIGINT NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER)) WITH (TABLE_UUID = F801A872785FAB3F16C51CF7A1969000);";
         let events = System::events();
         match events.last().map(|e| &e.event) {
             Some(RuntimeEvent::Tables(crate::Event::SchemaUpdated(_, list))) => {
                 if let Some(first_table) = list.first() {
                     let raw = &first_table.create_statement;
-                    assert_eq!(*raw, expected_sql);
+                    let sql_str = String::from_utf8(raw.to_vec()).unwrap();
+                    assert_eq!(sql_str, expected_sql);
 
                 }
             }
@@ -217,7 +213,7 @@ fn create_table_should_handle_withs_properly() {
 }
 
 #[test]
-fn create_table_should_generate_uuid_and_add_meta_column_without_with_clause() {
+fn create_table_should_generate_uuid_and_add_meta_column_including_with_clause() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
 
@@ -264,7 +260,7 @@ fn create_table_should_generate_uuid_and_add_meta_column_without_with_clause() {
         let generated_uuid = TableVersions::<Test>::get(&test_identifier, 0);
         assert!(!generated_uuid.is_empty());
 
-        let expected = "CREATE TABLE IF NOT EXISTS ETHEREUM.BLOCKS (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, BLOCK_HASH BINARY NOT NULL, GAS_LIMIT DECIMAL(75,0) NOT NULL, GAS_USED DECIMAL(75,0) NOT NULL, MINER BINARY NOT NULL, PARENT_HASH BINARY NOT NULL, REWARD DECIMAL(75,0) NOT NULL, SIZE BIGINT NOT NULL, TRANSACTION_COUNT INT NOT NULL, NONCE BINARY NOT NULL, RECEIPTS_ROOT BINARY NOT NULL, SHA3_UNCLES BINARY NOT NULL, STATE_ROOT BINARY NOT NULL, TRANSACTIONS_ROOT BINARY NOT NULL, UNCLES_COUNT BIGINT NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let expected = "CREATE TABLE IF NOT EXISTS ETHEREUM.BLOCKS (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, BLOCK_HASH BINARY NOT NULL, GAS_LIMIT DECIMAL(75,0) NOT NULL, GAS_USED DECIMAL(75,0) NOT NULL, MINER BINARY NOT NULL, PARENT_HASH BINARY NOT NULL, REWARD DECIMAL(75,0) NOT NULL, SIZE BIGINT NOT NULL, TRANSACTION_COUNT INT NOT NULL, NONCE BINARY NOT NULL, RECEIPTS_ROOT BINARY NOT NULL, SHA3_UNCLES BINARY NOT NULL, STATE_ROOT BINARY NOT NULL, TRANSACTIONS_ROOT BINARY NOT NULL, UNCLES_COUNT BIGINT NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER)) WITH (BLOCK_HASH = BLOCK_HASH, BLOCK_NUMBER = BLOCK_NUMBER, GAS_LIMIT = GAS_LIMIT, GAS_USED = GAS_USED, MINER = MINER, NONCE = NONCE, PARENT_HASH = PARENT_HASH, RECEIPTS_ROOT = RECEIPTS_ROOT, REWARD = REWARD, SHA3_UNCLES = SHA3_UNCLES, SIZE = SIZE, STATE_ROOT = STATE_ROOT, TABLE_UUID = F19A9076218BE7979478218C63207CEF, TIME_STAMP = TIME_STAMP, TRANSACTIONS_ROOT = TRANSACTIONS_ROOT, TRANSACTION_COUNT = TRANSACTION_COUNT, UNCLES_COUNT = UNCLES_COUNT);";
         let events = System::events();
         match events.last().map(|e| &e.event) {
             Some(RuntimeEvent::Tables(crate::Event::SchemaUpdated(_, list))) => {
