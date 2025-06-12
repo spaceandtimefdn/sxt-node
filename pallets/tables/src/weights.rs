@@ -54,6 +54,10 @@ pub trait WeightInfo {
 
 	/// drop a table
 	fn drop_table() -> Weight;
+	/// Weight for updating a namespace UUID
+	fn update_namespace_uuid() -> Weight;
+	/// Weight for updated a table UUID
+	fn update_table_uuid() -> Weight;
 }
 
 /// TODO: add docs
@@ -87,6 +91,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn drop_table() -> Weight {
 		Weight::from_parts(0,0)
 	}
+
+	fn update_namespace_uuid() -> Weight {
+		Weight::from_parts(0,0)
+	}
+
+	fn update_table_uuid() -> Weight {
+		Weight::from_parts(0,0)
+	}
 }
 
 // For backwards compatibility and tests
@@ -116,6 +128,12 @@ impl WeightInfo for () {
 	}
 
 	fn create_namespace() -> Weight {
+		Weight::from_parts(0,0)
+	}
+	fn update_namespace_uuid() -> Weight {
+		Weight::from_parts(0,0)
+	}
+	fn update_table_uuid() -> Weight {
 		Weight::from_parts(0,0)
 	}
 }
