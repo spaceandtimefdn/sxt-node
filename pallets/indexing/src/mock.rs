@@ -54,6 +54,7 @@ impl pallet_migrations::Config for Test {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type Migrations = (
         crate::migrations::v1::LazyMigrationV1<Test, crate::weights::SubstrateWeight<Test>, Api>,
+        crate::migrations::v2::LazyMigrationV2<Test, crate::weights::SubstrateWeight<Test>, Api>,
     );
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_migrations::mock_helpers::MockedMigrations;
@@ -136,6 +137,8 @@ impl pallet_staking::Config for Test {
 impl pallet_indexing::pallet::Config<Api> for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Test>;
+    const BATCH_QUEUE_CAPACITY: u32 = 10;
+    const MAX_BATCHES_PRUNED_PER_TRANSACTION: u32 = 2;
 }
 pub type BlockNumber = u64;
 

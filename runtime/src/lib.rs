@@ -341,6 +341,11 @@ impl pallet_migrations::Config for Runtime {
             pallet_indexing::SubstrateWeight<Runtime>,
             native_api::Api,
         >,
+        pallet_indexing::migrations::v2::LazyMigrationV2<
+            Runtime,
+            pallet_indexing::SubstrateWeight<Runtime>,
+            native_api::Api,
+        >,
     );
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
@@ -784,6 +789,8 @@ impl pallet_commitments::Config for Runtime {}
 impl pallet_indexing::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
+    const BATCH_QUEUE_CAPACITY: u32 = 3_000_000;
+    const MAX_BATCHES_PRUNED_PER_TRANSACTION: u32 = 5;
 }
 
 impl pallet_attestation::Config for Runtime {
