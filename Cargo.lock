@@ -10980,6 +10980,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking 36.0.0",
+ "sqlparser",
  "sxt-core",
 ]
 
@@ -11999,6 +12000,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sqlparser",
  "sxt-core",
 ]
 

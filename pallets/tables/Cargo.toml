@@ -30,6 +30,7 @@ sp-core.workspace = true
 pallet-commitments.workspace = true
 proof-of-sql-commitment-map.workspace = true
 bincode = { workspace = true, features = ["serde", "alloc"] }
+sqlparser = { workspace = true, default-features = false }
 
 [dev-dependencies]
 sp-core = { default-features = true, workspace = true }
