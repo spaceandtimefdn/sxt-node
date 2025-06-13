@@ -28,7 +28,10 @@ pub mod pallet {
         TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
     };
+    use scale_info::prelude::vec;
     use sp_runtime::Vec;
+    use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+    use sqlparser::ast::{ColumnDef, ColumnOption, ColumnOptionDef, DataType, Ident};
     use sxt_core::permissions::*;
     use sxt_core::tables::{
         convert_sql_to_ignite_create_statement,
@@ -211,6 +214,13 @@ pub mod pallet {
     #[pallet::storage]
     pub type TableSources<T: Config> =
         StorageMap<_, Blake2_128Concat, TableIdentifier, Source, ValueQuery>;
+
+    /// Maps a table identifier to the account that created it.
+    /// Only used for public/permissionless tables.
+    #[pallet::storage]
+    #[pallet::getter(fn table_owners)]
+    pub type TableOwners<T: Config> =
+        StorageMap<_, Blake2_128Concat, TableIdentifier, T::AccountId>;
 
     /// A table identifier, a sql statement for table creation, and an initial commitment
     pub type CreateTableCmd = (
@@ -683,6 +693,8 @@ pub mod pallet {
             let tables_with_meta_columns = tables
         .into_iter()
         .map(|mut table| {
+            let is_public = matches!(table.table_type, TableType::PublicPermissionless);
+
             // Generate or extract UUIDs
             let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table2(
                 table.create_statement.clone(),
@@ -699,10 +711,15 @@ pub mod pallet {
             );
 
             // Parse and remove WITH clause
-            let (create_table, with_options) = create_statement_to_sqlparser_remove_with(
+            let (mut create_table, with_options) = create_statement_to_sqlparser_remove_with(
                 table.create_statement.clone(),
             )
             .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+            // Inject submitter column if this is a permissionless table
+            if is_public {
+                create_table = inject_submitter_column(create_table);
+            }
 
             // Generate metadata
             let CreateTableAndCommitmentMetadata {
@@ -749,6 +766,9 @@ pub mod pallet {
             table.create_statement = CreateStatement::try_from(reconstructed.as_bytes().to_vec())
                 .map_err(|_| Error::<T>::BoundedVecError)?;
 
+
+            TableOwners::<T>::insert(&table.ident, ensure_signed(origin.clone())?);
+
             Ok(table)
         })
         .collect::<Result<Vec<_>, DispatchError>>()?
@@ -758,5 +778,21 @@ pub mod pallet {
             Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
             Ok(())
         }
+    }
+
+    /// Inject a submitter varchar column to a CreateTableBuilder
+    pub fn inject_submitter_column(mut table: CreateTableBuilder) -> CreateTableBuilder {
+        let submitter_col = ColumnDef {
+            name: Ident::new("submitter"),
+            data_type: DataType::Varchar(None), // or DataType::Text if needed
+            collation: None,
+            options: vec![ColumnOptionDef {
+                name: None,
+                option: ColumnOption::NotNull,
+            }],
+        };
+
+        table.columns.push(submitter_col);
+        table
     }
 }
