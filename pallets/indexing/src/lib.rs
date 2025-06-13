@@ -413,14 +413,11 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
-        // Clean up submissions for this batch
         Submissions::<T, I>::iter_key_prefix(&quorum.batch_id)
             .for_each(|key| Submissions::<T, I>::remove(&quorum.batch_id, key));
 
-        // Record final decision
         FinalData::<T, I>::insert(&quorum.batch_id, &quorum);
 
-        // Deserialize into Arrow-compatible OnChainTable
         let table_bytes = I::record_batch_to_onchain(sxt_core::native::RowData { row_data })
             .map_err(Error::<T, I>::from)?;
 
@@ -433,7 +430,6 @@ pub mod pallet {
             &submitter,
         )?;
 
-        // Commit to the data and retrieve metadata
         let InsertAndCommitmentMetadata {
             insert_with_meta_columns,
             ..
@@ -442,21 +438,18 @@ pub mod pallet {
             oc_table.clone(),
         )?;
 
-        // Serialize the final data
         let on_chain_table_bytes: BoundedVec<u8, ConstU32<DATA_MAX_LEN>> =
             postcard::to_allocvec(&insert_with_meta_columns)
                 .map_err(|_| Error::<T, I>::TableSerializationError)?
                 .try_into()
                 .map_err(|_| Error::<T, I>::TableSerializationError)?;
 
-        // Update latest indexed block number if applicable
         if let Some(bn) =
             block_number.or_else(|| oc_table.max_block_number().and_then(|v| v.try_into().ok()))
         {
             BlockNumbers::<T, I>::insert(&quorum.table, bn);
         }
 
-        // Emit appropriate event
         if oc_table.num_rows() == 0 {
             Pallet::<T, I>::deposit_event(Event::QuorumEmptyBlock {
                 table: quorum.table.clone(),
@@ -471,7 +464,6 @@ pub mod pallet {
             });
         }
 
-        // If system table, propagate insert or error
         if quorum.table.is_staking_table() {
             if let Err(e) = pallet_system_tables::Pallet::<T>::process_system_table(
                 quorum.table.clone(),
