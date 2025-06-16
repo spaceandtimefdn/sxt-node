@@ -18,6 +18,7 @@ mod tests;
 
 mod messages;
 mod parse;
+mod zkpay;
 
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
@@ -163,9 +164,7 @@ pub mod pallet {
             SystemRequestType::Staking(StakingSystemRequest::UnstakeInitiated) => {
                 process_unstake_initiated::<T>(request)
             }
-            // SystemRequestType::ZkPayRequest => {
-            //     Ok(())
-            // }
+            SystemRequestType::ZkPay(_) => zkpay::process_zkpay_request::<T>(request),
             _ => Ok(()),
         }
     }

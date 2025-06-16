@@ -10,13 +10,14 @@ use sxt_core::tables::TableIdentifier;
 
 use crate::parse::SystemFieldType::{Decimal, Varchar};
 use crate::parse::SystemRequestType::{Message, Staking};
+use crate::zkpay::{getZkPayTemplates, ZkPayRequest};
 
 /// Supported types of system requests, typically originating from data submissions
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum SystemRequestType {
     Message,
     Staking(StakingSystemRequest),
-    ZkPay,
+    ZkPay(ZkPayRequest),
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -74,9 +75,10 @@ impl SystemRequest {
 }
 
 #[derive(Clone)]
-enum SystemFieldType {
+pub(crate) enum SystemFieldType {
     Varchar,
     Bytes,
+    SmallInt,
     Decimal,
 }
 
@@ -86,6 +88,7 @@ pub enum SystemFieldValue {
     Varchar(String),
     Bytes(Vec<u8>),
     Decimal(U256),
+    SmallInt(i16),
 }
 
 /// A wrapper for a field/column containing multiple values from a request
@@ -103,6 +106,7 @@ impl SystemTableField {
             SystemFieldValue::Varchar(_) => SystemFieldType::Varchar,
             SystemFieldValue::Bytes(_) => SystemFieldType::Bytes,
             SystemFieldValue::Decimal(_) => SystemFieldType::Decimal,
+            SystemFieldValue::SmallInt(_) => SystemFieldType::SmallInt,
         };
 
         SystemTableField {
@@ -126,49 +130,56 @@ impl From<(&str, SystemFieldType)> for SystemTableField {
 static SYSTEM_TEMPLATES: spin::Once<Vec<SystemRequest>> = spin::Once::new();
 fn get_system_templates() -> &'static Vec<SystemRequest> {
     SYSTEM_TEMPLATES.call_once(|| {
-        vec![
-            SystemRequest {
-                request_type: Message,
-                fields: vec![
-                    ("SENDER", SystemFieldType::Bytes).into(),
-                    ("BODY", SystemFieldType::Bytes).into(),
-                    ("NONCE", Decimal).into(),
-                ],
-                table_id: TableIdentifier::from_str_unchecked("MESSAGE", "SXT_SYSTEM_STAKING"),
-            },
-            SystemRequest {
-                request_type: Staking(StakingSystemRequest::Stake),
-                fields: vec![
-                    ("STAKER", SystemFieldType::Bytes).into(),
-                    ("AMOUNT", Decimal).into(),
-                ],
-                table_id: TableIdentifier::from_str_unchecked("STAKED", "SXT_SYSTEM_STAKING"),
-            },
-            SystemRequest {
-                request_type: Staking(StakingSystemRequest::Nominate),
-                fields: vec![
-                    ("NOMINATOR", SystemFieldType::Bytes).into(),
-                    ("NODESED25519PUBKEYS", Varchar).into(),
-                ],
-                table_id: TableIdentifier::from_str_unchecked("NOMINATED", "SXT_SYSTEM_STAKING"),
-            },
-            SystemRequest {
-                request_type: Staking(StakingSystemRequest::UnstakeInitiated),
-                fields: vec![("STAKER", SystemFieldType::Bytes).into()],
-                table_id: TableIdentifier::from_str_unchecked(
-                    "UNSTAKEINITIATED",
-                    "SXT_SYSTEM_STAKING",
-                ),
-            },
-            SystemRequest {
-                request_type: Staking(StakingSystemRequest::UnstakeCancelled),
-                fields: vec![("STAKER", SystemFieldType::Bytes).into()],
-                table_id: TableIdentifier::from_str_unchecked(
-                    "UNSTAKECANCELLED",
-                    "SXT_SYSTEM_STAKING",
-                ),
-            },
-        ]
+        let out = vec![
+            getZkPayTemplates(),
+            vec![
+                SystemRequest {
+                    request_type: Message,
+                    fields: vec![
+                        ("SENDER", SystemFieldType::Bytes).into(),
+                        ("BODY", SystemFieldType::Bytes).into(),
+                        ("NONCE", Decimal).into(),
+                    ],
+                    table_id: TableIdentifier::from_str_unchecked("MESSAGE", "SXT_SYSTEM_STAKING"),
+                },
+                SystemRequest {
+                    request_type: Staking(StakingSystemRequest::Stake),
+                    fields: vec![
+                        ("STAKER", SystemFieldType::Bytes).into(),
+                        ("AMOUNT", Decimal).into(),
+                    ],
+                    table_id: TableIdentifier::from_str_unchecked("STAKED", "SXT_SYSTEM_STAKING"),
+                },
+                SystemRequest {
+                    request_type: Staking(StakingSystemRequest::Nominate),
+                    fields: vec![
+                        ("NOMINATOR", SystemFieldType::Bytes).into(),
+                        ("NODESED25519PUBKEYS", Varchar).into(),
+                    ],
+                    table_id: TableIdentifier::from_str_unchecked(
+                        "NOMINATED",
+                        "SXT_SYSTEM_STAKING",
+                    ),
+                },
+                SystemRequest {
+                    request_type: Staking(StakingSystemRequest::UnstakeInitiated),
+                    fields: vec![("STAKER", SystemFieldType::Bytes).into()],
+                    table_id: TableIdentifier::from_str_unchecked(
+                        "UNSTAKEINITIATED",
+                        "SXT_SYSTEM_STAKING",
+                    ),
+                },
+                SystemRequest {
+                    request_type: Staking(StakingSystemRequest::UnstakeCancelled),
+                    fields: vec![("STAKER", SystemFieldType::Bytes).into()],
+                    table_id: TableIdentifier::from_str_unchecked(
+                        "UNSTAKECANCELLED",
+                        "SXT_SYSTEM_STAKING",
+                    ),
+                },
+            ],
+        ];
+        out.into_iter().flatten().collect()
     })
 }
 
@@ -205,6 +216,18 @@ fn parse_request_with_template(oc_table: OnChainTable, template: &SystemRequest)
                         values: data
                             .iter()
                             .map(|v| SystemFieldValue::Bytes(v.clone()))
+                            .collect(),
+                    })
+            }
+            SystemFieldType::SmallInt => {
+                oc_table
+                    .get_smallints_by_column(&f.name)
+                    .map(|data| SystemTableField {
+                        name: f.name.clone(),
+                        value_type: SystemFieldType::SmallInt,
+                        values: data
+                            .iter()
+                            .map(|v| SystemFieldValue::SmallInt(v.clone()))
                             .collect(),
                     })
             }
