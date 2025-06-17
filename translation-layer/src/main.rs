@@ -1,10 +1,12 @@
 //! translation layer
 use std::sync::Arc;
+use std::time::Duration;
 
 use axum::routing::{get, post};
 use axum::Router;
 use clap::Parser;
 use log::info;
+use subxt::backend::rpc::reconnecting_rpc_client::{PingConfig, RpcClient};
 use subxt::OnlineClient;
 use tokio::net::TcpListener;
 use tokio::sync::{mpsc, Mutex};
@@ -79,7 +81,15 @@ async fn main() -> anyhow::Result<()> {
 
     // ──────────────── MAINNET ────────────────
     info!("🔵 Connecting to mainnet: {}", cli.mainnet_url);
-    let mainnet_api = OnlineClient::from_insecure_url(&cli.mainnet_url).await?;
+    let mainnet_rpc_client = RpcClient::builder()
+        .request_timeout(Duration::from_secs(60))
+        .connection_timeout(Duration::from_secs(10))
+        .enable_ws_ping(PingConfig::new())
+        .build(cli.mainnet_url.clone())
+        .await?;
+
+    let mainnet_api = OnlineClient::from_rpc_client(mainnet_rpc_client).await?;
+
     let mainnet_key = signer::load_substrate_key(&cli.mainnet_key).await?;
     let mainnet_submitter = Arc::new(Mutex::new(
         TxSubmitter::new(
