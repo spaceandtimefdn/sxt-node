@@ -112,7 +112,15 @@ async fn main() -> anyhow::Result<()> {
 
     // ──────────────── TESTNET ────────────────
     info!("🔵 Connecting to testnet: {}", cli.testnet_url);
-    let testnet_api = OnlineClient::from_insecure_url(&cli.testnet_url).await?;
+    let testnet_rpc_client = RpcClient::builder()
+        .request_timeout(Duration::from_secs(60))
+        .connection_timeout(Duration::from_secs(10))
+        .enable_ws_ping(PingConfig::new())
+        .build(cli.testnet_url.clone())
+        .await?;
+
+    let testnet_api = OnlineClient::from_rpc_client(testnet_rpc_client).await?;
+
     let testnet_key = signer::load_substrate_key(&cli.testnet_key).await?;
     let testnet_submitter = Arc::new(Mutex::new(
         TxSubmitter::new(
