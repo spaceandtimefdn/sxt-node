@@ -1,3 +1,12 @@
+# [1.9.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.8.0...v1.9.0) (2025-06-17)
+
+
+### Features
+
+* add use retry rpc client for testnet ([0866372](https://github.com/spaceandtimefdn/sxt-node/commit/0866372505ae231b88a5ca81736812e7c9b32326))
+
+
+
 # [1.8.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.7.1...v1.8.0) (2025-06-17)
 
 
@@ -73,16 +82,6 @@
 * Update docs for SXT Testnet ([4001be4](https://github.com/spaceandtimefdn/sxt-node/commit/4001be4b9807b714066f92c1985dcab723aa0173))
 * update hardware specs and docker image version ([8040836](https://github.com/spaceandtimefdn/sxt-node/commit/8040836a81f7b7bf5157abb4f1543a65762c974d))
 * Update License ([6a9f7c8](https://github.com/spaceandtimefdn/sxt-node/commit/6a9f7c8fc72fbd6e8a8248e4e40a7ba8989b9904))
-
-
-
-# [1.5.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.4.0...v1.5.0) (2025-05-28)
-
-
-### Features
-
-* add zkpay to system staking contracts ([4a07a0a](https://github.com/spaceandtimefdn/sxt-node/commit/4a07a0ad40c9ec7e42cc007daa5a5a6e0520fad7))
-* make new namespace for zkpay ([28c77d4](https://github.com/spaceandtimefdn/sxt-node/commit/28c77d47147967b3859486479b128dd5980c126b))
 
 
 
