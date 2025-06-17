@@ -1,3 +1,12 @@
+# [1.8.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.7.1...v1.8.0) (2025-06-17)
+
+
+### Features
+
+* use retrying rpc client in tx layer ([eb00eed](https://github.com/spaceandtimefdn/sxt-node/commit/eb00eedcc0599b2acb328f628a80bc630c5176ea))
+
+
+
 ## [1.7.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.7.0...v1.7.1) (2025-06-09)
 
 
@@ -74,21 +83,6 @@
 
 * add zkpay to system staking contracts ([4a07a0a](https://github.com/spaceandtimefdn/sxt-node/commit/4a07a0ad40c9ec7e42cc007daa5a5a6e0520fad7))
 * make new namespace for zkpay ([28c77d4](https://github.com/spaceandtimefdn/sxt-node/commit/28c77d47147967b3859486479b128dd5980c126b))
-
-
-
-# [1.4.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.3.0...v1.4.0) (2025-05-24)
-
-
-### Bug Fixes
-
-* correct build errors ([0f74bc7](https://github.com/spaceandtimefdn/sxt-node/commit/0f74bc7c50feed96c4c9c7bb700fe0315677484f))
-
-
-### Features
-
-* add reward rate calculation to canary ([5b99429](https://github.com/spaceandtimefdn/sxt-node/commit/5b99429894f9f39e7ea8deea4d7c10660c619b91))
-* update chain runtime to include new rewards pallet ([bb4a46e](https://github.com/spaceandtimefdn/sxt-node/commit/bb4a46e0c0559f1a2fb1b1bebcdbc65e49ae3685))
 
 
 
