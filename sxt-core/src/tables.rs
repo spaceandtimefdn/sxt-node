@@ -19,7 +19,7 @@ use sp_core::{blake2_256, RuntimeDebug, U256};
 use sp_runtime::DispatchError;
 use sp_runtime_interface::pass_by::PassByCodec;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
-use sqlparser::ast::ObjectName;
+use sqlparser::ast::{Expr, ObjectName, SqlOption, Value};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
@@ -475,6 +475,68 @@ fn strip_with_clause(sql: &str) -> (&str, Option<&str>) {
     }
 }
 
+/// Errors that can occure when updated a UUID in a SQL statement
+#[derive(Snafu, Debug)]
+pub enum UpdateUuidError {
+    /// The uuid supplied to inject was not valid utf8
+    InvalidUuid,
+    /// There was an error parsing the SQL statement into or from its object form
+    ParseError {
+        /// The parsing error
+        error: CreateStatementParseError,
+    },
+}
+
+/// Attempts to insert the provided UUID into the WITH clause of the provided create
+/// statement maintaining any other previously assigned options
+pub fn update_uuid_in_create_table_statement(
+    uuid: TableUuid,
+    column_uuids: ColumnUuidList,
+    statement: CreateStatement,
+) -> Result<CreateStatement, UpdateUuidError> {
+    let table: CreateTableBuilder = create_statement_to_sqlparser(statement)
+        .map_err(|error| UpdateUuidError::ParseError { error })?;
+
+    let table_uuid_str = from_utf8(uuid.as_slice()).map_err(|e| UpdateUuidError::InvalidUuid)?;
+
+    // Turn the UUID entries into SqlOption
+    let table_entry = SqlOption {
+        name: "TABLE_UUID".into(),
+        value: Expr::Value(Value::UnQuotedString(table_uuid_str.to_string())),
+    };
+
+    let mut entries: Vec<SqlOption> = column_uuids
+        .iter()
+        .filter_map(|entry| {
+            match (
+                from_utf8(entry.name.as_slice()),
+                from_utf8(entry.uuid.as_slice()),
+            ) {
+                (Ok(name), Ok(val)) => Some(SqlOption {
+                    name: name.into(),
+                    value: Expr::Value(Value::UnQuotedString(val.to_string())),
+                }),
+                (_, _) => None,
+            }
+        })
+        .chain(Some(table_entry))
+        .chain(table.clone().with_options)
+        .collect::<Vec<SqlOption>>();
+
+    // Dedup everything as uppercase to ensure case-insensitive handling
+    entries.sort_by(|a, b| {
+        a.name
+            .value
+            .to_uppercase()
+            .cmp(&b.name.value.to_uppercase())
+    });
+    entries.dedup_by(|a, b| a.name.value.to_uppercase() == b.name.value.to_uppercase());
+
+    let table = table.with_options(entries);
+
+    sqlparser_to_create_statement(table).map_err(|error| UpdateUuidError::ParseError { error })
+}
+
 /// Convert a sqlparser `CreateTableBuilder` to a [`CreateStatement`].
 pub fn sqlparser_to_create_statement(
     create_table: CreateTableBuilder,
@@ -681,6 +743,7 @@ pub fn generate_uuid(source: String) -> Option<TableUuid> {
 mod tests {
     use alloc::string::String;
     use alloc::{format, vec};
+    use core::fmt::Debug;
 
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
     use sqlparser::ast::{ColumnDef, DataType, Ident};
@@ -956,6 +1019,63 @@ mod tests {
         let output = convert_ignite_create_statement(test_val);
 
         assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn we_can_inject_uuids_into_sql_statements() {
+        let test_val = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME) );";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(test_val.as_bytes().to_vec()).unwrap();
+        let test_uuid: TableUuid = BoundedVec::try_from("TESTUUID".as_bytes().to_vec()).unwrap();
+        let expoected_val = "";
+        let r = update_uuid_in_create_table_statement(
+            test_uuid,
+            ColumnUuidList::default(),
+            create_statement,
+        );
+        assert!(r.is_ok());
+
+        let result_statement = r.unwrap();
+        let expected = "CREATE TABLE SOUTH.BOOK (ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME)) WITH (TABLE_UUID = TESTUUID)";
+        assert_eq!(expected, from_utf8(&result_statement).unwrap());
+    }
+
+    #[test]
+    fn we_can_inject_uuids_into_sql_statements_while_preserving_other_options() {
+        let test_val = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME) ) WITH (public_key=A1D9C617F01C9975117B3D605CD4F945853E263D6E52888EE6E3AF5CB0FA1026,access_type=public_read,immutable=true);";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(test_val.as_bytes().to_vec()).unwrap();
+        let test_uuid: TableUuid = BoundedVec::try_from("TESTUUID".as_bytes().to_vec()).unwrap();
+        let expoected_val = "";
+        let r = update_uuid_in_create_table_statement(
+            test_uuid,
+            ColumnUuidList::default(),
+            create_statement,
+        );
+        assert!(r.is_ok());
+
+        let result_statement = r.unwrap();
+        let expected = "CREATE TABLE SOUTH.BOOK (ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME)) WITH (access_type = public_read, immutable = true, public_key = A1D9C617F01C9975117B3D605CD4F945853E263D6E52888EE6E3AF5CB0FA1026, TABLE_UUID = TESTUUID)";
+        assert_eq!(expected, from_utf8(&result_statement).unwrap());
+    }
+
+    #[test]
+    fn we_can_inject_uuids_into_sql_statements_overriding_existing_uuids_if_present() {
+        let test_val = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME) ) WITH (table_uuid=abc678, public_key=A1D9C617F01C9975117B3D605CD4F945853E263D6E52888EE6E3AF5CB0FA1026,access_type=public_read,immutable=true);";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(test_val.as_bytes().to_vec()).unwrap();
+        let test_uuid: TableUuid = BoundedVec::try_from("TESTUUID".as_bytes().to_vec()).unwrap();
+        let expoected_val = "";
+        let r = update_uuid_in_create_table_statement(
+            test_uuid,
+            ColumnUuidList::default(),
+            create_statement,
+        );
+        assert!(r.is_ok());
+
+        let result_statement = r.unwrap();
+        let expected = "CREATE TABLE SOUTH.BOOK (ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME)) WITH (access_type = public_read, immutable = true, public_key = A1D9C617F01C9975117B3D605CD4F945853E263D6E52888EE6E3AF5CB0FA1026, TABLE_UUID = TESTUUID)";
+        assert_eq!(expected, from_utf8(&result_statement).unwrap());
     }
 }
 

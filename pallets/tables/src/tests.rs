@@ -293,7 +293,7 @@ fn update_namespace_uuid_works() {
 
         // Grant permission
         let (who, signer) = user(1);
-        set_permission!(who, TablesPalletPermission::EditSchema);
+        set_permission!(who, TablesPalletPermission::EditUuid);
 
         // Call extrinsic
         assert_ok!(Tables::update_namespace_uuid(
@@ -341,7 +341,7 @@ fn update_table_uuid_works() {
 
         // Grant permission
         let (who, signer) = user(1);
-        set_permission!(who, TablesPalletPermission::EditSchema);
+        set_permission!(who, TablesPalletPermission::EditUuid);
 
         // Call extrinsic
         assert_ok!(Tables::update_table_uuid(

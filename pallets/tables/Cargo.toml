@@ -30,8 +30,6 @@ sp-runtime = {default-features = false, workspace = true}
 sp-core.workspace = true
 pallet-commitments.workspace = true
 proof-of-sql-commitment-map.workspace = true
-rand_core.workspace = true
-rand_chacha.workspace = true
 
 [dev-dependencies]
 sp-core = { default-features = true, workspace = true }
@@ -47,8 +45,6 @@ std = [
 	"frame-system/std",
 	"scale-info/std",
 	"pallet-commitments/std",
-	"rand_chacha/std",
-	"rand_core/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

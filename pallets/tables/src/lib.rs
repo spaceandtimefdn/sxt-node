@@ -50,6 +50,7 @@ pub mod pallet {
         generate_namespace_uuid,
         generate_table_uuid,
         sqlparser_to_create_statement,
+        update_uuid_in_create_table_statement,
         uuids_from_create_statement,
         uuids_from_sqlparser,
         ColumnUuidList,
@@ -68,6 +69,7 @@ pub mod pallet {
         TableType,
         TableUuid,
         TableVersion,
+        UpdateUuidError,
     };
     use sxt_core::ByteString;
 
@@ -522,7 +524,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),
-                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditUuid),
             )?;
 
             let maybe_uuid = NamespaceVersions::<T>::get(&namespace, version);
@@ -549,18 +551,19 @@ pub mod pallet {
         ) -> DispatchResult {
             let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),
-                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditUuid),
             )?;
 
             let maybe_uuid = TableVersions::<T>::get(&table, version);
             TableVersions::<T>::set(&table, version, new_uuid.clone());
 
             if let Some(old_create_statement) = Schemas::<T>::get(&table.namespace, &table.name) {
-                let updated = Self::update_uuid_in_create_table_statement(
+                let updated = update_uuid_in_create_table_statement(
                     new_uuid.clone(),
                     ColumnUuidList::default(),
                     old_create_statement,
-                )?;
+                )
+                .map_err(map_uuid_error::<T>)?;
                 Schemas::<T>::set(&table.namespace, &table.name, Some(updated));
             }
 
@@ -572,6 +575,13 @@ pub mod pallet {
             });
 
             Ok(())
+        }
+    }
+
+    fn map_uuid_error<T: Config>(error: UpdateUuidError) -> DispatchError {
+        match error {
+            UpdateUuidError::InvalidUuid => Error::<T>::TableUUIDError.into(),
+            UpdateUuidError::ParseError { error } => Error::<T>::CreateStatementParseError.into(),
         }
     }
 
@@ -687,52 +697,6 @@ pub mod pallet {
             Ok(statement_with_metadata)
         }
 
-        /// Attempts to insert the provided UUID into the WITH clause of the provided create
-        /// statement maintaining any other previously assigned options
-        pub fn update_uuid_in_create_table_statement(
-            uuid: TableUuid,
-            column_uuids: ColumnUuidList,
-            statement: CreateStatement,
-        ) -> Result<CreateStatement, DispatchError> {
-            let table: CreateTableBuilder = create_statement_to_sqlparser(statement)
-                .map_err(|e| Error::<T>::CreateStatementParseError)?;
-
-            let table_uuid_str =
-                from_utf8(uuid.as_slice()).map_err(|e| Error::<T>::UtfConversionError)?;
-
-            // Turn the UUID entries into SqlOption
-            let table_entry = SqlOption {
-                name: "TABLE_UUID".into(),
-                value: Expr::Value(Value::UnQuotedString(table_uuid_str.to_string())),
-            };
-
-            let mut entries: Vec<SqlOption> = column_uuids
-                .iter()
-                .filter_map(|entry| {
-                    match (
-                        from_utf8(entry.name.as_slice()),
-                        from_utf8(entry.uuid.as_slice()),
-                    ) {
-                        (Ok(name), Ok(val)) => Some(SqlOption {
-                            name: name.into(),
-                            value: Expr::Value(Value::UnQuotedString(val.to_string())),
-                        }),
-                        (_, _) => None,
-                    }
-                })
-                .chain(Some(table_entry))
-                .chain(table.clone().with_options)
-                .collect::<Vec<SqlOption>>();
-
-            entries.sort_by(|a, b| a.name.cmp(&b.name));
-            entries.dedup_by(|a, b| a.name == b.name);
-
-            let table = table.with_options(entries);
-
-            sqlparser_to_create_statement(table)
-                .map_err(|e| Error::<T>::CreateStatementParseError.into())
-        }
-
         /// Attempts to retrieve the UUID for the provided table from the CreateStatement,
         /// generating UUIDs if that fails.
         pub fn get_or_generate_uuids_for_table(
@@ -805,82 +769,82 @@ pub mod pallet {
             )?;
 
             let tables_with_meta_columns = tables
-        .into_iter()
-        .map(|mut table| {
-            // Generate or extract UUIDs
-            let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(
-                table.create_statement.clone(),
-                table.ident.clone(),
-            )
-            .map_err(|_| Error::<T>::UUIDGenerationError)?;
+                .into_iter()
+                .map(|mut table| {
+                    // Generate or extract UUIDs
+                    let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(
+                        table.create_statement.clone(),
+                        table.ident.clone(),
+                    )
+                        .map_err(|_| Error::<T>::UUIDGenerationError)?;
 
-            // Update the create statement to add the UUIDs to the WITH clause
-            let updated_create_statement = pallet::Pallet::<T>::update_uuid_in_create_table_statement(table_uuid.clone(), column_uuids.clone(), table.create_statement.clone())?;
+                    // Update the create statement to add the UUIDs to the WITH clause
+                    let updated_create_statement = update_uuid_in_create_table_statement(table_uuid.clone(), column_uuids.clone(), table.create_statement.clone()).map_err(map_uuid_error::<T>)?;
 
-            Self::insert_table_uuid(table.ident.clone(), table_uuid, column_uuids)?;
-            Self::insert_schema(
-                table.ident.clone(),
-                updated_create_statement.clone(),
-                table.table_type.clone(),
-                table.source.clone(),
-            );
+                    Self::insert_table_uuid(table.ident.clone(), table_uuid, column_uuids)?;
+                    Self::insert_schema(
+                        table.ident.clone(),
+                        updated_create_statement.clone(),
+                        table.table_type.clone(),
+                        table.source.clone(),
+                    );
 
-            // Parse and remove WITH clause
-            let (create_table, with_options) = create_statement_to_sqlparser_remove_with(
-                updated_create_statement,
-            )
-            .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                    // Parse and remove WITH clause
+                    let (create_table, with_options) = create_statement_to_sqlparser_remove_with(
+                        updated_create_statement,
+                    )
+                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
-            // Generate metadata
-            let CreateTableAndCommitmentMetadata {
-                table_with_meta_columns,
-                ..
-            } = match table.commitment {
-                CommitmentCreationCmd::Empty(scheme) => {
-                    pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_scheme(
-                        create_table,
-                        scheme,
-                    )?
-                }
-                CommitmentCreationCmd::FromSnapshot(ref snapshot_url, ref per_commitment_scheme) => {
-                    Snapshots::<T>::insert(table.ident.clone(), snapshot_url.clone());
-                    pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
-                        create_table,
-                        per_commitment_scheme.clone(),
-                    )?
-                }
-            };
+                    // Generate metadata
+                    let CreateTableAndCommitmentMetadata {
+                        table_with_meta_columns,
+                        ..
+                    } = match table.commitment {
+                        CommitmentCreationCmd::Empty(scheme) => {
+                            pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_scheme(
+                                create_table,
+                                scheme,
+                            )?
+                        }
+                        CommitmentCreationCmd::FromSnapshot(ref snapshot_url, ref per_commitment_scheme) => {
+                            Snapshots::<T>::insert(table.ident.clone(), snapshot_url.clone());
+                            pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
+                                create_table,
+                                per_commitment_scheme.clone(),
+                            )?
+                        }
+                    };
 
-            // Reconstruct final DDL statement
-            let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
-                .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                    // Reconstruct final DDL statement
+                    let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
+                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
-            let statement_with_metadata = from_utf8(&statement_with_metadata)
-                .map_err(|_| Error::<T>::UtfConversionError)?;
+                    let statement_with_metadata = from_utf8(&statement_with_metadata)
+                        .map_err(|_| Error::<T>::UtfConversionError)?;
 
-            let reconstructed = match with_options {
-                Some(opts) => {
-                    let mut base = statement_with_metadata.trim_end_matches(';').to_owned();
-                    base.push(' ');
-                    base.push_str(from_utf8(&opts).map_err(|_| Error::<T>::UtfConversionError)?);
-                    base.push(';');
-                    base
-                }
-                None => {
-                    let mut base = statement_with_metadata.trim_end_matches(';').to_owned();
-                    base.push(';');
-                    base
-                }
-            };
+                    let reconstructed = match with_options {
+                        Some(opts) => {
+                            let mut base = statement_with_metadata.trim_end_matches(';').to_owned();
+                            base.push(' ');
+                            base.push_str(from_utf8(&opts).map_err(|_| Error::<T>::UtfConversionError)?);
+                            base.push(';');
+                            base
+                        }
+                        None => {
+                            let mut base = statement_with_metadata.trim_end_matches(';').to_owned();
+                            base.push(';');
+                            base
+                        }
+                    };
 
-            table.create_statement = CreateStatement::try_from(reconstructed.as_bytes().to_vec())
-                .map_err(|_| Error::<T>::BoundedVecError)?;
+                    table.create_statement = CreateStatement::try_from(reconstructed.as_bytes().to_vec())
+                        .map_err(|_| Error::<T>::BoundedVecError)?;
 
-            Ok(table)
-        })
-        .collect::<Result<Vec<_>, DispatchError>>()?
-        .try_into()
-        .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
+                    Ok(table)
+                })
+                .collect::<Result<Vec<_>, DispatchError>>()?
+                .try_into()
+                .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
 
             Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
             Ok(())
