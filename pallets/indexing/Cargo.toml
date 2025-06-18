@@ -37,6 +37,7 @@ postcard.workspace = true
 proof-of-sql-static-setups = { workspace = true, features = ["io"], optional = true }
 on-chain-table = { workspace = true, default-features = false }
 proof-of-sql-commitment-map = { workspace = true, optional = true }
+sqlparser.workspace = true
 
 [dev-dependencies]
 sp-staking.workspace = true

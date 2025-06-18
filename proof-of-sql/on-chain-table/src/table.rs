@@ -183,6 +183,11 @@ impl OnChainTable {
             _ => None,
         }
     }
+
+    /// Get the inner map as mutable
+    pub fn as_map_mut(&mut self) -> &mut IndexMap<Ident, OnChainColumn> {
+        &mut self.0
+    }
 }
 
 impl IntoIterator for OnChainTable {

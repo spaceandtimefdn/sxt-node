@@ -45,10 +45,13 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use hex::FromHex;
     use native_api::NativeApi;
-    use on_chain_table::OnChainTable;
+    use on_chain_table::{OnChainColumn, OnChainTable};
+    use scale_info::prelude::vec;
+    use sp_core::crypto::Ss58Codec;
     use sp_core::{H256, U256};
     use sp_runtime::traits::{Bounded, Hash, StaticLookup, UniqueSaturatedInto};
     use sp_runtime::{BoundedVec, SaturatedConversion};
+    use sqlparser::ast::Ident;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::{
         InsertQuorumSize,
@@ -194,6 +197,10 @@ pub mod pallet {
         TableDeserializationError,
         /// Error deserializing the table as an OnChainTable
         TableSerializationError,
+        /// BoundedVecError
+        BoundedVecError,
+        /// Submitter Injection Failed
+        SubmitterInjectionFailed,
     }
 
     #[pallet::call]
@@ -305,7 +312,7 @@ pub mod pallet {
         };
 
         if let Some(data_quorum) = public_data_quorum.or(privileged_data_quorum) {
-            finalize_quorum::<T, I>(data_quorum, data, block_number)?;
+            finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
         }
 
         Ok(())
@@ -400,6 +407,7 @@ pub mod pallet {
         quorum: DataQuorum<T::AccountId, T::Hash>,
         row_data: RowData,
         block_number: Option<u64>,
+        submitter: T::AccountId,
     ) -> DispatchResult
     where
         T: Config<I>,
@@ -413,8 +421,14 @@ pub mod pallet {
         let table_bytes = I::record_batch_to_onchain(sxt_core::native::RowData { row_data })
             .map_err(Error::<T, I>::from)?;
 
-        let oc_table = OnChainTable::try_from(table_bytes)
+        let mut oc_table = OnChainTable::try_from(table_bytes)
             .map_err(|_| Error::<T, I>::TableDeserializationError)?;
+
+        inject_submitter_column_if_permissionless::<T, I>(
+            &mut oc_table,
+            &quorum.table,
+            &submitter,
+        )?;
 
         let InsertAndCommitmentMetadata {
             insert_with_meta_columns,
@@ -498,6 +512,25 @@ pub mod pallet {
             pallet_tables::Schemas::<T>::contains_key(&table.namespace, &table.name),
             Error::<T, I>::InvalidTable
         );
+        Ok(())
+    }
+
+    fn inject_submitter_column_if_permissionless<T: Config<I>, I: NativeApi>(
+        table: &mut OnChainTable,
+        table_id: &TableIdentifier,
+        submitter: &T::AccountId,
+    ) -> Result<(), Error<T, I>> {
+        let is_permissionless = pallet_tables::TableOwners::<T>::contains_key(table_id);
+
+        if is_permissionless {
+            let submitter_str = hex::encode(submitter.encode());
+            let submitter_column =
+                OnChainColumn::VarChar(vec![submitter_str.clone(); table.num_rows()]);
+            table
+                .as_map_mut() // or destructure and rebuild if needed
+                .insert(Ident::new("SUBMITTER"), submitter_column);
+        }
+
         Ok(())
     }
 }

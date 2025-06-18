@@ -993,6 +993,9 @@ pub enum TableType {
 
     /// Testing type
     Testing(InsertQuorumSize),
+
+    /// Public permissionless, adds the writer to a "submitter column"
+    PublicPermissionless,
 }
 
 impl From<TableType> for InsertQuorumSize {
@@ -1011,6 +1014,10 @@ impl From<TableType> for InsertQuorumSize {
                 privileged: Some(0),
             },
             TableType::Testing(quorum) => quorum,
+            TableType::PublicPermissionless => InsertQuorumSize {
+                public: Some(0),
+                privileged: Some(0),
+            },
         }
     }
 }
