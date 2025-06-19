@@ -57,10 +57,12 @@ pub enum PermissionLevel {
     Deserialize,
 )]
 pub enum TablesPalletPermission {
-    /// TODO: add docs
+    /// Permission related to editing table schemas
     EditSchema,
     /// TODO: add docs
     EditRewards,
+    /// Permission related to updating the UUIDs for tables or namespaces
+    EditUuid,
 }
 
 /// Permissions for pallet_governance TODO

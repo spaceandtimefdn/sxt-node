@@ -1,7 +1,14 @@
-//! TODO: add docs
+//! The Tables pallet provides functionality related to interacting with tables on
+//! the SXT Chain. It provides support for creating, dropping, and editing tables and
+//! schemas.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
+
+extern crate alloc;
+extern crate core;
+
+use alloc::string::ToString;
 
 #[cfg(test)]
 mod mock;
@@ -29,6 +36,10 @@ pub mod pallet {
         TableCommitmentBytesPerCommitmentScheme,
     };
     use sp_runtime::Vec;
+    use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+    use sqlparser::ast::{Expr, ObjectName, SqlOption, Value};
+    use sqlparser::dialect::PostgreSqlDialect;
+    use sqlparser::parser::Parser;
     use sxt_core::permissions::*;
     use sxt_core::tables::{
         convert_sql_to_ignite_create_statement,
@@ -36,10 +47,10 @@ pub mod pallet {
         create_statement_to_sqlparser_remove_with,
         extract_schema_uuid,
         generate_column_uuid_list,
-        generate_column_uuid_list2,
         generate_namespace_uuid,
         generate_table_uuid,
         sqlparser_to_create_statement,
+        update_uuid_in_create_table_statement,
         uuids_from_create_statement,
         uuids_from_sqlparser,
         ColumnUuidList,
@@ -58,12 +69,15 @@ pub mod pallet {
         TableType,
         TableUuid,
         TableVersion,
+        UpdateUuidError,
     };
     use sxt_core::ByteString;
 
     use super::*;
+    use crate::Event::{NamespaceUuidUpdated, TableUuidUpdated};
 
-    /// TODO: add docs
+    /// A wrapper type that contains all the information needed to create a table
+    /// with or without a historical commitment and associated snapshot
     pub type UpdateTableCmd = (
         TableIdentifier,
         CreateStatement,
@@ -107,9 +121,9 @@ pub mod pallet {
     pub trait Config:
         frame_system::Config + pallet_permissions::Config + pallet_commitments::Config
     {
-        /// TODO: add docs
+        /// A runtime event binding to the runtime
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-        /// TODO: add docs
+        /// The weight info to be used for calls
         type WeightInfo: WeightInfo;
     }
 
@@ -129,7 +143,28 @@ pub mod pallet {
             /// Source
             source: Source,
         },
-
+        /// The UUID for a given namespace has been updated
+        NamespaceUuidUpdated {
+            /// The previous UUID of the namespace
+            old_uuid: TableUuid,
+            /// The new UUID of the namespace
+            new_uuid: TableUuid,
+            /// The namespace version that was updated
+            version: TableVersion,
+            /// The namespace that was updated
+            namespace: TableNamespace,
+        },
+        /// The UUID for a given table has been updated
+        TableUuidUpdated {
+            /// The previous UUID of the table
+            old_uuid: TableUuid,
+            /// The new UUID of the table
+            new_uuid: TableUuid,
+            /// The table version that was updated
+            version: TableVersion,
+            /// The table identifier that was updated
+            table: TableIdentifier,
+        },
         /// The schema for a table has been updated
         SchemaUpdated(Option<T::AccountId>, UpdateTableList),
 
@@ -300,6 +335,7 @@ pub mod pallet {
         UUIDGenerationError,
     }
 
+    /// The implementation for the pallet extrinsics
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -426,7 +462,8 @@ pub mod pallet {
             let namespace_uuid = match extract_schema_uuid(raw_sql) {
                 Some(uuid) => TableUuid::try_from(uuid.as_bytes().to_vec())
                     .map_err(|_| Error::<T>::TableUUIDError)?,
-                None => generate_namespace_uuid(block_number.into(), schema_name_s)?,
+                None => generate_namespace_uuid(block_number.into(), schema_name_s)
+                    .ok_or(Error::<T>::UUIDGenerationError)?,
             };
 
             Self::insert_namespace_uuid(schema_name, version, namespace_uuid.clone())?;
@@ -474,6 +511,77 @@ pub mod pallet {
             Self::remove_commits(ident);
 
             Ok(())
+        }
+
+        /// Update the UUID for the specificed namespace and version to the provided UUID
+        #[pallet::call_index(7)]
+        #[pallet::weight(<T as Config>::WeightInfo::update_namespace_uuid())]
+        pub fn update_namespace_uuid(
+            origin: OriginFor<T>,
+            namespace: TableNamespace,
+            version: TableVersion,
+            new_uuid: TableUuid,
+        ) -> DispatchResult {
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditUuid),
+            )?;
+
+            let maybe_uuid = NamespaceVersions::<T>::get(&namespace, version);
+            NamespaceVersions::<T>::set(&namespace, version, new_uuid.clone());
+
+            Self::deposit_event(NamespaceUuidUpdated {
+                old_uuid: maybe_uuid,
+                new_uuid,
+                version,
+                namespace,
+            });
+
+            Ok(())
+        }
+
+        /// Update the UUID for the specified table and version to the provided UUID
+        #[pallet::call_index(8)]
+        #[pallet::weight(<T as Config>::WeightInfo::update_table_uuid())]
+        pub fn update_table_uuid(
+            origin: OriginFor<T>,
+            table: TableIdentifier,
+            version: TableVersion,
+            new_uuid: TableUuid,
+        ) -> DispatchResult {
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditUuid),
+            )?;
+
+            let maybe_uuid = TableVersions::<T>::get(&table, version);
+            TableVersions::<T>::set(&table, version, new_uuid.clone());
+
+            if let Some(old_create_statement) = Schemas::<T>::get(&table.namespace, &table.name) {
+                let updated = update_uuid_in_create_table_statement(
+                    new_uuid.clone(),
+                    ColumnUuidList::default(),
+                    old_create_statement,
+                )
+                .map_err(map_uuid_error::<T>)?;
+                Schemas::<T>::set(&table.namespace, &table.name, Some(updated));
+            }
+
+            Self::deposit_event(TableUuidUpdated {
+                old_uuid: maybe_uuid,
+                new_uuid,
+                version,
+                table,
+            });
+
+            Ok(())
+        }
+    }
+
+    fn map_uuid_error<T: Config>(error: UpdateUuidError) -> DispatchError {
+        match error {
+            UpdateUuidError::InvalidUuid => Error::<T>::TableUUIDError.into(),
+            UpdateUuidError::ParseError { error } => Error::<T>::CreateStatementParseError.into(),
         }
     }
 
@@ -589,30 +697,9 @@ pub mod pallet {
             Ok(statement_with_metadata)
         }
 
-        /// Attempts to extract UUIDs for the provided table, generating new ones if there are none
-        /// present in the DDL
+        /// Attempts to retrieve the UUID for the provided table from the CreateStatement,
+        /// generating UUIDs if that fails.
         pub fn get_or_generate_uuids_for_table(
-            statement: CreateStatement,
-            identifier: TableIdentifier,
-        ) -> (TableUuid, ColumnUuidList) {
-            // Check if this table statement has UUIDs embedded in it
-            let Some((table_uuid, column_uuids)) = uuids_from_create_statement(statement.clone())
-            else {
-                // If not we generate them for the table
-                let block_number = <frame_system::Pallet<T>>::block_number();
-                let namespace = from_utf8(&identifier.namespace).unwrap();
-                let name = from_utf8(&identifier.name).unwrap();
-                return (
-                    generate_table_uuid(block_number.into(), namespace, name).unwrap(),
-                    generate_column_uuid_list(statement),
-                );
-            };
-
-            (table_uuid, column_uuids)
-        }
-
-        /// v2
-        pub fn get_or_generate_uuids_for_table2(
             raw: CreateStatement,
             identifier: TableIdentifier,
         ) -> Result<(TableUuid, ColumnUuidList), DispatchError> {
@@ -634,8 +721,9 @@ pub mod pallet {
             let name = from_utf8(&identifier.name)
                 .map_err(|_| DispatchError::Other("Invalid UTF-8 name"))?;
 
-            let table_uuid = generate_table_uuid(block_number.into(), namespace, name)?;
-            let column_uuids = generate_column_uuid_list2(raw)?;
+            let table_uuid = generate_table_uuid(block_number.into(), namespace, name)
+                .ok_or(Error::<T>::UUIDGenerationError)?;
+            let column_uuids = generate_column_uuid_list(raw)?;
 
             Ok((table_uuid, column_uuids))
         }
@@ -681,79 +769,82 @@ pub mod pallet {
             )?;
 
             let tables_with_meta_columns = tables
-        .into_iter()
-        .map(|mut table| {
-            // Generate or extract UUIDs
-            let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table2(
-                table.create_statement.clone(),
-                table.ident.clone(),
-            )
-            .map_err(|_| Error::<T>::UUIDGenerationError)?;
+                .into_iter()
+                .map(|mut table| {
+                    // Generate or extract UUIDs
+                    let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(
+                        table.create_statement.clone(),
+                        table.ident.clone(),
+                    )
+                        .map_err(|_| Error::<T>::UUIDGenerationError)?;
 
-            Self::insert_table_uuid(table.ident.clone(), table_uuid, column_uuids)?;
-            Self::insert_schema(
-                table.ident.clone(),
-                table.create_statement.clone(),
-                table.table_type.clone(),
-                table.source.clone(),
-            );
+                    // Update the create statement to add the UUIDs to the WITH clause
+                    let updated_create_statement = update_uuid_in_create_table_statement(table_uuid.clone(), column_uuids.clone(), table.create_statement.clone()).map_err(map_uuid_error::<T>)?;
 
-            // Parse and remove WITH clause
-            let (create_table, with_options) = create_statement_to_sqlparser_remove_with(
-                table.create_statement.clone(),
-            )
-            .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                    Self::insert_table_uuid(table.ident.clone(), table_uuid, column_uuids)?;
+                    Self::insert_schema(
+                        table.ident.clone(),
+                        updated_create_statement.clone(),
+                        table.table_type.clone(),
+                        table.source.clone(),
+                    );
 
-            // Generate metadata
-            let CreateTableAndCommitmentMetadata {
-                table_with_meta_columns,
-                ..
-            } = match table.commitment {
-                CommitmentCreationCmd::Empty(scheme) => {
-                    pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_scheme(
-                        create_table,
-                        scheme,
-                    )?
-                }
-                CommitmentCreationCmd::FromSnapshot(ref snapshot_url, ref per_commitment_scheme) => {
-                    Snapshots::<T>::insert(table.ident.clone(), snapshot_url.clone());
-                    pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
-                        create_table,
-                        per_commitment_scheme.clone(),
-                    )?
-                }
-            };
+                    // Parse and remove WITH clause
+                    let (create_table, with_options) = create_statement_to_sqlparser_remove_with(
+                        updated_create_statement,
+                    )
+                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
-            // Reconstruct final DDL statement
-            let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
-                .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                    // Generate metadata
+                    let CreateTableAndCommitmentMetadata {
+                        table_with_meta_columns,
+                        ..
+                    } = match table.commitment {
+                        CommitmentCreationCmd::Empty(scheme) => {
+                            pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_scheme(
+                                create_table,
+                                scheme,
+                            )?
+                        }
+                        CommitmentCreationCmd::FromSnapshot(ref snapshot_url, ref per_commitment_scheme) => {
+                            Snapshots::<T>::insert(table.ident.clone(), snapshot_url.clone());
+                            pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
+                                create_table,
+                                per_commitment_scheme.clone(),
+                            )?
+                        }
+                    };
 
-            let statement_with_metadata = from_utf8(&statement_with_metadata)
-                .map_err(|_| Error::<T>::UtfConversionError)?;
+                    // Reconstruct final DDL statement
+                    let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
+                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
-            let reconstructed = match with_options {
-                Some(opts) => {
-                    let mut base = statement_with_metadata.trim_end_matches(';').to_owned();
-                    base.push(' ');
-                    base.push_str(from_utf8(&opts).map_err(|_| Error::<T>::UtfConversionError)?);
-                    base.push(';');
-                    base
-                }
-                None => {
-                    let mut base = statement_with_metadata.trim_end_matches(';').to_owned();
-                    base.push(';');
-                    base
-                }
-            };
+                    let statement_with_metadata = from_utf8(&statement_with_metadata)
+                        .map_err(|_| Error::<T>::UtfConversionError)?;
 
-            table.create_statement = CreateStatement::try_from(reconstructed.as_bytes().to_vec())
-                .map_err(|_| Error::<T>::BoundedVecError)?;
+                    let reconstructed = match with_options {
+                        Some(opts) => {
+                            let mut base = statement_with_metadata.trim_end_matches(';').to_owned();
+                            base.push(' ');
+                            base.push_str(from_utf8(&opts).map_err(|_| Error::<T>::UtfConversionError)?);
+                            base.push(';');
+                            base
+                        }
+                        None => {
+                            let mut base = statement_with_metadata.trim_end_matches(';').to_owned();
+                            base.push(';');
+                            base
+                        }
+                    };
 
-            Ok(table)
-        })
-        .collect::<Result<Vec<_>, DispatchError>>()?
-        .try_into()
-        .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
+                    table.create_statement = CreateStatement::try_from(reconstructed.as_bytes().to_vec())
+                        .map_err(|_| Error::<T>::BoundedVecError)?;
+
+                    Ok(table)
+                })
+                .collect::<Result<Vec<_>, DispatchError>>()?
+                .try_into()
+                .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
 
             Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
             Ok(())
