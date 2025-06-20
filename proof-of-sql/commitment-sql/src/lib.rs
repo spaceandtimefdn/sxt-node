@@ -8,7 +8,9 @@ mod map;
 mod column_options;
 pub use column_options::InvalidColumnOptions;
 
-mod column_type_conversion;
+mod column_type_conversion {
+    proof_of_sql_unversioned::impl_sqlparser_proof_of_sql_type_conversion!();
+}
 pub use column_type_conversion::{
     sqlparser_data_type_to_proof_of_sql_column_type,
     UnsupportedColumnType,
