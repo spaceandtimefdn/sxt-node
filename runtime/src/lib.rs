@@ -165,7 +165,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 228,
+    spec_version: 229,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -290,7 +290,7 @@ impl frame_system::Config for Runtime {
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
     type SingleBlockMigrations = ();
-    type MultiBlockMigrator = ();
+    type MultiBlockMigrator = MultiBlockMigrations;
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
@@ -326,6 +326,25 @@ impl pallet_statement::Config for Runtime {
     type MaxAllowedStatements = MaxAllowedStatements;
     type MinAllowedBytes = MinAllowedBytes;
     type MaxAllowedBytes = MaxAllowedBytes;
+}
+
+parameter_types! {
+    pub MbmServiceWeight: Weight = Perbill::from_percent(80) * BlockWeights::get().max_block;
+}
+
+impl pallet_migrations::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type Migrations = Migrations;
+    // Benchmarks need mocked migrations to guarantee that they succeed.
+    #[cfg(feature = "runtime-benchmarks")]
+    type Migrations = pallet_migrations::mock_helpers::MockedMigrations;
+    type CursorMaxLen = ConstU32<65_536>;
+    type IdentifierMaxLen = ConstU32<256>;
+    type MigrationStatusHandler = ();
+    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type MaxServiceWeight = MbmServiceWeight;
+    type WeightInfo = pallet_migrations::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
@@ -866,6 +885,9 @@ mod runtime {
     #[runtime::pallet_index(71)]
     pub type Statement = pallet_statement;
 
+    #[runtime::pallet_index(72)]
+    pub type MultiBlockMigrations = pallet_migrations;
+
     // Custom pallets start at index 100 to ensure room for future consensus work
     #[runtime::pallet_index(100)]
     pub type Permissions = pallet_permissions::Pallet<Runtime>;
@@ -941,6 +963,7 @@ mod benches {
         [pallet_staking, Staking]
         [pallet_sudo, Sudo]
         [pallet_multisig, Multisig]
+        [pallet_migrations, MultiBlockMigrations]
         [frame_system, SystemBench::<Runtime>]
         [pallet_timestamp, Timestamp]
         [pallet_utility, Utility]

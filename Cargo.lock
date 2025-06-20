@@ -19431,6 +19431,7 @@ dependencies = [
  "pallet-indexing",
  "pallet-indices",
  "pallet-keystore",
+ "pallet-migrations",
  "pallet-multisig",
  "pallet-offences",
  "pallet-permissions",
