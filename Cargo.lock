@@ -13960,6 +13960,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "proof-of-sql-unversioned"
+version = "0.1.0"
+dependencies = [
+ "itertools 0.12.1",
+ "proof-of-sql",
+ "snafu 0.8.5",
+ "sqlparser",
+]
+
+[[package]]
 name = "proptest"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

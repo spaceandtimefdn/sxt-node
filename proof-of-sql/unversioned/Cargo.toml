@@ -1,0 +1,19 @@
+[package]
+name = "proof-of-sql-unversioned"
+version = "0.1.0"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+proof-of-sql.workspace = true
+sqlparser.workspace = true
+snafu.workspace = true
+itertools.workspace = true
+
+[lints]
+workspace = true
