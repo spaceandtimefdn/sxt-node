@@ -1,3 +1,13 @@
+# [1.11.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.10.0...v1.11.0) (2025-06-20)
+
+
+### Features
+
+* add pallet_migrations to runtime ([e7b7136](https://github.com/spaceandtimefdn/sxt-node/commit/e7b7136ee644aea09cca3335af1e0516485e0441))
+* upgrade runtime spec_version to 229 ([d099ed0](https://github.com/spaceandtimefdn/sxt-node/commit/d099ed06c5d86c5785f3fff91d734ca1100162be))
+
+
+
 # [1.10.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.9.0...v1.10.0) (2025-06-19)
 
 
@@ -28,21 +38,6 @@
 
 
 ## [1.7.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.7.0...v1.7.1) (2025-06-09)
-
-
-
-# [1.7.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.6.0...v1.7.0) (2025-06-06)
-
-
-### Bug Fixes
-
-* slim down watcher image from 1.44GB to ~100MB ([d365f17](https://github.com/spaceandtimefdn/sxt-node/commit/d365f1741d314c143902f5ba65568d781c380ee5))
-
-
-### Features
-
-* create /key as volume for attestor ([65536c0](https://github.com/spaceandtimefdn/sxt-node/commit/65536c017ad8074a65698a772f4591c3829fb530))
-* include subkey in watcher image ([db4e501](https://github.com/spaceandtimefdn/sxt-node/commit/db4e50102116856fcc74b1c4b3006a74c0dda5e1))
 
 
 
