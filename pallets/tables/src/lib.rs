@@ -16,6 +16,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub mod runtime_api;
+
 pub mod weights;
 pub use weights::*;
 
