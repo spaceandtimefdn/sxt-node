@@ -1304,4 +1304,10 @@ impl_runtime_apis! {
             Commitments::table_commitments_any_scheme(table_identifiers.as_slice())
         }
     }
+
+    impl pallet_tables::runtime_api::TablesApi<Block> for Runtime {
+        fn table_schema(table_identifier: sxt_core::tables::TableIdentifier) -> Result<sxt_core::tables::TableSchema, sxt_core::tables::GetTableSchemaError> {
+            Tables::table_schema(table_identifier)
+        }
+    }
 }
