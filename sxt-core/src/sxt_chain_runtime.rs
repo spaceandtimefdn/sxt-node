@@ -6,7 +6,7 @@ pub mod api {
     mod root_mod {
         pub use super::*;
     }
-    pub static PALLETS: [&str; 29usize] = [
+    pub static PALLETS: [&str; 30usize] = [
         "System",
         "Utility",
         "Babe",
@@ -26,6 +26,7 @@ pub mod api {
         "Multisig",
         "VoterList",
         "Statement",
+        "MultiBlockMigrations",
         "Permissions",
         "Tables",
         "Indexing",
@@ -1898,9 +1899,10 @@ pub mod api {
                         "query_call_info",
                         types::QueryCallInfo { call, len },
                         [
-                            64u8, 62u8, 84u8, 62u8, 62u8, 200u8, 201u8, 185u8, 180u8, 132u8, 35u8,
-                            235u8, 49u8, 193u8, 74u8, 143u8, 127u8, 6u8, 181u8, 80u8, 11u8, 38u8,
-                            190u8, 211u8, 78u8, 245u8, 62u8, 152u8, 58u8, 184u8, 9u8, 92u8,
+                            185u8, 36u8, 29u8, 202u8, 179u8, 110u8, 18u8, 107u8, 116u8, 100u8,
+                            43u8, 164u8, 91u8, 149u8, 146u8, 254u8, 122u8, 148u8, 245u8, 226u8,
+                            13u8, 248u8, 33u8, 188u8, 118u8, 134u8, 76u8, 203u8, 2u8, 176u8, 230u8,
+                            87u8,
                         ],
                     )
                 }
@@ -1918,9 +1920,9 @@ pub mod api {
                         "query_call_fee_details",
                         types::QueryCallFeeDetails { call, len },
                         [
-                            196u8, 239u8, 108u8, 149u8, 122u8, 7u8, 222u8, 166u8, 68u8, 115u8,
-                            111u8, 6u8, 199u8, 170u8, 4u8, 194u8, 134u8, 135u8, 65u8, 188u8, 62u8,
-                            211u8, 24u8, 170u8, 74u8, 139u8, 168u8, 13u8, 14u8, 37u8, 119u8, 27u8,
+                            149u8, 87u8, 95u8, 144u8, 175u8, 106u8, 11u8, 44u8, 224u8, 52u8, 171u8,
+                            181u8, 11u8, 138u8, 222u8, 79u8, 52u8, 117u8, 114u8, 99u8, 82u8, 97u8,
+                            131u8, 46u8, 213u8, 197u8, 76u8, 70u8, 177u8, 225u8, 167u8, 107u8,
                         ],
                     )
                 }
@@ -2428,6 +2430,9 @@ pub mod api {
         pub fn statement(&self) -> statement::constants::ConstantsApi {
             statement::constants::ConstantsApi
         }
+        pub fn multi_block_migrations(&self) -> multi_block_migrations::constants::ConstantsApi {
+            multi_block_migrations::constants::ConstantsApi
+        }
     }
     pub struct StorageApi;
     impl StorageApi {
@@ -2483,6 +2488,9 @@ pub mod api {
         }
         pub fn voter_list(&self) -> voter_list::storage::StorageApi {
             voter_list::storage::StorageApi
+        }
+        pub fn multi_block_migrations(&self) -> multi_block_migrations::storage::StorageApi {
+            multi_block_migrations::storage::StorageApi
         }
         pub fn permissions(&self) -> permissions::storage::StorageApi {
             permissions::storage::StorageApi
@@ -2558,6 +2566,9 @@ pub mod api {
         pub fn voter_list(&self) -> voter_list::calls::TransactionApi {
             voter_list::calls::TransactionApi
         }
+        pub fn multi_block_migrations(&self) -> multi_block_migrations::calls::TransactionApi {
+            multi_block_migrations::calls::TransactionApi
+        }
         pub fn permissions(&self) -> permissions::calls::TransactionApi {
             permissions::calls::TransactionApi
         }
@@ -2597,9 +2608,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                208u8, 204u8, 208u8, 151u8, 26u8, 16u8, 129u8, 175u8, 120u8, 135u8, 45u8, 171u8,
-                71u8, 68u8, 199u8, 115u8, 67u8, 245u8, 71u8, 10u8, 216u8, 14u8, 132u8, 118u8,
-                181u8, 75u8, 14u8, 100u8, 89u8, 52u8, 246u8, 166u8,
+                178u8, 181u8, 3u8, 22u8, 25u8, 168u8, 80u8, 39u8, 177u8, 35u8, 6u8, 19u8, 57u8,
+                133u8, 221u8, 226u8, 255u8, 200u8, 119u8, 51u8, 210u8, 248u8, 89u8, 73u8, 142u8,
+                159u8, 250u8, 175u8, 30u8, 52u8, 19u8, 249u8,
             ]
     }
     pub mod system {
@@ -3756,10 +3767,9 @@ pub mod api {
                         "Events",
                         (),
                         [
-                            107u8, 77u8, 17u8, 194u8, 80u8, 29u8, 242u8, 219u8, 237u8, 204u8,
-                            222u8, 61u8, 142u8, 180u8, 110u8, 128u8, 185u8, 3u8, 82u8, 40u8, 73u8,
-                            161u8, 205u8, 212u8, 192u8, 209u8, 93u8, 13u8, 237u8, 49u8, 207u8,
-                            224u8,
+                            54u8, 61u8, 9u8, 105u8, 99u8, 169u8, 93u8, 145u8, 75u8, 232u8, 54u8,
+                            10u8, 187u8, 46u8, 210u8, 49u8, 92u8, 191u8, 46u8, 94u8, 224u8, 181u8,
+                            93u8, 141u8, 165u8, 128u8, 201u8, 64u8, 35u8, 191u8, 146u8, 59u8,
                         ],
                     )
                 }
@@ -4349,10 +4359,10 @@ pub mod api {
                         "batch",
                         types::Batch { calls },
                         [
-                            108u8, 181u8, 78u8, 50u8, 225u8, 208u8, 143u8, 254u8, 31u8, 144u8,
-                            123u8, 26u8, 3u8, 50u8, 60u8, 8u8, 202u8, 37u8, 111u8, 141u8, 117u8,
-                            138u8, 93u8, 232u8, 194u8, 189u8, 148u8, 33u8, 127u8, 228u8, 175u8,
-                            14u8,
+                            139u8, 30u8, 142u8, 154u8, 139u8, 211u8, 73u8, 244u8, 162u8, 198u8,
+                            197u8, 185u8, 56u8, 234u8, 86u8, 75u8, 234u8, 106u8, 93u8, 220u8,
+                            110u8, 97u8, 194u8, 116u8, 117u8, 102u8, 214u8, 23u8, 124u8, 121u8,
+                            43u8, 170u8,
                         ],
                     )
                 }
@@ -4383,10 +4393,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            77u8, 109u8, 88u8, 254u8, 139u8, 35u8, 183u8, 141u8, 143u8, 44u8, 67u8,
-                            71u8, 177u8, 100u8, 240u8, 69u8, 178u8, 123u8, 77u8, 212u8, 124u8,
-                            250u8, 177u8, 20u8, 154u8, 69u8, 39u8, 250u8, 236u8, 224u8, 161u8,
-                            23u8,
+                            190u8, 251u8, 107u8, 43u8, 67u8, 217u8, 71u8, 24u8, 117u8, 13u8, 170u8,
+                            61u8, 104u8, 147u8, 65u8, 239u8, 12u8, 80u8, 160u8, 45u8, 66u8, 73u8,
+                            147u8, 254u8, 56u8, 74u8, 118u8, 174u8, 145u8, 122u8, 10u8, 232u8,
                         ],
                     )
                 }
@@ -4413,10 +4422,10 @@ pub mod api {
                         "batch_all",
                         types::BatchAll { calls },
                         [
-                            181u8, 105u8, 16u8, 72u8, 204u8, 231u8, 252u8, 106u8, 51u8, 49u8,
-                            247u8, 216u8, 10u8, 171u8, 55u8, 127u8, 45u8, 227u8, 204u8, 62u8,
-                            121u8, 124u8, 17u8, 141u8, 127u8, 93u8, 99u8, 186u8, 5u8, 188u8, 14u8,
-                            243u8,
+                            141u8, 240u8, 248u8, 161u8, 157u8, 238u8, 141u8, 8u8, 54u8, 104u8,
+                            15u8, 56u8, 200u8, 11u8, 208u8, 251u8, 147u8, 63u8, 238u8, 54u8, 36u8,
+                            134u8, 229u8, 233u8, 249u8, 163u8, 53u8, 19u8, 71u8, 129u8, 172u8,
+                            81u8,
                         ],
                     )
                 }
@@ -4440,9 +4449,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            123u8, 25u8, 161u8, 5u8, 198u8, 139u8, 148u8, 253u8, 181u8, 78u8,
-                            153u8, 175u8, 69u8, 195u8, 164u8, 7u8, 173u8, 131u8, 22u8, 18u8, 228u8,
-                            79u8, 192u8, 126u8, 167u8, 134u8, 96u8, 97u8, 156u8, 42u8, 125u8, 73u8,
+                            188u8, 125u8, 66u8, 62u8, 18u8, 96u8, 194u8, 88u8, 191u8, 39u8, 99u8,
+                            131u8, 74u8, 207u8, 147u8, 239u8, 108u8, 206u8, 28u8, 67u8, 117u8,
+                            162u8, 34u8, 23u8, 47u8, 142u8, 248u8, 161u8, 152u8, 72u8, 14u8, 122u8,
                         ],
                     )
                 }
@@ -4469,10 +4478,9 @@ pub mod api {
                         "force_batch",
                         types::ForceBatch { calls },
                         [
-                            43u8, 62u8, 59u8, 44u8, 177u8, 143u8, 105u8, 121u8, 120u8, 237u8,
-                            225u8, 60u8, 109u8, 55u8, 133u8, 176u8, 63u8, 27u8, 30u8, 141u8, 75u8,
-                            229u8, 10u8, 112u8, 34u8, 225u8, 135u8, 136u8, 229u8, 190u8, 160u8,
-                            95u8,
+                            12u8, 236u8, 140u8, 13u8, 214u8, 201u8, 244u8, 134u8, 128u8, 201u8,
+                            152u8, 38u8, 225u8, 239u8, 119u8, 4u8, 47u8, 119u8, 31u8, 72u8, 187u8,
+                            198u8, 248u8, 78u8, 28u8, 63u8, 182u8, 3u8, 246u8, 232u8, 118u8, 130u8,
                         ],
                     )
                 }
@@ -4496,10 +4504,10 @@ pub mod api {
                             weight,
                         },
                         [
-                            18u8, 15u8, 30u8, 171u8, 240u8, 0u8, 178u8, 22u8, 165u8, 194u8, 64u8,
-                            56u8, 213u8, 77u8, 206u8, 11u8, 243u8, 187u8, 96u8, 128u8, 117u8,
-                            172u8, 144u8, 189u8, 237u8, 75u8, 26u8, 138u8, 177u8, 107u8, 97u8,
-                            89u8,
+                            114u8, 130u8, 60u8, 40u8, 57u8, 46u8, 155u8, 177u8, 39u8, 230u8, 254u8,
+                            20u8, 60u8, 178u8, 165u8, 226u8, 36u8, 223u8, 119u8, 67u8, 127u8,
+                            137u8, 130u8, 78u8, 153u8, 22u8, 55u8, 236u8, 94u8, 146u8, 247u8,
+                            255u8,
                         ],
                     )
                 }
@@ -14822,9 +14830,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            190u8, 217u8, 75u8, 247u8, 7u8, 249u8, 61u8, 25u8, 173u8, 159u8, 20u8,
-                            86u8, 158u8, 114u8, 121u8, 34u8, 155u8, 104u8, 12u8, 207u8, 56u8, 3u8,
-                            212u8, 255u8, 43u8, 139u8, 92u8, 100u8, 96u8, 81u8, 235u8, 181u8,
+                            163u8, 46u8, 146u8, 16u8, 4u8, 205u8, 155u8, 205u8, 146u8, 24u8, 38u8,
+                            51u8, 249u8, 119u8, 92u8, 241u8, 179u8, 98u8, 235u8, 109u8, 200u8,
+                            135u8, 211u8, 25u8, 38u8, 103u8, 140u8, 226u8, 234u8, 37u8, 33u8, 61u8,
                         ],
                     )
                 }
@@ -14847,9 +14855,9 @@ pub mod api {
                             weight,
                         },
                         [
-                            140u8, 223u8, 216u8, 160u8, 243u8, 6u8, 159u8, 21u8, 98u8, 208u8, 10u8,
-                            34u8, 58u8, 220u8, 154u8, 143u8, 232u8, 162u8, 187u8, 98u8, 218u8,
-                            26u8, 161u8, 78u8, 83u8, 189u8, 63u8, 203u8, 223u8, 235u8, 52u8, 54u8,
+                            170u8, 254u8, 222u8, 94u8, 90u8, 15u8, 126u8, 154u8, 77u8, 1u8, 216u8,
+                            29u8, 170u8, 124u8, 35u8, 83u8, 91u8, 82u8, 2u8, 236u8, 206u8, 92u8,
+                            129u8, 162u8, 92u8, 234u8, 31u8, 28u8, 129u8, 136u8, 96u8, 209u8,
                         ],
                     )
                 }
@@ -14889,9 +14897,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            71u8, 135u8, 7u8, 215u8, 211u8, 208u8, 187u8, 18u8, 157u8, 33u8, 27u8,
-                            238u8, 75u8, 108u8, 158u8, 188u8, 22u8, 161u8, 214u8, 129u8, 72u8,
-                            31u8, 30u8, 164u8, 177u8, 157u8, 152u8, 53u8, 45u8, 163u8, 241u8, 50u8,
+                            51u8, 189u8, 241u8, 45u8, 151u8, 147u8, 66u8, 57u8, 238u8, 85u8, 51u8,
+                            39u8, 213u8, 43u8, 197u8, 243u8, 62u8, 242u8, 123u8, 81u8, 136u8,
+                            173u8, 92u8, 85u8, 122u8, 255u8, 149u8, 103u8, 137u8, 95u8, 107u8, 6u8,
                         ],
                     )
                 }
@@ -16129,9 +16137,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            88u8, 43u8, 197u8, 245u8, 214u8, 69u8, 197u8, 80u8, 83u8, 160u8, 72u8,
-                            179u8, 99u8, 30u8, 82u8, 183u8, 83u8, 28u8, 166u8, 25u8, 232u8, 84u8,
-                            101u8, 187u8, 87u8, 177u8, 33u8, 167u8, 140u8, 98u8, 107u8, 200u8,
+                            31u8, 187u8, 84u8, 231u8, 182u8, 77u8, 160u8, 184u8, 149u8, 61u8, 80u8,
+                            105u8, 11u8, 255u8, 30u8, 232u8, 202u8, 28u8, 67u8, 254u8, 30u8, 226u8,
+                            58u8, 194u8, 109u8, 126u8, 112u8, 199u8, 19u8, 31u8, 119u8, 233u8,
                         ],
                     )
                 }
@@ -16194,9 +16202,9 @@ pub mod api {
                             max_weight,
                         },
                         [
-                            8u8, 212u8, 62u8, 65u8, 78u8, 102u8, 106u8, 90u8, 46u8, 32u8, 54u8,
-                            33u8, 244u8, 94u8, 249u8, 11u8, 236u8, 214u8, 128u8, 81u8, 149u8, 96u8,
-                            2u8, 33u8, 253u8, 234u8, 171u8, 20u8, 221u8, 229u8, 114u8, 168u8,
+                            145u8, 153u8, 229u8, 192u8, 53u8, 196u8, 242u8, 113u8, 11u8, 202u8,
+                            137u8, 227u8, 77u8, 130u8, 34u8, 129u8, 2u8, 253u8, 211u8, 240u8, 65u8,
+                            42u8, 171u8, 108u8, 123u8, 145u8, 75u8, 77u8, 48u8, 87u8, 213u8, 212u8,
                         ],
                     )
                 }
@@ -17205,6 +17213,591 @@ pub mod api {
             }
         }
     }
+    pub mod multi_block_migrations {
+        use super::{root_mod, runtime_types};
+        #[doc = "The `Error` enum of this pallet."]
+        pub type Error = runtime_types::pallet_migrations::pallet::Error;
+        #[doc = "Contains a variant per dispatchable extrinsic that this pallet has."]
+        pub type Call = runtime_types::pallet_migrations::pallet::Call;
+        pub mod calls {
+            use super::{root_mod, runtime_types};
+            type DispatchError = runtime_types::sp_runtime::DispatchError;
+            pub mod types {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Allows root to set a cursor to forcefully start, stop or forward the migration process."]
+                #[doc = ""]
+                #[doc = "Should normally not be needed and is only in place as emergency measure. Note that"]
+                #[doc = "restarting the migration process in this manner will not call the"]
+                #[doc = "[`MigrationStatusHandler::started`] hook or emit an `UpgradeStarted` event."]
+                pub struct ForceSetCursor {
+                    pub cursor: force_set_cursor::Cursor,
+                }
+                pub mod force_set_cursor {
+                    use super::runtime_types;
+                    pub type Cursor = ::core::option::Option<
+                        runtime_types::pallet_migrations::MigrationCursor<
+                            runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                                ::core::primitive::u8,
+                            >,
+                            ::core::primitive::u32,
+                        >,
+                    >;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for ForceSetCursor {
+                    const PALLET: &'static str = "MultiBlockMigrations";
+                    const CALL: &'static str = "force_set_cursor";
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Allows root to set an active cursor to forcefully start/forward the migration process."]
+                #[doc = ""]
+                #[doc = "This is an edge-case version of [`Self::force_set_cursor`] that allows to set the"]
+                #[doc = "`started_at` value to the next block number. Otherwise this would not be possible, since"]
+                #[doc = "`force_set_cursor` takes an absolute block number. Setting `started_at` to `None`"]
+                #[doc = "indicates that the current block number plus one should be used."]
+                pub struct ForceSetActiveCursor {
+                    pub index: force_set_active_cursor::Index,
+                    pub inner_cursor: force_set_active_cursor::InnerCursor,
+                    pub started_at: force_set_active_cursor::StartedAt,
+                }
+                pub mod force_set_active_cursor {
+                    use super::runtime_types;
+                    pub type Index = ::core::primitive::u32;
+                    pub type InnerCursor = ::core::option::Option<
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                    >;
+                    pub type StartedAt = ::core::option::Option<::core::primitive::u32>;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for ForceSetActiveCursor {
+                    const PALLET: &'static str = "MultiBlockMigrations";
+                    const CALL: &'static str = "force_set_active_cursor";
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Forces the onboarding of the migrations."]
+                #[doc = ""]
+                #[doc = "This process happens automatically on a runtime upgrade. It is in place as an emergency"]
+                #[doc = "measurement. The cursor needs to be `None` for this to succeed."]
+                pub struct ForceOnboardMbms;
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for ForceOnboardMbms {
+                    const PALLET: &'static str = "MultiBlockMigrations";
+                    const CALL: &'static str = "force_onboard_mbms";
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Clears the `Historic` set."]
+                #[doc = ""]
+                #[doc = "`map_cursor` must be set to the last value that was returned by the"]
+                #[doc = "`HistoricCleared` event. The first time `None` can be used. `limit` must be chosen in a"]
+                #[doc = "way that will result in a sensible weight."]
+                pub struct ClearHistoric {
+                    pub selector: clear_historic::Selector,
+                }
+                pub mod clear_historic {
+                    use super::runtime_types;
+                    pub type Selector = runtime_types::pallet_migrations::HistoricCleanupSelector<
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                    >;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for ClearHistoric {
+                    const PALLET: &'static str = "MultiBlockMigrations";
+                    const CALL: &'static str = "clear_historic";
+                }
+            }
+            pub struct TransactionApi;
+            impl TransactionApi {
+                #[doc = "Allows root to set a cursor to forcefully start, stop or forward the migration process."]
+                #[doc = ""]
+                #[doc = "Should normally not be needed and is only in place as emergency measure. Note that"]
+                #[doc = "restarting the migration process in this manner will not call the"]
+                #[doc = "[`MigrationStatusHandler::started`] hook or emit an `UpgradeStarted` event."]
+                pub fn force_set_cursor(
+                    &self,
+                    cursor: types::force_set_cursor::Cursor,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::ForceSetCursor>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "MultiBlockMigrations",
+                        "force_set_cursor",
+                        types::ForceSetCursor { cursor },
+                        [
+                            19u8, 44u8, 153u8, 100u8, 215u8, 46u8, 69u8, 184u8, 161u8, 215u8, 80u8,
+                            229u8, 65u8, 166u8, 63u8, 102u8, 97u8, 214u8, 112u8, 219u8, 227u8,
+                            213u8, 16u8, 50u8, 246u8, 54u8, 69u8, 172u8, 105u8, 216u8, 197u8,
+                            184u8,
+                        ],
+                    )
+                }
+                #[doc = "Allows root to set an active cursor to forcefully start/forward the migration process."]
+                #[doc = ""]
+                #[doc = "This is an edge-case version of [`Self::force_set_cursor`] that allows to set the"]
+                #[doc = "`started_at` value to the next block number. Otherwise this would not be possible, since"]
+                #[doc = "`force_set_cursor` takes an absolute block number. Setting `started_at` to `None`"]
+                #[doc = "indicates that the current block number plus one should be used."]
+                pub fn force_set_active_cursor(
+                    &self,
+                    index: types::force_set_active_cursor::Index,
+                    inner_cursor: types::force_set_active_cursor::InnerCursor,
+                    started_at: types::force_set_active_cursor::StartedAt,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::ForceSetActiveCursor>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "MultiBlockMigrations",
+                        "force_set_active_cursor",
+                        types::ForceSetActiveCursor {
+                            index,
+                            inner_cursor,
+                            started_at,
+                        },
+                        [
+                            171u8, 245u8, 214u8, 230u8, 7u8, 61u8, 186u8, 60u8, 43u8, 235u8, 110u8,
+                            188u8, 30u8, 215u8, 48u8, 194u8, 249u8, 215u8, 224u8, 229u8, 89u8,
+                            179u8, 189u8, 70u8, 62u8, 162u8, 245u8, 199u8, 3u8, 234u8, 154u8, 9u8,
+                        ],
+                    )
+                }
+                #[doc = "Forces the onboarding of the migrations."]
+                #[doc = ""]
+                #[doc = "This process happens automatically on a runtime upgrade. It is in place as an emergency"]
+                #[doc = "measurement. The cursor needs to be `None` for this to succeed."]
+                pub fn force_onboard_mbms(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::ForceOnboardMbms>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "MultiBlockMigrations",
+                        "force_onboard_mbms",
+                        types::ForceOnboardMbms {},
+                        [
+                            201u8, 148u8, 226u8, 128u8, 88u8, 120u8, 31u8, 159u8, 78u8, 5u8, 148u8,
+                            189u8, 71u8, 195u8, 136u8, 24u8, 131u8, 107u8, 56u8, 17u8, 26u8, 25u8,
+                            189u8, 102u8, 220u8, 148u8, 44u8, 92u8, 79u8, 232u8, 236u8, 86u8,
+                        ],
+                    )
+                }
+                #[doc = "Clears the `Historic` set."]
+                #[doc = ""]
+                #[doc = "`map_cursor` must be set to the last value that was returned by the"]
+                #[doc = "`HistoricCleared` event. The first time `None` can be used. `limit` must be chosen in a"]
+                #[doc = "way that will result in a sensible weight."]
+                pub fn clear_historic(
+                    &self,
+                    selector: types::clear_historic::Selector,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::ClearHistoric>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "MultiBlockMigrations",
+                        "clear_historic",
+                        types::ClearHistoric { selector },
+                        [
+                            160u8, 68u8, 166u8, 164u8, 115u8, 190u8, 214u8, 167u8, 171u8, 238u8,
+                            176u8, 191u8, 30u8, 228u8, 237u8, 125u8, 183u8, 147u8, 186u8, 246u8,
+                            59u8, 186u8, 40u8, 193u8, 13u8, 252u8, 99u8, 199u8, 207u8, 149u8, 20u8,
+                            95u8,
+                        ],
+                    )
+                }
+            }
+        }
+        #[doc = "The `Event` enum of this pallet"]
+        pub type Event = runtime_types::pallet_migrations::pallet::Event;
+        pub mod events {
+            use super::runtime_types;
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "A Runtime upgrade started."]
+            #[doc = ""]
+            #[doc = "Its end is indicated by `UpgradeCompleted` or `UpgradeFailed`."]
+            pub struct UpgradeStarted {
+                pub migrations: upgrade_started::Migrations,
+            }
+            pub mod upgrade_started {
+                use super::runtime_types;
+                pub type Migrations = ::core::primitive::u32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for UpgradeStarted {
+                const PALLET: &'static str = "MultiBlockMigrations";
+                const EVENT: &'static str = "UpgradeStarted";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "The current runtime upgrade completed."]
+            #[doc = ""]
+            #[doc = "This implies that all of its migrations completed successfully as well."]
+            pub struct UpgradeCompleted;
+            impl ::subxt::ext::subxt_core::events::StaticEvent for UpgradeCompleted {
+                const PALLET: &'static str = "MultiBlockMigrations";
+                const EVENT: &'static str = "UpgradeCompleted";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "Runtime upgrade failed."]
+            #[doc = ""]
+            #[doc = "This is very bad and will require governance intervention."]
+            pub struct UpgradeFailed;
+            impl ::subxt::ext::subxt_core::events::StaticEvent for UpgradeFailed {
+                const PALLET: &'static str = "MultiBlockMigrations";
+                const EVENT: &'static str = "UpgradeFailed";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "A migration was skipped since it was already executed in the past."]
+            pub struct MigrationSkipped {
+                pub index: migration_skipped::Index,
+            }
+            pub mod migration_skipped {
+                use super::runtime_types;
+                pub type Index = ::core::primitive::u32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for MigrationSkipped {
+                const PALLET: &'static str = "MultiBlockMigrations";
+                const EVENT: &'static str = "MigrationSkipped";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "A migration progressed."]
+            pub struct MigrationAdvanced {
+                pub index: migration_advanced::Index,
+                pub took: migration_advanced::Took,
+            }
+            pub mod migration_advanced {
+                use super::runtime_types;
+                pub type Index = ::core::primitive::u32;
+                pub type Took = ::core::primitive::u32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for MigrationAdvanced {
+                const PALLET: &'static str = "MultiBlockMigrations";
+                const EVENT: &'static str = "MigrationAdvanced";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "A Migration completed."]
+            pub struct MigrationCompleted {
+                pub index: migration_completed::Index,
+                pub took: migration_completed::Took,
+            }
+            pub mod migration_completed {
+                use super::runtime_types;
+                pub type Index = ::core::primitive::u32;
+                pub type Took = ::core::primitive::u32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for MigrationCompleted {
+                const PALLET: &'static str = "MultiBlockMigrations";
+                const EVENT: &'static str = "MigrationCompleted";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "A Migration failed."]
+            #[doc = ""]
+            #[doc = "This implies that the whole upgrade failed and governance intervention is required."]
+            pub struct MigrationFailed {
+                pub index: migration_failed::Index,
+                pub took: migration_failed::Took,
+            }
+            pub mod migration_failed {
+                use super::runtime_types;
+                pub type Index = ::core::primitive::u32;
+                pub type Took = ::core::primitive::u32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for MigrationFailed {
+                const PALLET: &'static str = "MultiBlockMigrations";
+                const EVENT: &'static str = "MigrationFailed";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "The set of historical migrations has been cleared."]
+            pub struct HistoricCleared {
+                pub next_cursor: historic_cleared::NextCursor,
+            }
+            pub mod historic_cleared {
+                use super::runtime_types;
+                pub type NextCursor = ::core::option::Option<
+                    ::subxt::ext::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                >;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for HistoricCleared {
+                const PALLET: &'static str = "MultiBlockMigrations";
+                const EVENT: &'static str = "HistoricCleared";
+            }
+        }
+        pub mod storage {
+            use super::runtime_types;
+            pub mod types {
+                use super::runtime_types;
+                pub mod cursor {
+                    use super::runtime_types;
+                    pub type Cursor = runtime_types::pallet_migrations::MigrationCursor<
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                        ::core::primitive::u32,
+                    >;
+                }
+                pub mod historic {
+                    use super::runtime_types;
+                    pub type Historic = ();
+                    pub type Param0 = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                        ::core::primitive::u8,
+                    >;
+                }
+            }
+            pub struct StorageApi;
+            impl StorageApi {
+                #[doc = " The currently active migration to run and its cursor."]
+                #[doc = ""]
+                #[doc = " `None` indicates that no migration is running."]
+                pub fn cursor(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::cursor::Cursor,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "MultiBlockMigrations",
+                        "Cursor",
+                        (),
+                        [
+                            158u8, 123u8, 0u8, 37u8, 29u8, 141u8, 51u8, 91u8, 165u8, 167u8, 35u8,
+                            72u8, 219u8, 39u8, 135u8, 23u8, 215u8, 63u8, 127u8, 57u8, 55u8, 169u8,
+                            178u8, 177u8, 77u8, 209u8, 230u8, 152u8, 136u8, 145u8, 58u8, 33u8,
+                        ],
+                    )
+                }
+                #[doc = " Set of all successfully executed migrations."]
+                #[doc = ""]
+                #[doc = " This is used as blacklist, to not re-execute migrations that have not been removed from the"]
+                #[doc = " codebase yet. Governance can regularly clear this out via `clear_historic`."]
+                pub fn historic_iter(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::historic::Historic,
+                    (),
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "MultiBlockMigrations",
+                        "Historic",
+                        (),
+                        [
+                            142u8, 100u8, 97u8, 146u8, 174u8, 131u8, 203u8, 224u8, 127u8, 74u8,
+                            118u8, 165u8, 237u8, 128u8, 89u8, 198u8, 80u8, 250u8, 231u8, 29u8, 1u8,
+                            128u8, 201u8, 51u8, 150u8, 168u8, 3u8, 17u8, 35u8, 175u8, 153u8, 141u8,
+                        ],
+                    )
+                }
+                #[doc = " Set of all successfully executed migrations."]
+                #[doc = ""]
+                #[doc = " This is used as blacklist, to not re-execute migrations that have not been removed from the"]
+                #[doc = " codebase yet. Governance can regularly clear this out via `clear_historic`."]
+                pub fn historic(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::historic::Param0>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                        types::historic::Param0,
+                    >,
+                    types::historic::Historic,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "MultiBlockMigrations",
+                        "Historic",
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                            _0.borrow(),
+                        ),
+                        [
+                            142u8, 100u8, 97u8, 146u8, 174u8, 131u8, 203u8, 224u8, 127u8, 74u8,
+                            118u8, 165u8, 237u8, 128u8, 89u8, 198u8, 80u8, 250u8, 231u8, 29u8, 1u8,
+                            128u8, 201u8, 51u8, 150u8, 168u8, 3u8, 17u8, 35u8, 175u8, 153u8, 141u8,
+                        ],
+                    )
+                }
+            }
+        }
+        pub mod constants {
+            use super::runtime_types;
+            pub struct ConstantsApi;
+            impl ConstantsApi {
+                #[doc = " The maximal length of an encoded cursor."]
+                #[doc = ""]
+                #[doc = " A good default needs to selected such that no migration will ever have a cursor with MEL"]
+                #[doc = " above this limit. This is statically checked in `integrity_test`."]
+                pub fn cursor_max_len(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::constants::address::StaticAddress<
+                    ::core::primitive::u32,
+                > {
+                    ::subxt::ext::subxt_core::constants::address::StaticAddress::new_static(
+                        "MultiBlockMigrations",
+                        "CursorMaxLen",
+                        [
+                            98u8, 252u8, 116u8, 72u8, 26u8, 180u8, 225u8, 83u8, 200u8, 157u8,
+                            125u8, 151u8, 53u8, 76u8, 168u8, 26u8, 10u8, 9u8, 98u8, 68u8, 9u8,
+                            178u8, 197u8, 113u8, 31u8, 79u8, 200u8, 90u8, 203u8, 100u8, 41u8,
+                            145u8,
+                        ],
+                    )
+                }
+                #[doc = " The maximal length of an encoded identifier."]
+                #[doc = ""]
+                #[doc = " A good default needs to selected such that no migration will ever have an identifier"]
+                #[doc = " with MEL above this limit. This is statically checked in `integrity_test`."]
+                pub fn identifier_max_len(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::constants::address::StaticAddress<
+                    ::core::primitive::u32,
+                > {
+                    ::subxt::ext::subxt_core::constants::address::StaticAddress::new_static(
+                        "MultiBlockMigrations",
+                        "IdentifierMaxLen",
+                        [
+                            98u8, 252u8, 116u8, 72u8, 26u8, 180u8, 225u8, 83u8, 200u8, 157u8,
+                            125u8, 151u8, 53u8, 76u8, 168u8, 26u8, 10u8, 9u8, 98u8, 68u8, 9u8,
+                            178u8, 197u8, 113u8, 31u8, 79u8, 200u8, 90u8, 203u8, 100u8, 41u8,
+                            145u8,
+                        ],
+                    )
+                }
+            }
+        }
+    }
     pub mod permissions {
         use super::{root_mod, runtime_types};
         #[doc = "The `Error` enum of this pallet."]
@@ -17339,9 +17932,10 @@ pub mod api {
                         "set_permissions",
                         types::SetPermissions { who, permissions },
                         [
-                            148u8, 219u8, 28u8, 46u8, 139u8, 76u8, 36u8, 222u8, 60u8, 134u8, 123u8,
-                            153u8, 145u8, 14u8, 2u8, 90u8, 63u8, 17u8, 147u8, 2u8, 184u8, 208u8,
-                            112u8, 126u8, 123u8, 23u8, 108u8, 18u8, 150u8, 133u8, 104u8, 30u8,
+                            34u8, 162u8, 160u8, 105u8, 175u8, 97u8, 180u8, 254u8, 179u8, 246u8,
+                            202u8, 49u8, 168u8, 165u8, 231u8, 76u8, 202u8, 1u8, 85u8, 198u8, 246u8,
+                            148u8, 115u8, 63u8, 206u8, 147u8, 197u8, 45u8, 149u8, 40u8, 203u8,
+                            104u8,
                         ],
                     )
                 }
@@ -17393,9 +17987,10 @@ pub mod api {
                         "add_proxy_permission",
                         types::AddProxyPermission { proxy, permission },
                         [
-                            255u8, 244u8, 179u8, 43u8, 26u8, 135u8, 194u8, 114u8, 229u8, 43u8,
-                            44u8, 98u8, 21u8, 191u8, 101u8, 229u8, 235u8, 206u8, 11u8, 143u8, 13u8,
-                            7u8, 40u8, 62u8, 88u8, 5u8, 235u8, 149u8, 32u8, 67u8, 196u8, 196u8,
+                            88u8, 245u8, 133u8, 164u8, 70u8, 243u8, 97u8, 173u8, 24u8, 10u8, 108u8,
+                            196u8, 76u8, 233u8, 250u8, 162u8, 78u8, 105u8, 127u8, 79u8, 201u8,
+                            251u8, 166u8, 129u8, 110u8, 107u8, 34u8, 244u8, 122u8, 188u8, 216u8,
+                            212u8,
                         ],
                     )
                 }
@@ -17460,9 +18055,9 @@ pub mod api {
                         "Permissions",
                         (),
                         [
-                            233u8, 163u8, 105u8, 44u8, 238u8, 146u8, 21u8, 183u8, 156u8, 147u8,
-                            232u8, 201u8, 42u8, 184u8, 92u8, 246u8, 198u8, 61u8, 53u8, 185u8, 16u8,
-                            181u8, 23u8, 0u8, 231u8, 218u8, 222u8, 18u8, 190u8, 75u8, 156u8, 167u8,
+                            29u8, 124u8, 77u8, 202u8, 179u8, 3u8, 228u8, 164u8, 149u8, 37u8, 164u8,
+                            136u8, 25u8, 32u8, 130u8, 106u8, 61u8, 113u8, 86u8, 69u8, 182u8, 172u8,
+                            150u8, 51u8, 122u8, 187u8, 25u8, 135u8, 232u8, 183u8, 65u8, 127u8,
                         ],
                     )
                 }
@@ -17486,9 +18081,9 @@ pub mod api {
                             _0.borrow(),
                         ),
                         [
-                            233u8, 163u8, 105u8, 44u8, 238u8, 146u8, 21u8, 183u8, 156u8, 147u8,
-                            232u8, 201u8, 42u8, 184u8, 92u8, 246u8, 198u8, 61u8, 53u8, 185u8, 16u8,
-                            181u8, 23u8, 0u8, 231u8, 218u8, 222u8, 18u8, 190u8, 75u8, 156u8, 167u8,
+                            29u8, 124u8, 77u8, 202u8, 179u8, 3u8, 228u8, 164u8, 149u8, 37u8, 164u8,
+                            136u8, 25u8, 32u8, 130u8, 106u8, 61u8, 113u8, 86u8, 69u8, 182u8, 172u8,
+                            150u8, 51u8, 122u8, 187u8, 25u8, 135u8, 232u8, 183u8, 65u8, 127u8,
                         ],
                     )
                 }
@@ -17499,7 +18094,7 @@ pub mod api {
         use super::{root_mod, runtime_types};
         #[doc = "The `Error` enum of this pallet."]
         pub type Error = runtime_types::pallet_tables::pallet::Error;
-        #[doc = "Contains a variant per dispatchable extrinsic that this pallet has."]
+        #[doc = "The implementation for the pallet extrinsics"]
         pub type Call = runtime_types::pallet_tables::pallet::Call;
         pub mod calls {
             use super::{root_mod, runtime_types};
@@ -17687,6 +18282,75 @@ pub mod api {
                     const PALLET: &'static str = "Tables";
                     const CALL: &'static str = "drop_invalid_commits";
                 }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Update the UUID for the specificed namespace and version to the provided UUID"]
+                pub struct UpdateNamespaceUuid {
+                    pub namespace: update_namespace_uuid::Namespace,
+                    pub version: update_namespace_uuid::Version,
+                    pub new_uuid: update_namespace_uuid::NewUuid,
+                }
+                pub mod update_namespace_uuid {
+                    use super::runtime_types;
+                    pub type Namespace =
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >;
+                    pub type Version = ::core::primitive::u16;
+                    pub type NewUuid = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                        ::core::primitive::u8,
+                    >;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for UpdateNamespaceUuid {
+                    const PALLET: &'static str = "Tables";
+                    const CALL: &'static str = "update_namespace_uuid";
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Update the UUID for the specified table and version to the provided UUID"]
+                pub struct UpdateTableUuid {
+                    pub table: update_table_uuid::Table,
+                    pub version: update_table_uuid::Version,
+                    pub new_uuid: update_table_uuid::NewUuid,
+                }
+                pub mod update_table_uuid {
+                    use super::runtime_types;
+                    pub type Table = runtime_types::sxt_core::tables::TableIdentifier;
+                    pub type Version = ::core::primitive::u16;
+                    pub type NewUuid = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                        ::core::primitive::u8,
+                    >;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for UpdateTableUuid {
+                    const PALLET: &'static str = "Tables";
+                    const CALL: &'static str = "update_table_uuid";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
@@ -17814,6 +18478,52 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = "Update the UUID for the specificed namespace and version to the provided UUID"]
+                pub fn update_namespace_uuid(
+                    &self,
+                    namespace: types::update_namespace_uuid::Namespace,
+                    version: types::update_namespace_uuid::Version,
+                    new_uuid: types::update_namespace_uuid::NewUuid,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::UpdateNamespaceUuid>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Tables",
+                        "update_namespace_uuid",
+                        types::UpdateNamespaceUuid {
+                            namespace,
+                            version,
+                            new_uuid,
+                        },
+                        [
+                            191u8, 173u8, 166u8, 64u8, 33u8, 145u8, 237u8, 214u8, 205u8, 107u8,
+                            197u8, 245u8, 33u8, 116u8, 237u8, 245u8, 5u8, 20u8, 12u8, 223u8, 151u8,
+                            51u8, 149u8, 76u8, 89u8, 190u8, 100u8, 32u8, 192u8, 125u8, 47u8, 4u8,
+                        ],
+                    )
+                }
+                #[doc = "Update the UUID for the specified table and version to the provided UUID"]
+                pub fn update_table_uuid(
+                    &self,
+                    table: types::update_table_uuid::Table,
+                    version: types::update_table_uuid::Version,
+                    new_uuid: types::update_table_uuid::NewUuid,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::UpdateTableUuid>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Tables",
+                        "update_table_uuid",
+                        types::UpdateTableUuid {
+                            table,
+                            version,
+                            new_uuid,
+                        },
+                        [
+                            235u8, 103u8, 100u8, 14u8, 114u8, 189u8, 247u8, 246u8, 66u8, 179u8,
+                            210u8, 11u8, 89u8, 220u8, 126u8, 49u8, 174u8, 143u8, 38u8, 241u8, 94u8,
+                            131u8, 9u8, 200u8, 88u8, 62u8, 188u8, 38u8, 65u8, 210u8, 2u8, 102u8,
+                        ],
+                    )
+                }
             }
         }
         #[doc = "The `Event` enum of this pallet"]
@@ -17855,6 +18565,74 @@ pub mod api {
             impl ::subxt::ext::subxt_core::events::StaticEvent for NamespaceCreated {
                 const PALLET: &'static str = "Tables";
                 const EVENT: &'static str = "NamespaceCreated";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "The UUID for a given namespace has been updated"]
+            pub struct NamespaceUuidUpdated {
+                pub old_uuid: namespace_uuid_updated::OldUuid,
+                pub new_uuid: namespace_uuid_updated::NewUuid,
+                pub version: namespace_uuid_updated::Version,
+                pub namespace: namespace_uuid_updated::Namespace,
+            }
+            pub mod namespace_uuid_updated {
+                use super::runtime_types;
+                pub type OldUuid = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                    ::core::primitive::u8,
+                >;
+                pub type NewUuid = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                    ::core::primitive::u8,
+                >;
+                pub type Version = ::core::primitive::u16;
+                pub type Namespace = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                    ::core::primitive::u8,
+                >;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for NamespaceUuidUpdated {
+                const PALLET: &'static str = "Tables";
+                const EVENT: &'static str = "NamespaceUuidUpdated";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "The UUID for a given table has been updated"]
+            pub struct TableUuidUpdated {
+                pub old_uuid: table_uuid_updated::OldUuid,
+                pub new_uuid: table_uuid_updated::NewUuid,
+                pub version: table_uuid_updated::Version,
+                pub table: table_uuid_updated::Table,
+            }
+            pub mod table_uuid_updated {
+                use super::runtime_types;
+                pub type OldUuid = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                    ::core::primitive::u8,
+                >;
+                pub type NewUuid = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                    ::core::primitive::u8,
+                >;
+                pub type Version = ::core::primitive::u16;
+                pub type Table = runtime_types::sxt_core::tables::TableIdentifier;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for TableUuidUpdated {
+                const PALLET: &'static str = "Tables";
+                const EVENT: &'static str = "TableUuidUpdated";
             }
             #[derive(
                 :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -23736,6 +24514,220 @@ pub mod api {
                 }
             }
         }
+        pub mod pallet_migrations {
+            use super::runtime_types;
+            pub mod pallet {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Contains a variant per dispatchable extrinsic that this pallet has."]
+                pub enum Call {
+                    #[codec(index = 0)]
+                    #[doc = "Allows root to set a cursor to forcefully start, stop or forward the migration process."]
+                    #[doc = ""]
+                    #[doc = "Should normally not be needed and is only in place as emergency measure. Note that"]
+                    #[doc = "restarting the migration process in this manner will not call the"]
+                    #[doc = "[`MigrationStatusHandler::started`] hook or emit an `UpgradeStarted` event."]
+                    force_set_cursor {
+                        cursor: ::core::option::Option<
+                            runtime_types::pallet_migrations::MigrationCursor<
+                                runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                                    ::core::primitive::u8,
+                                >,
+                                ::core::primitive::u32,
+                            >,
+                        >,
+                    },
+                    #[codec(index = 1)]
+                    #[doc = "Allows root to set an active cursor to forcefully start/forward the migration process."]
+                    #[doc = ""]
+                    #[doc = "This is an edge-case version of [`Self::force_set_cursor`] that allows to set the"]
+                    #[doc = "`started_at` value to the next block number. Otherwise this would not be possible, since"]
+                    #[doc = "`force_set_cursor` takes an absolute block number. Setting `started_at` to `None`"]
+                    #[doc = "indicates that the current block number plus one should be used."]
+                    force_set_active_cursor {
+                        index: ::core::primitive::u32,
+                        inner_cursor: ::core::option::Option<
+                            runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                                ::core::primitive::u8,
+                            >,
+                        >,
+                        started_at: ::core::option::Option<::core::primitive::u32>,
+                    },
+                    #[codec(index = 2)]
+                    #[doc = "Forces the onboarding of the migrations."]
+                    #[doc = ""]
+                    #[doc = "This process happens automatically on a runtime upgrade. It is in place as an emergency"]
+                    #[doc = "measurement. The cursor needs to be `None` for this to succeed."]
+                    force_onboard_mbms,
+                    #[codec(index = 3)]
+                    #[doc = "Clears the `Historic` set."]
+                    #[doc = ""]
+                    #[doc = "`map_cursor` must be set to the last value that was returned by the"]
+                    #[doc = "`HistoricCleared` event. The first time `None` can be used. `limit` must be chosen in a"]
+                    #[doc = "way that will result in a sensible weight."]
+                    clear_historic {
+                        selector: runtime_types::pallet_migrations::HistoricCleanupSelector<
+                            runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                                ::core::primitive::u8,
+                            >,
+                        >,
+                    },
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "The `Error` enum of this pallet."]
+                pub enum Error {
+                    #[codec(index = 0)]
+                    #[doc = "The operation cannot complete since some MBMs are ongoing."]
+                    Ongoing,
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "The `Event` enum of this pallet"]
+                pub enum Event {
+                    #[codec(index = 0)]
+                    #[doc = "A Runtime upgrade started."]
+                    #[doc = ""]
+                    #[doc = "Its end is indicated by `UpgradeCompleted` or `UpgradeFailed`."]
+                    UpgradeStarted { migrations: ::core::primitive::u32 },
+                    #[codec(index = 1)]
+                    #[doc = "The current runtime upgrade completed."]
+                    #[doc = ""]
+                    #[doc = "This implies that all of its migrations completed successfully as well."]
+                    UpgradeCompleted,
+                    #[codec(index = 2)]
+                    #[doc = "Runtime upgrade failed."]
+                    #[doc = ""]
+                    #[doc = "This is very bad and will require governance intervention."]
+                    UpgradeFailed,
+                    #[codec(index = 3)]
+                    #[doc = "A migration was skipped since it was already executed in the past."]
+                    MigrationSkipped { index: ::core::primitive::u32 },
+                    #[codec(index = 4)]
+                    #[doc = "A migration progressed."]
+                    MigrationAdvanced {
+                        index: ::core::primitive::u32,
+                        took: ::core::primitive::u32,
+                    },
+                    #[codec(index = 5)]
+                    #[doc = "A Migration completed."]
+                    MigrationCompleted {
+                        index: ::core::primitive::u32,
+                        took: ::core::primitive::u32,
+                    },
+                    #[codec(index = 6)]
+                    #[doc = "A Migration failed."]
+                    #[doc = ""]
+                    #[doc = "This implies that the whole upgrade failed and governance intervention is required."]
+                    MigrationFailed {
+                        index: ::core::primitive::u32,
+                        took: ::core::primitive::u32,
+                    },
+                    #[codec(index = 7)]
+                    #[doc = "The set of historical migrations has been cleared."]
+                    HistoricCleared {
+                        next_cursor: ::core::option::Option<
+                            ::subxt::ext::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                        >,
+                    },
+                }
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            pub struct ActiveCursor<_0, _1> {
+                pub index: ::core::primitive::u32,
+                pub inner_cursor: ::core::option::Option<_0>,
+                pub started_at: _1,
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            pub enum HistoricCleanupSelector<_0> {
+                #[codec(index = 0)]
+                Specific(::subxt::ext::subxt_core::alloc::vec::Vec<_0>),
+                #[codec(index = 1)]
+                Wildcard {
+                    limit: ::core::option::Option<::core::primitive::u32>,
+                    previous_cursor: ::core::option::Option<
+                        ::subxt::ext::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    >,
+                },
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            pub enum MigrationCursor<_0, _1> {
+                #[codec(index = 0)]
+                Active(runtime_types::pallet_migrations::ActiveCursor<_0, _1>),
+                #[codec(index = 1)]
+                Stuck,
+            }
+        }
         pub mod pallet_multisig {
             use super::runtime_types;
             pub mod pallet {
@@ -25924,7 +26916,7 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Contains a variant per dispatchable extrinsic that this pallet has."]
+                #[doc = "The implementation for the pallet extrinsics"]
                 pub enum Call {
                     #[codec(index = 0)]
                     #[doc = "TODO: add docs"]
@@ -25970,6 +26962,26 @@ pub mod api {
                     #[doc = "TODO remove this function"]
                     drop_invalid_commits {
                         ident: runtime_types::sxt_core::tables::TableIdentifier,
+                    },
+                    #[codec(index = 7)]
+                    #[doc = "Update the UUID for the specificed namespace and version to the provided UUID"]
+                    update_namespace_uuid {
+                        namespace: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                        version: ::core::primitive::u16,
+                        new_uuid: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                    },
+                    #[codec(index = 8)]
+                    #[doc = "Update the UUID for the specified table and version to the provided UUID"]
+                    update_table_uuid {
+                        table: runtime_types::sxt_core::tables::TableIdentifier,
+                        version: ::core::primitive::u16,
+                        new_uuid: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
                     },
                 }
                 #[derive(
@@ -26105,6 +27117,32 @@ pub mod api {
                         source: runtime_types::sxt_core::tables::Source,
                     },
                     #[codec(index = 1)]
+                    #[doc = "The UUID for a given namespace has been updated"]
+                    NamespaceUuidUpdated {
+                        old_uuid: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                        new_uuid: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                        version: ::core::primitive::u16,
+                        namespace: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                    },
+                    #[codec(index = 2)]
+                    #[doc = "The UUID for a given table has been updated"]
+                    TableUuidUpdated {
+                        old_uuid: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                        new_uuid: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                        version: ::core::primitive::u16,
+                        table: runtime_types::sxt_core::tables::TableIdentifier,
+                    },
+                    #[codec(index = 3)]
                     #[doc = "The schema for a table has been updated"]
                     SchemaUpdated(
                         ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>,
@@ -26112,7 +27150,7 @@ pub mod api {
                             runtime_types::pallet_tables::pallet::UpdateTable,
                         >,
                     ),
-                    #[codec(index = 2)]
+                    #[codec(index = 4)]
                     #[doc = "Tables have been created with known commitments"]
                     TablesCreatedWithCommitments {
                         source_and_mode: runtime_types::sxt_core::tables::SourceAndMode,
@@ -26120,7 +27158,7 @@ pub mod api {
                             runtime_types::pallet_tables::pallet::CreateTableRequest,
                         >,
                     },
-                    #[codec(index = 3)]
+                    #[codec(index = 5)]
                     #[doc = "A table has been successfully dropped"]
                     TableDropped(
                         ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>,
@@ -28912,6 +29950,8 @@ pub mod api {
                     EditSchema,
                     #[codec(index = 1)]
                     EditRewards,
+                    #[codec(index = 2)]
+                    EditUuid,
                 }
             }
             pub mod smartcontracts {
@@ -29555,6 +30595,8 @@ pub mod api {
                 Multisig(runtime_types::pallet_multisig::pallet::Call),
                 #[codec(index = 52)]
                 VoterList(runtime_types::pallet_bags_list::pallet::Call),
+                #[codec(index = 72)]
+                MultiBlockMigrations(runtime_types::pallet_migrations::pallet::Call),
                 #[codec(index = 100)]
                 Permissions(runtime_types::pallet_permissions::pallet::Call),
                 #[codec(index = 101)]
@@ -29612,6 +30654,8 @@ pub mod api {
                 Multisig(runtime_types::pallet_multisig::pallet::Error),
                 #[codec(index = 52)]
                 VoterList(runtime_types::pallet_bags_list::pallet::Error),
+                #[codec(index = 72)]
+                MultiBlockMigrations(runtime_types::pallet_migrations::pallet::Error),
                 #[codec(index = 100)]
                 Permissions(runtime_types::pallet_permissions::pallet::Error),
                 #[codec(index = 101)]
@@ -29673,6 +30717,8 @@ pub mod api {
                 VoterList(runtime_types::pallet_bags_list::pallet::Event),
                 #[codec(index = 71)]
                 Statement(runtime_types::pallet_statement::pallet::Event),
+                #[codec(index = 72)]
+                MultiBlockMigrations(runtime_types::pallet_migrations::pallet::Event),
                 #[codec(index = 100)]
                 Permissions(runtime_types::pallet_permissions::pallet::Event),
                 #[codec(index = 101)]
