@@ -1,3 +1,13 @@
+# [1.12.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.11.0...v1.12.0) (2025-06-23)
+
+
+### Features
+
+* Added chain-utils support for changing all table uuids in a given DDL ([9a722df](https://github.com/spaceandtimefdn/sxt-node/commit/9a722dfbcecbaf44ec84cffe7b06acc667e08783))
+* Updated the sxt_chain subxt generated code ([038d4bb](https://github.com/spaceandtimefdn/sxt-node/commit/038d4bb1054c85c32a84e7e89132befeacf32bc5))
+
+
+
 # [1.11.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.10.0...v1.11.0) (2025-06-20)
 
 
@@ -34,10 +44,6 @@
 ### Features
 
 * use retrying rpc client in tx layer ([eb00eed](https://github.com/spaceandtimefdn/sxt-node/commit/eb00eedcc0599b2acb328f628a80bc630c5176ea))
-
-
-
-## [1.7.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.7.0...v1.7.1) (2025-06-09)
 
 
 
