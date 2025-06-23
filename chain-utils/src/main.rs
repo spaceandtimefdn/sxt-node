@@ -6,6 +6,7 @@ mod fetch_submissions;
 mod load_tables;
 mod print_batch;
 mod test_staking;
+mod update_uuids;
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -44,6 +45,7 @@ struct Cli {
     command: Commands,
 }
 
+/// Wrappers for the available commands and their corresponding arguments
 #[derive(Subcommand)]
 enum Commands {
     /// Load table definitions from a DDL file and submit to the SxT chain
@@ -59,6 +61,25 @@ enum Commands {
         /// Node RPC endpoint
         #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
         rpc: url::Url,
+    },
+
+    /// Read UUIDs from a DDL file and update the corresponding tables to the supplied UUIDs
+    UpdateUuids {
+        /// Path to the SQL DDL file
+        #[arg(short, long)]
+        file: PathBuf,
+
+        /// Private key URI to sign transactions
+        #[arg(short, long)]
+        private_key: String,
+
+        /// Node RPC endpoint
+        #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
+        rpc: url::Url,
+
+        /// The table versions to update, defaults to 0
+        #[arg(short, long, default_value = "0")]
+        version: u16,
     },
 
     /// Stub for future utility to print batch
@@ -109,6 +130,17 @@ async fn main() {
             rpc,
         } => {
             if let Err(e) = load_tables::load_tables(file, &private_key, &rpc).await {
+                error!("Failed to load tables: {}", e);
+                process::exit(1);
+            }
+        }
+        Commands::UpdateUuids {
+            file,
+            private_key,
+            rpc,
+            version,
+        } => {
+            if let Err(e) = update_uuids::update_uuids(file, &private_key, &rpc, version).await {
                 error!("Failed to load tables: {}", e);
                 process::exit(1);
             }
