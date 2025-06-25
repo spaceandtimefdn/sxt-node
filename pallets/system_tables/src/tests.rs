@@ -9,6 +9,13 @@ use sp_core::crypto::AccountId32;
 use sp_core::U256;
 use sp_runtime::traits::StaticLookup;
 use sp_runtime::{DispatchError, Perbill};
+use sxt_core::parse::{
+    StakingSystemRequest,
+    SystemFieldValue,
+    SystemRequest,
+    SystemRequestType,
+    SystemTableField,
+};
 use sxt_core::sxt_chain_runtime::api::runtime_types::pallet_system_tables;
 use sxt_core::tables::TableIdentifier;
 use sxt_core::utils::{
@@ -18,13 +25,6 @@ use sxt_core::utils::{
 };
 
 use crate::mock::*;
-use crate::parse::{
-    StakingSystemRequest,
-    SystemFieldValue,
-    SystemRequest,
-    SystemRequestType,
-    SystemTableField,
-};
 use crate::Pallet;
 
 // Example SCALE encoded Session keys from calling author_rotateKeys() on Alice

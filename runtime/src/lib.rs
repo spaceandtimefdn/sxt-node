@@ -794,6 +794,10 @@ impl pallet_system_tables::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_zkpay::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+}
+
 impl pallet_system_contracts::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
@@ -909,6 +913,8 @@ mod runtime {
     pub type SystemContracts = pallet_system_contracts;
     #[runtime::pallet_index(109)]
     pub type Rewards = pallet_rewards;
+    #[runtime::pallet_index(110)]
+    pub type ZkPay = pallet_zkpay;
 }
 
 /// The address format for describing accounts.

@@ -23,6 +23,7 @@ frame_support::construct_runtime!(
         Commitments: pallet_commitments,
         Tables: pallet_tables,
         Session: pallet_session,
+        ZkPay: pallet_zkpay,
         Historical: pallet_session::historical,
         SystemTables: pallet_system_tables,
         Balances: pallet_balances,
@@ -187,6 +188,10 @@ sp_runtime::impl_opaque_keys! {
             pub grandpa: Grandpa,
             pub authority_discovery: AuthorityDiscovery,
     }
+}
+
+impl pallet_zkpay::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
 }
 
 impl pallet_system_tables::Config for Test {

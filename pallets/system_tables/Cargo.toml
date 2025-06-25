@@ -22,6 +22,7 @@ scale-info = { features = [
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
+pallet-zkpay.workspace = true
 pallet-tables.workspace = true
 pallet-balances.workspace = true
 pallet-commitments.workspace = true
@@ -77,6 +78,7 @@ std = [
 	"pallet-commitments/std",
 	"pallet-staking/std",
 	"pallet-babe/std",
+	"pallet-zkpay/std",
 	"sxt-core/std",
 	"sp-runtime/std",
 	"on-chain-table/std",
