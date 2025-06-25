@@ -23,6 +23,7 @@ frame_support::construct_runtime!(
         SystemTabales: pallet_system_tables,
         Session: pallet_session,
         Balances: pallet_balances,
+        ZkPay: pallet_zkpay,
         Staking: pallet_staking,
     }
 );
@@ -157,6 +158,10 @@ sp_runtime::impl_opaque_keys! {
     pub struct SessionKeys {
         pub foo: sp_runtime::testing::UintAuthorityId,
     }
+}
+
+impl pallet_zkpay::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
 }
 
 impl pallet_smartcontracts::Config<Api> for Test {

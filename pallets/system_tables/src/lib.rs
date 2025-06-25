@@ -9,7 +9,6 @@ extern crate core;
 use alloc::string::String;
 
 pub use pallet::*;
-use pallet_zkpay;
 
 #[cfg(test)]
 mod mock;

@@ -1,5 +1,3 @@
-use crate::mock::*;
-use crate::{ComputeCreditAddress, Event, Pallet};
 use frame_support::dispatch::RawOrigin;
 use frame_support::{assert_err, assert_ok};
 use sp_core::crypto::{AccountId32, Ss58Codec};
@@ -15,18 +13,9 @@ use sxt_core::parse::{
 use sxt_core::tables::TableIdentifier;
 use sxt_core::ByteString;
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-use crate::mock::*;
-use crate::{ComputeCreditAddress, Event};
-
->>>>>>> Stashed changes
-=======
 use crate::mock::*;
 use crate::{ComputeCreditAddress, Event, Pallet};
 
->>>>>>> Stashed changes
 // Example SCALE encoded Session keys from calling author_rotateKeys() on Alice
 const ETH_TEST_WALLET: &str = "44bCf7001D9C3fe8b7aA2BBaaf1B94410db31f5c";
 fn get_send_payment_message(
@@ -67,16 +56,24 @@ fn non_root_calls_produce_an_error_and_do_not_update_storage() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
 
-        let sender = AccountId32::from_ss58check("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
+        let sender =
+            AccountId32::from_ss58check("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+                .unwrap();
         let test_address =
-            ByteString::try_from(hex::decode("27d4d2af364c1ad2ebdb2a28d6cb7b99ede1d450").unwrap()).unwrap();
+            ByteString::try_from(hex::decode("27d4d2af364c1ad2ebdb2a28d6cb7b99ede1d450").unwrap())
+                .unwrap();
         ComputeCreditAddress::<Test>::put(test_address.clone());
 
-        let test_new_address =
-            hex::decode("deadbeef364c1ad2ebdb2a28d6cb7b99ede1d450").unwrap();
+        let test_new_address = hex::decode("deadbeef364c1ad2ebdb2a28d6cb7b99ede1d450").unwrap();
 
-        assert_err!(crate::Pallet::<Test>::update_compute_credit_address(RuntimeOrigin::signed(sender), ByteString::try_from(test_new_address).unwrap()), DispatchError::BadOrigin);
-        
+        assert_err!(
+            crate::Pallet::<Test>::update_compute_credit_address(
+                RuntimeOrigin::signed(sender),
+                ByteString::try_from(test_new_address).unwrap()
+            ),
+            DispatchError::BadOrigin
+        );
+
         assert_eq!(test_address, ComputeCreditAddress::<Test>::get());
     })
 }
@@ -88,25 +85,33 @@ fn update_contract_address_works() {
 
         // Set an existing address
         let test_old_address =
-            ByteString::try_from(hex::decode("deadbeef364c1ad2ebdb2a28d6cb7b99ede1d450").unwrap()).unwrap();
+            ByteString::try_from(hex::decode("deadbeef364c1ad2ebdb2a28d6cb7b99ede1d450").unwrap())
+                .unwrap();
         ComputeCreditAddress::<Test>::put(test_old_address.clone());
 
         let test_address =
-            ByteString::try_from(hex::decode("27d4d2af364c1ad2ebdb2a28d6cb7b99ede1d450").unwrap()).unwrap();
+            ByteString::try_from(hex::decode("27d4d2af364c1ad2ebdb2a28d6cb7b99ede1d450").unwrap())
+                .unwrap();
 
         let sender = RawOrigin::Root;
 
         // Send the transaction
-        assert_ok!(crate::Pallet::<Test>::update_compute_credit_address(sender.into(), test_address.clone()));
+        assert_ok!(crate::Pallet::<Test>::update_compute_credit_address(
+            sender.into(),
+            test_address.clone()
+        ));
 
         // Make sure the on-chain state is updated
         assert_eq!(test_address, ComputeCreditAddress::<Test>::get());
 
         // Make sure we emitted the expected event
-        System::assert_last_event(Event::<Test>::ComputeCreditAddressUpdated{
-            old_address: test_old_address,
-            new_address: test_address,
-        }.into());
+        System::assert_last_event(
+            Event::<Test>::ComputeCreditAddressUpdated {
+                old_address: test_old_address,
+                new_address: test_address,
+            }
+            .into(),
+        );
     })
 }
 
@@ -115,8 +120,9 @@ fn buying_compute_credits_works() {
     new_test_ext().execute_with(|| {
         let test_amount = 100_000;
         let test_compute_credit_address =
-            ByteString::try_from(hex::decode("27d4d2af364c1ad2ebdb2a28d6cb7b99ede1d450").unwrap()).unwrap();
-        
+            ByteString::try_from(hex::decode("27d4d2af364c1ad2ebdb2a28d6cb7b99ede1d450").unwrap())
+                .unwrap();
+
         ComputeCreditAddress::<Test>::put(test_compute_credit_address.clone());
 
         // Test Sender
@@ -143,7 +149,7 @@ fn buying_compute_credits_works() {
 
         // Process the send_payment
         assert_ok!(crate::Pallet::<Test>::process_send_payment(send_payment));
-        
+
         // And should now have balance equal to test_amount
         let new_balance = pallet_balances::Pallet::<Test>::free_balance(alice_account);
         assert_eq!(new_balance, test_amount);
