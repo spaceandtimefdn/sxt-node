@@ -11997,6 +11997,7 @@ dependencies = [
  "pallet-commitments",
  "pallet-permissions",
  "parity-scale-codec",
+ "proof-of-sql",
  "proof-of-sql-commitment-map",
  "scale-info",
  "sp-core",

@@ -21,7 +21,7 @@ pub use weights::*;
 #[frame_support::pallet]
 pub mod pallet {
     use alloc::boxed::Box;
-    use core::str::from_utf8;
+    use core::str::{from_utf8, Utf8Error};
 
     use codec::alloc::borrow::ToOwned;
     use commitment_sql::CreateTableAndCommitmentMetadata;
@@ -29,6 +29,7 @@ pub mod pallet {
     use frame_support::pallet_prelude::{StorageDoubleMap, ValueQuery, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
+    use frame_system::RawOrigin;
     use proof_of_sql_commitment_map::{
         CommitmentSchemeFlags,
         TableCommitmentBytesPerCommitmentScheme,
@@ -36,9 +37,9 @@ pub mod pallet {
     use scale_info::prelude::vec;
     use sp_runtime::Vec;
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
+    use sqlparser::ast::{ObjectName, SqlOption, Value};
     use sxt_core::permissions::*;
     use sxt_core::tables::{
-        convert_sql_to_ignite_create_statement,
         create_statement_to_sqlparser,
         create_statement_to_sqlparser_remove_with,
         extract_schema_uuid,
@@ -763,11 +764,10 @@ pub mod pallet {
             origin: OriginFor<T>,
             tables: UpdateTableList,
         ) -> DispatchResult {
-            let owner: Option<T::AccountId> =
-                pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                    origin.clone(),
-                    &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
-                )?;
+            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            )?;
 
             let tables_with_meta_columns = tables
         .into_iter()
@@ -800,7 +800,7 @@ pub mod pallet {
 
                     // Inject submitter column if this is a permissionless table
                     if is_public {
-                        create_table = inject_submitter_column(create_table);
+                        create_table = sxt_core::tables::inject_submitter_column(create_table);
                     }
 
                     // Generate metadata
@@ -848,6 +848,24 @@ pub mod pallet {
                     table.create_statement = CreateStatement::try_from(reconstructed.as_bytes().to_vec())
                         .map_err(|_| Error::<T>::BoundedVecError)?;
 
+            // Grant permission to the table creator to submit data and grant others permission to
+            // submit data
+            if let Some(owner) = owner.clone() {
+                let table_permission = PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table.ident.clone()));
+
+                let _ = pallet_permissions::Pallet::<T>::add_proxy_permission(
+                    RawOrigin::Root.into(),
+                    owner.clone(),
+                    table_permission.clone(),
+                );
+
+                let _ = pallet_permissions::Pallet::<T>::add_proxy_permission(
+                    RawOrigin::Root.into(),
+                    owner.clone(),
+                    PermissionLevel::EditSpecificPermission(Box::new(table_permission)),
+                );
+            }
+
             TableOwners::<T>::insert(&table.ident, owner.clone());
 
             Ok(table)
@@ -859,21 +877,5 @@ pub mod pallet {
             Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
             Ok(())
         }
-    }
-
-    /// Inject a submitter varchar column to a CreateTableBuilder
-    pub fn inject_submitter_column(mut table: CreateTableBuilder) -> CreateTableBuilder {
-        let submitter_col = sqlparser::ast::ColumnDef {
-            name: sqlparser::ast::Ident::new("submitter"),
-            data_type: sqlparser::ast::DataType::Varchar(None),
-            collation: None,
-            options: vec![sqlparser::ast::ColumnOptionDef {
-                name: None,
-                option: sqlparser::ast::ColumnOption::NotNull,
-            }],
-        };
-
-        table.columns.push(submitter_col);
-        table
     }
 }
