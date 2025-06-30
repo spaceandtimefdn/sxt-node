@@ -8,8 +8,6 @@ pub use pallet::*;
 extern crate alloc;
 extern crate core;
 
-use alloc::string::ToString;
-
 #[cfg(test)]
 mod mock;
 
@@ -22,7 +20,8 @@ pub use weights::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    use core::str::{from_utf8, Utf8Error};
+    use alloc::boxed::Box;
+    use core::str::from_utf8;
 
     use codec::alloc::borrow::ToOwned;
     use commitment_sql::CreateTableAndCommitmentMetadata;
@@ -32,14 +31,11 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use proof_of_sql_commitment_map::{
         CommitmentSchemeFlags,
-        TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
     };
+    use scale_info::prelude::vec;
     use sp_runtime::Vec;
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
-    use sqlparser::ast::{Expr, ObjectName, SqlOption, Value};
-    use sqlparser::dialect::PostgreSqlDialect;
-    use sqlparser::parser::Parser;
     use sxt_core::permissions::*;
     use sxt_core::tables::{
         convert_sql_to_ignite_create_statement,
@@ -51,14 +47,12 @@ pub mod pallet {
         generate_table_uuid,
         sqlparser_to_create_statement,
         update_uuid_in_create_table_statement,
-        uuids_from_create_statement,
         uuids_from_sqlparser,
         ColumnUuidList,
         CommitmentBytes,
         CommitmentScheme,
         CreateStatement,
         IdentifierList,
-        IndexerMode,
         InsertQuorumSize,
         SnapshotUrl,
         Source,
@@ -247,6 +241,12 @@ pub mod pallet {
     pub type TableSources<T: Config> =
         StorageMap<_, Blake2_128Concat, TableIdentifier, Source, ValueQuery>;
 
+    /// Maps a table identifier to the account that created it.
+    /// Only used for community tables.
+    #[pallet::storage]
+    pub type TableOwners<T: Config> =
+        StorageMap<_, Blake2_128Concat, TableIdentifier, Option<T::AccountId>, ValueQuery>;
+
     /// A table identifier, a sql statement for table creation, and an initial commitment
     pub type CreateTableCmd = (
         TableIdentifier,
@@ -340,7 +340,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
         #[pallet::weight(<T as Config>::WeightInfo::update_tables())]
-        /// TODO: add docs
+        /// Create table from a provided list with identifiers and DDLs
         pub fn create_tables(origin: OriginFor<T>, tables: UpdateTableList) -> DispatchResult {
             Self::create_tables_inner(origin, tables)
         }
@@ -522,7 +522,7 @@ pub mod pallet {
             version: TableVersion,
             new_uuid: TableUuid,
         ) -> DispatchResult {
-            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+            let _ = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditUuid),
             )?;
@@ -549,7 +549,7 @@ pub mod pallet {
             version: TableVersion,
             new_uuid: TableUuid,
         ) -> DispatchResult {
-            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+            let _ = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditUuid),
             )?;
@@ -581,7 +581,7 @@ pub mod pallet {
     fn map_uuid_error<T: Config>(error: UpdateUuidError) -> DispatchError {
         match error {
             UpdateUuidError::InvalidUuid => Error::<T>::TableUUIDError.into(),
-            UpdateUuidError::ParseError { error } => Error::<T>::CreateStatementParseError.into(),
+            UpdateUuidError::ParseError { .. } => Error::<T>::CreateStatementParseError.into(),
         }
     }
 
@@ -763,20 +763,23 @@ pub mod pallet {
             origin: OriginFor<T>,
             tables: UpdateTableList,
         ) -> DispatchResult {
-            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin.clone(),
-                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
-            )?;
+            let owner: Option<T::AccountId> =
+                pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                    origin.clone(),
+                    &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+                )?;
 
             let tables_with_meta_columns = tables
-                .into_iter()
-                .map(|mut table| {
-                    // Generate or extract UUIDs
-                    let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(
-                        table.create_statement.clone(),
-                        table.ident.clone(),
-                    )
-                        .map_err(|_| Error::<T>::UUIDGenerationError)?;
+        .into_iter()
+        .map(|mut table| {
+            let is_public = table.table_type == TableType::PublicPermissionless;
+
+            // Generate or extract UUIDs
+            let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(
+                table.create_statement.clone(),
+                table.ident.clone(),
+            )
+            .map_err(|_| Error::<T>::UUIDGenerationError)?;
 
                     // Update the create statement to add the UUIDs to the WITH clause
                     let updated_create_statement = update_uuid_in_create_table_statement(table_uuid.clone(), column_uuids.clone(), table.create_statement.clone()).map_err(map_uuid_error::<T>)?;
@@ -790,10 +793,15 @@ pub mod pallet {
                     );
 
                     // Parse and remove WITH clause
-                    let (create_table, with_options) = create_statement_to_sqlparser_remove_with(
+                    let (mut create_table, with_options) = create_statement_to_sqlparser_remove_with(
                         updated_create_statement,
                     )
                         .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+                    // Inject submitter column if this is a permissionless table
+                    if is_public {
+                        create_table = inject_submitter_column(create_table);
+                    }
 
                     // Generate metadata
                     let CreateTableAndCommitmentMetadata {
@@ -840,14 +848,32 @@ pub mod pallet {
                     table.create_statement = CreateStatement::try_from(reconstructed.as_bytes().to_vec())
                         .map_err(|_| Error::<T>::BoundedVecError)?;
 
-                    Ok(table)
-                })
-                .collect::<Result<Vec<_>, DispatchError>>()?
-                .try_into()
-                .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
+            TableOwners::<T>::insert(&table.ident, owner.clone());
+
+            Ok(table)
+        })
+        .collect::<Result<Vec<_>, DispatchError>>()?
+        .try_into()
+        .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
 
             Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
             Ok(())
         }
+    }
+
+    /// Inject a submitter varchar column to a CreateTableBuilder
+    pub fn inject_submitter_column(mut table: CreateTableBuilder) -> CreateTableBuilder {
+        let submitter_col = sqlparser::ast::ColumnDef {
+            name: sqlparser::ast::Ident::new("submitter"),
+            data_type: sqlparser::ast::DataType::Varchar(None),
+            collation: None,
+            options: vec![sqlparser::ast::ColumnOptionDef {
+                name: None,
+                option: sqlparser::ast::ColumnOption::NotNull,
+            }],
+        };
+
+        table.columns.push(submitter_col);
+        table
     }
 }
