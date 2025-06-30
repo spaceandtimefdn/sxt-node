@@ -11,3 +11,7 @@ pub use api_impl::CommitmentsApiImpl;
 mod proof_plan_for_query_and_commitments;
 
 mod statement_and_associated_table_refs;
+
+mod column_type_conversion {
+    proof_of_sql_unversioned::impl_sqlparser_proof_of_sql_type_conversion!();
+}

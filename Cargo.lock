@@ -9638,6 +9638,7 @@ dependencies = [
  "proof-of-sql-commitment-map",
  "proof-of-sql-planner",
  "proof-of-sql-static-setups",
+ "proof-of-sql-unversioned",
  "sc-chain-spec",
  "sc-client-api",
  "sc-consensus-babe",

@@ -30,6 +30,7 @@ pallet-system-contracts = { workspace = true, default-features = true }
 proof-of-sql = { workspace = true }
 proof-of-sql-planner = { workspace = true }
 proof-of-sql-commitment-map = { workspace = true }
+proof-of-sql-unversioned = { workspace = true }
 sc-chain-spec = { workspace = true, default-features = true }
 sc-client-api = { workspace = true, default-features = true }
 sc-consensus-babe = { workspace = true, default-features = true }
