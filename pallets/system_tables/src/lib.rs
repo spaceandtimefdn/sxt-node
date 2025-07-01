@@ -141,7 +141,7 @@ pub mod pallet {
             table_id: TableIdentifier,
             oc_table: OnChainTable,
         ) -> DispatchResult {
-            match templates::table_to_request(oc_table, table_id) {
+            match table_to_request(oc_table, table_id) {
                 None => Ok(()),
                 Some(req) => process_request::<T>(req),
             }
