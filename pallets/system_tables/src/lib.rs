@@ -553,26 +553,29 @@ pub mod pallet {
     }
 
     /// A custom offence handler that chills validators when they offend
-    pub struct ChillingOffenceHandler<T: pallet_staking::Config>(core::marker::PhantomData<T>);
+    pub struct ChillingOffenceHandler<T: pallet_staking::Config, B>(
+        core::marker::PhantomData<(T, B)>,
+    );
 
-    impl<T: pallet_staking::Config> Default for ChillingOffenceHandler<T> {
+    impl<T: pallet_staking::Config, B> Default for ChillingOffenceHandler<T, B> {
         fn default() -> Self {
             Self(Default::default())
         }
     }
 
-    impl<Reporter, T> OnOffenceHandler<Reporter, IdentificationTuple<T>, Weight>
-        for ChillingOffenceHandler<T>
+    impl<Reporter, T, B> OnOffenceHandler<Reporter, IdentificationTuple<T>, Weight>
+        for ChillingOffenceHandler<T, B>
     where
         T: pallet_staking::Config + pallet_session::historical::Config + crate::pallet::Config,
         T::ValidatorId: Into<T::AccountId>,
+        B: OnOffenceHandler<Reporter, IdentificationTuple<T>, Weight>,
     {
         fn on_offence(
             offenders: &[OffenceDetails<Reporter, IdentificationTuple<T>>],
-            _slash_fraction: &[Perbill],
-            _session_index: SessionIndex,
+            slash_fraction: &[Perbill],
+            session_index: SessionIndex,
         ) -> Weight {
-            let mut weight = Weight::zero();
+            let mut weight = B::on_offence(offenders, slash_fraction, session_index);
 
             for offender in offenders {
                 let (validator_id, _exposure) = &offender.offender;

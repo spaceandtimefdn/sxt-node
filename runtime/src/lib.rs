@@ -560,7 +560,7 @@ impl pallet_im_online::Config for Runtime {
 impl pallet_offences::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
-    type OnOffenceHandler = pallet_system_tables::ChillingOffenceHandler<Runtime>;
+    type OnOffenceHandler = pallet_system_tables::ChillingOffenceHandler<Runtime, Staking>;
 }
 
 pub type OnChainAccuracy = sp_runtime::Perbill;
