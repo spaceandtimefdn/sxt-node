@@ -1,3 +1,15 @@
+# [1.13.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.12.0...v1.13.0) (2025-07-01)
+
+
+### Features
+
+* Add parse module to sxt_core for parsing system requests out of ([153c2f6](https://github.com/spaceandtimefdn/sxt-node/commit/153c2f6c445c873e4470166514d0e8016a11324e))
+* Add support for SmallInt to OnChainTable ([af5dc1b](https://github.com/spaceandtimefdn/sxt-node/commit/af5dc1b0761b6e3d156cdacfa6b9eed499609eae))
+* Increase runtime version to 230 ([0ec6fdb](https://github.com/spaceandtimefdn/sxt-node/commit/0ec6fdb04d7f75727f696785f316bc6801e18942))
+* Refactor system tables, putting ZKpay in its own pallet ([2daafc9](https://github.com/spaceandtimefdn/sxt-node/commit/2daafc9c20ddc64669a3922b274288919443bccf))
+
+
+
 # [1.12.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.11.0...v1.12.0) (2025-06-23)
 
 
@@ -35,15 +47,6 @@
 ### Features
 
 * add use retry rpc client for testnet ([0866372](https://github.com/spaceandtimefdn/sxt-node/commit/0866372505ae231b88a5ca81736812e7c9b32326))
-
-
-
-# [1.8.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.7.1...v1.8.0) (2025-06-17)
-
-
-### Features
-
-* use retrying rpc client in tx layer ([eb00eed](https://github.com/spaceandtimefdn/sxt-node/commit/eb00eedcc0599b2acb328f628a80bc630c5176ea))
 
 
 
