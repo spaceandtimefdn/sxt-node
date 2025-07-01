@@ -59,6 +59,7 @@ pallet-indexing.workspace = true
 pallet-attestation.workspace = true
 pallet-keystore.workspace = true
 pallet-smartcontracts.workspace = true
+pallet-zkpay.workspace = true
 
 pallet-rewards.workspace = true
 pallet-system-tables.workspace = true
@@ -106,6 +107,7 @@ std = [
 	"pallet-session/std",
 	"pallet-system-tables/std",
 	"pallet-system-contracts/std",
+	"pallet-zkpay/std",
 	"sp-std/std",
 	"codec/std",
 	"scale-info/std",

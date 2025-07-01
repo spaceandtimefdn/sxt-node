@@ -10,6 +10,9 @@ use sp_runtime::BoundedVec;
 /// Types and functionality related to the permissions system
 pub mod permissions;
 
+/// Types and Functionality related to parsing system messages
+pub mod parse;
+
 /// Types and functionality related to tables
 pub mod tables;
 

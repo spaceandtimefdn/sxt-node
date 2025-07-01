@@ -2,7 +2,6 @@ use alloc::vec::Vec;
 
 use codec::Decode;
 use frame_system::Config as SystemConfig;
-use hex::FromHex;
 use sp_core::crypto::AccountId32;
 use sp_runtime::traits::StaticLookup;
 use sp_runtime::DispatchError;
@@ -30,6 +29,13 @@ pub fn account_id_from_str<T: frame_system::Config>(
 ) -> Result<T::AccountId, DispatchError> {
     let hex_str = addr.trim_start_matches("0x");
     let raw_bytes = hex::decode(hex_str).map_err(|_| "Invalid hex address")?;
+
+    // Valid aaddresses are either 20 or 32 bytes. If we don't have that number of bytes,
+    // return an error
+    if raw_bytes.len() != 20 && raw_bytes.len() != 32 {
+        return Err("Invalid Address Length. Must be 20 or 32 bytes".into());
+    }
+
     let raw_bytes: [u8; 32] = raw_bytes
         .try_into()
         .map_err(|_| "Could not coerce account into 32 bytes")?;

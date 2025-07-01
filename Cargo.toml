@@ -35,7 +35,8 @@ members = [
     "chain-utils",
     "translation-layer",
     "pallets/system-contracts",
-    "canaries"
+    "canaries",
+    "pallets/zkpay",
 ]
 exclude = [
     "utoipa",  
@@ -66,9 +67,10 @@ pallet-attestation = { path = "pallets/attestation", default-features = false }
 pallet-keystore = { path = "pallets/keystore", default-features = false }
 pallet-system-contracts = { path = "pallets/system-contracts", default-features = false }
 pallet-system-tables = { path = "pallets/system_tables", default-features = false }
+pallet-zkpay = { path = "pallets/zkpay", default-features = false }
 pallet-smartcontracts = { path = "pallets/smartcontracts", default-features = false}
-sxt-core = { path = "sxt-core", default-features = false}
-pallet-tables = { path = "pallets/tables", default-features = false}
+sxt-core = { path = "sxt-core", default-features = false }
+pallet-tables = { path = "pallets/tables", default-features = false }
 pallet-indexing = { path = "pallets/indexing", default-features = false }
 native = { path = "native", default-features = false }
 native-api = { path = "native-api", default-features = false }

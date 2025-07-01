@@ -52,6 +52,7 @@ sp-runtime.workspace = true
 native.workspace = true
 arrow.workspace = true
 proof-of-sql-commitment-map.workspace = true
+pallet-zkpay.workspace = true
 
 [features]
 default = ["std"]
@@ -70,6 +71,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-staking/std",
 	"pallet-system-tables/std",
+	"pallet-zkpay/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

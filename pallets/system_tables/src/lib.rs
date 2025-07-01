@@ -17,7 +17,7 @@ mod mock;
 mod tests;
 
 mod messages;
-mod parse;
+mod templates;
 
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
@@ -30,18 +30,22 @@ pub mod pallet {
     use itertools::Itertools;
     use on_chain_table::OnChainTable;
     use pallet_session::historical::IdentificationTuple;
-    use parse::{table_to_request, SystemRequest};
     use sp_core::U256;
     use sp_runtime::traits::{StaticLookup, UniqueSaturatedInto};
     use sp_runtime::{Perbill, SaturatedConversion};
     use sp_staking::offence::{OffenceDetails, OnOffenceHandler};
     use sp_staking::SessionIndex;
+    use sxt_core::parse::{
+        StakingSystemRequest,
+        SystemFieldValue,
+        SystemRequest,
+        SystemRequestType,
+    };
     use sxt_core::permissions::{PermissionLevel, PermissionList};
     use sxt_core::tables::{extract_schema_uuid, TableIdentifier, TableName, TableNamespace};
     use sxt_core::utils::{convert_account_id, eth_address_to_substrate_account_id};
 
     use super::*;
-    use crate::parse::{StakingSystemRequest, SystemFieldValue, SystemRequestType};
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -53,6 +57,7 @@ pub mod pallet {
         + pallet_session::Config
         + pallet_staking::Config<CurrencyBalance = u128>
         + pallet_balances::Config
+        + pallet_zkpay::Config
     {
         /// The overarching runtime event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -136,7 +141,7 @@ pub mod pallet {
             table_id: TableIdentifier,
             oc_table: OnChainTable,
         ) -> DispatchResult {
-            match table_to_request(oc_table, table_id) {
+            match templates::table_to_request(oc_table, table_id) {
                 None => Ok(()),
                 Some(req) => process_request::<T>(req),
             }
@@ -163,9 +168,9 @@ pub mod pallet {
             SystemRequestType::Staking(StakingSystemRequest::UnstakeInitiated) => {
                 process_unstake_initiated::<T>(request)
             }
-            // SystemRequestType::ZkPayRequest => {
-            //     Ok(())
-            // }
+            SystemRequestType::ZkPay(_) => {
+                pallet_zkpay::Pallet::<T>::process_zkpay_request(request)
+            }
             _ => Ok(()),
         }
     }

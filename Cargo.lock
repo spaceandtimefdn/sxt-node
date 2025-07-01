@@ -10971,6 +10971,7 @@ dependencies = [
  "pallet-system-tables",
  "pallet-tables",
  "pallet-timestamp",
+ "pallet-zkpay",
  "parity-scale-codec",
  "postcard",
  "proof-of-sql-commitment-map",
@@ -11790,6 +11791,7 @@ dependencies = [
  "pallet-system-tables",
  "pallet-tables",
  "pallet-timestamp",
+ "pallet-zkpay",
  "parity-scale-codec",
  "proof-of-sql-commitment-map",
  "proof-of-sql-static-setups",
@@ -11968,6 +11970,7 @@ dependencies = [
  "pallet-staking-reward-curve",
  "pallet-tables",
  "pallet-timestamp",
+ "pallet-zkpay",
  "parity-scale-codec",
  "proof-of-sql-static-setups",
  "scale-info",
@@ -12290,6 +12293,23 @@ dependencies = [
  "sp-std",
  "staging-xcm",
  "staging-xcm-builder",
+]
+
+[[package]]
+name = "pallet-zkpay"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sxt-core",
 ]
 
 [[package]]
@@ -19449,6 +19469,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-utility",
+ "pallet-zkpay",
  "parity-scale-codec",
  "proof-of-sql-commitment-map",
  "scale-info",

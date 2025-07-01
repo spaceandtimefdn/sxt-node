@@ -159,6 +159,17 @@ impl OnChainTable {
         }
     }
 
+    /// Attempts to retrieve the values for a given SmallInt column name
+    /// Returns None if the provided column does not exist
+    pub fn get_smallints_by_column(&self, column_name: &str) -> Option<&Vec<i16>> {
+        let column_id: Ident = Ident::new(column_name.to_uppercase());
+        let column = self.as_map().get(&column_id)?;
+        match column {
+            OnChainColumn::SmallInt(values) => Some(values),
+            _ => None,
+        }
+    }
+
     /// Attempts to retrieve the values for a given VarChar column name
     /// Returns None if the provided column does not exist
     pub fn get_varchars_by_column(&self, column_name: &str) -> Option<&Vec<alloc::string::String>> {
@@ -513,6 +524,40 @@ mod tests {
         let table = OnChainTable::try_from_iter(data.clone()).unwrap();
 
         let result = table.get_varchars_by_column("price");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn get_smallints_with_valid_params_works() {
+        let data = [(Ident::new("values"), OnChainColumn::SmallInt(vec![1, 2, 3]))];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
+
+        let result = table.get_smallints_by_column("values");
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), &vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn get_smallints_with_missing_column_is_none() {
+        let data = [(Ident::new("values"), OnChainColumn::SmallInt(vec![1, 2, 3]))];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
+        let result = table.get_varchars_by_column("missing_column");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn get_smallints_with_wrong_type_is_none() {
+        let data = [(
+            Ident::new("values"),
+            OnChainColumn::Decimal75(
+                Precision::new(18).unwrap(),
+                2,
+                vec![U256::from(100), U256::from(200)],
+            ),
+        )];
+        let table = OnChainTable::try_from_iter(data.clone()).unwrap();
+
+        let result = table.get_smallints_by_column("values");
         assert!(result.is_none());
     }
 

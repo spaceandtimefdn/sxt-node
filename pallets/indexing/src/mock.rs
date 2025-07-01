@@ -20,6 +20,7 @@ frame_support::construct_runtime!(
         Indexing: pallet_indexing::native_pallet,
         Permissions: pallet_permissions,
         Commitments: pallet_commitments,
+        ZkPay: pallet_zkpay,
         Tables: pallet_tables,
         Session: pallet_session,
         SystemTables: pallet_system_tables,
@@ -162,6 +163,10 @@ sp_runtime::impl_opaque_keys! {
     pub struct SessionKeys {
         pub foo: sp_runtime::testing::UintAuthorityId,
     }
+}
+
+impl pallet_zkpay::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
 }
 
 impl pallet_system_tables::Config for Test {
