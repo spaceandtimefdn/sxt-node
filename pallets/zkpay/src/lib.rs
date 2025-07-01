@@ -88,11 +88,37 @@ pub mod pallet {
         ContractAddressError,
         /// An account id provided was invalid
         InvalidAccountId,
+        /// The ZKpay event was for an unsupported asset address
+        UnsupportedAsset,
     }
 
     #[pallet::storage]
     #[pallet::getter(fn compute_credit_address)]
     pub type ComputeCreditAddress<T> = StorageValue<_, ByteString, ValueQuery>;
+
+    /// Maximum length of an asset address
+    pub const MAX_ASSET_LEN: u32 = 20;
+    /// A type to represent the contract address of a supported asset
+    pub type AssetAddress = BoundedVec<u8, ConstU32<MAX_ASSET_LEN>>;
+
+    /// A struct used to hold metadata about supported ZKpay assets
+    #[derive(Eq, PartialEq, Decode, Encode, MaxEncodedLen, TypeInfo, Clone, Debug)]
+    pub struct Asset {
+        /// The asset address
+        pub address: AssetAddress,
+        /// The allowed payment sources as a bytes1 bitmask
+        pub allowed_payment_types: ByteString,
+        /// The address of the price feed
+        pub price_feed: AssetAddress,
+        /// The number of decimals in this asset
+        pub token_decimals: i16,
+        /// The time before a price is considered stale in seconds
+        pub stale_price_threshold_in_seconds: core::time::Duration,
+    }
+
+    #[pallet::storage]
+    #[pallet::getter(fn supported_assets)]
+    pub type SupportedAssets<T> = StorageMap<_, Blake2_128Concat, AssetAddress, Asset, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -122,6 +148,33 @@ pub mod pallet {
                 old_address,
                 new_address: address,
             });
+
+            Ok(())
+        }
+
+        /// Add a supported asset and related metadata
+        #[pallet::call_index(1)]
+        #[pallet::weight(Weight::zero())]
+        pub fn set_supported_asset(origin: OriginFor<T>, asset: Asset) -> DispatchResult {
+            // Check that the extrinsic was signed by root.
+            ensure_root(origin)?;
+
+            SupportedAssets::<T>::set(&asset.address, Some(asset.clone()));
+
+            Ok(())
+        }
+
+        /// Remove a supported asset
+        #[pallet::call_index(2)]
+        #[pallet::weight(Weight::zero())]
+        pub fn remove_supported_asset(
+            origin: OriginFor<T>,
+            asset_address: AssetAddress,
+        ) -> DispatchResult {
+            // Check that the extrinsic was signed by root.
+            ensure_root(origin)?;
+
+            SupportedAssets::<T>::remove(&asset_address);
 
             Ok(())
         }
@@ -485,8 +538,11 @@ pub mod pallet {
                             Some(SystemFieldValue::Decimal(amount_in_usd)),
                             Some(SystemFieldValue::Bytes(sender)),
                         ) => {
-                            // For now, we only support SXT and no other assets. Because of this
-                            // we will ignore the asset field.
+                            let asset_address = AssetAddress::try_from(asset.to_vec())
+                                .map_err(|_| Error::<T>::UnsupportedAsset)?;
+
+                            let _ = SupportedAssets::<T>::get(asset_address)
+                                .ok_or(Error::<T>::UnsupportedAsset)?;
 
                             // Check if the target address is the Compute Credit Address
                             let compute_credit_address = ComputeCreditAddress::<T>::get();
