@@ -107,18 +107,6 @@ pub enum CommitmentsApiError {
         /// The source runtime api error.
         source: sp_api::ApiError,
     },
-    /// Unexpected table to commitment mismap.
-    #[snafu(display("unexpected table ref to commitment mismap, statement has {num_tables} tables but runtime api returned {num_commitments} commitments"))]
-    UnexpectedTableCommitmentMismap {
-        num_tables: usize,
-        num_commitments: usize,
-    },
-    /// Failed to deserialize table commitment.
-    #[snafu(display("failed to deserialize table commitment: {source}"))]
-    DeserializeTableCommitment {
-        /// The source bincode error.
-        source: bincode::error::DecodeError,
-    },
     /// Encountered error in proof-of-sql planner.
     #[snafu(
         display("encountered error in proof-of-sql planner: {source}"),
@@ -128,11 +116,6 @@ pub enum CommitmentsApiError {
         /// The osource planner error.
         source: PlannerError,
     },
-    /// Tables do not exist or have incomplete commitment coverage for all schemes.
-    #[snafu(display(
-        "tables do not exist or have incomplete commitment coverage for all schemes"
-    ))]
-    IncompleteCommitmentCoverage,
     /// Failed to encode proof plan.
     #[snafu(display("failed to encode proof plan: {source}"), context(false))]
     EncodeProofPlan {
@@ -188,10 +171,7 @@ impl From<CommitmentsApiError> for ErrorObjectOwned {
                 CommitmentsApiError::NotOneStatement { .. } => 12,
                 CommitmentsApiError::ProofOfSqlIncompatibleRelation { .. } => 13,
                 CommitmentsApiError::RuntimeApi { .. } => 14,
-                CommitmentsApiError::UnexpectedTableCommitmentMismap { .. } => 15,
-                CommitmentsApiError::DeserializeTableCommitment { .. } => 16,
                 CommitmentsApiError::Planner { .. } => 17,
-                CommitmentsApiError::IncompleteCommitmentCoverage => 18,
                 CommitmentsApiError::EncodeProofPlan { .. } => 19,
                 CommitmentsApiError::NoSuchTable { .. } => 20,
                 CommitmentsApiError::InvalidTableSchema { .. } => 21,
