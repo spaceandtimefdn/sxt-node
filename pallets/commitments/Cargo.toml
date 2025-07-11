@@ -32,6 +32,8 @@ sp-core.workspace = true
 sp-api.workspace = true
 sqlparser.workspace = true
 sxt-core.workspace = true
+snafu.workspace = true
+itertools.workspace = true
 
 [dev-dependencies]
 sp-core = { default-features = true, workspace = true }

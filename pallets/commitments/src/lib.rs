@@ -26,6 +26,8 @@ mod test_table_commitments;
 
 mod error_conversions;
 
+mod end_row_insert_simulation;
+
 pub mod runtime_api;
 pub use pallet::*;
 
