@@ -3,12 +3,9 @@ extern crate alloc;
 
 use alloc::vec;
 use alloc::vec::Vec;
-use core::str::from_utf8;
 
-use codec::{Decode, Encode};
+use codec::Decode;
 use frame_support::dispatch::RawOrigin;
-use frame_support::pallet_prelude::TypeInfo;
-use hex::FromHex;
 use pallet_staking::ValidatorPrefs;
 use sp_runtime::{DispatchError, DispatchResult, Perbill};
 

@@ -1,5 +1,4 @@
-//! # System Tables Pallet
-//! This pallet holds logic for parsing insert statements received via indexing and
+//! # System Tables Palledexing and
 //! performing any system related on-chain state transitions
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -18,6 +17,7 @@ mod tests;
 
 mod messages;
 mod templates;
+mod utils;
 
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
@@ -26,24 +26,24 @@ pub mod pallet {
 
     use frame_support::dispatch::RawOrigin;
     use frame_support::pallet_prelude::*;
+    use frame_support::traits::StoredMap;
     use frame_system::pallet_prelude::*;
     use itertools::Itertools;
     use on_chain_table::OnChainTable;
     use pallet_session::historical::IdentificationTuple;
     use sp_core::U256;
-    use sp_runtime::traits::{StaticLookup, UniqueSaturatedInto};
-    use sp_runtime::{Perbill, SaturatedConversion};
+    use sp_runtime::traits::{StaticLookup, UniqueSaturatedInto, Zero};
+    use sp_runtime::{DispatchErrorWithPostInfo, Perbill, SaturatedConversion};
     use sp_staking::offence::{OffenceDetails, OnOffenceHandler};
-    use sp_staking::SessionIndex;
+    use sp_staking::{SessionIndex, StakingInterface};
     use sxt_core::parse::{
         StakingSystemRequest,
         SystemFieldValue,
         SystemRequest,
         SystemRequestType,
     };
-    use sxt_core::permissions::{PermissionLevel, PermissionList};
-    use sxt_core::tables::{extract_schema_uuid, TableIdentifier, TableName, TableNamespace};
-    use sxt_core::utils::{convert_account_id, eth_address_to_substrate_account_id};
+    use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
+    use sxt_core::utils::eth_address_to_substrate_account_id;
 
     use super::*;
 
@@ -87,6 +87,11 @@ pub mod pallet {
             /// The validator that was forcefully chilled
             validator: T::AccountId,
         },
+        /// Emitted when an unstake is claimed
+        UnstakingClaimed {
+            /// The account that claimed the unstaked amount
+            claimer: T::AccountId,
+        },
     }
 
     #[pallet::error]
@@ -115,6 +120,12 @@ pub mod pallet {
         ErrorParsingNominations,
         /// Empty Nomination Set
         EmptyNominationSet,
+        /// An account provided for an unstaking action was not staked
+        AccountNotStaked,
+        /// An account provided for an unstaking action was not unbonding
+        AccountNotUnbonding,
+        /// Occurs when attempting to claim locked funds
+        FundsLocked,
     }
 
     #[pallet::call]
@@ -141,7 +152,7 @@ pub mod pallet {
             table_id: TableIdentifier,
             oc_table: OnChainTable,
         ) -> DispatchResult {
-            match table_to_request(oc_table, table_id) {
+            match templates::table_to_request(oc_table, table_id) {
                 None => Ok(()),
                 Some(req) => process_request::<T>(req),
             }
@@ -167,6 +178,12 @@ pub mod pallet {
             }
             SystemRequestType::Staking(StakingSystemRequest::UnstakeInitiated) => {
                 process_unstake_initiated::<T>(request)
+            }
+            SystemRequestType::Staking(StakingSystemRequest::UnstakeClaimed) => {
+                process_unstake_claimed::<T>(request)
+            }
+            SystemRequestType::Staking(StakingSystemRequest::Unstaked) => {
+                process_unstaked::<T>(request)
             }
             SystemRequestType::ZkPay(_) => {
                 pallet_zkpay::Pallet::<T>::process_zkpay_request(request)
@@ -224,7 +241,6 @@ pub mod pallet {
                 }
             })
             .for_each(emit_for_error::<T>);
-
         Ok(())
     }
 
@@ -263,8 +279,7 @@ pub mod pallet {
                         }
 
                         let nominator = hex::encode(nominator);
-                        let nominator_id =
-                            sxt_core::utils::eth_address_to_substrate_account_id::<T>(&nominator)?;
+                        let nominator_id = eth_address_to_substrate_account_id::<T>(&nominator)?;
                         let nominator_signer: OriginFor<T> = RawOrigin::Signed(nominator_id).into();
 
                         pallet_staking::Pallet::<T>::nominate(nominator_signer, nominations)?;
@@ -275,6 +290,106 @@ pub mod pallet {
             })
             .for_each(emit_for_error::<T>);
 
+        Ok(())
+    }
+
+    /// Processes the actual withdrawal once the Unstaked event is emitted from the Ethereum
+    /// Contract
+    pub fn process_unstaked<T: Config>(request: SystemRequest) -> DispatchResult {
+        request
+            .rows()
+            .map(|row| -> DispatchResult {
+                match (row.get("STAKER"), row.get("AMOUNT")) {
+                    (
+                        Some(SystemFieldValue::Bytes(staker)),
+                        Some(SystemFieldValue::Decimal(amount)),
+                    ) => {
+                        let staker = hex::encode(staker);
+                        let staker_id =
+                            sxt_core::utils::eth_address_to_substrate_account_id::<T>(&staker)?;
+                        let staker_signer: OriginFor<T> =
+                            RawOrigin::Signed(staker_id.clone()).into();
+
+                        let stake_amount = amount.min(&U256::from(u128::MAX)).low_u128();
+
+                        //                        // Withdraw any unlocked funds to the free balance
+                        //                        pallet_staking::Pallet::<T>::withdraw_unbonded(staker_signer.clone(), 0u32)
+                        //                            .map_err(|e: DispatchErrorWithPostInfo<_>| e.error)?;
+
+                        // Now burn that unbonded amount from the account
+                        pallet_balances::Pallet::<T>::burn(
+                            staker_signer,
+                            stake_amount.saturated_into(),
+                            false,
+                        )?;
+
+                        Ok(())
+                    }
+                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                }
+            })
+            .for_each(emit_for_error::<T>);
+
+        Ok(())
+    }
+
+    /// Processes an unstake claimed event and updates chain state appropriately
+    pub fn process_unstake_claimed<T: Config>(request: SystemRequest) -> DispatchResult {
+        request
+            .rows()
+            .map(|row| -> DispatchResult {
+                match row.get("STAKER") {
+                    Some(SystemFieldValue::Bytes(staker)) => {
+                        // Convert the staker to a T::AccountId
+                        let staker = hex::encode(staker);
+                        let staker_id =
+                            sxt_core::utils::eth_address_to_substrate_account_id::<T>(&staker)?;
+
+                        // Make sure they're staked
+                        if pallet_staking::Ledger::<T>::get(&staker_id).is_none() {
+                            return Err(Error::<T>::AccountNotStaked.into());
+                        }
+
+                        // Make sure they're in an unbonding state
+                        if !(pallet_staking::Pallet::<T>::is_unbonding(&staker_id)?) {
+                            return Err(Error::<T>::AccountNotUnbonding.into());
+                        }
+
+                        let staker_signer: OriginFor<T> =
+                            RawOrigin::Signed(staker_id.clone()).into();
+
+                        // Due to scope limitations on the variables in the staking pallet, we
+                        // can't actually look at in which the funds will unlock. For now the
+                        // best we can do is to call the withdraw function and see if there are any
+                        // balance changes.
+                        let r = pallet_staking::Pallet::<T>::withdraw_unbonded(staker_signer, 0u32);
+                        match r {
+                            Ok(_) => {}
+                            Err(e) => emit_for_error::<T>(Err(e.error)),
+                        };
+
+                        // Check if the user still has entries in the staking ledger
+                        if let Some(ledger) = pallet_staking::Ledger::<T>::get(&staker_id) {
+                            // If this was a partial unlock we need to actaully check if the locks
+                            // were removed by the withdrawal call. If they weren't the claim is
+                            // unsuccessful and we return an error. Otherwise we emit the event
+                            if pallet_staking::Pallet::<T>::is_unbonding(&staker_id)? {
+                                // The user's unstaked funds are still locked
+                                return Err(Error::<T>::FundsLocked.into());
+                            }
+                        }
+
+                        // User is fully unbonded, so we stop here an emit an event
+                        Pallet::<T>::deposit_event(Event::<T>::UnstakingClaimed {
+                            claimer: staker_id.clone(),
+                        });
+
+                        Ok(())
+                    }
+                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                }
+            })
+            .for_each(emit_for_error::<T>);
         Ok(())
     }
 
@@ -291,12 +406,9 @@ pub mod pallet {
                         let staker_signer: OriginFor<T> =
                             RawOrigin::Signed(staker_id.clone()).into();
 
-                        let raw_balance: u128 =
+                        let staking_balance: T::CurrencyBalance =
                             pallet_balances::Pallet::<T>::free_balance(staker_id)
                                 .unique_saturated_into();
-                        let staking_balance: T::CurrencyBalance = T::CurrencyBalance::from(
-                            UniqueSaturatedInto::<u64>::unique_saturated_into(raw_balance),
-                        );
                         pallet_staking::Pallet::<T>::unbond(staker_signer, staking_balance)
                             .map_err(|e| e.error)?;
                         Ok(())
@@ -317,8 +429,7 @@ pub mod pallet {
                 match row.get("STAKER") {
                     Some(SystemFieldValue::Bytes(staker)) => {
                         let staker = hex::encode(staker);
-                        let staker_id =
-                            sxt_core::utils::eth_address_to_substrate_account_id::<T>(&staker)?;
+                        let staker_id = eth_address_to_substrate_account_id::<T>(&staker)?;
                         let staker_signer: OriginFor<T> =
                             RawOrigin::Signed(staker_id.clone()).into();
 
