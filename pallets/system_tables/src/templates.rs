@@ -69,13 +69,32 @@ fn get_staking_templates() -> Vec<SystemRequest> {
         },
         SystemRequest {
             request_type: Staking(StakingSystemRequest::UnstakeInitiated),
-            fields: vec![("STAKER", SystemFieldType::Bytes).into()],
+            fields: vec![
+                ("STAKER", SystemFieldType::Bytes).into(),
+                ("AMOUNT", SystemFieldType::Decimal).into(),
+            ],
             table_id: TableIdentifier::from_str_unchecked("UNSTAKEINITIATED", "SXT_SYSTEM_STAKING"),
+        },
+        SystemRequest {
+            request_type: Staking(StakingSystemRequest::Unstaked),
+            fields: vec![
+                ("STAKER", SystemFieldType::Bytes).into(),
+                ("AMOUNT", SystemFieldType::Decimal).into(),
+            ],
+            table_id: TableIdentifier::from_str_unchecked("UNSTAKED", "SXT_SYSTEM_STAKING"),
         },
         SystemRequest {
             request_type: Staking(StakingSystemRequest::UnstakeCancelled),
             fields: vec![("STAKER", SystemFieldType::Bytes).into()],
-            table_id: TableIdentifier::from_str_unchecked("UNSTAKECANCELLED", "SXT_SYSTEM_STAKING"),
+            table_id: TableIdentifier::from_str_unchecked(
+                "INITIATEUNSTAKECANCELLED",
+                "SXT_SYSTEM_STAKING",
+            ),
+        },
+        SystemRequest {
+            request_type: Staking(StakingSystemRequest::UnstakeCancelled),
+            fields: vec![("STAKER", SystemFieldType::Bytes).into()],
+            table_id: TableIdentifier::from_str_unchecked("UNSTAKECLAIMED", "SXT_SYSTEM_STAKING"),
         },
     ]
 }

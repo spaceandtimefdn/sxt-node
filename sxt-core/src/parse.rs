@@ -32,6 +32,8 @@ pub enum StakingSystemRequest {
     Nominate,
     /// An already staked address is initiating the unstaking process
     UnstakeInitiated,
+    /// A user has completed an unstaking action, including the claim
+    Unstaked,
     /// An existing unstaking request was cancelled
     UnstakeCancelled,
     /// An existing unstaking request that has waited the required unbonding period has been claimed
