@@ -11,6 +11,7 @@ use commitment_sql::{
 use proof_of_sql_commitment_map::{KeyExistsError, TableCommitmentToBytesError};
 use sxt_core::native::{NativeCommitmentError, OnChainTableToBytesError};
 
+use crate::end_row_insert_simulation::{EndRowInsertSimulationAllSchemesError, InsertExceedsLimit};
 use crate::pallet::Error;
 
 impl<T> From<TableCommitmentToBytesError> for Error<T> {
@@ -134,5 +135,23 @@ impl<T> From<NativeCommitmentError> for Error<T> {
 impl<T, K: Debug> From<KeyExistsError<K>> for Error<T> {
     fn from(_: KeyExistsError<K>) -> Self {
         Error::TableAlreadyExists
+    }
+}
+
+impl<T> From<InsertExceedsLimit> for Error<T> {
+    fn from(_: InsertExceedsLimit) -> Self {
+        Error::InsertExceedsLimit
+    }
+}
+
+impl<T> From<EndRowInsertSimulationAllSchemesError> for Error<T> {
+    fn from(error: EndRowInsertSimulationAllSchemesError) -> Self {
+        match error {
+            EndRowInsertSimulationAllSchemesError::NoCommitments => Error::NoExistingCommitments,
+            EndRowInsertSimulationAllSchemesError::EndRowMismatch => {
+                Error::ExistingCommitmentsRangeMismatch
+            }
+            EndRowInsertSimulationAllSchemesError::ExceedsLimit { source } => source.into(),
+        }
     }
 }

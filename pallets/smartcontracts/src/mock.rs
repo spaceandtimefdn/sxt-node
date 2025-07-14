@@ -2,6 +2,8 @@ use frame_election_provider_support::bounds::{ElectionBounds, ElectionBoundsBuil
 use frame_election_provider_support::{onchain, SequentialPhragmen};
 use frame_support::{derive_impl, parameter_types};
 use native_api::Api;
+use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
+use proof_of_sql_commitment_map::PerCommitmentScheme;
 use sp_core::{ConstU32, ConstU64, H256};
 use sp_runtime::traits::{ConvertInto, IdentityLookup, MaybeConvert, OpaqueKeys, TryConvertInto};
 use sp_runtime::{BuildStorage, KeyTypeId};
@@ -179,7 +181,12 @@ impl pallet_tables::Config for Test {
     type WeightInfo = ();
 }
 
-impl pallet_commitments::Config for Test {}
+impl pallet_commitments::Config for Test {
+    const END_ROW_LIMITS_PER_SCHEME: PerCommitmentScheme<ConcreteType<u32>> = PerCommitmentScheme {
+        hyper_kzg: 4,
+        dynamic_dory: 4,
+    };
+}
 
 impl pallet_indexing::pallet::Config<Api> for Test {
     type RuntimeEvent = RuntimeEvent;

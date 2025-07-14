@@ -221,3 +221,81 @@ fn we_cannot_process_inserts_that_dont_match_table() {
         );
     });
 }
+
+#[test]
+fn we_cannot_process_insert_that_exceeds_end_row_limit() {
+    new_test_ext().execute_with(|| {
+        ProcessCreateTableTestParams::new_valid().execute().unwrap();
+
+        // insert 3 rows into table
+        ProcessInsertTestParams::new_valid().execute().unwrap();
+
+        // a fourth row is too much for the mock runtime's dynamic_dory limit
+        let mut insert_params = ProcessInsertTestParams::new_valid();
+
+        let animals_col_id = Ident::new("animal");
+        let animals_data = ["snake"].map(String::from);
+
+        let population_col_id = Ident::new("population");
+        let population_data = [4];
+        let insert_data = OnChainTable::try_from_iter([
+            (
+                animals_col_id,
+                OnChainColumn::VarChar(animals_data.to_vec()),
+            ),
+            (
+                population_col_id,
+                OnChainColumn::BigInt(population_data.to_vec()),
+            ),
+        ])
+        .unwrap();
+
+        assert_eq!(insert_data.num_rows(), 1);
+
+        insert_params.insert_data = insert_data;
+
+        assert_noop!(insert_params.execute(), Error::<Test>::InsertExceedsLimit);
+    });
+}
+
+#[test]
+fn we_can_process_insert_that_exceeds_end_row_limit_of_disabled_commitment_scheme() {
+    new_test_ext().execute_with(|| {
+        let mut create_params = ProcessCreateTableTestParams::new_valid();
+        create_params.commitment_schemes.dynamic_dory = false;
+        create_params.execute().unwrap();
+
+        // insert 3 rows into table
+        ProcessInsertTestParams::new_valid().execute().unwrap();
+
+        // a fourth row is OK because this table is only committed w/ hyper_kzg, which has a limit
+        // of 4 in this mock runtime.
+        let mut insert_params = ProcessInsertTestParams::new_valid();
+
+        let animals_col_id = Ident::new("animal");
+        let animals_data = ["snake"].map(String::from);
+
+        let population_col_id = Ident::new("population");
+        let population_data = [4];
+        let insert_data = OnChainTable::try_from_iter([
+            (
+                animals_col_id,
+                OnChainColumn::VarChar(animals_data.to_vec()),
+            ),
+            (
+                population_col_id,
+                OnChainColumn::BigInt(population_data.to_vec()),
+            ),
+        ])
+        .unwrap();
+
+        assert_eq!(insert_data.num_rows(), 1);
+
+        insert_params.insert_data = insert_data;
+
+        assert!(insert_params.clone().execute().is_ok());
+
+        // a fifth row is still too many
+        assert_noop!(insert_params.execute(), Error::<Test>::InsertExceedsLimit);
+    });
+}

@@ -11391,6 +11391,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-zkpay",
  "parity-scale-codec",
+ "proof-of-sql-commitment-map",
  "proof-of-sql-static-setups",
  "scale-info",
  "serde_json",

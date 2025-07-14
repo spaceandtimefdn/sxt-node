@@ -224,6 +224,62 @@ fn we_cannot_process_create_table_from_inappropriate_snapshot() {
 }
 
 #[test]
+fn we_cannot_process_create_table_from_snapshot_that_exceeds_limits() {
+    new_test_ext().execute_with(|| {
+        let mut test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
+        let animals_col_id = Ident::new("animal");
+        let animals_data = ["cow", "dog", "cat", "snake"].map(String::from);
+
+        let population_col_id = Ident::new("population");
+        let population_data = [100, 2, 7, 4];
+
+        test_params.snapshot_data = OnChainTable::try_from_iter([
+            (
+                animals_col_id,
+                OnChainColumn::VarChar(animals_data.to_vec()),
+            ),
+            (
+                population_col_id,
+                OnChainColumn::BigInt(population_data.to_vec()),
+            ),
+        ])
+        .unwrap();
+
+        assert_noop!(test_params.execute(), Error::<Test>::InsertExceedsLimit);
+    });
+}
+
+#[test]
+fn we_can_process_create_table_from_snapshot_that_exceeds_limits_of_disabled_scheme() {
+    new_test_ext().execute_with(|| {
+        let mut test_params = ProcessCreateTableFromSnapshotTestParams::new_valid();
+
+        // dynamic_dory is the only scheme whose limit is 3 in this mock runtime
+        test_params.commitment_schemes.dynamic_dory = false;
+
+        let animals_col_id = Ident::new("animal");
+        let animals_data = ["cow", "dog", "cat", "snake"].map(String::from);
+
+        let population_col_id = Ident::new("population");
+        let population_data = [100, 2, 7, 4];
+
+        test_params.snapshot_data = OnChainTable::try_from_iter([
+            (
+                animals_col_id,
+                OnChainColumn::VarChar(animals_data.to_vec()),
+            ),
+            (
+                population_col_id,
+                OnChainColumn::BigInt(population_data.to_vec()),
+            ),
+        ])
+        .unwrap();
+
+        assert!(test_params.execute().is_ok());
+    });
+}
+
+#[test]
 fn we_cannot_process_invalid_create_table_from_snapshot() {
     test_create_table_generic::we_cannot_process_invalid_create_table::<
         ProcessCreateTableFromSnapshotTestParams,

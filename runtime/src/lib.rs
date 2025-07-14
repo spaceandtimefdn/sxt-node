@@ -45,7 +45,7 @@ pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
-use proof_of_sql_commitment_map::{AnyCommitmentScheme, TableCommitmentBytes};
+use proof_of_sql_commitment_map::{AnyCommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
 use sp_api::impl_runtime_apis;
 use sp_arithmetic::traits::UniqueSaturatedInto;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -773,7 +773,14 @@ impl pallet_tables::Config for Runtime {
     type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_commitments::Config for Runtime {}
+impl pallet_commitments::Config for Runtime {
+    const END_ROW_LIMITS_PER_SCHEME: PerCommitmentScheme<ConcreteType<u32>> = PerCommitmentScheme {
+        // final compressed elements
+        hyper_kzg: 268_435_455,
+        // max_nu 16
+        dynamic_dory: 2_147_483_647,
+    };
+}
 
 impl pallet_indexing::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;

@@ -4,6 +4,8 @@ use frame_support::pallet_prelude::ConstU32;
 use frame_support::traits::{ConstU128, VariantCountOf};
 use frame_support::{derive_impl, parameter_types};
 use native_api::Api;
+use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
+use proof_of_sql_commitment_map::PerCommitmentScheme;
 use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
 use sp_core::{ConstU64, H256};
 use sp_runtime::traits::{ConvertInto, IdentityLookup, MaybeConvert, OpaqueKeys, TryConvertInto};
@@ -182,7 +184,12 @@ impl pallet_permissions::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
 }
-impl pallet_commitments::Config for Test {}
+impl pallet_commitments::Config for Test {
+    const END_ROW_LIMITS_PER_SCHEME: PerCommitmentScheme<ConcreteType<u32>> = PerCommitmentScheme {
+        hyper_kzg: 4,
+        dynamic_dory: 4,
+    };
+}
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
     let _ = get_or_init_from_files_with_four_points_unchecked();
