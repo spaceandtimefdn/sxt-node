@@ -165,7 +165,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 230,
+    spec_version: 231,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1302,6 +1302,12 @@ impl_runtime_apis! {
     impl pallet_commitments::runtime_api::CommitmentsApi<Block> for Runtime {
         fn table_commitments_any_scheme(table_identifiers: pallet_commitments::runtime_api::CommitmentsApiBoundedTableIdentifiersList) -> Option<pallet_commitments::AnyTableCommitments> {
             Commitments::table_commitments_any_scheme(table_identifiers.as_slice())
+        }
+    }
+
+    impl pallet_tables::runtime_api::TablesApi<Block> for Runtime {
+        fn table_schema(table_identifier: sxt_core::tables::TableIdentifier) -> Result<sxt_core::tables::TableSchema, sxt_core::tables::GetTableSchemaError> {
+            Tables::table_schema(table_identifier)
         }
     }
 }

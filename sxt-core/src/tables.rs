@@ -2,7 +2,6 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use core::fmt::Display;
 use core::str::{from_utf8, Utf8Error};
 
 use codec::{Decode, Encode, MaxEncodedLen};
@@ -19,9 +18,10 @@ use sp_core::{blake2_256, RuntimeDebug, U256};
 use sp_runtime::DispatchError;
 use sp_runtime_interface::pass_by::PassByCodec;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
-use sqlparser::ast::{Expr, ObjectName, SqlOption, Value};
+use sqlparser::ast::{ColumnDef, Expr, Ident, ObjectName, SqlOption, Value};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
+use sqlparser::tokenizer::Token;
 
 use super::{ByteString, IDENT_LENGTH};
 
@@ -739,14 +739,182 @@ pub fn generate_uuid(source: String) -> Option<TableUuid> {
     }
 }
 
+/// The type of table that we are indexing
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Default,
+    Serialize,
+    Deserialize,
+)]
+pub enum TableType {
+    /// Core Blockchain table
+    #[default]
+    CoreBlockchain,
+
+    /// Smart Contract Indexing
+    SCI,
+
+    /// Community Owned Table
+    Community,
+
+    /// Testing type
+    Testing(InsertQuorumSize),
+}
+
+impl From<TableType> for InsertQuorumSize {
+    fn from(table_type: TableType) -> Self {
+        match table_type {
+            TableType::CoreBlockchain => InsertQuorumSize {
+                public: Some(3),
+                privileged: None,
+            },
+            TableType::SCI => InsertQuorumSize {
+                public: Some(1),
+                privileged: None,
+            },
+            TableType::Community => InsertQuorumSize {
+                public: None,
+                privileged: Some(0),
+            },
+            TableType::Testing(quorum) => quorum,
+        }
+    }
+}
+
+/// Commitment schemes
+#[derive(
+    Copy,
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Serialize,
+    Deserialize,
+)]
+pub enum CommitmentScheme {
+    /// HyperKzg
+    HyperKzg,
+    /// dynamic dory
+    DynamicDory,
+}
+
+/// A list of column names to column types.
+pub type TableSchema = Vec<ScaleColumnSchema>;
+
+/// Simple column schema in a form that can be communicated in chain APIs.
+#[derive(Clone, PartialEq, Eq, Debug, Encode, Decode, TypeInfo)]
+pub struct ScaleColumnSchema {
+    /// The name of the column.
+    name: String,
+    /// The data type of the column, as plain SQL.
+    data_type: String,
+}
+
+impl From<ColumnDef> for ScaleColumnSchema {
+    fn from(
+        ColumnDef {
+            name, data_type, ..
+        }: ColumnDef,
+    ) -> Self {
+        ScaleColumnSchema {
+            name: name.value,
+            data_type: data_type.to_string(),
+        }
+    }
+}
+
+impl TryFrom<ScaleColumnSchema> for ColumnDef {
+    type Error = sqlparser::parser::ParserError;
+
+    fn try_from(
+        ScaleColumnSchema { name, data_type }: ScaleColumnSchema,
+    ) -> Result<Self, Self::Error> {
+        let name = Ident::new(name);
+
+        let parser = Parser::new(&PostgreSqlDialect {});
+
+        let data_type = parser.try_with_sql(&data_type).and_then(|mut parser| {
+            let data_type = parser.parse_data_type()?;
+
+            if parser.peek_token() == Token::EOF {
+                Ok(data_type)
+            } else {
+                Err(sqlparser::parser::ParserError::ParserError(
+                    "expected data type string to be a single data type".to_string(),
+                ))
+            }
+        })?;
+
+        Ok(ColumnDef {
+            name,
+            data_type,
+            collation: None,
+            options: Vec::new(),
+        })
+    }
+}
+
+fn table_schema_from_create_table(create_table: CreateTableBuilder) -> TableSchema {
+    create_table
+        .columns
+        .into_iter()
+        .map(ScaleColumnSchema::from)
+        .collect()
+}
+
+/// Returns a [`TableSchema`] inferred from the given [`CreateStatement`].
+pub fn table_schema_from_create_statement(
+    create_statement: CreateStatement,
+) -> Result<TableSchema, CreateStatementParseError> {
+    create_statement_to_sqlparser(create_statement).map(table_schema_from_create_table)
+}
+
+/// Errors that can occur when getting a table schema from chain state.
+#[derive(Snafu, Debug, Decode, Encode, TypeInfo)]
+#[snafu(module)]
+pub enum GetTableSchemaError {
+    #[snafu(display("table does not exist"))]
+    /// Table does not exist.
+    NoSuchTable,
+    #[snafu(display("stored table definition exceeds maximum size"))]
+    /// Stored table definition exceeds maximum size.
+    StatementTooLarge,
+    #[snafu(display("create statement does not store valid utf8"))]
+    /// Create statement does not store valid utf8.
+    NotUtf8,
+    #[snafu(display("failed to parse create statement"))]
+    /// Failed to parse create statement.
+    Parse,
+}
+
+impl From<CreateStatementParseError> for GetTableSchemaError {
+    fn from(error: CreateStatementParseError) -> Self {
+        match error {
+            CreateStatementParseError::StatementTooLarge => GetTableSchemaError::StatementTooLarge,
+            CreateStatementParseError::Utf8 { .. } => GetTableSchemaError::NotUtf8,
+            CreateStatementParseError::Sqlparser { .. } => GetTableSchemaError::Parse,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use alloc::string::String;
     use alloc::{format, vec};
-    use core::fmt::Debug;
 
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
-    use sqlparser::ast::{ColumnDef, DataType, Ident};
+    use sqlparser::ast::{ColumnDef, DataType, ExactNumberInfo, Ident, TimezoneInfo};
     use sqlparser::dialect::PostgreSqlDialect;
     use sqlparser::parser::Parser;
 
@@ -1077,74 +1245,84 @@ mod tests {
         let expected = "CREATE TABLE SOUTH.BOOK (ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME)) WITH (access_type = public_read, immutable = true, public_key = A1D9C617F01C9975117B3D605CD4F945853E263D6E52888EE6E3AF5CB0FA1026, TABLE_UUID = TESTUUID)";
         assert_eq!(expected, from_utf8(&result_statement).unwrap());
     }
-}
 
-/// The type of table that we are indexing
-#[derive(
-    Clone,
-    Encode,
-    Decode,
-    Eq,
-    PartialEq,
-    RuntimeDebug,
-    TypeInfo,
-    MaxEncodedLen,
-    Default,
-    Serialize,
-    Deserialize,
-)]
-pub enum TableType {
-    /// Core Blockchain table
-    #[default]
-    CoreBlockchain,
+    #[test]
+    fn we_can_convert_between_column_def_and_scale_column_schema() {
+        let expected_columns = [
+            (Ident::new("VARCHAR_COl"), DataType::Varchar(None)),
+            (Ident::new("TINYINT_COl"), DataType::TinyInt(None)),
+            (Ident::new("SMALLINT_COl"), DataType::SmallInt(None)),
+            (Ident::new("SMALLINT_COl"), DataType::SmallInt(None)),
+            (Ident::new("BIGINT_COl"), DataType::BigInt(None)),
+            (
+                Ident::new("DECIMAL_COl"),
+                DataType::Decimal(ExactNumberInfo::PrecisionAndScale(10, 2)),
+            ),
+            (Ident::new("BOOLEAN_COl"), DataType::Boolean),
+            (
+                Ident::new("TIMESTAMP_COl"),
+                DataType::Timestamp(None, TimezoneInfo::None),
+            ),
+            (Ident::new("BINARY_COl"), DataType::Binary(None)),
+        ]
+        .map(|(name, data_type)| ColumnDef {
+            name,
+            data_type,
+            options: Vec::new(),
+            collation: None,
+        });
 
-    /// Smart Contract Indexing
-    SCI,
+        expected_columns.into_iter().for_each(|expected| {
+            let actual = ColumnDef::try_from(ScaleColumnSchema::from(expected.clone())).unwrap();
 
-    /// Community Owned Table
-    Community,
-
-    /// Testing type
-    Testing(InsertQuorumSize),
-}
-
-impl From<TableType> for InsertQuorumSize {
-    fn from(table_type: TableType) -> Self {
-        match table_type {
-            TableType::CoreBlockchain => InsertQuorumSize {
-                public: Some(3),
-                privileged: None,
-            },
-            TableType::SCI => InsertQuorumSize {
-                public: Some(1),
-                privileged: None,
-            },
-            TableType::Community => InsertQuorumSize {
-                public: None,
-                privileged: Some(0),
-            },
-            TableType::Testing(quorum) => quorum,
-        }
+            assert_eq!(actual, expected);
+        });
     }
-}
 
-/// Commitment schemes
-#[derive(
-    Copy,
-    Clone,
-    Encode,
-    Decode,
-    Eq,
-    PartialEq,
-    RuntimeDebug,
-    TypeInfo,
-    MaxEncodedLen,
-    Serialize,
-    Deserialize,
-)]
-pub enum CommitmentScheme {
-    /// HyperKzg
-    HyperKzg,
-    /// dynamic dory
-    DynamicDory,
+    #[test]
+    fn we_cannot_create_column_def_from_invalid_scale_column_schema() {
+        let column_schema = ScaleColumnSchema {
+            name: "EXCESSIVE_DATA_TYPE".to_string(),
+            data_type: "Binary Varchar".to_string(),
+        };
+        assert!(ColumnDef::try_from(column_schema).is_err());
+
+        let column_schema = ScaleColumnSchema {
+            name: "SQL_NOT_DATA_TYPE".to_string(),
+            data_type: "SELECT * FROM TABLE".to_string(),
+        };
+        assert!(ColumnDef::try_from(column_schema).is_err());
+
+        let column_schema = ScaleColumnSchema {
+            name: "NOTHING".to_string(),
+            data_type: "".to_string(),
+        };
+        assert!(ColumnDef::try_from(column_schema).is_err());
+    }
+
+    #[test]
+    fn we_can_create_table_schema_from_create_statement() {
+        let create_statement = create_statement("CREATE TABLE SOUTH.BOOK (ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME)) WITH (access_type = public_read, immutable = true, public_key = A1D9C617F01C9975117B3D605CD4F945853E263D6E52888EE6E3AF5CB0FA1026, TABLE_UUID = TESTUUID)");
+
+        let table_schema = table_schema_from_create_statement(create_statement).unwrap();
+        let expected = vec![
+            ScaleColumnSchema {
+                name: "ID".to_string(),
+                data_type: "INT".to_string(),
+            },
+            ScaleColumnSchema {
+                name: "NAME".to_string(),
+                data_type: "VARCHAR".to_string(),
+            },
+        ];
+
+        assert_eq!(table_schema, expected);
+    }
+
+    #[test]
+    fn we_cannot_create_table_schema_from_invalid_create_statement() {
+        let create_statement = create_statement("SELECT * FROM NOT.CREATE");
+
+        assert!(table_schema_from_create_statement(create_statement).is_err());
+    }
 }

@@ -6,9 +6,12 @@ use pallet_permissions::Pallet;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use sp_core::ConstU32;
 use sp_runtime::BoundedVec;
+use sqlparser::ast::{ColumnDef, DataType, ExactNumberInfo, Ident, TimezoneInfo};
 use sxt_core::permissions::{PermissionLevel, PermissionList, TablesPalletPermission};
 use sxt_core::tables::{
     CreateStatement,
+    GetTableSchemaError,
+    ScaleColumnSchema,
     Source,
     SourceAndMode,
     TableIdentifier,
@@ -433,5 +436,71 @@ fn test_get_or_generate_uuids_for_table_generates_uuids_if_missing() {
         );
         println!("✅ Table UUID: {:?}", table_uuid);
         println!("✅ Column UUIDs: {:?}", column_uuids);
+    });
+}
+
+#[test]
+fn we_can_get_table_schemas() {
+    new_test_ext().execute_with(|| {
+        let test_identifier = TableIdentifier {
+            name: b"BLOCKS".to_vec().try_into().unwrap(),
+            namespace: b"ETHEREUM".to_vec().try_into().unwrap(),
+        };
+
+        assert!(matches!(
+            Tables::table_schema(test_identifier.clone()),
+            Err(GetTableSchemaError::NoSuchTable)
+        ));
+
+        let ddl = r#"CREATE TABLE IF NOT EXISTS ETHEREUM.BLOCKS (
+            TIME_STAMP TIMESTAMP NOT NULL,
+            BLOCK_NUMBER BIGINT NOT NULL,
+            BLOCK_HASH BINARY NOT NULL,
+            GAS_LIMIT DECIMAL(75, 0) NOT NULL,
+            TRANSACTION_COUNT INT NOT NULL,
+            PRIMARY KEY (BLOCK_NUMBER)
+        ) WITH (TABLE_UUID=F801A872785FAB3F16C51CF7A1969000);"#;
+
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::CoreBlockchain,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+            source: Source::Ethereum,
+        }])
+        .expect("Table list should fit in BoundedVec");
+
+        Tables::create_tables(RuntimeOrigin::root(), tables.clone()).unwrap();
+
+        let table_schema = Tables::table_schema(test_identifier)
+            .unwrap()
+            .into_iter()
+            .map(|column_schema| ColumnDef::try_from(column_schema).unwrap())
+            .collect::<Vec<_>>();
+
+        let expected_columns = [
+            (
+                Ident::new("TIME_STAMP"),
+                DataType::Timestamp(None, TimezoneInfo::None),
+            ),
+            (Ident::new("BLOCK_NUMBER"), DataType::BigInt(None)),
+            (Ident::new("BLOCK_HASH"), DataType::Binary(None)),
+            (
+                Ident::new("GAS_LIMIT"),
+                DataType::Decimal(ExactNumberInfo::PrecisionAndScale(75, 0)),
+            ),
+            (Ident::new("TRANSACTION_COUNT"), DataType::Int(None)),
+        ]
+        .map(|(name, data_type)| ColumnDef {
+            name,
+            data_type,
+            options: Vec::new(),
+            collation: None,
+        });
+
+        assert_eq!(table_schema, expected_columns);
     });
 }

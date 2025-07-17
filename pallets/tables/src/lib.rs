@@ -16,6 +16,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub mod runtime_api;
+
 pub mod weights;
 pub use weights::*;
 
@@ -50,6 +52,7 @@ pub mod pallet {
         generate_namespace_uuid,
         generate_table_uuid,
         sqlparser_to_create_statement,
+        table_schema_from_create_statement,
         update_uuid_in_create_table_statement,
         uuids_from_create_statement,
         uuids_from_sqlparser,
@@ -57,6 +60,7 @@ pub mod pallet {
         CommitmentBytes,
         CommitmentScheme,
         CreateStatement,
+        GetTableSchemaError,
         IdentifierList,
         IndexerMode,
         InsertQuorumSize,
@@ -66,6 +70,7 @@ pub mod pallet {
         TableIdentifier,
         TableName,
         TableNamespace,
+        TableSchema,
         TableType,
         TableUuid,
         TableVersion,
@@ -848,6 +853,18 @@ pub mod pallet {
 
             Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
             Ok(())
+        }
+
+        /// Returns the schema for the given table identifier.
+        pub fn table_schema(
+            table_identifier: TableIdentifier,
+        ) -> Result<TableSchema, GetTableSchemaError> {
+            let create_statement = Self::schemas(table_identifier.namespace, table_identifier.name)
+                .ok_or(GetTableSchemaError::NoSuchTable)?;
+
+            let table_schema = table_schema_from_create_statement(create_statement)?;
+
+            Ok(table_schema)
         }
     }
 }

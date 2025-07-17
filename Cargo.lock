@@ -11999,6 +11999,7 @@ dependencies = [
  "parity-scale-codec",
  "proof-of-sql-commitment-map",
  "scale-info",
+ "sp-api",
  "sp-core",
  "sp-io",
  "sp-runtime",
