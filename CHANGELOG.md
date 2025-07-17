@@ -1,3 +1,12 @@
+# [1.14.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.13.0...v1.14.0) (2025-07-17)
+
+
+### Features
+
+* add proof-of-sql-unversioned crate ([9071830](https://github.com/spaceandtimefdn/sxt-node/commit/907183000368e206fdb35ffc92329dd9fa929a73))
+
+
+
 # [1.13.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.12.0...v1.13.0) (2025-07-01)
 
 
@@ -38,15 +47,6 @@
 * Added transactions for updating table and namespace UUIDs ([2c248f3](https://github.com/spaceandtimefdn/sxt-node/commit/2c248f3458d1802b804ae2d99e642eef460ebe74))
 * Update schemas WITH statement on-chain when a UUID is updated ([5b3327a](https://github.com/spaceandtimefdn/sxt-node/commit/5b3327a87d358af2fd3ffda294d74d9157304830))
 * Updated generate_uuid to follow same algorithm as other services ([64661bf](https://github.com/spaceandtimefdn/sxt-node/commit/64661bfa023839b63385b80a500e497d0b220184))
-
-
-
-# [1.9.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.8.0...v1.9.0) (2025-06-17)
-
-
-### Features
-
-* add use retry rpc client for testnet ([0866372](https://github.com/spaceandtimefdn/sxt-node/commit/0866372505ae231b88a5ca81736812e7c9b32326))
 
 
 
