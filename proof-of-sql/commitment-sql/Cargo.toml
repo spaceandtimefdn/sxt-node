@@ -15,6 +15,7 @@ itertools.workspace = true
 on-chain-table.workspace = true
 proof-of-sql.workspace = true
 proof-of-sql-commitment-map.workspace = true
+proof-of-sql-unversioned.workspace = true
 rayon = { workspace = true, optional = true }
 snafu.workspace = true
 sqlparser.workspace = true

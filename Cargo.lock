@@ -3868,6 +3868,7 @@ dependencies = [
  "proof-of-sql",
  "proof-of-sql-commitment-map",
  "proof-of-sql-static-setups",
+ "proof-of-sql-unversioned",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rayon",
@@ -13957,6 +13958,16 @@ dependencies = [
  "snafu 0.8.5",
  "tokio",
  "url",
+]
+
+[[package]]
+name = "proof-of-sql-unversioned"
+version = "0.1.0"
+dependencies = [
+ "itertools 0.12.1",
+ "proof-of-sql",
+ "snafu 0.8.5",
+ "sqlparser",
 ]
 
 [[package]]
