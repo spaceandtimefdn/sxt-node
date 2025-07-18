@@ -1,3 +1,7 @@
+## [1.15.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.15.0...v1.15.1) (2025-07-18)
+
+
+
 # [1.15.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.14.0...v1.15.0) (2025-07-17)
 
 
@@ -38,16 +42,6 @@
 
 * Added chain-utils support for changing all table uuids in a given DDL ([9a722df](https://github.com/spaceandtimefdn/sxt-node/commit/9a722dfbcecbaf44ec84cffe7b06acc667e08783))
 * Updated the sxt_chain subxt generated code ([038d4bb](https://github.com/spaceandtimefdn/sxt-node/commit/038d4bb1054c85c32a84e7e89132befeacf32bc5))
-
-
-
-# [1.11.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.10.0...v1.11.0) (2025-06-20)
-
-
-### Features
-
-* add pallet_migrations to runtime ([e7b7136](https://github.com/spaceandtimefdn/sxt-node/commit/e7b7136ee644aea09cca3335af1e0516485e0441))
-* upgrade runtime spec_version to 229 ([d099ed0](https://github.com/spaceandtimefdn/sxt-node/commit/d099ed06c5d86c5785f3fff91d734ca1100162be))
 
 
 
