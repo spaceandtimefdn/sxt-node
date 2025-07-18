@@ -227,7 +227,7 @@ At the last block of Epoch 5 in each era, the election will take place and keys 
 
 ### Step 1: Approve Token Spend
 Send a transaction to the token contract to approve the staking contract to spend your tokens:
-- Go to SXT token contract address in etherscan: [0xE6Bfd33F52d82Ccb5b37E16D3dD81f9FFDAbB195](https://etherscan.io/address/0xE6Bfd33F52d82Ccb5b37E16D3dD81f9FFDAbB195) (SpaceAndTime)
+- Go to SXT token contract address in etherscan: [0xE6Bfd33F52d82Ccb5b37E16D3dD81f9FFDAbB195](https://etherscan.io/token/0xE6Bfd33F52d82Ccb5b37E16D3dD81f9FFDAbB195#writeContract) (SpaceAndTime)
 - Select "write" button in this contract and connect with your Ethereum wallet (same wallet where you have your SXT tokens)
 - Send an `approve` transaction with:
   - The **staking contract address** 0x93d176dd54FF38b08f33b4Fc62573ec80F1da185 (Staking)
@@ -238,7 +238,7 @@ Send a transaction to the token contract to approve the staking contract to spen
 
 ### Step 2: Stake Tokens
 Stake your desired amount using the **staking contract**. You must stake a minimum of 100 SXT or 100000000000000000000 units
-- Go to Staking contract address in etherscan: [0x93d176dd54FF38b08f33b4Fc62573ec80F1da185](https://etherscan.io/address/0x93d176dd54FF38b08f33b4Fc62573ec80F1da185) (Staking)
+- Go to Staking contract address in etherscan: [0x93d176dd54FF38b08f33b4Fc62573ec80F1da185](https://etherscan.io/address/0x93d176dd54FF38b08f33b4Fc62573ec80F1da185#writeContract) (Staking)
 - Select "write" button in this contract and connect with your Ethereum wallet (same wallet where you have your SXT tokens)
 - Execute `stake` transaction:
 
@@ -276,7 +276,8 @@ You’ll receive a response like:
 ```
 
 - Copy the `result` hex string.
-- Paste it into the `body` field of the **message transaction**.
+- Go to SessionKey Registration Contract address in etherscan: [0x70106a3247542069a3ee1AF4D6988a5f34b31cE1](https://etherscan.io/address/0x70106a3247542069a3ee1AF4D6988a5f34b31cE1#writeContract) (SXTChainMessaging)
+- Paste the hex string into the `body` field of the **message transaction**.
 - This also triggers `validate()` to activate your node.
 
   ![Etherscan Register Keys Transaction](./assets/message.png)
