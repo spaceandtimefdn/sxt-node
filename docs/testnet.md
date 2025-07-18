@@ -255,7 +255,7 @@ At the last block of Epoch 5 in each era, the election will take place and keys 
 
 ### Step 1: Approve Token Spend
 Send a transaction to the token contract to approve the staking contract to spend your test tokens:
-- Go to SXT token contract address in etherscan: [0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839](https://sepolia.etherscan.io/address/0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839) (SpaceAndTime)
+- Go to SXT token contract address in etherscan: [0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839](https://sepolia.etherscan.io/token/0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839#writeContract) (SpaceAndTime)
 - Select "write" button in this contract and connect with your Ethereum wallet (same wallet where you have your SXT tokens)
 - Send an `approve` transaction with:
   - The **staking contract address** 0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab (Staking)
@@ -266,7 +266,7 @@ Send a transaction to the token contract to approve the staking contract to spen
 
 ### Step 2: Stake Tokens
 Stake your desired amount using the **staking contract**. You must stake a minimum of 100 SXT or 100000000000000000000 units
-- Go to Staking contract address in etherscan: [0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab](https://sepolia.etherscan.io/address/0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab) (Staking)
+- Go to Staking contract address in etherscan: [0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab](https://sepolia.etherscan.io/address/0x7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab#writeContract) (Staking)
 - Select "write" button in this contract and connect with your Ethereum wallet (same wallet where you have your SXT tokens)
 - Execute `stake` transaction:
 
@@ -304,7 +304,8 @@ You’ll receive a response like:
 ```
 
 - Copy the `result` hex string.
-- Paste it into the `body` field of the **message transaction**.
+- Go to SessionKey Registration Contract address in etherscan: [0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118](https://sepolia.etherscan.io/address/0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118#writeContract) (SXTChainMessaging)
+- Paste the hex string into the `body` field of the **message transaction**.
 - This also triggers `validate()` to activate your node.
 
   ![Etherscan Register Keys Transaction](./assets/message.png)
