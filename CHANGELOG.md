@@ -1,3 +1,12 @@
+# [1.16.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.15.1...v1.16.0) (2025-07-22)
+
+
+### Features
+
+* Update ZKpay to understand assets ([fb7353c](https://github.com/spaceandtimefdn/sxt-node/commit/fb7353ce2bc5623d10292ddf08ed819398289954))
+
+
+
 ## [1.15.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.15.0...v1.15.1) (2025-07-18)
 
 
@@ -32,16 +41,6 @@
 * Add support for SmallInt to OnChainTable ([af5dc1b](https://github.com/spaceandtimefdn/sxt-node/commit/af5dc1b0761b6e3d156cdacfa6b9eed499609eae))
 * Increase runtime version to 230 ([0ec6fdb](https://github.com/spaceandtimefdn/sxt-node/commit/0ec6fdb04d7f75727f696785f316bc6801e18942))
 * Refactor system tables, putting ZKpay in its own pallet ([2daafc9](https://github.com/spaceandtimefdn/sxt-node/commit/2daafc9c20ddc64669a3922b274288919443bccf))
-
-
-
-# [1.12.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.11.0...v1.12.0) (2025-06-23)
-
-
-### Features
-
-* Added chain-utils support for changing all table uuids in a given DDL ([9a722df](https://github.com/spaceandtimefdn/sxt-node/commit/9a722dfbcecbaf44ec84cffe7b06acc667e08783))
-* Updated the sxt_chain subxt generated code ([038d4bb](https://github.com/spaceandtimefdn/sxt-node/commit/038d4bb1054c85c32a84e7e89132befeacf32bc5))
 
 
 
