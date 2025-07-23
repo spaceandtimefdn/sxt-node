@@ -26,9 +26,7 @@ postcard = { workspace = true, features = ["alloc"] }
 on-chain-table = { workspace = true, default-features = false }
 tonic = { workspace = true, optional = true }
 arrow = { workspace = true, optional = true, features = ["ipc"]}
-arrow-flight = { workspace = true, optional = true, features = ["flight-sql-experimental"] }
 subxt = { workspace = true, optional = true, features = ["native", "reconnecting-rpc-client"] }
-data-loader = { workspace = true, optional = true }
 glob.workspace = true
 tokio = { workspace = true, optional = true }
 sc-client-api = { workspace = true, default-features = false, optional = true }
@@ -64,9 +62,7 @@ std = [
 	"dep:tokio",
 	"dep:tonic",
 	"dep:arrow",
-	"dep:arrow-flight",
 	"dep:subxt",
-	"dep:data-loader",
 	"dep:sp-api",
 	"dep:sc-client-api",
 	"dep:sp-blockchain",

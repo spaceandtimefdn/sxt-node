@@ -263,7 +263,6 @@ pub struct NewFullBase {
 /// Creates a full service from the configuration.
 pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
     config: Configuration,
-    with_db: bool,
 ) -> Result<NewFullBase, ServiceError> {
     let role = config.role;
     let force_authoring = config.force_authoring;
@@ -463,14 +462,6 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
         );
     }
 
-    if with_db {
-        sxt_core::sql::spawn_flightsql_tasks::<FullClient, Block, FullBackend>(
-            "flightsql-task",
-            &task_manager.spawn_essential_handle(),
-            client.clone(),
-        );
-    }
-
     // if the node isn't actively participating in consensus then it doesn't
     // need a keystore, regardless of which protocol we use below.
     let keystore = if role.is_authority() {
@@ -577,18 +568,17 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 /// Builds a new service for a full client.
 pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceError> {
     let database_path = config.database.path().map(Path::to_path_buf);
-    let with_db = cli.with_db;
 
     futures::executor::block_on(initialize_from_config(&cli.proof_of_sql_public_setup_args))
         .map_err(|e| ServiceError::Other(e.to_string()))?;
 
     let task_manager = match config.network.network_backend {
         sc_network::config::NetworkBackendType::Libp2p => {
-            new_full_base::<sc_network::NetworkWorker<_, _>>(config, with_db)
+            new_full_base::<sc_network::NetworkWorker<_, _>>(config)
                 .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
         sc_network::config::NetworkBackendType::Litep2p => {
-            new_full_base::<sc_network::Litep2pNetworkBackend>(config, with_db)
+            new_full_base::<sc_network::Litep2pNetworkBackend>(config)
                 .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
     };

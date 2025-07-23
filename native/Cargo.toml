@@ -21,7 +21,6 @@ frame-system = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false}
 tonic = { workspace = true, optional = true }
 arrow = { workspace = true, optional = true, features = ["ipc"]}
-arrow-flight = { workspace = true, optional = true, features = ["flight-sql-experimental"] }
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
 proof-of-sql-static-setups = { workspace = true, optional = true, features = ["io"] }
 futures = { features = ["thread-pool"], workspace = true, optional = true }
@@ -41,7 +40,6 @@ std = [
     "dep:commitment-sql",
     "dep:on-chain-table",
     "dep:proof-of-sql-static-setups",
-    "dep:arrow-flight",
     "dep:tonic",
     "dep:futures",
     "sp-runtime/std",

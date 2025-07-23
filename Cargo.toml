@@ -19,7 +19,6 @@ members = [
     "proof-of-sql/commitment-map",
     "runtime",
     "sxt-core",
-    "data-loader",
     "proof-of-sql/on-chain-table",
     "proof-of-sql/commitment-sql",
     "proof-of-sql/static-setups",
@@ -57,9 +56,7 @@ bigdecimal = { version = "0.4.5", default-features = false }
 bincode = { version = "2.0.0", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
 commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
-data-loader = { path = "./data-loader", default-features = false }
 datafusion = { version = "38.0.0", default-features = false }
-arrow-flight = { version = "54.2.1", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-rewards = { path = "./pallets/rewards", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
