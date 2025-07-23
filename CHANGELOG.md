@@ -1,3 +1,7 @@
+## [1.17.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.17.0...v1.17.1) (2025-07-23)
+
+
+
 # [1.17.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.16.0...v1.17.0) (2025-07-23)
 
 
@@ -30,15 +34,6 @@
 * add TablesApi runtime API ([b7190ec](https://github.com/spaceandtimefdn/sxt-node/commit/b7190ecad8e1ed20ac81a2a19449cb765ec49ffb))
 * convert create statements to communicable table schemas ([3da49df](https://github.com/spaceandtimefdn/sxt-node/commit/3da49df76cf3bb85ee802dddb9b11b35344a62f0))
 * upgrade runtime spec_version to 231 ([dbf7598](https://github.com/spaceandtimefdn/sxt-node/commit/dbf75983568197ac2412c3ea4e2864e845280db3))
-
-
-
-# [1.14.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.13.0...v1.14.0) (2025-07-17)
-
-
-### Features
-
-* add proof-of-sql-unversioned crate ([9071830](https://github.com/spaceandtimefdn/sxt-node/commit/907183000368e206fdb35ffc92329dd9fa929a73))
 
 
 
