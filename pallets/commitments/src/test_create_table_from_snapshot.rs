@@ -25,6 +25,7 @@ use crate::Error;
 struct ProcessCreateTableFromSnapshotTestParams {
     sql_statement: String,
     snapshot_data: OnChainTable,
+    commitment_schemes: CommitmentSchemeFlags,
 }
 
 impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
@@ -53,9 +54,12 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
         ])
         .unwrap();
 
+        let commitment_schemes = CommitmentSchemeFlags::all();
+
         ProcessCreateTableFromSnapshotTestParams {
             sql_statement,
             snapshot_data,
+            commitment_schemes,
         }
     }
 
@@ -67,7 +71,8 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
         let commitments = PUBLIC_SETUPS
             .get()
             .unwrap()
-            .into_iter()
+            .select(&self.commitment_schemes)
+            .into_flat_iter()
             .map(|any| {
                 any.map(OnChainTableToTableCommitmentFn::new(&self.snapshot_data, 0))
                     .transpose_result()

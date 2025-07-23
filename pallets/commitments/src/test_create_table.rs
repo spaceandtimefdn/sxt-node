@@ -16,6 +16,7 @@ use crate::Error;
 /// Test parameters for process_create_table_and_initiate_commitments.
 pub struct ProcessCreateTableTestParams {
     sql_statement: String,
+    commitment_schemes: CommitmentSchemeFlags,
 }
 
 impl CreateTableApiTestParams for ProcessCreateTableTestParams {
@@ -26,7 +27,12 @@ impl CreateTableApiTestParams for ProcessCreateTableTestParams {
             PRIMARY KEY (animal))"
             .to_string();
 
-        ProcessCreateTableTestParams { sql_statement }
+        let commitment_schemes = CommitmentSchemeFlags::all();
+
+        ProcessCreateTableTestParams {
+            sql_statement,
+            commitment_schemes,
+        }
     }
 
     fn set_sql_statement(&mut self, sql_text: String) {
@@ -42,7 +48,10 @@ impl CreateTableApiTestParams for ProcessCreateTableTestParams {
             .try_into()
             .unwrap();
 
-        CommitmentsModule::process_create_table_and_initiate_commitments(create_table)
+        CommitmentsModule::process_create_table_and_initiate_commitments_with_scheme(
+            create_table,
+            self.commitment_schemes,
+        )
     }
 }
 
