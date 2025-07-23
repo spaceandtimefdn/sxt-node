@@ -1,3 +1,13 @@
+# [1.17.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.16.0...v1.17.0) (2025-07-23)
+
+
+### Features
+
+* SDO-300 Remove Data-Loader, FlightSQL, and snapshots data ([bc1ef63](https://github.com/spaceandtimefdn/sxt-node/commit/bc1ef63dd7e93417b11c5eaaa79942b28a0f484d))
+* SDO-300 remove sxtnode.sh wrapper and flightsql scripts ([727d542](https://github.com/spaceandtimefdn/sxt-node/commit/727d542d32a60db6eee4fbcfbba248520c16126c))
+
+
+
 # [1.16.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.15.1...v1.16.0) (2025-07-22)
 
 
@@ -29,18 +39,6 @@
 ### Features
 
 * add proof-of-sql-unversioned crate ([9071830](https://github.com/spaceandtimefdn/sxt-node/commit/907183000368e206fdb35ffc92329dd9fa929a73))
-
-
-
-# [1.13.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.12.0...v1.13.0) (2025-07-01)
-
-
-### Features
-
-* Add parse module to sxt_core for parsing system requests out of ([153c2f6](https://github.com/spaceandtimefdn/sxt-node/commit/153c2f6c445c873e4470166514d0e8016a11324e))
-* Add support for SmallInt to OnChainTable ([af5dc1b](https://github.com/spaceandtimefdn/sxt-node/commit/af5dc1b0761b6e3d156cdacfa6b9eed499609eae))
-* Increase runtime version to 230 ([0ec6fdb](https://github.com/spaceandtimefdn/sxt-node/commit/0ec6fdb04d7f75727f696785f316bc6801e18942))
-* Refactor system tables, putting ZKpay in its own pallet ([2daafc9](https://github.com/spaceandtimefdn/sxt-node/commit/2daafc9c20ddc64669a3922b274288919443bccf))
 
 
 
