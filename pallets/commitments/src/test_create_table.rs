@@ -15,8 +15,10 @@ use crate::Error;
 
 /// Test parameters for process_create_table_and_initiate_commitments.
 pub struct ProcessCreateTableTestParams {
-    sql_statement: String,
-    commitment_schemes: CommitmentSchemeFlags,
+    /// The sql statement used to create the table.
+    pub sql_statement: String,
+    /// The commitment schemes used for the table.
+    pub commitment_schemes: CommitmentSchemeFlags,
 }
 
 impl CreateTableApiTestParams for ProcessCreateTableTestParams {
