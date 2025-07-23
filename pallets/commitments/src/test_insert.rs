@@ -23,6 +23,7 @@ use crate::test_create_table::ProcessCreateTableTestParams;
 use crate::test_create_table_generic::CreateTableApiTestParams;
 use crate::Error;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct ProcessInsertTestParams {
     table_id: TableIdentifier,
     insert_data: OnChainTable,
