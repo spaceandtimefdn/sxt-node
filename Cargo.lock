@@ -13159,9 +13159,9 @@ dependencies = [
 
 [[package]]
 name = "proof-of-sql"
-version = "0.99.3"
+version = "0.114.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee2bf1a51c5572d108ffa38f31c16d6f980062481049180f4dbf81ae17310604"
+checksum = "99b2fee7691ac9f58b64cb49509ce22765aae7af98941789b24d74635d265841"
 dependencies = [
  "ahash 0.8.11",
  "ark-bls12-381 0.5.0",
@@ -13176,7 +13176,6 @@ dependencies = [
  "bigdecimal",
  "bincode 2.0.0",
  "bit-iter",
- "blake3",
  "bnum",
  "bumpalo",
  "byte-slice-cast",
@@ -13228,9 +13227,9 @@ dependencies = [
 
 [[package]]
 name = "proof-of-sql-parser"
-version = "0.99.3"
+version = "0.114.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b4f527a70b1f94a0c05a7fcdae00ac841e1dd501cc6ad7a64c2587664a92258"
+checksum = "8b375c5a9cf5ecc0b3b1538049bc6aa3df5f779859480c8978e57e9dd4f412df"
 dependencies = [
  "arrayvec 0.7.6",
  "bigdecimal",
@@ -13244,9 +13243,9 @@ dependencies = [
 
 [[package]]
 name = "proof-of-sql-planner"
-version = "0.99.3"
+version = "0.114.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab2b58418cb80a1b048e2e7710c51a2b09b36fc17444e8f4ba4ffb29e5d2f468"
+checksum = "ff5fc0cb214645845e4c37f1da6d61fc0d3aede712f36355faecb3e10d4cb8d5"
 dependencies = [
  "ahash 0.8.11",
  "arrow 51.0.0",
@@ -19703,12 +19702,11 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.15.1"
+version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0f540e3240398cce6128b64ba83fdbdd86129c16a3aa1a3a252efd66eb3d587"
+checksum = "b3758f5e68192bb96cc8f9b7e2c2cfdabb435499a28499a42f8f984092adad4b"
 dependencies = [
- "getrandom 0.3.1",
- "js-sys",
+ "getrandom 0.2.15",
  "wasm-bindgen",
 ]
 

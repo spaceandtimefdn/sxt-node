@@ -87,8 +87,8 @@ lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
 on-chain-table = { path = "./proof-of-sql/on-chain-table/", default-features = false }
 postcard = { version = "1.0.10", default-features = false }
 primitive-types = { version = "0.12.2", default-features = false }
-proof-of-sql = { version = "0.99.0", default-features = false }
-proof-of-sql-planner = { version = "0.99.0", default-features = false }
+proof-of-sql = { version = "0.114.0", default-features = false }
+proof-of-sql-planner = { version = "0.114.0", default-features = false }
 proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
 proof-of-sql-static-setups = { path = "./proof-of-sql/static-setups/", default-features = false }
 proof-of-sql-unversioned = { path = "./proof-of-sql/unversioned/", default-features = false }
