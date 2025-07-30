@@ -10014,11 +10014,14 @@ dependencies = [
 name = "pallet-commitments"
 version = "0.1.0"
 dependencies = [
+ "clap 4.5.32",
  "commitment-sql",
+ "env_logger 0.11.6",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "itertools 0.12.1",
+ "log",
  "native-api",
  "on-chain-table",
  "parity-scale-codec",
@@ -10033,6 +10036,7 @@ dependencies = [
  "sp-runtime",
  "sqlparser",
  "sxt-core",
+ "tokio",
 ]
 
 [[package]]
