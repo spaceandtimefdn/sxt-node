@@ -2,8 +2,9 @@ use attestation_tree::{AttestationTreeError, AttestationTreeProofError};
 use jsonrpsee::types::ErrorObjectOwned;
 use proof_of_sql_planner::PlannerError;
 use snafu::Snafu;
-use sxt_core::tables::TableIdentifierConversionError;
+use sxt_core::tables::{GetTableSchemaError, TableIdentifierConversionError};
 
+use super::query_schema::TableToProofOfSqlSchemaError;
 use crate::commitments::limits::{NUM_TABLES_LIMIT, PROOF_PLAN_SIZE_LIMIT, QUERY_SIZE_LIMIT};
 
 /// The base error code used by the commitments RPCs.
@@ -106,18 +107,6 @@ pub enum CommitmentsApiError {
         /// The source runtime api error.
         source: sp_api::ApiError,
     },
-    /// Unexpected table to commitment mismap.
-    #[snafu(display("unexpected table ref to commitment mismap, statement has {num_tables} tables but runtime api returned {num_commitments} commitments"))]
-    UnexpectedTableCommitmentMismap {
-        num_tables: usize,
-        num_commitments: usize,
-    },
-    /// Failed to deserialize table commitment.
-    #[snafu(display("failed to deserialize table commitment: {source}"))]
-    DeserializeTableCommitment {
-        /// The source bincode error.
-        source: bincode::error::DecodeError,
-    },
     /// Encountered error in proof-of-sql planner.
     #[snafu(
         display("encountered error in proof-of-sql planner: {source}"),
@@ -127,17 +116,39 @@ pub enum CommitmentsApiError {
         /// The osource planner error.
         source: PlannerError,
     },
-    /// Tables do not exist or have incomplete commitment coverage for all schemes.
-    #[snafu(display(
-        "tables do not exist or have incomplete commitment coverage for all schemes"
-    ))]
-    IncompleteCommitmentCoverage,
     /// Failed to encode proof plan.
     #[snafu(display("failed to encode proof plan: {source}"), context(false))]
     EncodeProofPlan {
         /// The source bincode error.
         source: bincode::error::EncodeError,
     },
+    /// No such table
+    #[snafu(display("no such table"))]
+    NoSuchTable,
+    /// Invalid table metadata in storage for
+    #[snafu(display("invalid table metadata in storage: {error}"))]
+    InvalidTableSchema {
+        /// The source error.
+        error: GetTableSchemaError,
+    },
+    /// Unable to convert on-chain schema to proof-of-sql schema.
+    #[snafu(
+        display("unable to convert on-chain schema to proof-of-sql schema: {source}"),
+        context(false)
+    )]
+    ProofOfSqlSchemaConversion {
+        /// The source conversion error
+        source: TableToProofOfSqlSchemaError,
+    },
+}
+
+impl From<GetTableSchemaError> for CommitmentsApiError {
+    fn from(error: GetTableSchemaError) -> Self {
+        match error {
+            GetTableSchemaError::NoSuchTable => CommitmentsApiError::NoSuchTable,
+            error => CommitmentsApiError::InvalidTableSchema { error },
+        }
+    }
 }
 
 impl From<CommitmentsApiError> for ErrorObjectOwned {
@@ -160,11 +171,11 @@ impl From<CommitmentsApiError> for ErrorObjectOwned {
                 CommitmentsApiError::NotOneStatement { .. } => 12,
                 CommitmentsApiError::ProofOfSqlIncompatibleRelation { .. } => 13,
                 CommitmentsApiError::RuntimeApi { .. } => 14,
-                CommitmentsApiError::UnexpectedTableCommitmentMismap { .. } => 15,
-                CommitmentsApiError::DeserializeTableCommitment { .. } => 16,
                 CommitmentsApiError::Planner { .. } => 17,
-                CommitmentsApiError::IncompleteCommitmentCoverage => 18,
                 CommitmentsApiError::EncodeProofPlan { .. } => 19,
+                CommitmentsApiError::NoSuchTable { .. } => 20,
+                CommitmentsApiError::InvalidTableSchema { .. } => 21,
+                CommitmentsApiError::ProofOfSqlSchemaConversion { .. } => 22,
             };
 
         ErrorObjectOwned::owned(code, message, None::<()>)

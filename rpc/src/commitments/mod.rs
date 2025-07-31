@@ -8,6 +8,10 @@ pub use api::CommitmentsApiServer;
 mod api_impl;
 pub use api_impl::CommitmentsApiImpl;
 
-mod proof_plan_for_query_and_commitments;
+mod proof_plan_no_normalization;
 
-mod statement_and_associated_table_refs;
+mod query_schema;
+
+mod column_type_conversion {
+    proof_of_sql_unversioned::impl_sqlparser_proof_of_sql_type_conversion!();
+}

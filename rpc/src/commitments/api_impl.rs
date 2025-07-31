@@ -11,13 +11,12 @@ use attestation_tree::{
 };
 use codec::Decode;
 use frame_support::traits::StorageInstance;
-use pallet_commitments::runtime_api::CommitmentsApi;
 use pallet_system_contracts::_GeneratedPrefixForStorageStakingContract;
 use proof_of_sql::sql::evm_proof_plan::EVMProofPlan;
 use proof_of_sql::sql::proof::ProofPlan;
 use proof_of_sql::sql::proof_plans::DynProofPlan;
 use proof_of_sql_commitment_map::{CommitmentScheme, TableCommitmentBytes};
-use proof_of_sql_planner::statement_with_uppercase_identifiers;
+use proof_of_sql_planner::{get_table_refs_from_statement, statement_with_uppercase_identifiers};
 use sc_client_api::{Backend as BackendT, StorageKey, StorageProvider};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
@@ -27,10 +26,11 @@ use sqlparser::dialect::GenericDialect;
 use sqlparser::parser::Parser;
 use sxt_core::tables::TableIdentifier;
 use sxt_core::utils::proof_of_sql_bincode_config;
-use sxt_runtime::pallet_commitments;
+use sxt_runtime::pallet_tables;
+use sxt_runtime::pallet_tables::runtime_api::TablesApi;
 
-use super::proof_plan_for_query_and_commitments::ProofPlanForQueryAndCommitments;
-use super::statement_and_associated_table_refs::StatementAndAssociatedTableRefs;
+use super::proof_plan_no_normalization::proof_plan_no_normalization;
+use super::query_schema::QuerySchema;
 use crate::commitments::api::{
     ProofPlanResponse,
     VerifiableCommitment,
@@ -85,12 +85,12 @@ where
         + StorageProvider<Block, Backend>
         + ProvideRuntimeApi<Block>
         + 'static,
-    Client::Api: pallet_commitments::runtime_api::CommitmentsApi<Block>,
+    Client::Api: TablesApi<Block>,
     Backend: BackendT<Block> + 'static,
     Block: BlockT + 'static,
     Config: Send
         + Sync
-        + pallet_commitments::Config
+        + pallet_tables::Config
         + pallet_balances::Config<(), Balance = u128>
         + pallet_system_contracts::Config
         + 'static,
@@ -225,34 +225,31 @@ where
 
         let statement = statement_with_uppercase_identifiers(statement);
 
-        let statement_and_associated_table_refs =
-            StatementAndAssociatedTableRefs::try_from(statement)?;
+        let table_refs = get_table_refs_from_statement(&statement)?;
 
-        let num_tables = statement_and_associated_table_refs.table_refs().len();
+        let num_tables = table_refs.len();
         if num_tables > NUM_TABLES_LIMIT {
             return Err(CommitmentsApiError::NumTablesLimit { num_tables });
         }
 
-        let table_identifiers = statement_and_associated_table_refs
-            .table_refs()
-            .iter()
-            .cloned()
-            .map(TableIdentifier::try_from)
-            .collect::<Result<Vec<_>, _>>()?
-            .try_into()
-            .expect("We've already verified that there are fewer than 64 tables");
-
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
 
-        let proof_plan = self
-            .client
-            .runtime_api()
-            .table_commitments_any_scheme(at, table_identifiers)?
-            .ok_or(CommitmentsApiError::IncompleteCommitmentCoverage)?
-            .map(ProofPlanForQueryAndCommitments(
-                statement_and_associated_table_refs,
-            ))
-            .unwrap()?;
+        let table_schemas = table_refs
+            .into_iter()
+            .map(|table_ref| {
+                let table_identifier = TableIdentifier::try_from(table_ref.clone())?;
+
+                let table_schema = self
+                    .client
+                    .runtime_api()
+                    .table_schema(at, table_identifier)??;
+                Ok((table_ref, table_schema))
+            })
+            .collect::<Result<Vec<_>, CommitmentsApiError>>()?;
+
+        let query_schema = QuerySchema::try_from_table_schemas(table_schemas)?;
+
+        let proof_plan = proof_plan_no_normalization(&statement, &query_schema)?;
 
         let proof_plan_bytes = bincode::serde::encode_to_vec(
             &proof_plan,
