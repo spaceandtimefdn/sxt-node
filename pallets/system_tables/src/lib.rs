@@ -1,4 +1,5 @@
-//! # System Tables Palledexing and
+//! # System Tables Pallet
+//! This pallet holds logic for parsing insert statements received via indexing and
 //! performing any system related on-chain state transitions
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -17,7 +18,6 @@ mod tests;
 
 mod messages;
 mod templates;
-mod utils;
 
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
@@ -312,11 +312,7 @@ pub mod pallet {
 
                         let stake_amount = amount.min(&U256::from(u128::MAX)).low_u128();
 
-                        //                        // Withdraw any unlocked funds to the free balance
-                        //                        pallet_staking::Pallet::<T>::withdraw_unbonded(staker_signer.clone(), 0u32)
-                        //                            .map_err(|e: DispatchErrorWithPostInfo<_>| e.error)?;
-
-                        // Now burn that unbonded amount from the account
+                        // Burn the unbonded amount from the account
                         pallet_balances::Pallet::<T>::burn(
                             staker_signer,
                             stake_amount.saturated_into(),
@@ -358,19 +354,16 @@ pub mod pallet {
                         let staker_signer: OriginFor<T> =
                             RawOrigin::Signed(staker_id.clone()).into();
 
-                        // Due to scope limitations on the variables in the staking pallet, we
-                        // can't actually look at in which the funds will unlock. For now the
+                        // The struct that represents when a particular batch of funds will unlock
+                        // has all fields private to the staking crate. For now the
                         // best we can do is to call the withdraw function and see if there are any
                         // balance changes.
-                        let r = pallet_staking::Pallet::<T>::withdraw_unbonded(staker_signer, 0u32);
-                        match r {
-                            Ok(_) => {}
-                            Err(e) => emit_for_error::<T>(Err(e.error)),
-                        };
+                        pallet_staking::Pallet::<T>::withdraw_unbonded(staker_signer, 0u32)
+                            .map_err(|e| e.error)?;
 
                         // Check if the user still has entries in the staking ledger
                         if let Some(ledger) = pallet_staking::Ledger::<T>::get(&staker_id) {
-                            // If this was a partial unlock we need to actaully check if the locks
+                            // If this was a partial unlock we need to actually check if the locks
                             // were removed by the withdrawal call. If they weren't the claim is
                             // unsuccessful and we return an error. Otherwise we emit the event
                             if pallet_staking::Pallet::<T>::is_unbonding(&staker_id)? {
@@ -379,7 +372,7 @@ pub mod pallet {
                             }
                         }
 
-                        // User is fully unbonded, so we stop here an emit an event
+                        // User is fully unbonded, so we emit an event
                         Pallet::<T>::deposit_event(Event::<T>::UnstakingClaimed {
                             claimer: staker_id.clone(),
                         });
@@ -398,19 +391,29 @@ pub mod pallet {
         request
             .rows()
             .map(|row| -> DispatchResult {
-                match row.get("STAKER") {
-                    Some(SystemFieldValue::Bytes(staker)) => {
+                match (row.get("STAKER"), row.get("AMOUNT")) {
+                    (
+                        Some(SystemFieldValue::Bytes(staker)),
+                        Some(SystemFieldValue::Decimal(amount)),
+                    ) => {
                         let staker = hex::encode(staker);
                         let staker_id =
                             sxt_core::utils::eth_address_to_substrate_account_id::<T>(&staker)?;
                         let staker_signer: OriginFor<T> =
                             RawOrigin::Signed(staker_id.clone()).into();
 
-                        let staking_balance: T::CurrencyBalance =
-                            pallet_balances::Pallet::<T>::free_balance(staker_id)
-                                .unique_saturated_into();
-                        pallet_staking::Pallet::<T>::unbond(staker_signer, staking_balance)
+                        let staking_ledger = pallet_staking::Pallet::<T>::ledger(
+                            sp_staking::StakingAccount::Stash(staker_id.clone()),
+                        )?;
+
+                        // If the user is trying to unstake more than the available stake, reduce
+                        // the amount to the available stake
+                        let stake_amount = amount.min(&U256::from(u128::MAX)).low_u128();
+                        let unstake_amount = stake_amount.min(staking_ledger.active);
+
+                        pallet_staking::Pallet::<T>::unbond(staker_signer, unstake_amount)
                             .map_err(|e| e.error)?;
+
                         Ok(())
                     }
                     _ => Err(Error::<T>::MissingExpectedField.into()),

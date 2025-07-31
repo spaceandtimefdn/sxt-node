@@ -306,7 +306,7 @@ fn initiating_unstake_fails_when_user_is_not_staked() {
 
         System::assert_has_event(RuntimeEvent::SystemTables(
             crate::Event::MessageProcessingError {
-                error: pallet_staking::Error::<Test>::NotController.into(),
+                error: pallet_staking::Error::<Test>::NotStash.into(),
             },
         ));
     });
