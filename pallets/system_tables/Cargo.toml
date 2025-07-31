@@ -61,6 +61,7 @@ sp-consensus-babe.workspace = true
 sp-core.workspace = true
 sp-io.workspace = true
 sp-runtime.workspace = true
+proof-of-sql-commitment-map.workspace = true
 
 [features]
 default = ["std"]

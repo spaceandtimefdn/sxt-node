@@ -32,11 +32,24 @@ sp-core.workspace = true
 sp-api.workspace = true
 sqlparser.workspace = true
 sxt-core.workspace = true
+snafu.workspace = true
+itertools.workspace = true
+
+sp-io = { default-features = true, workspace = true, optional = true }
+sp-runtime = { default-features = true, workspace = true, optional = true }
+clap = { workspace = true, optional = true, features = ["env", "derive"] }
+tokio = { workspace = true, optional = true, features = ["rt-multi-thread"] }
+env_logger = { workspace = true, optional = true }
+log = { workspace = true, optional = true }
 
 [dev-dependencies]
 sp-core = { default-features = true, workspace = true }
 sp-io = { default-features = true, workspace = true }
 sp-runtime = { default-features = true, workspace = true }
+
+[[bin]]
+name = "test_end_row_limits"
+required-features = ["test-end-row-limits"]
 
 [features]
 default = ["std"]
@@ -59,6 +72,7 @@ try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 ]
+test-end-row-limits = ["dep:sp-io", "dep:sp-runtime", "dep:clap", "proof-of-sql-static-setups/io", "dep:tokio", "dep:env_logger", "dep:log"]
 
 [lints]
 workspace = true

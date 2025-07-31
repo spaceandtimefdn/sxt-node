@@ -26,6 +26,8 @@ mod test_table_commitments;
 
 mod error_conversions;
 
+mod end_row_insert_simulation;
+
 pub mod runtime_api;
 pub use pallet::*;
 
@@ -52,6 +54,7 @@ pub mod pallet {
         CommitmentSchemeFlags,
         CommitmentStorageMapHandler,
         KeyExistsError,
+        PerCommitmentScheme,
         TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
         TableCommitmentBytesPerCommitmentSchemePassBy,
@@ -61,6 +64,7 @@ pub mod pallet {
     use sxt_core::tables::TableIdentifier;
 
     use super::*;
+    use crate::end_row_insert_simulation::table_commitment_end_row_insert_simulation_all_schemes;
 
     /// Commitment pallet, providing methods for pallet calls
     #[pallet::pallet]
@@ -68,7 +72,20 @@ pub mod pallet {
 
     /// The commitment pallet's configuration trait.
     #[pallet::config]
-    pub trait Config: frame_system::Config {}
+    pub trait Config: frame_system::Config {
+        /// The highest end row value commitments can have, per commitment scheme.
+        ///
+        /// In other words, the maximum table size per commitment scheme.
+        ///
+        /// Different commitment schemes require different `proof-of-sql` setups that have
+        /// different limits. A table will never accept inserts that make the table size exceed the
+        /// limits of any of its commitment schemes.
+        ///
+        /// `proof-of-sql` provides setups of various sizes, and the size of the setup correlates
+        /// to the table size limit. These setups only exist in native code, so it is important for
+        /// nodes of a runtime to use setups of sufficient size to maintain good standing.
+        const END_ROW_LIMITS_PER_SCHEME: PerCommitmentScheme<ConcreteType<u32>>;
+    }
 
     /// Mapping of tables to their current commitments, stored on chain.
     #[pallet::storage]
@@ -172,6 +189,8 @@ pub mod pallet {
         InsertDataDoesntMatchExistingCommitments,
         /// Table identifier already exists in commitment storage.
         TableAlreadyExists,
+        /// The insert cannot be performed as the resulting end row exceeds the limit
+        InsertExceedsLimit,
     }
 
     impl<T: Config> Pallet<T> {
@@ -230,9 +249,15 @@ pub mod pallet {
             create_table: CreateTableBuilder,
             snapshot_commitment_bytes: TableCommitmentBytesPerCommitmentScheme,
         ) -> Result<CreateTableAndCommitmentMetadata, Error<T>> {
-            let snapshot_commitments = snapshot_commitment_bytes
+            let snapshot_commitments: PerCommitmentScheme<_> = snapshot_commitment_bytes
                 .try_into()
                 .map_err(|_| Error::DeserializeCommitment)?;
+
+            let _end_row = table_commitment_end_row_insert_simulation_all_schemes(
+                0,
+                snapshot_commitments.clone(),
+                T::END_ROW_LIMITS_PER_SCHEME,
+            )?;
 
             let (create_table_and_commitment_metadata, snapshot_commitments) =
                 process_create_table_from_snapshot(
@@ -281,14 +306,27 @@ pub mod pallet {
         ) -> Result<InsertAndCommitmentMetadata, Error<T>> {
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
 
-            let previous_commitments = TableCommitmentBytesPerCommitmentSchemePassBy {
-                data: handler.get_commitments(&table),
+            let previous_commitments = handler.get_commitments(&table);
+
+            let previous_commitments_decoded = previous_commitments
+                .clone()
+                .try_into()
+                .map_err(|_| Error::DeserializeCommitment)?;
+
+            let previous_commitments_pass_by = TableCommitmentBytesPerCommitmentSchemePassBy {
+                data: previous_commitments,
             };
+
+            let _new_end_row = table_commitment_end_row_insert_simulation_all_schemes(
+                insert_data.num_rows() as u32,
+                previous_commitments_decoded,
+                T::END_ROW_LIMITS_PER_SCHEME,
+            )?;
 
             let table_bytes = insert_data.try_into()?;
 
             let (insert_with_meta_columns_bytes, commitments_bytes) =
-                I::process_insert(table.clone(), table_bytes, previous_commitments)?;
+                I::process_insert(table.clone(), table_bytes, previous_commitments_pass_by)?;
 
             let commitments_bytes = commitments_bytes.data;
 

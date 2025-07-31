@@ -1,4 +1,6 @@
 use frame_support::derive_impl;
+use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
+use proof_of_sql_commitment_map::PerCommitmentScheme;
 use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
 use sp_runtime::BuildStorage;
 
@@ -20,7 +22,12 @@ impl frame_system::Config for Test {
     type Block = Block;
 }
 
-impl pallet_commitments::Config for Test {}
+impl pallet_commitments::Config for Test {
+    const END_ROW_LIMITS_PER_SCHEME: PerCommitmentScheme<ConcreteType<u32>> = PerCommitmentScheme {
+        hyper_kzg: 4,
+        dynamic_dory: 3,
+    };
+}
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
