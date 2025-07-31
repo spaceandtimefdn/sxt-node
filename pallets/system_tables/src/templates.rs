@@ -92,7 +92,7 @@ fn get_staking_templates() -> Vec<SystemRequest> {
             ),
         },
         SystemRequest {
-            request_type: Staking(StakingSystemRequest::UnstakeCancelled),
+            request_type: Staking(StakingSystemRequest::UnstakeClaimed),
             fields: vec![("STAKER", SystemFieldType::Bytes).into()],
             table_id: TableIdentifier::from_str_unchecked("UNSTAKECLAIMED", "SXT_SYSTEM_STAKING"),
         },
