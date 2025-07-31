@@ -1,3 +1,17 @@
+# [1.18.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.17.1...v1.18.0) (2025-07-31)
+
+
+### Bug Fixes
+
+* configure and impose end row limits in commitments pallet ([0a9b080](https://github.com/spaceandtimefdn/sxt-node/commit/0a9b0802d2864b0666a8776f8cd97325598b1290))
+
+
+### Features
+
+* determine if an insert for a commitment exceeds end row limits ([6c9716d](https://github.com/spaceandtimefdn/sxt-node/commit/6c9716d58497bfd0d7a7743deaa38336dcda9a57))
+
+
+
 ## [1.17.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.17.0...v1.17.1) (2025-07-23)
 
 
@@ -22,18 +36,6 @@
 
 
 ## [1.15.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.15.0...v1.15.1) (2025-07-18)
-
-
-
-# [1.15.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.14.0...v1.15.0) (2025-07-17)
-
-
-### Features
-
-* add table_schema method to pallet-tables ([17069e5](https://github.com/spaceandtimefdn/sxt-node/commit/17069e550011dff14faea24c9ef4222e019c0976))
-* add TablesApi runtime API ([b7190ec](https://github.com/spaceandtimefdn/sxt-node/commit/b7190ecad8e1ed20ac81a2a19449cb765ec49ffb))
-* convert create statements to communicable table schemas ([3da49df](https://github.com/spaceandtimefdn/sxt-node/commit/3da49df76cf3bb85ee802dddb9b11b35344a62f0))
-* upgrade runtime spec_version to 231 ([dbf7598](https://github.com/spaceandtimefdn/sxt-node/commit/dbf75983568197ac2412c3ea4e2864e845280db3))
 
 
 
