@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use const_format::formatcp;
 use on_chain_table::{OnChainColumn, OnChainTable};
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
-use sqlparser::ast::{ColumnDef, ColumnOption, ColumnOptionDef, DataType, Ident};
+use sqlparser::ast::{ColumnDef, ColumnOption, ColumnOptionDef, DataType, Ident, TableConstraint};
 
 use crate::metadata_prefix::METADATA_PREFIX;
 
@@ -25,6 +25,56 @@ pub fn row_number_column_def() -> ColumnDef {
             option: ColumnOption::NotNull,
         }],
     }
+}
+
+/// Adds a entry for the META_ROW_NUMBER column to the list of primary keys for the provided table
+pub fn add_row_number_primary_key(mut table: CreateTableBuilder) -> CreateTableBuilder {
+    let has_pks = table.constraints.iter().any(|c| match c {
+        sqlparser::ast::TableConstraint::PrimaryKey { .. } => true,
+        c => false,
+    });
+
+    if has_pks {
+        // Add the meta row number to primary key as well
+        table.constraints = table
+            .constraints
+            .into_iter()
+            .map(|c: TableConstraint| match c {
+                sqlparser::ast::TableConstraint::PrimaryKey {
+                    name,
+                    index_name,
+                    index_type,
+                    mut columns,
+                    index_options,
+                    characteristics,
+                } => {
+                    columns.push(Ident::new(ROW_NUMBER_COLUMN_NAME));
+                    sqlparser::ast::TableConstraint::PrimaryKey {
+                        name,
+                        index_name,
+                        index_type,
+                        columns,
+                        index_options,
+                        characteristics,
+                    }
+                }
+                c => c,
+            })
+            .collect();
+    } else {
+        table
+            .constraints
+            .push(sqlparser::ast::TableConstraint::PrimaryKey {
+                name: None,
+                index_name: None,
+                index_type: None,
+                columns: vec![Ident::new(ROW_NUMBER_COLUMN_NAME)],
+                index_options: vec![],
+                characteristics: None,
+            });
+    }
+
+    table
 }
 
 /// Pushes a bigint row number metadata column onto the table definition.
@@ -62,6 +112,67 @@ mod tests {
     use sqlparser::parser::Parser;
 
     use super::*;
+
+    #[test]
+    fn we_can_inject_meta_row_as_primary_key() {
+        let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+            .try_with_sql(
+                "CREATE TABLE animal.population (
+            animal VARCHAR NOT NULL,
+            population BIGINT NOT NULL,
+            PRIMARY KEY (animal))",
+            )
+            .unwrap()
+            .parse_statement()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        let expected: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+            .try_with_sql(
+                "CREATE TABLE animal.population (
+            animal VARCHAR NOT NULL,
+            population BIGINT NOT NULL,
+            PRIMARY KEY (animal, META_ROW_NUMBER))",
+            )
+            .unwrap()
+            .parse_statement()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        assert_eq!(add_row_number_primary_key(create_table), expected);
+    }
+
+    #[test]
+    fn we_can_inject_meta_row_as_primary_key_to_table_with_no_pk() {
+        let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+            .try_with_sql(
+                "CREATE TABLE animal.population (
+            animal VARCHAR NOT NULL,
+            population BIGINT NOT NULL)",
+            )
+            .unwrap()
+            .parse_statement()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        let expected: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+            .try_with_sql(
+                "CREATE TABLE animal.population (
+            animal VARCHAR NOT NULL,
+            population BIGINT NOT NULL,
+            PRIMARY KEY (META_ROW_NUMBER))",
+            )
+            .unwrap()
+            .parse_statement()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        assert_eq!(add_row_number_primary_key(create_table), expected);
+    }
 
     #[test]
     fn we_can_transform_create_table_with_row_number_column() {
