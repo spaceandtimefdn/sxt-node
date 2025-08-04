@@ -20,7 +20,7 @@ use proof_of_sql_commitment_map::{
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sxt_core::tables::TableIdentifier;
 
-use crate::row_number_column::create_table_with_row_number_column;
+use crate::row_number_column::{add_row_number_primary_key, create_table_with_row_number_column};
 use crate::validated_create_table::{InvalidCreateTable, ValidatedCreateTable};
 
 /// Generically accepts a commitment setup and returns the table commitment to the captured
@@ -100,7 +100,8 @@ pub fn process_create_table(
         })
         .collect();
 
-    let table_with_meta_columns = create_table_with_row_number_column(table);
+    let table_with_meta_columns =
+        add_row_number_primary_key(create_table_with_row_number_column(table));
 
     Ok((
         CreateTableAndCommitmentMetadata {
@@ -154,7 +155,7 @@ mod tests {
             animal VARCHAR NOT NULL,
             population BIGINT NOT NULL,
             META_ROW_NUMBER BIGINT NOT NULL,
-            PRIMARY KEY (animal))",
+            PRIMARY KEY (animal, META_ROW_NUMBER))",
                 )
                 .unwrap()
                 .parse_statement()

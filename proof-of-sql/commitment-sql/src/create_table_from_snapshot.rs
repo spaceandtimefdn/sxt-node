@@ -184,7 +184,7 @@ mod tests {
             animal VARCHAR NOT NULL,
             population BIGINT NOT NULL,
             META_ROW_NUMBER BIGINT NOT NULL,
-            PRIMARY KEY (animal))",
+            PRIMARY KEY (animal, META_ROW_NUMBER))",
                 )
                 .unwrap()
                 .parse_statement()
