@@ -20,6 +20,7 @@ scale-info = { features = [
 	"derive",
 	"serde",
 ], workspace = true }
+eth-ecdsa = { workspace = true }
 frame-support = { features = ["experimental"], workspace = true }
 frame-system.workspace = true
 frame-try-runtime = { optional = true, workspace = true }
@@ -162,6 +163,7 @@ std = [
 	"substrate-wasm-builder",
 	"proof-of-sql-commitment-map/std",
 	"sxt-core/std",
+	"eth-ecdsa/std",
 ]
 
 runtime-benchmarks = [
@@ -190,6 +192,7 @@ runtime-benchmarks = [
 	"frame-election-provider-support/runtime-benchmarks",
 	"pallet-bags-list/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
+	"eth-ecdsa/runtime-benchmarks",
 ]
 
 try-runtime = [
@@ -219,6 +222,7 @@ try-runtime = [
 	"frame-election-provider-support/try-runtime",
 	"pallet-bags-list/try-runtime",
 	"pallet-utility/try-runtime",
+	"eth-ecdsa/try-runtime",
 ]
 
 [lints]

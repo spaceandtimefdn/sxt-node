@@ -19,6 +19,7 @@ sp-core = { features = ["serde"], workspace = true }
 sp-io = { workspace = true }
 sp-runtime = { features = ["serde"], workspace = true }
 serde = { workspace = true, optional = true }
+snafu = { workspace = true }
 
 [features]
 serde = ["dep:serde"]

@@ -57,6 +57,7 @@ bincode = { version = "2.0.0", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
 commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
 datafusion = { version = "38.0.0", default-features = false }
+eth-ecdsa = { path = "./eth-ecdsa", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-rewards = { path = "./pallets/rewards", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
