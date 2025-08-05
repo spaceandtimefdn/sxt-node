@@ -5272,6 +5272,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "eth-ecdsa"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
 name = "eth_merkle_tree"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
