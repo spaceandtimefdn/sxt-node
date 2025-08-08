@@ -192,9 +192,6 @@ pub mod pallet {
             SystemRequestType::Staking(StakingSystemRequest::Unstaked) => {
                 process_unstaked::<T>(request)
             }
-            SystemRequestType::ZkPay(_) => {
-                pallet_zkpay::Pallet::<T>::process_zkpay_request(request)
-            }
             _ => Ok(()),
         }
     }
