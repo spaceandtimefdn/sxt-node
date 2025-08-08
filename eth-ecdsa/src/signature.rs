@@ -21,12 +21,13 @@ pub struct EthEcdsaSigner(pub ecdsa::Public);
 impl IdentifyAccount for EthEcdsaSigner {
     type AccountId = AccountId32;
     fn into_account(self) -> AccountId32 {
-        (*Address::from_public_key(
-            &VerifyingKey::from_sec1_bytes(&self.0)
-                .expect("ecdsa::Public key should be in compressed form"),
-        )
-        .into_word())
-        .into()
+        AccountId32::new(sp_io::hashing::blake2_256(
+            Address::from_public_key(
+                &VerifyingKey::from_sec1_bytes(&self.0)
+                    .expect("ecdsa::Public key should be in compressed form"),
+            )
+            .as_slice(),
+        ))
     }
 }
 
@@ -41,7 +42,7 @@ impl Verify for EthEcdsaSignature {
             return false;
         };
 
-        &AccountId32::from(*address.into_word()) == signer
+        &sp_io::hashing::blake2_256(address.as_ref()) == <dyn AsRef<[u8; 32]>>::as_ref(signer)
     }
 }
 
@@ -49,8 +50,28 @@ impl Verify for EthEcdsaSignature {
 mod tests {
     use alloy_signer::SignerSync;
     use alloy_signer_local::PrivateKeySigner;
+    use sp_core::crypto::Ss58Codec;
 
     use super::*;
+
+    #[test]
+    fn our_account_ids_match_polkagate_account_id() {
+        let test_ss58 = "5CNWk7dqqxdEY5aMn1JBPpwUrh7nCCE3JxZXr3KcsJv8Hr1Z";
+        let test_seed = "f1e0c57b0c85d60c2086ff468831fabd13b22530aa8b46aa696295197ddcab43";
+        let _test_recovery_phrase =
+            "priority dwarf mixed bike approve double vacuum village project slow moral large";
+
+        let signer: PrivateKeySigner = test_seed.parse().unwrap();
+
+        let verifying_key = signer.credential().verifying_key();
+
+        let eth_ecdsa_signer =
+            EthEcdsaSigner(ecdsa::Public::try_from(&verifying_key.to_sec1_bytes()[..]).unwrap());
+
+        let account = eth_ecdsa_signer.into_account();
+
+        assert_eq!(test_ss58, Ss58Codec::to_ss58check(&account));
+    }
 
     #[test]
     fn we_can_identify_account_id() {
@@ -63,14 +84,7 @@ mod tests {
 
         let address = signer.address();
 
-        let expected_account_id = AccountId32::new(
-            core::iter::repeat(0)
-                .take(12)
-                .chain(address.into_array())
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap(),
-        );
+        let expected_account_id = AccountId32::new(sp_io::hashing::blake2_256(address.as_ref()));
 
         assert_eq!(eth_ecdsa_signer.into_account(), expected_account_id)
     }
@@ -81,14 +95,7 @@ mod tests {
 
         let address = signer.address();
 
-        let account_id = AccountId32::new(
-            core::iter::repeat(0)
-                .take(12)
-                .chain(address.into_array())
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap(),
-        );
+        let account_id = AccountId32::new(sp_io::hashing::blake2_256(address.as_ref()));
 
         let signature = signer.sign_message_sync(message).unwrap();
 

@@ -24,6 +24,7 @@ serde = { workspace = true, optional = true }
 snafu = { workspace = true }
 
 [dev-dependencies]
+hex = { workspace = true }
 alloy-signer = { workspace = true }
 alloy-signer-local = { workspace = true }
 sp-runtime = { features = ["serde"], workspace = true }
