@@ -25,7 +25,7 @@ pub mod pallet {
     use alloc::vec::Vec;
     use core::cmp::Ordering;
 
-    use frame_support::dispatch::RawOrigin;
+    use frame_support::dispatch::{DispatchResult, RawOrigin};
     use frame_support::pallet_prelude::*;
     use frame_support::traits::StoredMap;
     use frame_system::pallet_prelude::*;
@@ -38,6 +38,7 @@ pub mod pallet {
     use sp_staking::offence::{OffenceDetails, OnOffenceHandler};
     use sp_staking::{SessionIndex, StakingInterface};
     use sxt_core::parse::{
+        MessageSystemRequest,
         StakingSystemRequest,
         SystemFieldValue,
         SystemRequest,
@@ -167,7 +168,12 @@ pub mod pallet {
     /// Process all state changes for a given SystemRequest
     pub fn process_request<T: Config>(request: SystemRequest) -> DispatchResult {
         match request.request_type {
-            SystemRequestType::Message => process_evm_message::<T>(request),
+            SystemRequestType::Message(MessageSystemRequest::Message) => {
+                process_evm_message::<T>(request)
+            }
+            SystemRequestType::Message(MessageSystemRequest::FundedMessage) => {
+                process_evm_funded_message::<T>(request)
+            }
             SystemRequestType::Staking(StakingSystemRequest::Stake) => {
                 process_staking::<T>(request)
             }
@@ -500,6 +506,45 @@ pub mod pallet {
                             eth_address_to_substrate_account_id::<T>(&hex::encode(sender))?;
                         consume_nonce::<T>(*nonce, &eth_sender)?;
                         messages::handle_message::<T>(eth_sender, body.to_vec())?;
+                        Ok(())
+                    }
+                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                }
+            })
+            .for_each(emit_for_error::<T>);
+
+        Ok(())
+    }
+
+    /// Process a funded message received from our EVM contract
+    #[allow(clippy::comparison_chain)]
+    pub fn process_evm_funded_message<T: Config>(request: SystemRequest) -> DispatchResult {
+        request
+            .rows()
+            .map(|row| -> DispatchResult {
+                match (
+                    row.get("SENDER"),
+                    row.get("BODY"),
+                    row.get("NONCE"),
+                    row.get("TARGET"),
+                    row.get("AMOUNT"),
+                ) {
+                    (
+                        Some(SystemFieldValue::Bytes(sender)),
+                        Some(SystemFieldValue::Bytes(body)),
+                        Some(SystemFieldValue::Decimal(nonce)),
+                        Some(SystemFieldValue::Bytes(target)),
+                        Some(SystemFieldValue::Decimal(amount)),
+                    ) => {
+                        let eth_sender =
+                            eth_address_to_substrate_account_id::<T>(&hex::encode(sender))?;
+                        consume_nonce::<T>(*nonce, &eth_sender)?;
+                        pallet_zkpay::Pallet::<T>::fund_compute_credits(
+                            target,
+                            body,
+                            amount.as_u128().saturated_into(),
+                            sender,
+                        )?;
                         Ok(())
                     }
                     _ => Err(Error::<T>::MissingExpectedField.into()),
