@@ -15,12 +15,21 @@ use crate::tables::TableIdentifier;
 /// Supported types of system requests, typically originating from data submissions
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum SystemRequestType {
-    /// An arbitrary message in bytes. Currently only used to register session keys
-    Message,
+    /// A message request (can be regular or funded)
+    Message(MessageSystemRequest),
     /// A Staking related request
     Staking(StakingSystemRequest),
     /// A ZKpay related request
     ZkPay(ZKPayRequest),
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+/// Types of supported message requests
+pub enum MessageSystemRequest {
+    /// A regular message (currently only used for session keys)
+    Message,
+    /// A funded message that includes target and amount fields
+    FundedMessage,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]

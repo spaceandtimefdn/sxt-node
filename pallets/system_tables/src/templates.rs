@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 
 use on_chain_table::OnChainTable;
 use sxt_core::parse::SystemRequestType::{Message, Staking};
-use sxt_core::parse::{StakingSystemRequest, SystemFieldType, SystemRequest};
+use sxt_core::parse::{MessageSystemRequest, StakingSystemRequest, SystemFieldType, SystemRequest};
 use sxt_core::tables::TableIdentifier;
 
 /// Returns the parsing template for the provided table identifier. The template is a
@@ -43,13 +43,24 @@ fn get_system_templates() -> &'static Vec<SystemRequest> {
 fn get_staking_templates() -> Vec<SystemRequest> {
     vec![
         SystemRequest {
-            request_type: Message,
+            request_type: Message(MessageSystemRequest::Message),
             fields: vec![
                 ("SENDER", SystemFieldType::Bytes).into(),
                 ("BODY", SystemFieldType::Bytes).into(),
                 ("NONCE", SystemFieldType::Decimal).into(),
             ],
             table_id: TableIdentifier::from_str_unchecked("MESSAGE", "SXT_SYSTEM_STAKING"),
+        },
+        SystemRequest {
+            request_type: Message(MessageSystemRequest::FundedMessage),
+            fields: vec![
+                ("SENDER", SystemFieldType::Bytes).into(),
+                ("BODY", SystemFieldType::Bytes).into(),
+                ("NONCE", SystemFieldType::Decimal).into(),
+                ("TARGET", SystemFieldType::Bytes).into(),
+                ("AMOUNT", SystemFieldType::Decimal).into(),
+            ],
+            table_id: TableIdentifier::from_str_unchecked("FUNDEDMESSAGE", "SXT_SYSTEM_STAKING"),
         },
         SystemRequest {
             request_type: Staking(StakingSystemRequest::Stake),
