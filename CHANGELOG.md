@@ -1,3 +1,14 @@
+# [1.19.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.18.0...v1.19.0) (2025-08-08)
+
+
+### Features
+
+* Add partial unstaking to unstake Initiated impl ([8c7a3de](https://github.com/spaceandtimefdn/sxt-node/commit/8c7a3de16f224769161e9a4d115221da8f63eb64))
+* Added missing request enum types ([263436c](https://github.com/spaceandtimefdn/sxt-node/commit/263436c0c33832517281f3c26535eaee3f16b331))
+* Complete unstake processing implementations ([32649e7](https://github.com/spaceandtimefdn/sxt-node/commit/32649e780c0ccc9dc02cd35344c0537f41cce4ff))
+
+
+
 # [1.18.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.17.1...v1.18.0) (2025-07-31)
 
 
@@ -32,10 +43,6 @@
 ### Features
 
 * Update ZKpay to understand assets ([fb7353c](https://github.com/spaceandtimefdn/sxt-node/commit/fb7353ce2bc5623d10292ddf08ed819398289954))
-
-
-
-## [1.15.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.15.0...v1.15.1) (2025-07-18)
 
 
 
