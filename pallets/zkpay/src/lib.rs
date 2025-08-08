@@ -544,45 +544,13 @@ pub mod pallet {
                             let _ = SupportedAssets::<T>::get(asset_address)
                                 .ok_or(Error::<T>::UnsupportedAsset)?;
 
-                            // Check if the target address is the Compute Credit Address
-                            let compute_credit_address = ComputeCreditAddress::<T>::get();
-                            if target == compute_credit_address.as_slice() {
-                                // Get the address we need to fund
-                                let funded_addr = sxt_core::utils::account_id_from_str::<T>(
-                                    encode(on_behalf_of).as_str(),
-                                )
-                                .map_err(|_| Error::<T>::InvalidAccountId)?;
+                            Self::fund_compute_credits(
+                                target,
+                                on_behalf_of,
+                                amount.as_u128().saturated_into(),
+                                sender,
+                            )?;
 
-                                // Get their current balance
-                                let balance: u128 =
-                                    pallet_balances::Pallet::<T>::free_balance(&funded_addr)
-                                        .unique_saturated_into();
-
-                                let amount: u128 = amount.as_u128().saturated_into();
-
-                                // Add the new amount
-                                let new_total_balance = balance.saturating_add(amount);
-
-                                // Force set the balance
-                                let funded_lookup = <T as frame_system::Config>::Lookup::unlookup(
-                                    funded_addr.clone(),
-                                );
-                                pallet_balances::Pallet::<T>::force_set_balance(
-                                    RawOrigin::Root.into(),
-                                    funded_lookup,
-                                    new_total_balance.saturated_into(),
-                                )?;
-
-                                // Emit an event that the sender sent payment, including the "on_behalf_of"
-                                let sender_addr = sxt_core::utils::account_id_from_str::<T>(
-                                    encode(sender).as_str(),
-                                )?;
-                                Self::deposit_event(Event::<T>::ComputeCreditsPurchased {
-                                    amount,
-                                    account_id: funded_addr.clone(),
-                                    sender: sender_addr,
-                                })
-                            }
                             Ok(())
                         }
                         _ => Err(Error::<T>::MissingExpectedField.into()),
@@ -608,6 +576,50 @@ pub mod pallet {
                 })
                 .for_each(Pallet::<T>::emit_for_error);
 
+            Ok(())
+        }
+
+        /// Funds compute credits for a user. `target` must be the compute credit address in order for funding to succeed.
+        /// `on_behalf_of` is the account actually recieving funds.
+        pub fn fund_compute_credits(
+            target: &[u8],
+            on_behalf_of: &[u8],
+            amount: u128,
+            sender: &[u8],
+        ) -> DispatchResult {
+            // Check if the target address is the Compute Credit Address
+            let compute_credit_address = ComputeCreditAddress::<T>::get();
+            if target == compute_credit_address.as_slice() {
+                // Get the address we need to fund
+                let funded_addr =
+                    sxt_core::utils::account_id_from_str::<T>(encode(on_behalf_of).as_str())
+                        .map_err(|_| Error::<T>::InvalidAccountId)?;
+
+                // Get their current balance
+                let balance: u128 = pallet_balances::Pallet::<T>::free_balance(&funded_addr)
+                    .unique_saturated_into();
+
+                // Add the new amount
+                let new_total_balance = balance.saturating_add(amount);
+
+                // Force set the balance
+                let funded_lookup =
+                    <T as frame_system::Config>::Lookup::unlookup(funded_addr.clone());
+                pallet_balances::Pallet::<T>::force_set_balance(
+                    RawOrigin::Root.into(),
+                    funded_lookup,
+                    new_total_balance.saturated_into(),
+                )?;
+
+                // Emit an event that the sender sent payment, including the "on_behalf_of"
+                let sender_addr =
+                    sxt_core::utils::account_id_from_str::<T>(encode(sender).as_str())?;
+                Self::deposit_event(Event::<T>::ComputeCreditsPurchased {
+                    amount,
+                    account_id: funded_addr.clone(),
+                    sender: sender_addr,
+                })
+            }
             Ok(())
         }
     }
