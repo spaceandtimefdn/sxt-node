@@ -1,3 +1,12 @@
+# [1.21.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.20.0...v1.21.0) (2025-08-08)
+
+
+### Features
+
+* add support for funding compute credits with funded message ([7587cf2](https://github.com/spaceandtimefdn/sxt-node/commit/7587cf28bac3468a751eb71bda08b4b902feb42a))
+
+
+
 # [1.20.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.19.0...v1.20.0) (2025-08-08)
 
 
@@ -33,16 +42,6 @@
 
 
 ## [1.17.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.17.0...v1.17.1) (2025-07-23)
-
-
-
-# [1.17.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.16.0...v1.17.0) (2025-07-23)
-
-
-### Features
-
-* SDO-300 Remove Data-Loader, FlightSQL, and snapshots data ([bc1ef63](https://github.com/spaceandtimefdn/sxt-node/commit/bc1ef63dd7e93417b11c5eaaa79942b28a0f484d))
-* SDO-300 remove sxtnode.sh wrapper and flightsql scripts ([727d542](https://github.com/spaceandtimefdn/sxt-node/commit/727d542d32a60db6eee4fbcfbba248520c16126c))
 
 
 
