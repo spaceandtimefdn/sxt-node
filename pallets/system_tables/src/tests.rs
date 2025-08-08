@@ -7,6 +7,7 @@ use sp_runtime::traits::StaticLookup;
 use sp_runtime::{DispatchError, Perbill, TokenError};
 use sp_staking::StakingInterface;
 use sxt_core::parse::{
+    MessageSystemRequest,
     StakingSystemRequest,
     SystemFieldValue,
     SystemRequest,
@@ -14,7 +15,11 @@ use sxt_core::parse::{
     SystemTableField,
 };
 use sxt_core::tables::TableIdentifier;
-use sxt_core::utils::{convert_account_id, eth_address_to_substrate_account_id};
+use sxt_core::utils::{
+    account_id_from_str,
+    convert_account_id,
+    eth_address_to_substrate_account_id,
+};
 
 use crate::mock::*;
 use crate::Pallet;
@@ -109,7 +114,7 @@ fn get_register_keys_message(eth_wallet: &str, session_keys: &str, nonce: U256) 
         SystemTableField::with_value("NONCE".to_string(), SystemFieldValue::Decimal(nonce));
 
     SystemRequest {
-        request_type: SystemRequestType::Message,
+        request_type: SystemRequestType::Message(MessageSystemRequest::Message),
         table_id: TableIdentifier::from_str_unchecked("MESSAGE", "SXT_SYSTEM_STAKING"),
         fields: vec![sender_field, body_field, nonce_field],
     }
@@ -710,5 +715,79 @@ fn changing_eras_works() {
         crate::mock::start_active_era(1);
         assert_eq!(crate::mock::active_era(), 1);
         crate::mock::start_active_era(2);
+    });
+}
+
+fn get_funded_message(
+    sender: Vec<u8>,
+    body: Vec<u8>,
+    nonce: U256,
+    target: Vec<u8>,
+    amount: U256,
+) -> SystemRequest {
+    SystemRequest {
+        request_type: SystemRequestType::Message(
+            sxt_core::parse::MessageSystemRequest::FundedMessage,
+        ),
+        table_id: TableIdentifier::from_str_unchecked("FUNDEDMESSAGE", "SXT_SYSTEM_MESSAGING"),
+        fields: vec![
+            SystemTableField::with_value("SENDER".to_string(), SystemFieldValue::Bytes(sender)),
+            SystemTableField::with_value("BODY".to_string(), SystemFieldValue::Bytes(body)),
+            SystemTableField::with_value("NONCE".to_string(), SystemFieldValue::Decimal(nonce)),
+            SystemTableField::with_value("TARGET".to_string(), SystemFieldValue::Bytes(target)),
+            SystemTableField::with_value("AMOUNT".to_string(), SystemFieldValue::Decimal(amount)),
+        ],
+    }
+}
+
+#[test]
+fn test_funded_message_funds_account() {
+    new_test_ext().execute_with(|| {
+        const COMPUTE_CREDIT_ADDRESS: &str = "0123456789ABCDEF0123456789ABCDEF01234567";
+        const SENDER_WALLET: &str = "AAAAA00000BBBBB00000CCCCC00000DDDDD00000";
+        const FUNDED_ACCOUNT: &str =
+            "0000111122223333444455556666777788889999AAAABBBBCCCCDDDDEEEEFFFF";
+        let compute_credit_address = hex::decode(COMPUTE_CREDIT_ADDRESS).unwrap();
+        let sender_wallet = hex::decode(SENDER_WALLET).unwrap();
+        let funded_address = hex::decode(FUNDED_ACCOUNT).unwrap();
+
+        let sender_account = eth_address_to_substrate_account_id::<Test>(SENDER_WALLET).unwrap();
+        let funded_account = account_id_from_str::<Test>(FUNDED_ACCOUNT).unwrap();
+
+        pallet_zkpay::ComputeCreditAddress::<Test>::put(
+            sxt_core::ByteString::try_from(compute_credit_address.clone()).unwrap(),
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&sender_account),
+            0
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&funded_account),
+            0
+        );
+
+        let request = get_funded_message(
+            sender_wallet,
+            funded_address,
+            1.into(),
+            compute_credit_address.clone(),
+            1000u64.into(),
+        );
+
+        assert_ok!(crate::process_evm_funded_message::<Test>(request));
+
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&sender_account),
+            0
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&funded_account),
+            1000
+        );
+
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(&sender_account),
+            Some(1.into())
+        );
     });
 }
