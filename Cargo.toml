@@ -38,6 +38,7 @@ members = [
     "canaries",
     "pallets/zkpay",
     "proof-of-sql/commitment-column-mapping",
+    "eth-ecdsa",
 ]
 exclude = [
     "utoipa",  
@@ -58,6 +59,7 @@ bincode = { version = "2.0.0", default-features = false }
 const_format = { version = "0.2.33", default-features = false }
 commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
 datafusion = { version = "38.0.0", default-features = false }
+eth-ecdsa = { path = "./eth-ecdsa", default-features = false }
 sxt-runtime = { path = "./runtime", default-features = false }
 pallet-rewards = { path = "./pallets/rewards", default-features = false }
 pallet-commitments = { path = "./pallets/commitments", default-features = false }
@@ -205,6 +207,9 @@ handlebars = { version = "5.1.2", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 spin = "0.9.8"
 alloy = { version = "0.11.0", default-features = false }
+alloy-primitives = { version = "0.8.22", default-features = false }
+alloy-signer = { version = "0.11.1", default-features = false }
+alloy-signer-local = { version = "0.11.1", default-features = false }
 glob = "0.3.1"
 eth_merkle_tree = { version = "=0.1.1", default-features = false }
 anyhow = { version = "1.0.95", default-features = false }
