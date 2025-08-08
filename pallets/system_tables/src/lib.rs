@@ -23,6 +23,7 @@ mod templates;
 #[frame_support::pallet]
 pub mod pallet {
     use alloc::vec::Vec;
+    use core::cmp::Ordering;
 
     use frame_support::dispatch::RawOrigin;
     use frame_support::pallet_prelude::*;
@@ -470,6 +471,19 @@ pub mod pallet {
     pub(super) type LastProcessedUserNonce<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, U256>;
 
+    fn consume_nonce<T: Config>(nonce: U256, eth_sender: &T::AccountId) -> DispatchResult {
+        let expected =
+            LastProcessedUserNonce::<T>::get(eth_sender).unwrap_or(U256::from(0)) + U256::from(1);
+        match nonce.cmp(&expected) {
+            Ordering::Less => Err(Error::<T>::LateNonce.into()),
+            Ordering::Greater => Err(Error::<T>::FutureNonce.into()),
+            Ordering::Equal => {
+                LastProcessedUserNonce::<T>::set(eth_sender, Some(nonce));
+                Ok(())
+            }
+        }
+    }
+
     /// Process a message received from our EVM contract
     #[allow(clippy::comparison_chain)]
     pub fn process_evm_message<T: Config>(request: SystemRequest) -> DispatchResult {
@@ -482,21 +496,9 @@ pub mod pallet {
                         Some(SystemFieldValue::Bytes(body)),
                         Some(SystemFieldValue::Decimal(nonce)),
                     ) => {
-                        let sender = hex::encode(sender);
-                        let eth_sender = eth_address_to_substrate_account_id::<T>(&sender)?;
-
-                        let nonce: U256 = *nonce;
-                        let expected = LastProcessedUserNonce::<T>::get(&eth_sender)
-                            .unwrap_or(U256::from(0))
-                            + U256::from(1);
-                        if nonce < expected {
-                            return Err(Error::<T>::LateNonce.into());
-                        } else if nonce > expected {
-                            return Err(Error::<T>::FutureNonce.into());
-                        }
-
-                        LastProcessedUserNonce::<T>::set(&eth_sender, Some(nonce));
-
+                        let eth_sender =
+                            eth_address_to_substrate_account_id::<T>(&hex::encode(sender))?;
+                        consume_nonce::<T>(*nonce, &eth_sender)?;
                         messages::handle_message::<T>(eth_sender, body.to_vec())?;
                         Ok(())
                     }
