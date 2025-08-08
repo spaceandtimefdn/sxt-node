@@ -18549,6 +18549,7 @@ dependencies = [
 name = "sxt-runtime"
 version = "0.1.0"
 dependencies = [
+ "eth-ecdsa",
  "frame-benchmarking",
  "frame-election-provider-support",
  "frame-executive",
