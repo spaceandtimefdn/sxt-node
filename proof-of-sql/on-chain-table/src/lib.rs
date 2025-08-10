@@ -11,6 +11,7 @@ mod u256_scalar_conversion;
 pub use u256_scalar_conversion::OutOfScalarBounds;
 
 mod map;
+pub use map::{IndexMap, IndexSet};
 
 mod column;
 pub use column::OnChainColumn;
