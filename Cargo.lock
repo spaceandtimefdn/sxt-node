@@ -3470,6 +3470,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "commitment-column-mapping"
+version = "0.1.0"
+dependencies = [
+ "commitment-sql",
+ "on-chain-table",
+ "proof-of-sql",
+ "proof-of-sql-commitment-map",
+ "proof-of-sql-static-setups",
+ "snafu 0.8.5",
+ "sqlparser",
+ "sxt-core",
+]
+
+[[package]]
 name = "commitment-sql"
 version = "0.1.0"
 dependencies = [

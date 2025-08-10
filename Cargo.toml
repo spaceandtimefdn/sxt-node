@@ -37,6 +37,7 @@ members = [
     "pallets/system-contracts",
     "canaries",
     "pallets/zkpay",
+    "proof-of-sql/commitment-column-mapping",
 ]
 exclude = [
     "utoipa",  
