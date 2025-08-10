@@ -1,3 +1,7 @@
+use commitment_column_mapping::{
+    convert_selected_varbinary_columns_to_varchar,
+    convert_varchar_to_varbinary,
+};
 use commitment_sql::{
     process_insert,
     InsertAndCommitmentMetadata,
@@ -92,13 +96,32 @@ fn we_can_process_insert() {
 
         let test_params = ProcessInsertTestParams::new_valid();
 
-        let (expected_insert_and_commitment_metadata, expected_commitments) = process_insert(
-            &test_params.table_id,
-            test_params.insert_data.clone(),
-            empty_commitments,
-            *PUBLIC_SETUPS.get().unwrap(),
-        )
-        .unwrap();
+        let (varchar_columns, empty_commitments_converted, insert_data_converted) =
+            convert_varchar_to_varbinary(empty_commitments, test_params.insert_data.clone())
+                .unwrap();
+
+        let (expected_insert_and_commitment_metadata_converted, expected_commitments_converted) =
+            process_insert(
+                &test_params.table_id,
+                insert_data_converted,
+                empty_commitments_converted,
+                *PUBLIC_SETUPS.get().unwrap(),
+            )
+            .unwrap();
+
+        let (expected_commitments, expected_insert_with_meta_columns) =
+            convert_selected_varbinary_columns_to_varchar(
+                &varchar_columns,
+                expected_commitments_converted,
+                expected_insert_and_commitment_metadata_converted.insert_with_meta_columns,
+            )
+            .unwrap();
+
+        let expected_insert_and_commitment_metadata = InsertAndCommitmentMetadata {
+            insert_with_meta_columns: expected_insert_with_meta_columns,
+            ..expected_insert_and_commitment_metadata_converted
+        };
+
         let expected_commitments_bytes =
             TableCommitmentBytesPerCommitmentScheme::try_from(expected_commitments).unwrap();
 

@@ -37,6 +37,10 @@ pub mod pallet {
     use alloc::vec::Vec;
     use alloc::{str, vec};
 
+    use commitment_column_mapping::{
+        convert_selected_varbinary_columns_to_varchar,
+        convert_varchar_to_varbinary,
+    };
     use commitment_sql::{
         process_create_table,
         process_create_table_from_snapshot,
@@ -191,6 +195,10 @@ pub mod pallet {
         TableAlreadyExists,
         /// The insert cannot be performed as the resulting end row exceeds the limit
         InsertExceedsLimit,
+        /// Unable to construct table commitment due to negative range.
+        UnexpectedNegativeRange,
+        /// Utf8 error encountered after varbinary workaround.
+        VarcharColumnsNoLongerUtf8,
     }
 
     impl<T: Config> Pallet<T> {
@@ -309,37 +317,64 @@ pub mod pallet {
             let previous_commitments = handler.get_commitments(&table);
 
             let previous_commitments_decoded = previous_commitments
-                .clone()
                 .try_into()
                 .map_err(|_| Error::DeserializeCommitment)?;
 
-            let previous_commitments_pass_by = TableCommitmentBytesPerCommitmentSchemePassBy {
-                data: previous_commitments,
-            };
+            let (
+                varchar_columns,
+                previous_commitments_with_varbinary_workaround,
+                insert_data_with_varbinary_workaround,
+            ) = convert_varchar_to_varbinary(previous_commitments_decoded, insert_data)?;
+
+            let data = previous_commitments_with_varbinary_workaround
+                .clone()
+                .try_into()
+                .map_err(|_| Error::SerializeCommitment)?;
+
+            let previous_commitments_pass_by =
+                TableCommitmentBytesPerCommitmentSchemePassBy { data };
 
             let _new_end_row = table_commitment_end_row_insert_simulation_all_schemes(
-                insert_data.num_rows() as u32,
-                previous_commitments_decoded,
+                insert_data_with_varbinary_workaround.num_rows() as u32,
+                previous_commitments_with_varbinary_workaround,
                 T::END_ROW_LIMITS_PER_SCHEME,
             )?;
 
-            let table_bytes = insert_data.try_into()?;
+            let table_bytes = insert_data_with_varbinary_workaround.try_into()?;
 
             let (insert_with_meta_columns_bytes, commitments_bytes) =
                 I::process_insert(table.clone(), table_bytes, previous_commitments_pass_by)?;
 
             let commitments_bytes = commitments_bytes.data;
 
-            handler
-                 .update_commitments(table, commitments_bytes)
-                 .expect("process_insert guarantees to update the same commitment schemes that were provided to it");
+            let commitments = commitments_bytes
+                .try_into()
+                .map_err(|_| Error::DeserializeCommitment)?;
 
             let insert_with_meta_columns = insert_with_meta_columns_bytes
                 .try_into()
                 .map_err(|_| Error::DeserializeInsertData)?;
 
-            Ok(InsertAndCommitmentMetadata {
+            let (
+                commitments_without_varbinary_workaround,
+                insert_with_meta_columns_without_varbinary_workaround,
+            ) = convert_selected_varbinary_columns_to_varchar(
+                &varchar_columns,
+                commitments,
                 insert_with_meta_columns,
+            )?;
+
+            let commitments_without_varbinary_workaround_bytes =
+                commitments_without_varbinary_workaround
+                    .try_into()
+                    .map_err(|_| Error::SerializeCommitment)?;
+
+            handler
+                 .update_commitments(table, commitments_without_varbinary_workaround_bytes)
+                 .expect("process_insert guarantees to update the same commitment schemes that were provided to it");
+
+            Ok(InsertAndCommitmentMetadata {
+                insert_with_meta_columns: insert_with_meta_columns_without_varbinary_workaround,
                 meta_table_inserts: vec![],
             })
         }

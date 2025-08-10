@@ -17,6 +17,7 @@ codec = { features = [
 	"derive",
 ], workspace = true }
 commitment-sql.workspace = true
+commitment-column-mapping.workspace = true
 scale-info = { features = [
 	"derive",
 ], workspace = true }
