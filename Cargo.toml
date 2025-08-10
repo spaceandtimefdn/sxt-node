@@ -91,6 +91,7 @@ primitive-types = { version = "0.12.2", default-features = false }
 proof-of-sql = { version = "0.99.0", default-features = false }
 proof-of-sql-planner = { version = "0.99.0", default-features = false }
 proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
+commitment-column-mapping = { path = "./proof-of-sql/commitment-column-mapping/", default-features = false }
 proof-of-sql-static-setups = { path = "./proof-of-sql/static-setups/", default-features = false }
 proof-of-sql-unversioned = { path = "./proof-of-sql/unversioned/", default-features = false }
 rand = { version = "0.8.5", default-features = false }

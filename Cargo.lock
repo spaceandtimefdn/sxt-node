@@ -10029,6 +10029,7 @@ name = "pallet-commitments"
 version = "0.1.0"
 dependencies = [
  "clap 4.5.32",
+ "commitment-column-mapping",
  "commitment-sql",
  "env_logger 0.11.6",
  "frame-benchmarking",

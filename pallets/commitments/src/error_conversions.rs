@@ -1,5 +1,6 @@
 use core::fmt::Debug;
 
+use commitment_column_mapping::ConvertSelectedVarbinaryColumnsToVarcharError;
 use commitment_sql::{
     AppendOnChainTableError,
     InvalidColumnOptions,
@@ -8,6 +9,7 @@ use commitment_sql::{
     ProcessInsertError,
     UnsupportedColumnType,
 };
+use proof_of_sql::base::commitment::NegativeRange;
 use proof_of_sql_commitment_map::{KeyExistsError, TableCommitmentToBytesError};
 use sxt_core::native::{NativeCommitmentError, OnChainTableToBytesError};
 
@@ -152,6 +154,25 @@ impl<T> From<EndRowInsertSimulationAllSchemesError> for Error<T> {
                 Error::ExistingCommitmentsRangeMismatch
             }
             EndRowInsertSimulationAllSchemesError::ExceedsLimit { source } => source.into(),
+        }
+    }
+}
+
+impl<T> From<NegativeRange> for Error<T> {
+    fn from(_: NegativeRange) -> Self {
+        Error::UnexpectedNegativeRange
+    }
+}
+
+impl<T> From<ConvertSelectedVarbinaryColumnsToVarcharError> for Error<T> {
+    fn from(error: ConvertSelectedVarbinaryColumnsToVarcharError) -> Self {
+        match error {
+            ConvertSelectedVarbinaryColumnsToVarcharError::FromUtf8 { .. } => {
+                Error::VarcharColumnsNoLongerUtf8
+            }
+            ConvertSelectedVarbinaryColumnsToVarcharError::UnexpectedNegativeRange { source } => {
+                source.into()
+            }
         }
     }
 }
