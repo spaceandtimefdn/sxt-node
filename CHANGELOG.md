@@ -1,3 +1,22 @@
+# [1.22.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.21.0...v1.22.0) (2025-08-11)
+
+
+### Bug Fixes
+
+* increment runtime spec version to 232 ([69527ae](https://github.com/spaceandtimefdn/sxt-node/commit/69527ae6ec2c7784e738dfa62346bf89e7fe3d83))
+* temporarily convert varchar columns to varbinary for commitments ([92c157b](https://github.com/spaceandtimefdn/sxt-node/commit/92c157b48351986547b847aa2b7e0da7a137a752))
+
+
+### Features
+
+* add commitment-column-mapping crate ([e644732](https://github.com/spaceandtimefdn/sxt-node/commit/e644732162c6555ee5fa90234527ab59afbc0910))
+* add GenericOverCommitment type for Vecs ([b001101](https://github.com/spaceandtimefdn/sxt-node/commit/b001101cb8ae0e51c427101ccaec6330bb822fef))
+* add type alias TableCommitmentPerCommitmentScheme ([f151d41](https://github.com/spaceandtimefdn/sxt-node/commit/f151d4140c045ffeb858dfa23d6f5096d23cb205))
+* publicize no-std compatible indexmap aliases ([83cba52](https://github.com/spaceandtimefdn/sxt-node/commit/83cba52b27f09ba8f4eeb78a9290c64a6b9bd51f))
+* statelessly temporarily convert varchar columns to varbinary ([8714157](https://github.com/spaceandtimefdn/sxt-node/commit/87141579fa74af5dccaf96d5d70b10e41926dc37))
+
+
+
 # [1.21.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.20.0...v1.21.0) (2025-08-08)
 
 
@@ -38,10 +57,6 @@
 ### Features
 
 * determine if an insert for a commitment exceeds end row limits ([6c9716d](https://github.com/spaceandtimefdn/sxt-node/commit/6c9716d58497bfd0d7a7743deaa38336dcda9a57))
-
-
-
-## [1.17.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.17.0...v1.17.1) (2025-07-23)
 
 
 
