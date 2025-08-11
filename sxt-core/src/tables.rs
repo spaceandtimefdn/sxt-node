@@ -916,14 +916,17 @@ impl From<CreateStatementParseError> for GetTableSchemaError {
     }
 }
 
+fn submitter_col_ident() -> Ident {
+    sqlparser::ast::Ident::new("SXT_META_SUBMITTER")
+}
+
 /// A helper function to inject the submitter address bytes into all rows in the OnChainTable provided
 pub fn inject_submitter_data(
     row_data: on_chain_table::OnChainTable,
     submitter: Vec<u8>,
 ) -> Result<on_chain_table::OnChainTable, on_chain_table::OnChainTableError> {
     let column = on_chain_table::OnChainColumn::VarBinary(vec![submitter; row_data.num_rows()]);
-    let column_ready_for_chaining =
-        vec![(sqlparser::ast::Ident::new("SXT_META_SUBMITTER"), column)];
+    let column_ready_for_chaining = vec![(submitter_col_ident(), column)];
     on_chain_table::OnChainTable::try_from_iter(
         row_data.into_iter().chain(column_ready_for_chaining),
     )
@@ -932,7 +935,7 @@ pub fn inject_submitter_data(
 /// Inject a submitter varchar column to a CreateTableBuilder
 pub fn inject_submitter_column(mut table: CreateTableBuilder) -> CreateTableBuilder {
     let submitter_col = sqlparser::ast::ColumnDef {
-        name: sqlparser::ast::Ident::new("SXT_META_SUBMITTER"),
+        name: submitter_col_ident(),
         data_type: sqlparser::ast::DataType::Binary(None),
         collation: None,
         options: vec![sqlparser::ast::ColumnOptionDef {
@@ -943,6 +946,14 @@ pub fn inject_submitter_column(mut table: CreateTableBuilder) -> CreateTableBuil
 
     table.columns.push(submitter_col);
     table
+}
+
+/// Checks the provided table for any columns with the same name as the
+/// system's 'SUBMITTER' column. Returns true if the table conflicts
+/// with the system column, false otherwise.
+pub fn has_submitter_column(table: &CreateTableBuilder) -> bool {
+    let ident = submitter_col_ident();
+    table.columns.iter().any(|c: &ColumnDef| c.name == ident)
 }
 
 #[cfg(test)]
@@ -957,6 +968,25 @@ mod tests {
     use sqlparser::parser::Parser;
 
     use super::*;
+
+    #[test]
+    fn checking_for_submitter_column_works() {
+        let false_statement = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME) );";
+        let false_table = create_statement_to_sqlparser(
+            CreateStatement::try_from(false_statement.as_bytes().to_vec()).unwrap(),
+        )
+        .unwrap();
+
+        assert!(!has_submitter_column(&false_table));
+
+        let true_statement = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, SXT_META_SUBMITTER BINARY NOT NULL, PRIMARY KEY (ID, NAME) );";
+        let true_table = create_statement_to_sqlparser(
+            CreateStatement::try_from(true_statement.as_bytes().to_vec()).unwrap(),
+        )
+        .unwrap();
+
+        assert!(has_submitter_column(&true_table));
+    }
 
     #[test]
     fn we_can_inject_submitter_columns_into_table() {
