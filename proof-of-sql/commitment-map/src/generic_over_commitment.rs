@@ -2,6 +2,7 @@
 //!
 //! Contains [`GenericOverCommitment`] and its implementors.
 
+use alloc::vec::Vec;
 use core::marker::PhantomData;
 
 #[cfg(feature = "substrate")]
@@ -84,6 +85,15 @@ pub struct OptionType<G: GenericOverCommitment>(PhantomData<G>);
 
 impl<G: GenericOverCommitment> GenericOverCommitment for OptionType<G> {
     type WithCommitment<C: CommitmentId> = Option<G::WithCommitment<C>>;
+}
+
+/// Concrete type associated with `Vec<G::WithCommitment<C: CommitmentId>>` types.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
+pub struct VecType<G: GenericOverCommitment>(PhantomData<G>);
+
+impl<G: GenericOverCommitment> GenericOverCommitment for VecType<G> {
+    type WithCommitment<C: CommitmentId> = Vec<G::WithCommitment<C>>;
 }
 
 /// Concrete type associated with `Result<G::WithCommitment<C: CommitmentId>, E>` types.
