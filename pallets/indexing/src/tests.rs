@@ -184,7 +184,7 @@ fn inserting_data_succeeds_when_data_is_good() {
         };
         Tables::create_tables(RuntimeOrigin::root(), vec![request].try_into().unwrap()).unwrap();
 
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
             IndexingPalletPermission::SubmitDataForPublicQuorum,
@@ -234,7 +234,7 @@ fn submission_fails_when_data_is_already_submitted() {
             .unwrap(),
         )
         .unwrap();
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
             IndexingPalletPermission::SubmitDataForPublicQuorum,
@@ -287,7 +287,7 @@ fn data_submission_fails_if_no_permissions() {
         let test_data = RowData::try_from(b"some arbitrary row data".to_vec()).unwrap();
 
         // Create a non permissioned signer
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         assert_err!(
             Indexing::submit_data(
                 signer.clone(),
@@ -345,21 +345,24 @@ fn data_is_decided_on_after_required_submissions() {
         )])
         .unwrap();
         for id in 0..5 {
-            let who = ensure_signed(RuntimeOrigin::signed(id)).unwrap();
-            pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+            let who = ensure_signed(RuntimeOrigin::signed(sp_runtime::AccountId32::new(
+                [id; 32],
+            )))
+            .unwrap();
+            pallet_permissions::Permissions::<Test>::insert(who.clone(), permissions.clone());
         }
 
         // Submit 4 entries with 4 different accounts
         assert_ok!(submit_test_data(
-            RuntimeOrigin::signed(1),
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32])),
             test_submission.clone()
         ));
         assert_ok!(submit_test_data(
-            RuntimeOrigin::signed(2),
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([2; 32])),
             test_submission.clone()
         ));
         assert_ok!(submit_test_data(
-            RuntimeOrigin::signed(3),
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([3; 32])),
             test_submission.clone()
         ));
 
@@ -368,7 +371,7 @@ fn data_is_decided_on_after_required_submissions() {
 
         // Send the final required submission
         assert_ok!(submit_test_data(
-            RuntimeOrigin::signed(4),
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([4; 32])),
             test_submission.clone()
         ));
 
@@ -415,7 +418,10 @@ fn correct_data_is_decided_on_after_required_submissions() {
 
         // Add permissions for the test accounts
         for id in 1..6 {
-            let who = ensure_signed(RuntimeOrigin::signed(id)).unwrap();
+            let who = ensure_signed(RuntimeOrigin::signed(sp_runtime::AccountId32::new(
+                [id; 32],
+            )))
+            .unwrap();
             let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
                 IndexingPalletPermission::SubmitDataForPublicQuorum,
             )])
@@ -433,15 +439,15 @@ fn correct_data_is_decided_on_after_required_submissions() {
 
         // Submit 4 entries with 4 different accounts
         assert_ok!(submit_test_data(
-            RuntimeOrigin::signed(1),
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32])),
             test_submission.clone()
         ));
         assert_ok!(submit_test_data(
-            RuntimeOrigin::signed(2),
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([2; 32])),
             test_submission.clone()
         ));
         assert_ok!(submit_test_data(
-            RuntimeOrigin::signed(3),
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([3; 32])),
             test_submission.clone()
         ));
 
@@ -455,7 +461,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
             data: diff_row_data(),
         };
         assert_ok!(submit_test_data(
-            RuntimeOrigin::signed(4),
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([4; 32])),
             differing_submission.clone()
         ));
 
@@ -464,7 +470,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
 
         // Now submit a final matching entry
         assert_ok!(submit_test_data(
-            RuntimeOrigin::signed(5),
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([5; 32])),
             test_submission.clone()
         ));
 
@@ -489,8 +495,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
 fn inserting_data_fails_when_data_is_empty() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
             IndexingPalletPermission::SubmitDataForPublicQuorum,
@@ -532,8 +537,7 @@ fn inserting_data_fails_when_data_is_empty() {
 fn inserting_data_fails_when_table_name_is_empty() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
             IndexingPalletPermission::SubmitDataForPublicQuorum,
@@ -579,8 +583,7 @@ fn inserting_data_fails_when_table_name_is_empty() {
 fn inserting_data_fails_when_table_namespace_is_empty() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
             IndexingPalletPermission::SubmitDataForPublicQuorum,
@@ -626,8 +629,7 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
 fn inserting_data_fails_when_batch_id_is_empty() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(signer.clone()).unwrap();
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
             IndexingPalletPermission::SubmitDataForPublicQuorum,
@@ -694,7 +696,10 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
         )])
         .unwrap();
         for id in 0..5 {
-            let who = ensure_signed(RuntimeOrigin::signed(id)).unwrap();
+            let who = ensure_signed(RuntimeOrigin::signed(sp_runtime::AccountId32::new(
+                [id; 32],
+            )))
+            .unwrap();
             pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
         }
 
@@ -709,7 +714,7 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
         // Submit enough data to ensure the quorum is reached
         for i in 0..4 {
             assert_ok!(Indexing::submit_data(
-                RuntimeOrigin::signed(i),
+                RuntimeOrigin::signed(sp_runtime::AccountId32::new([i; 32])),
                 test_submission.table.clone(),
                 test_submission.batch_id.clone(),
                 test_submission.data.clone()
@@ -724,11 +729,14 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
         assert_eq!(quorum.table, test_submission.table);
 
         // Future submissions to this batch should receive the LateBatch Error
-        let who = ensure_signed(RuntimeOrigin::signed(1234)).unwrap();
-        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+        let who = ensure_signed(RuntimeOrigin::signed(sp_runtime::AccountId32::new(
+            [123; 32],
+        )))
+        .unwrap();
+        pallet_permissions::Permissions::<Test>::insert(who.clone(), permissions.clone());
         assert_err!(
             Indexing::submit_data(
-                RuntimeOrigin::signed(1234),
+                RuntimeOrigin::signed(who),
                 test_submission.table.clone(),
                 test_submission.batch_id.clone(),
                 test_submission.data.clone(),
@@ -763,9 +771,9 @@ fn submit_data_with_mothership_key_work() {
         )
         .unwrap();
 
-        let signer_key = 1;
-        let signer = RuntimeOrigin::signed(signer_key);
-        let admin = 2;
+        let signer_key = sp_runtime::AccountId32::new([1; 32]);
+        let signer = RuntimeOrigin::signed(signer_key.clone());
+        let admin = sp_runtime::AccountId32::new([2; 32]);
 
         let admin_permission = PermissionLevel::EditSpecificPermission(Box::new(
             PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum),
@@ -773,7 +781,7 @@ fn submit_data_with_mothership_key_work() {
         let permission_list = BoundedVec::try_from(vec![admin_permission]).unwrap();
         assert_ok!(pallet_permissions::Pallet::<Test>::set_permissions(
             RuntimeOrigin::root(),
-            admin,
+            admin.clone(),
             permission_list,
         ));
 
@@ -844,7 +852,7 @@ fn we_can_reach_privileged_quorum() {
         )])
         .unwrap();
 
-        let origin = RuntimeOrigin::signed(1);
+        let origin = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(origin.clone()).unwrap();
         pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
 
@@ -905,21 +913,21 @@ fn we_can_manage_quorum_state_for_both_scopes() {
             IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_id),
         );
 
-        let public_submitter = RuntimeOrigin::signed(1);
+        let public_submitter = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(public_submitter.clone()).unwrap();
         pallet_permissions::Permissions::<Test>::insert(
             who,
             PermissionList::try_from(vec![public_permission.clone()]).unwrap(),
         );
 
-        let privileged_submitter = RuntimeOrigin::signed(2);
+        let privileged_submitter = RuntimeOrigin::signed(sp_runtime::AccountId32::new([2; 32]));
         let who = ensure_signed(privileged_submitter.clone()).unwrap();
         pallet_permissions::Permissions::<Test>::insert(
             who,
             PermissionList::try_from(vec![privileged_permission.clone()]).unwrap(),
         );
 
-        let both_submitter = RuntimeOrigin::signed(3);
+        let both_submitter = RuntimeOrigin::signed(sp_runtime::AccountId32::new([3; 32]));
         let who = ensure_signed(both_submitter.clone()).unwrap();
         pallet_permissions::Permissions::<Test>::insert(
             who,
@@ -1005,7 +1013,7 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_one_quorum_reached_ev
             IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_id),
         );
 
-        let both_submitter = RuntimeOrigin::signed(3);
+        let both_submitter = RuntimeOrigin::signed(sp_runtime::AccountId32::new([3; 32]));
         let who = ensure_signed(both_submitter.clone()).unwrap();
         pallet_permissions::Permissions::<Test>::insert(
             who,
@@ -1073,7 +1081,7 @@ fn we_cannot_submit_for_table_disabled_quorum_scope() {
         let public_permission =
             PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum);
 
-        let public_submitter = RuntimeOrigin::signed(1);
+        let public_submitter = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(public_submitter.clone()).unwrap();
         pallet_permissions::Permissions::<Test>::insert(
             who,
@@ -1129,7 +1137,7 @@ fn we_cannot_submit_with_privilege_to_different_table() {
             IndexingPalletPermission::SubmitDataForPrivilegedQuorum(TableIdentifier::default()),
         );
 
-        let privileged_submitter = RuntimeOrigin::signed(1);
+        let privileged_submitter = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(privileged_submitter.clone()).unwrap();
         pallet_permissions::Permissions::<Test>::insert(
             who,
@@ -1174,7 +1182,7 @@ fn blockchain_data_submission_stores_block_number() {
         )
         .unwrap();
 
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(signer.clone()).unwrap();
 
         pallet_permissions::Permissions::<Test>::insert(
@@ -1228,7 +1236,7 @@ fn empty_blockchain_data_emits_empty_event_with_block_number() {
         )
         .unwrap();
 
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(signer.clone()).unwrap();
 
         pallet_permissions::Permissions::<Test>::insert(
@@ -1285,7 +1293,7 @@ fn fallback_to_oc_table_block_number_when_none_provided() {
         )
         .unwrap();
 
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(signer.clone()).unwrap();
         pallet_permissions::Permissions::<Test>::insert(
             who,
@@ -1300,7 +1308,7 @@ fn fallback_to_oc_table_block_number_when_none_provided() {
 
         // Submit via `submit_data` without providing block_number
         assert_ok!(Indexing::submit_data(
-            RuntimeOrigin::signed(1),
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32])),
             table_id.clone(),
             batch.clone(),
             data.clone()
@@ -1338,7 +1346,7 @@ fn no_block_number_stored_when_implicit_and_empty_data() {
         )
         .unwrap();
 
-        let signer = RuntimeOrigin::signed(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
         let who = ensure_signed(signer.clone()).unwrap();
 
         pallet_permissions::Permissions::<Test>::insert(

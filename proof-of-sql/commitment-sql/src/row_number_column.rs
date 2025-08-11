@@ -29,12 +29,11 @@ pub fn row_number_column_def() -> ColumnDef {
 
 /// Adds a entry for the META_ROW_NUMBER column to the list of primary keys for the provided table
 pub fn add_row_number_primary_key(mut table: CreateTableBuilder) -> CreateTableBuilder {
-    let has_pks = table.constraints.iter().any(|c| match c {
-        sqlparser::ast::TableConstraint::PrimaryKey { .. } => true,
-        c => false,
-    });
-
-    if has_pks {
+    if table
+        .constraints
+        .iter()
+        .any(|c| matches!(c, sqlparser::ast::TableConstraint::PrimaryKey { .. }))
+    {
         // Add the meta row number to primary key as well
         table.constraints = table
             .constraints
@@ -69,7 +68,7 @@ pub fn add_row_number_primary_key(mut table: CreateTableBuilder) -> CreateTableB
                 index_name: None,
                 index_type: None,
                 columns: vec![Ident::new(ROW_NUMBER_COLUMN_NAME)],
-                index_options: vec![],
+                index_options: Vec::new(),
                 characteristics: None,
             });
     }

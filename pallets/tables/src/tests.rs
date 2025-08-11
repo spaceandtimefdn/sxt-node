@@ -1,17 +1,20 @@
 use core::str::from_utf8;
 
-use frame_support::traits::OriginTrait;
 use frame_support::{assert_err, assert_ok};
 use pallet_permissions::Pallet;
+use proof_of_sql::base::database::TableRef;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
-use sp_core::ConstU32;
 use sp_runtime::BoundedVec;
 use sqlparser::ast::{ColumnDef, DataType, ExactNumberInfo, Ident, TimezoneInfo};
-use sxt_core::permissions::{PermissionLevel, PermissionList, TablesPalletPermission};
+use sxt_core::permissions::{
+    IndexingPalletPermission,
+    PermissionLevel,
+    PermissionList,
+    TablesPalletPermission,
+};
 use sxt_core::tables::{
     CreateStatement,
     GetTableSchemaError,
-    ScaleColumnSchema,
     Source,
     SourceAndMode,
     TableIdentifier,
@@ -27,6 +30,7 @@ use crate::{
     CreateTableList,
     Event,
     NamespaceVersions,
+    TableOwners,
     TableVersions,
     UpdateTable,
     UpdateTableList,
@@ -46,9 +50,53 @@ macro_rules! set_permission {
     };
 }
 
+const ETH_TEST_WALLET: &str = "44bCf7001D9C3fe8b7aA2BBaaf1B94410db31f5c";
+const EXPECTED_TRANSFORMED_ETH_TEST_WALLET_HEX: &str =
+    "00000000000000000000000044bCf7001D9C3fe8b7aA2BBaaf1B94410db31f5c";
+
+fn test_tables() -> UpdateTableList {
+    let test_identifier = TableIdentifier {
+        name: Default::default(),
+        namespace: Default::default(),
+    };
+
+    let ddl = r#"CREATE TABLE IF NOT EXISTS ETHEREUM.BLOCKS (
+            TIME_STAMP TIMESTAMP NOT NULL,
+            BLOCK_NUMBER BIGINT NOT NULL,
+            BLOCK_HASH BINARY NOT NULL,
+            GAS_LIMIT DECIMAL(75, 0) NOT NULL,
+            GAS_USED DECIMAL(75, 0) NOT NULL,
+            MINER BINARY NOT NULL,
+            PARENT_HASH BINARY NOT NULL,
+            REWARD DECIMAL(75, 0) NOT NULL,
+            SIZE BIGINT NOT NULL,
+            TRANSACTION_COUNT INT NOT NULL,
+            NONCE BINARY NOT NULL,
+            RECEIPTS_ROOT BINARY NOT NULL,
+            SHA3_UNCLES BINARY NOT NULL,
+            STATE_ROOT BINARY NOT NULL,
+            TRANSACTIONS_ROOT BINARY NOT NULL,
+            UNCLES_COUNT BIGINT NOT NULL,
+            PRIMARY KEY (BLOCK_NUMBER)
+        ) WITH (TABLE_UUID=F801A872785FAB3F16C51CF7A1969000);"#;
+
+    let create_statement: CreateStatement =
+        BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+    BoundedVec::try_from(vec![UpdateTable {
+        ident: test_identifier.clone(),
+        create_statement: create_statement.clone(),
+        table_type: TableType::CoreBlockchain,
+        commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+        source: Source::Ethereum,
+    }])
+    .expect("Table list should fit in BoundedVec")
+}
+
 // Create a user from an integer and created a signed origin for it
-fn user(i: u64) -> (u64, RuntimeOrigin) {
-    (i, RuntimeOrigin::signed(i))
+fn user(i: u8) -> (sp_runtime::AccountId32, RuntimeOrigin) {
+    let who = sp_runtime::AccountId32::new([i; 32]);
+    (who.clone(), RuntimeOrigin::signed(who.clone()))
 }
 
 #[test]
@@ -67,10 +115,7 @@ fn update_tables_should_work_when_permissioned() {
 
         set_permission!(who, TablesPalletPermission::EditSchema);
 
-        assert_ok!(
-            Tables::create_tables(signer, UpdateTableList::default()),
-            ()
-        );
+        assert_ok!(Tables::create_tables(signer, test_tables()), ());
     })
 }
 
@@ -80,7 +125,7 @@ fn update_tables_should_work_when_sudo() {
         System::set_block_number(1);
 
         assert_ok!(
-            Tables::create_tables(RuntimeOrigin::root(), UpdateTableList::default()),
+            Tables::create_tables(RuntimeOrigin::root(), test_tables()),
             ()
         );
     })
@@ -295,8 +340,8 @@ fn update_namespace_uuid_works() {
         NamespaceVersions::<Test>::insert(&namespace, version, old_uuid.clone());
 
         // Grant permission
-        let (who, signer) = user(1);
-        set_permission!(who, TablesPalletPermission::EditUuid);
+        let (who, _) = user(1);
+        set_permission!(who.clone(), TablesPalletPermission::EditUuid);
 
         // Call extrinsic
         assert_ok!(Tables::update_namespace_uuid(
@@ -348,7 +393,7 @@ fn update_table_uuid_works() {
 
         // Call extrinsic
         assert_ok!(Tables::update_table_uuid(
-            RuntimeOrigin::signed(who),
+            signer,
             table.clone(),
             version,
             new_uuid.clone()
@@ -386,16 +431,11 @@ fn test_update_table_uuid_requires_permissions() {
         // Simulate original UUID
         TableVersions::<Test>::insert(&table, version, old_uuid.clone());
 
-        let (who, signer) = user(1);
+        let (_, signer) = user(1);
 
         // Call extrinsic without assigning permissions to the account
         assert_err!(
-            Tables::update_table_uuid(
-                RuntimeOrigin::signed(who),
-                table.clone(),
-                version,
-                new_uuid.clone()
-            ),
+            Tables::update_table_uuid(signer, table.clone(), version, new_uuid.clone()),
             pallet_permissions::Error::<Test>::InsufficientPermissions
         );
 
@@ -436,6 +476,155 @@ fn test_get_or_generate_uuids_for_table_generates_uuids_if_missing() {
         );
         println!("✅ Table UUID: {:?}", table_uuid);
         println!("✅ Column UUIDs: {:?}", column_uuids);
+    });
+}
+
+#[test]
+fn creating_public_permissionless_table_automatically_adds_submitter_column() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (who, signer) = user(1);
+        let test_identifier =
+            TableIdentifier::from_str_unchecked("VOTES", "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+        let ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::PublicPermissionless,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+            source: Source::Ethereum,
+        }])
+        .expect("Table list should fit in BoundedVec");
+
+        // Permission the table creator
+        assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
+            RuntimeOrigin::root(),
+            who.clone(),
+            PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema)
+        ));
+
+        assert_ok!(Tables::create_tables(signer, tables.clone()));
+
+        let expected_ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, SXT_META_SUBMITTER BINARY NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER, META_ROW_NUMBER)) WITH (BLOCK_NUMBER = BLOCK_NUMBER, TABLE_UUID = CCA1F51C06FE00EB3E489D1A083162B5, TIME_STAMP = TIME_STAMP);";
+
+        let events = System::events();
+        match events.last().map(|e| &e.event) {
+            Some(RuntimeEvent::Tables(crate::Event::SchemaUpdated(_, list))) => {
+                if let Some(first_table) = list.first() {
+                    assert_eq!(
+                        from_utf8(&first_table.create_statement).unwrap(),
+                        expected_ddl
+                    )
+                } else {
+                    panic!("Schema update event had no statements");
+                }
+            }
+            _ => panic!("Expected SchemaUpdated event not found"),
+        }
+    });
+}
+
+#[test]
+fn create_table_sets_table_owner() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (who, _) = user(1);
+        let test_identifier =
+            TableIdentifier::from_str_unchecked("VOTES", "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+        let ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::PublicPermissionless,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+            source: Source::Ethereum,
+        }])
+        .expect("Table list should fit in BoundedVec");
+
+        // Permission the table creator
+        assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
+            RuntimeOrigin::root(),
+            who.clone(),
+            PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema)
+        ));
+
+        assert_ok!(Tables::create_tables(
+            RuntimeOrigin::signed(who.clone()),
+            tables.clone()
+        ));
+
+        assert!(TableVersions::<Test>::contains_key(&test_identifier, 0));
+
+        assert_eq!(TableOwners::<Test>::get(&test_identifier), Some(who));
+    });
+}
+
+#[test]
+fn creating_a_table_should_automatically_permission_table_owner() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (who, signer) = user(1);
+        let test_identifier =
+            TableIdentifier::from_str_unchecked("VOTES", "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+        let ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::PublicPermissionless,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+            source: Source::Ethereum,
+        }])
+        .expect("Table list should fit in BoundedVec");
+
+        let edit_permission = PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema);
+
+        // Permission the table creator
+        assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
+            RuntimeOrigin::root(),
+            who.clone(),
+            edit_permission.clone(),
+        ));
+
+        assert!(pallet_permissions::Pallet::<Test>::has_permissions(
+            &who,
+            &edit_permission
+        ));
+
+        assert_ok!(Tables::create_tables(signer, tables.clone()));
+
+        assert!(TableVersions::<Test>::contains_key(&test_identifier, 0));
+
+        assert_eq!(
+            TableOwners::<Test>::get(&test_identifier),
+            Some(who.clone())
+        );
+
+        let submit_permission = PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(test_identifier.clone()),
+        );
+
+        let meta_permission =
+            PermissionLevel::EditSpecificPermission(Box::new(PermissionLevel::IndexingPallet(
+                IndexingPalletPermission::SubmitDataForPrivilegedQuorum(test_identifier.clone()),
+            )));
+
+        assert!(pallet_permissions::Pallet::<Test>::has_permissions(
+            &who,
+            &submit_permission
+        ));
+        assert!(pallet_permissions::Pallet::<Test>::has_permissions(
+            &who,
+            &meta_permission
+        ));
     });
 }
 
@@ -503,4 +692,43 @@ fn we_can_get_table_schemas() {
 
         assert_eq!(table_schema, expected_columns);
     });
+}
+
+use sp_core::crypto::Ss58Codec;
+#[test]
+fn ensure_safe_name_works_for_substrate_address() {
+    let (test_account, _) = user(1);
+    let ss58 = Ss58Codec::to_ss58check(&test_account);
+    println!("{ss58:?}");
+    let test_identifier = TableIdentifier::from_str_unchecked(
+        "TABLE",
+        "SCHEMA_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+    );
+
+    assert_ok!(crate::ensure_safe_name::<Test>(
+        test_account,
+        test_identifier
+    ));
+}
+
+#[test]
+fn we_can_identify_an_eth_address() {
+    let account = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+    assert!(crate::is_ethereum_address::<Test>(account));
+}
+
+use sxt_core::utils::eth_address_to_substrate_account_id;
+#[test]
+fn ensure_safe_name_works_for_ethereum_address() {
+    let test_account = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
+    let test_identifier = TableIdentifier::from_str_unchecked(
+        "TABLE",
+        "SCHEMA_44bCf7001D9C3fe8b7aA2BBaaf1B94410db31f5c",
+    );
+
+    assert_ok!(crate::ensure_safe_name::<Test>(
+        test_account,
+        test_identifier
+    ));
 }

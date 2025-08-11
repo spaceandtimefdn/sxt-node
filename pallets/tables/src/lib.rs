@@ -8,7 +8,7 @@ pub use pallet::*;
 extern crate alloc;
 extern crate core;
 
-use alloc::string::ToString;
+use alloc::string::String;
 
 #[cfg(test)]
 mod mock;
@@ -24,7 +24,8 @@ pub use weights::*;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    use core::str::{from_utf8, Utf8Error};
+    use alloc::boxed::Box;
+    use core::str::from_utf8;
 
     use codec::alloc::borrow::ToOwned;
     use commitment_sql::CreateTableAndCommitmentMetadata;
@@ -32,19 +33,17 @@ pub mod pallet {
     use frame_support::pallet_prelude::{StorageDoubleMap, ValueQuery, *};
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
+    use frame_system::RawOrigin;
     use proof_of_sql_commitment_map::{
         CommitmentSchemeFlags,
-        TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
     };
+    use scale_info::prelude::vec;
+    use sp_core::crypto::Ss58Codec;
+    use sp_core::U256;
     use sp_runtime::Vec;
-    use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
-    use sqlparser::ast::{Expr, ObjectName, SqlOption, Value};
-    use sqlparser::dialect::PostgreSqlDialect;
-    use sqlparser::parser::Parser;
     use sxt_core::permissions::*;
     use sxt_core::tables::{
-        convert_sql_to_ignite_create_statement,
         create_statement_to_sqlparser,
         create_statement_to_sqlparser_remove_with,
         extract_schema_uuid,
@@ -54,7 +53,6 @@ pub mod pallet {
         sqlparser_to_create_statement,
         table_schema_from_create_statement,
         update_uuid_in_create_table_statement,
-        uuids_from_create_statement,
         uuids_from_sqlparser,
         ColumnUuidList,
         CommitmentBytes,
@@ -62,7 +60,6 @@ pub mod pallet {
         CreateStatement,
         GetTableSchemaError,
         IdentifierList,
-        IndexerMode,
         InsertQuorumSize,
         SnapshotUrl,
         Source,
@@ -252,6 +249,12 @@ pub mod pallet {
     pub type TableSources<T: Config> =
         StorageMap<_, Blake2_128Concat, TableIdentifier, Source, ValueQuery>;
 
+    /// Maps a table identifier to the account that created it.
+    /// Only used for community tables.
+    #[pallet::storage]
+    pub type TableOwners<T: Config> =
+        StorageMap<_, Blake2_128Concat, TableIdentifier, Option<T::AccountId>, ValueQuery>;
+
     /// A table identifier, a sql statement for table creation, and an initial commitment
     pub type CreateTableCmd = (
         TableIdentifier,
@@ -338,14 +341,23 @@ pub mod pallet {
 
         /// There was an error generating a uuid
         UUIDGenerationError,
+
+        /// The provided namespace was invalid for the table
+        InvalidNamespace,
+
+        /// The provided name was invalid for the table
+        InvalidTableName,
     }
 
     /// The implementation for the pallet extrinsics
     #[pallet::call]
-    impl<T: Config> Pallet<T> {
+    impl<T: Config> Pallet<T>
+    where
+        T::AccountId: Ss58Codec,
+    {
         #[pallet::call_index(0)]
         #[pallet::weight(<T as Config>::WeightInfo::update_tables())]
-        /// TODO: add docs
+        /// Create table from a provided list with identifiers and DDLs
         pub fn create_tables(origin: OriginFor<T>, tables: UpdateTableList) -> DispatchResult {
             Self::create_tables_inner(origin, tables)
         }
@@ -527,7 +539,7 @@ pub mod pallet {
             version: TableVersion,
             new_uuid: TableUuid,
         ) -> DispatchResult {
-            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+            let _ = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditUuid),
             )?;
@@ -554,7 +566,7 @@ pub mod pallet {
             version: TableVersion,
             new_uuid: TableUuid,
         ) -> DispatchResult {
-            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+            let _ = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditUuid),
             )?;
@@ -586,11 +598,14 @@ pub mod pallet {
     fn map_uuid_error<T: Config>(error: UpdateUuidError) -> DispatchError {
         match error {
             UpdateUuidError::InvalidUuid => Error::<T>::TableUUIDError.into(),
-            UpdateUuidError::ParseError { error } => Error::<T>::CreateStatementParseError.into(),
+            UpdateUuidError::ParseError { .. } => Error::<T>::CreateStatementParseError.into(),
         }
     }
 
-    impl<T: Config> Pallet<T> {
+    impl<T: Config> Pallet<T>
+    where
+        T::AccountId: Ss58Codec,
+    {
         /// Remove commits based on identifier
         pub fn remove_commits(ident: TableIdentifier) {
             for (k1, k2, _) in pallet_commitments::CommitmentStorageMap::<T>::iter() {
@@ -635,7 +650,7 @@ pub mod pallet {
             Ok(next_version)
         }
 
-        /// Uodate the schema and commitment for a table and source and mode combo
+        /// Update the schema and commitment for a table and source and mode combo
         pub fn insert_schema(
             ident: TableIdentifier,
             stmnt: CreateStatement,
@@ -768,20 +783,36 @@ pub mod pallet {
             origin: OriginFor<T>,
             tables: UpdateTableList,
         ) -> DispatchResult {
-            let owner = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin.clone(),
-                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
-            )?;
+            // If all the tables being submitted are public, then we only need the transaction to
+            // be signed, not specially permissioned
+            let all_public = tables
+                .iter()
+                .all(|table| table.table_type == TableType::PublicPermissionless);
+
+            let owner: Option<T::AccountId> = if all_public {
+                Some(ensure_signed(origin)?)
+            } else {
+                pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                    origin.clone(),
+                    &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+                )?
+            };
 
             let tables_with_meta_columns = tables
-                .into_iter()
-                .map(|mut table| {
-                    // Generate or extract UUIDs
-                    let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(
-                        table.create_statement.clone(),
-                        table.ident.clone(),
-                    )
-                        .map_err(|_| Error::<T>::UUIDGenerationError)?;
+        .into_iter()
+        .map(|mut table| {
+            let is_public = table.table_type == TableType::PublicPermissionless;
+
+            if is_public && owner.is_some() {
+                ensure_safe_name::<T>(owner.clone().expect("owner.is_some"), table.ident.clone())?;
+            }
+
+            // Generate or extract UUIDs
+            let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(
+                table.create_statement.clone(),
+                table.ident.clone(),
+            )
+            .map_err(|_| Error::<T>::UUIDGenerationError)?;
 
                     // Update the create statement to add the UUIDs to the WITH clause
                     let updated_create_statement = update_uuid_in_create_table_statement(table_uuid.clone(), column_uuids.clone(), table.create_statement.clone()).map_err(map_uuid_error::<T>)?;
@@ -795,10 +826,15 @@ pub mod pallet {
                     );
 
                     // Parse and remove WITH clause
-                    let (create_table, with_options) = create_statement_to_sqlparser_remove_with(
+                    let (mut create_table, with_options) = create_statement_to_sqlparser_remove_with(
                         updated_create_statement,
                     )
                         .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+                    // Inject submitter column if this is a permissionless table
+                    if is_public {
+                        create_table = sxt_core::tables::inject_submitter_column(create_table);
+                    }
 
                     // Generate metadata
                     let CreateTableAndCommitmentMetadata {
@@ -845,11 +881,31 @@ pub mod pallet {
                     table.create_statement = CreateStatement::try_from(reconstructed.as_bytes().to_vec())
                         .map_err(|_| Error::<T>::BoundedVecError)?;
 
-                    Ok(table)
-                })
-                .collect::<Result<Vec<_>, DispatchError>>()?
-                .try_into()
-                .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
+            // Grant permission to the table creator to submit data and grant others permission to
+            // submit data
+            if let Some(owner) = owner.clone() {
+                let table_permission = PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table.ident.clone()));
+
+                let _ = pallet_permissions::Pallet::<T>::add_proxy_permission(
+                    RawOrigin::Root.into(),
+                    owner.clone(),
+                    table_permission.clone(),
+                );
+
+                let _ = pallet_permissions::Pallet::<T>::add_proxy_permission(
+                    RawOrigin::Root.into(),
+                    owner.clone(),
+                    PermissionLevel::EditSpecificPermission(Box::new(table_permission)),
+                );
+            }
+
+            TableOwners::<T>::insert(&table.ident, owner.clone());
+
+            Ok(table)
+        })
+        .collect::<Result<Vec<_>, DispatchError>>()?
+        .try_into()
+        .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
 
             Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
             Ok(())
@@ -866,5 +922,78 @@ pub mod pallet {
 
             Ok(table_schema)
         }
+    }
+
+    // Check if a public table has a safe name. Accepts an account ID and a table Identifier and determines if the table identifier is
+    // valid for the provided table owner.
+    pub(crate) fn ensure_safe_name<T: Config>(
+        who: T::AccountId,
+        ident: TableIdentifier,
+    ) -> Result<(), DispatchError>
+    where
+        T::AccountId: Ss58Codec,
+    {
+        // Get the namespace as a string
+        let val = from_utf8(&ident.namespace).map_err(|_| Error::<T>::UtfConversionError)?;
+
+        // Substrate addresses are 32 bytes, which, in hex string format, exceeds our character
+        // limit. Because of this, substrate addresses must use their SS58 format, but to improve user
+        // experience, Ethereum use their hex string format. This distinction requires use to check
+        // which kind of account we're handling.
+
+        // Check if this address has the ten leading 0's
+        let is_ethereum = is_ethereum_address::<T>(who.clone());
+        let is_valid_eth_namespace = is_valid_eth_user_namespace(val, who.clone().encode());
+        let is_valid_ss58 = is_valid_ss58_user_namespace(val, Ss58Codec::to_ss58check(&who));
+
+        if is_ethereum && is_valid_eth_namespace {
+            return Ok(());
+        }
+
+        if is_valid_ss58 {
+            return Ok(());
+        }
+
+        Err(Error::<T>::InvalidNamespace.into())
+    }
+
+    // Returns true if the provided bytes coule be a valid ethereum address
+    pub(crate) fn is_ethereum_address<T: Config>(account: T::AccountId) -> bool {
+        let eth_bytes = account.encode();
+        // Remove the leiading 0s from the bytes before comparing
+        let trimmed_bytes: Vec<u8> = eth_bytes
+            .into_iter()
+            .skip_while(|&byte| byte == 0)
+            .collect(); // U256 with 10 leading 0's
+                        // Eth addresses are 20 bytes, so this is the maximum possible value of an eth
+                        // address in our system
+
+        let address = U256::from_little_endian(&trimmed_bytes);
+
+        let eth_max_val =
+            U256::from_str_radix("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16).unwrap();
+
+        address < eth_max_val
+    }
+
+    /// Returns true if the namespace is valid for the provided eth address bytes
+    fn is_valid_eth_user_namespace(namespace: &str, eth_bytes: Vec<u8>) -> bool {
+        // Remove the leading 0s from the bytes before comparing
+        let trimmed_bytes: Vec<u8> = eth_bytes
+            .into_iter()
+            .skip_while(|&byte| byte == 0)
+            .collect();
+
+        namespace
+            .to_uppercase()
+            .ends_with(&hex::encode(trimmed_bytes).to_uppercase())
+    }
+
+    /// Returns true if the namespace is valid for the provided SS58 encoded address string
+    fn is_valid_ss58_user_namespace(namespace: &str, ss58_user: String) -> bool {
+        // The namespace of user created tales must end with the users hexadecimal address
+        namespace
+            .to_uppercase()
+            .ends_with(&ss58_user.to_uppercase())
     }
 }

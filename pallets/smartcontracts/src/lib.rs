@@ -124,6 +124,7 @@ pub mod pallet {
     impl<T: Config<I>, I: 'static> Pallet<T, I>
     where
         I: NativeApi,
+        T::AccountId: sp_core::crypto::Ss58Codec,
     {
         /// **Remove a Smart Contract Entry**
         ///

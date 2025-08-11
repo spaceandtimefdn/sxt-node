@@ -16,6 +16,8 @@ frame_support::construct_runtime!(
 
 #[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
 impl frame_system::Config for Test {
+    type AccountId = sp_runtime::AccountId32;
+    type Lookup = sp_runtime::traits::IdentityLookup<Self::AccountId>;
     type Block = Block;
 }
 
