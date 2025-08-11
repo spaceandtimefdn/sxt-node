@@ -1,3 +1,13 @@
+# [1.24.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.23.0...v1.24.0) (2025-08-11)
+
+
+### Features
+
+* Add check for existing submitter column in CreateTables ([63c89d1](https://github.com/spaceandtimefdn/sxt-node/commit/63c89d185c742574290ba2f9ac6dade387ba70ac))
+* Implement Public and Permissionless Tables ([12c5e0c](https://github.com/spaceandtimefdn/sxt-node/commit/12c5e0c6b636c31588a9ac33402d71ba95b1f751))
+
+
+
 # [1.23.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.22.0...v1.23.0) (2025-08-11)
 
 
@@ -42,17 +52,6 @@
 ### Features
 
 * inject meta_row_number as primary key during table creation ([30ab34f](https://github.com/spaceandtimefdn/sxt-node/commit/30ab34f24068adfc68c68b421d334997e9ad4758))
-
-
-
-# [1.19.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.18.0...v1.19.0) (2025-08-08)
-
-
-### Features
-
-* Add partial unstaking to unstake Initiated impl ([8c7a3de](https://github.com/spaceandtimefdn/sxt-node/commit/8c7a3de16f224769161e9a4d115221da8f63eb64))
-* Added missing request enum types ([263436c](https://github.com/spaceandtimefdn/sxt-node/commit/263436c0c33832517281f3c26535eaee3f16b331))
-* Complete unstake processing implementations ([32649e7](https://github.com/spaceandtimefdn/sxt-node/commit/32649e780c0ccc9dc02cd35344c0537f41cce4ff))
 
 
 
