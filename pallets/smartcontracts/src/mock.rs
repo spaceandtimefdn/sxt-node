@@ -30,7 +30,7 @@ frame_support::construct_runtime!(
     }
 );
 
-type AccountId = u64;
+type AccountId = sp_core::crypto::AccountId32;
 type Nonce = u32;
 type Balance = u128;
 

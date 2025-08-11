@@ -1,6 +1,8 @@
 use frame_support::derive_impl;
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
 use proof_of_sql_commitment_map::PerCommitmentScheme;
+use sp_core::crypto::AccountId32;
+use sp_runtime::traits::IdentityLookup;
 use sp_runtime::BuildStorage;
 
 use crate as pallet_tables;
@@ -21,6 +23,8 @@ frame_support::construct_runtime!(
 #[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
 impl frame_system::Config for Test {
     type Block = Block;
+    type AccountId = AccountId32;
+    type Lookup = IdentityLookup<Self::AccountId>;
 }
 
 impl pallet_tables::Config for Test {

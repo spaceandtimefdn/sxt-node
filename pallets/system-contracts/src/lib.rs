@@ -91,7 +91,10 @@ pub mod pallet {
 
     /// The system contracts pallet's dispatchable functions ([`Call`]s).
     #[pallet::call]
-    impl<T: Config> Pallet<T> {
+    impl<T: Config> Pallet<T>
+    where
+        T::AccountId: sp_core::crypto::Ss58Codec,
+    {
         /// Sudo call for setting the stored staking contract information.
         #[pallet::call_index(0)]
         #[pallet::weight(Weight::from_parts(0, 0))]

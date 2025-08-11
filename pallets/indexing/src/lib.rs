@@ -46,6 +46,7 @@ pub mod pallet {
     use hex::FromHex;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
+    use sp_core::crypto::Ss58Codec;
     use sp_core::{H256, U256};
     use sp_runtime::traits::{Bounded, Hash, StaticLookup, UniqueSaturatedInto};
     use sp_runtime::{BoundedVec, SaturatedConversion};
@@ -194,6 +195,8 @@ pub mod pallet {
         TableDeserializationError,
         /// Error deserializing the table as an OnChainTable
         TableSerializationError,
+        /// Submitter Injection Failed
+        SubmitterInjectionFailed,
     }
 
     #[pallet::call]
@@ -305,7 +308,7 @@ pub mod pallet {
         };
 
         if let Some(data_quorum) = public_data_quorum.or(privileged_data_quorum) {
-            finalize_quorum::<T, I>(data_quorum, data, block_number)?;
+            finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
         }
 
         Ok(())
@@ -400,22 +403,39 @@ pub mod pallet {
         quorum: DataQuorum<T::AccountId, T::Hash>,
         row_data: RowData,
         block_number: Option<u64>,
+        submitter: T::AccountId,
     ) -> DispatchResult
     where
         T: Config<I>,
         I: NativeApi,
     {
+        // Clean up submissions for this batch
         Submissions::<T, I>::iter_key_prefix(&quorum.batch_id)
             .for_each(|key| Submissions::<T, I>::remove(&quorum.batch_id, key));
 
+        // Record final decision
         FinalData::<T, I>::insert(&quorum.batch_id, &quorum);
 
+        // Deserialize into Arrow-compatible OnChainTable
         let table_bytes = I::record_batch_to_onchain(sxt_core::native::RowData { row_data })
             .map_err(Error::<T, I>::from)?;
 
         let oc_table = OnChainTable::try_from(table_bytes)
             .map_err(|_| Error::<T, I>::TableDeserializationError)?;
 
+        // Check if the table is permissionless and inject the submitter column if needed
+        let is_permissionless =
+            pallet_tables::Identifiers::<T>::get(sxt_core::tables::TableType::PublicPermissionless)
+                .contains(&quorum.table);
+
+        let oc_table = if is_permissionless {
+            sxt_core::tables::inject_submitter_data(oc_table, submitter.encode())
+                .map_err(|_| Error::<T, I>::SubmitterInjectionFailed)?
+        } else {
+            oc_table
+        };
+
+        // Commit to the data and retrieve metadata
         let InsertAndCommitmentMetadata {
             insert_with_meta_columns,
             ..
@@ -424,18 +444,21 @@ pub mod pallet {
             oc_table.clone(),
         )?;
 
+        // Serialize the final data
         let on_chain_table_bytes: BoundedVec<u8, ConstU32<DATA_MAX_LEN>> =
             postcard::to_allocvec(&insert_with_meta_columns)
                 .map_err(|_| Error::<T, I>::TableSerializationError)?
                 .try_into()
                 .map_err(|_| Error::<T, I>::TableSerializationError)?;
 
+        // Update latest indexed block number if applicable
         if let Some(bn) =
             block_number.or_else(|| oc_table.max_block_number().and_then(|v| v.try_into().ok()))
         {
             BlockNumbers::<T, I>::insert(&quorum.table, bn);
         }
 
+        // Emit appropriate event
         if oc_table.num_rows() == 0 {
             Pallet::<T, I>::deposit_event(Event::QuorumEmptyBlock {
                 table: quorum.table.clone(),
@@ -450,6 +473,7 @@ pub mod pallet {
             });
         }
 
+        // If system table, propagate insert or error
         if quorum.table.is_staking_table() {
             if let Err(e) = pallet_system_tables::Pallet::<T>::process_system_table(
                 quorum.table.clone(),

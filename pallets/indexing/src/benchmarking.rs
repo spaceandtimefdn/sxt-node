@@ -3,6 +3,7 @@ use alloc::vec;
 
 use frame_benchmarking::v2::*;
 use frame_system::RawOrigin;
+use sp_core::crypto::Ss58Codec;
 
 use super::*;
 #[cfg(test)]
@@ -11,7 +12,11 @@ use crate::native_pallet::Pallet as PalletWithApi;
 use crate::Pallet as Indexing;
 
 #[allow(clippy::multiple_bound_locations)]
-#[instance_benchmarks(where I: NativeApi)]
+#[instance_benchmarks(
+    where
+        <T as frame_system::Config>::AccountId: Ss58Codec,
+        I: NativeApi,
+)]
 mod benchmarks {
     use native_api::NativeApi;
     use pallet_tables::{CommitmentCreationCmd, UpdateTable};

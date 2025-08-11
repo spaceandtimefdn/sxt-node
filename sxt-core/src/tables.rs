@@ -1,7 +1,8 @@
 extern crate alloc;
-use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use alloc::{format, vec};
+use core::fmt::Display;
 use core::str::{from_utf8, Utf8Error};
 
 use codec::{Decode, Encode, MaxEncodedLen};
@@ -766,6 +767,9 @@ pub enum TableType {
 
     /// Testing type
     Testing(InsertQuorumSize),
+
+    /// Public permissionless, adds the writer to a "submitter column"
+    PublicPermissionless,
 }
 
 impl From<TableType> for InsertQuorumSize {
@@ -784,6 +788,10 @@ impl From<TableType> for InsertQuorumSize {
                 privileged: Some(0),
             },
             TableType::Testing(quorum) => quorum,
+            TableType::PublicPermissionless => InsertQuorumSize {
+                public: Some(0),
+                privileged: Some(0),
+            },
         }
     }
 }
@@ -908,17 +916,96 @@ impl From<CreateStatementParseError> for GetTableSchemaError {
     }
 }
 
+/// A helper function to inject the submitter address bytes into all rows in the OnChainTable provided
+pub fn inject_submitter_data(
+    row_data: on_chain_table::OnChainTable,
+    submitter: Vec<u8>,
+) -> Result<on_chain_table::OnChainTable, on_chain_table::OnChainTableError> {
+    let column = on_chain_table::OnChainColumn::VarBinary(vec![submitter; row_data.num_rows()]);
+    let column_ready_for_chaining =
+        vec![(sqlparser::ast::Ident::new("SXT_META_SUBMITTER"), column)];
+    on_chain_table::OnChainTable::try_from_iter(
+        row_data.into_iter().chain(column_ready_for_chaining),
+    )
+}
+
+/// Inject a submitter varchar column to a CreateTableBuilder
+pub fn inject_submitter_column(mut table: CreateTableBuilder) -> CreateTableBuilder {
+    let submitter_col = sqlparser::ast::ColumnDef {
+        name: sqlparser::ast::Ident::new("SXT_META_SUBMITTER"),
+        data_type: sqlparser::ast::DataType::Binary(None),
+        collation: None,
+        options: vec![sqlparser::ast::ColumnOptionDef {
+            name: None,
+            option: sqlparser::ast::ColumnOption::NotNull,
+        }],
+    };
+
+    table.columns.push(submitter_col);
+    table
+}
+
 #[cfg(test)]
 mod tests {
     use alloc::string::String;
     use alloc::{format, vec};
 
+    use on_chain_table::OnChainColumn;
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
     use sqlparser::ast::{ColumnDef, DataType, ExactNumberInfo, Ident, TimezoneInfo};
     use sqlparser::dialect::PostgreSqlDialect;
     use sqlparser::parser::Parser;
 
     use super::*;
+
+    #[test]
+    fn we_can_inject_submitter_columns_into_table() {
+        let test_input = on_chain_table::OnChainTable::try_from_iter([
+            (Ident::new("FIRST"), OnChainColumn::BigInt(vec![1])),
+            (
+                Ident::new("SECOND"),
+                OnChainColumn::VarChar(vec!["ABC123".into()]),
+            ),
+            (Ident::new("THIRD"), OnChainColumn::BigInt(vec![1])),
+        ])
+        .unwrap();
+
+        let test_submitter = vec![4; 32]; // 32 byte 'address'
+
+        let expected_output = on_chain_table::OnChainTable::try_from_iter([
+            (Ident::new("FIRST"), OnChainColumn::BigInt(vec![1])),
+            (
+                Ident::new("SECOND"),
+                OnChainColumn::VarChar(vec!["ABC123".into()]),
+            ),
+            (Ident::new("THIRD"), OnChainColumn::BigInt(vec![1])),
+            (
+                Ident::new("SXT_META_SUBMITTER"),
+                OnChainColumn::VarBinary(vec![test_submitter.clone()]),
+            ),
+        ])
+        .unwrap();
+
+        assert_eq!(
+            inject_submitter_data(test_input, test_submitter).unwrap(),
+            expected_output
+        );
+    }
+
+    #[test]
+    fn we_can_inject_submitter_data_into_tables() {
+        let test_val = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME) );";
+        let sample_statement = CreateStatement::try_from(test_val.as_bytes().to_vec()).unwrap();
+
+        let expected_val = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, SXT_META_SUBMITTER BINARY NOT NULL, PRIMARY KEY (ID, NAME) );";
+        let expected_statement =
+            CreateStatement::try_from(expected_val.as_bytes().to_vec()).unwrap();
+        let expected_output = create_statement_to_sqlparser(expected_statement).unwrap();
+
+        let test_input = create_statement_to_sqlparser(sample_statement).unwrap();
+
+        assert_eq!(inject_submitter_column(test_input), expected_output);
+    }
 
     #[test]
     fn test_generate_namespace_uuid_deterministic() {

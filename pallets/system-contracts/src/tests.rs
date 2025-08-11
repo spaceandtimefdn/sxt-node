@@ -45,13 +45,21 @@ fn non_root_cannot_set_contracts() {
 
         let contract_info = sample_contract_info();
 
+        let account = sp_runtime::AccountId32::new([1; 32]);
+
         assert_noop!(
-            SystemContracts::set_staking_contract(RuntimeOrigin::signed(1), contract_info,),
+            SystemContracts::set_staking_contract(
+                RuntimeOrigin::signed(account.clone()),
+                contract_info,
+            ),
             sp_runtime::DispatchError::BadOrigin
         );
 
         assert_noop!(
-            SystemContracts::set_messaging_contract(RuntimeOrigin::signed(1), contract_info,),
+            SystemContracts::set_messaging_contract(
+                RuntimeOrigin::signed(account.clone()),
+                contract_info,
+            ),
             sp_runtime::DispatchError::BadOrigin
         );
     });

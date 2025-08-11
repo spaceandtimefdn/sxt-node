@@ -59,8 +59,8 @@ fn add_smartcontract_works() {
         let source = Source::default();
         let contract_address = create_contract_address();
         let contract_abi = Some(create_contract_abi());
-        let who = 1;
-        set_permission!(who);
+        let who = sp_runtime::AccountId32::new([1; 32]);
+        set_permission!(who.clone());
 
         let normal_contract = Contract::Normal(NormalContract {
             details: ContractDetails {
@@ -81,7 +81,7 @@ fn add_smartcontract_works() {
 
         // Call the extrinsic
         assert_ok!(SmartContracts::add_smartcontract(
-            RuntimeOrigin::signed(who),
+            RuntimeOrigin::signed(who.clone()),
             normal_contract.clone(),
             Default::default(),
         ));
@@ -114,8 +114,8 @@ fn add_proxy_smartcontract_works() {
         let proxy_address = create_contract_address();
         let implementation_address = create_contract_address();
         let contract_abi = Some(create_contract_abi());
-        let who = 1;
-        set_permission!(who);
+        let who = sp_runtime::AccountId32::new([1; 32]);
+        set_permission!(who.clone());
 
         let proxy_contract = Contract::Proxy(ProxyContract {
             details: ContractDetails {
@@ -148,7 +148,7 @@ fn add_proxy_smartcontract_works() {
 
         // Call the extrinsic
         assert_ok!(SmartContracts::add_smartcontract(
-            RuntimeOrigin::signed(who),
+            RuntimeOrigin::signed(who.clone()),
             proxy_contract.clone(),
             Default::default(),
         ));
@@ -180,8 +180,8 @@ fn add_existing_smartcontract_fails() {
         let source = Source::default();
         let contract_address = create_contract_address();
         let contract_abi = Some(create_contract_abi());
-        let who = 1;
-        set_permission!(who);
+        let who = sp_runtime::AccountId32::new([1; 32]);
+        set_permission!(who.clone());
 
         let normal_contract = Contract::Normal(NormalContract {
             details: ContractDetails {
@@ -202,7 +202,7 @@ fn add_existing_smartcontract_fails() {
 
         // Insert contract initially
         assert_ok!(SmartContracts::add_smartcontract(
-            RuntimeOrigin::signed(who),
+            RuntimeOrigin::signed(who.clone()),
             normal_contract.clone(),
             Default::default(),
         ));
@@ -228,8 +228,8 @@ fn remove_smartcontract_works() {
         let source = Source::default();
         let contract_address = create_contract_address();
         let contract_abi = Some(create_contract_abi());
-        let who = 1;
-        set_permission!(who);
+        let who = sp_runtime::AccountId32::new([1; 32]);
+        set_permission!(who.clone());
 
         let normal_contract = Contract::Normal(NormalContract {
             details: ContractDetails {
@@ -263,7 +263,7 @@ fn remove_smartcontract_works() {
 
         // Call the extrinsic
         assert_ok!(SmartContracts::remove_smartcontract(
-            RuntimeOrigin::signed(who),
+            RuntimeOrigin::signed(who.clone()),
             source.clone(),
             contract_address.clone(),
         ));
@@ -294,8 +294,8 @@ fn remove_nonexistent_smartcontract_does_not_fail() {
 
         let source = Source::default();
         let contract_address = create_contract_address();
-        let who = 1;
-        set_permission!(who);
+        let who = sp_runtime::AccountId32::new([1; 32]);
+        set_permission!(who.clone());
 
         // Ensure it doesn't exist
         assert!(!ContractStorage::<Test, Api>::contains_key(
