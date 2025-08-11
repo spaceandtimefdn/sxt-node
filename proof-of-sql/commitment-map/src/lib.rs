@@ -37,5 +37,6 @@ pub use commitment_storage_map::{
     TableCommitmentBytesPerCommitmentScheme,
     TableCommitmentBytesPerCommitmentSchemePassBy,
     TableCommitmentMaxLength,
+    TableCommitmentPerCommitmentScheme,
     TableCommitmentToBytesError,
 };
