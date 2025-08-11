@@ -347,6 +347,9 @@ pub mod pallet {
 
         /// The provided name was invalid for the table
         InvalidTableName,
+
+        /// The table used a reserved Column Name
+        ReservedColumnName,
     }
 
     /// The implementation for the pallet extrinsics
@@ -833,6 +836,9 @@ pub mod pallet {
 
                     // Inject submitter column if this is a permissionless table
                     if is_public {
+                        if sxt_core::tables::has_submitter_column(&create_table) {
+                            return Err(Error::<T>::ReservedColumnName.into());
+                        }
                         create_table = sxt_core::tables::inject_submitter_column(create_table);
                     }
 
