@@ -38,6 +38,9 @@ pub struct TableCommitmentBytes {
 pub type TableCommitmentBytesPerCommitmentScheme =
     PerCommitmentScheme<OptionType<ConcreteType<TableCommitmentBytes>>>;
 
+/// Collection of table commitments with at most one per commitment scheme.
+pub type TableCommitmentPerCommitmentScheme = PerCommitmentScheme<OptionType<TableCommitmentType>>;
+
 /// [`TableCommitmentBytesPerCommitmentScheme`] wrapper that can cross the native-runtime boundary.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, PassByCodec)]
 pub struct TableCommitmentBytesPerCommitmentSchemePassBy {
@@ -98,14 +101,10 @@ impl<C: Commitment + Serialize> TryFrom<&TableCommitment<C>> for TableCommitment
 
 // This conversion cannot be implemented with `GenericOverCommitmentFn` because it imposes
 // additional trait bounds on `WithCommitment<C>` (`C: Serialize`).
-impl TryFrom<PerCommitmentScheme<OptionType<TableCommitmentType>>>
-    for TableCommitmentBytesPerCommitmentScheme
-{
+impl TryFrom<TableCommitmentPerCommitmentScheme> for TableCommitmentBytesPerCommitmentScheme {
     type Error = TableCommitmentToBytesError;
 
-    fn try_from(
-        value: PerCommitmentScheme<OptionType<TableCommitmentType>>,
-    ) -> Result<Self, Self::Error> {
+    fn try_from(value: TableCommitmentPerCommitmentScheme) -> Result<Self, Self::Error> {
         value
             .into_flat_iter()
             .map(|any| match &any {
@@ -139,9 +138,7 @@ where
 
 // This conversion cannot be implemented with `GenericOverCommitmentFn` because it imposes
 // additional trait bounds on `WithCommitment<C>` (`C: Deserialize`).
-impl TryFrom<TableCommitmentBytesPerCommitmentScheme>
-    for PerCommitmentScheme<OptionType<TableCommitmentType>>
-{
+impl TryFrom<TableCommitmentBytesPerCommitmentScheme> for TableCommitmentPerCommitmentScheme {
     type Error = bincode::error::DecodeError;
 
     fn try_from(value: TableCommitmentBytesPerCommitmentScheme) -> Result<Self, Self::Error> {
