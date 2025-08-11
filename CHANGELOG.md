@@ -1,3 +1,13 @@
+# [1.23.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.22.0...v1.23.0) (2025-08-11)
+
+
+### Features
+
+* add eth-ecdsa as a 4th runtime signature type ([3a489ac](https://github.com/spaceandtimefdn/sxt-node/commit/3a489ac79ec94a5f0decb8488cc661f7f013e8c2))
+* use eth_ecdsa MultiSignature in runtime ([777a187](https://github.com/spaceandtimefdn/sxt-node/commit/777a187a675826f619fa664d5cf5aae84691bf44))
+
+
+
 # [1.22.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.21.0...v1.22.0) (2025-08-11)
 
 
@@ -43,20 +53,6 @@
 * Add partial unstaking to unstake Initiated impl ([8c7a3de](https://github.com/spaceandtimefdn/sxt-node/commit/8c7a3de16f224769161e9a4d115221da8f63eb64))
 * Added missing request enum types ([263436c](https://github.com/spaceandtimefdn/sxt-node/commit/263436c0c33832517281f3c26535eaee3f16b331))
 * Complete unstake processing implementations ([32649e7](https://github.com/spaceandtimefdn/sxt-node/commit/32649e780c0ccc9dc02cd35344c0537f41cce4ff))
-
-
-
-# [1.18.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.17.1...v1.18.0) (2025-07-31)
-
-
-### Bug Fixes
-
-* configure and impose end row limits in commitments pallet ([0a9b080](https://github.com/spaceandtimefdn/sxt-node/commit/0a9b0802d2864b0666a8776f8cd97325598b1290))
-
-
-### Features
-
-* determine if an insert for a commitment exceeds end row limits ([6c9716d](https://github.com/spaceandtimefdn/sxt-node/commit/6c9716d58497bfd0d7a7743deaa38336dcda9a57))
 
 
 
