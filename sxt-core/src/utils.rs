@@ -1,7 +1,12 @@
 use alloc::vec::Vec;
-
+#[cfg(feature = "std")]
+use anyhow::Result;
+#[cfg(feature = "std")]
+use arrow::array::RecordBatch;
 use codec::Decode;
 use frame_system::Config as SystemConfig;
+#[cfg(feature = "std")]
+use on_chain_table::OnChainTable;
 use sp_core::crypto::AccountId32;
 use sp_runtime::traits::StaticLookup;
 use sp_runtime::DispatchError;
@@ -81,4 +86,11 @@ pub fn proof_of_sql_bincode_config<const ALLOCATION_LIMIT: usize>() -> impl binc
         .with_fixed_int_encoding()
         .with_big_endian()
         .with_limit::<ALLOCATION_LIMIT>()
+}
+
+/// Used to decode the on chain table slice to a RecordBatch
+#[cfg(feature = "std")]
+pub fn record_batch_from_data(on_chain_table_bytes: &[u8]) -> Result<RecordBatch> {
+    let table: OnChainTable = postcard::from_bytes(on_chain_table_bytes)?;
+    Ok(RecordBatch::from(table))
 }

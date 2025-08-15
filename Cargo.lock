@@ -18461,6 +18461,7 @@ name = "sxt-core"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "anyhow",
  "arrow 54.2.1",
  "bincode 2.0.0",
  "exponential-backoff",
