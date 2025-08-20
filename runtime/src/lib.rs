@@ -165,7 +165,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 232,
+    spec_version: 233,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -354,18 +354,34 @@ impl pallet_utility::Config for Runtime {
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
+/// We want to base our pricing on the cost of the data insertion transaction since this is the
+/// most common action on the network. The values below are intended to represent an 'Average'
+/// Insert of 5000 bytes of data.
+pub const CALIBRATION_MULTIPLIER: u128 = 10; // A Calibration multiplier to reach the desired target pricing
+pub const AVERAGE_INSERT_SIZE_BYTES: u128 = 8192;
+pub const AVERAGE_INSERT_TARGET_COST: u128 = CENTS
+    .saturating_mul(5)
+    .saturating_mul(CALIBRATION_MULTIPLIER);
+pub const TARGET_BYTE_FEE: u128 =
+    AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_SIZE_BYTES);
+/// Approximated Average Insert Weight from actual transactions on testnet
+pub const AVERAGE_INSERT_CALL_WEIGHT: u128 = 65_686_228_000;
+pub const WEIGHT_FEE: u128 = AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_CALL_WEIGHT);
+
 parameter_types! {
-    pub const TransactionByteFee: Balance = 100_000;
+    pub const TransactionByteFee: Balance = TARGET_BYTE_FEE;
+    pub const WeightFeePerRefTime: Balance = WEIGHT_FEE;
     pub const OperationalFeeMultiplier: u8 = 5;
     pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(80);
     pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
     pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
     pub MaximumMultiplier: Multiplier = Bounded::max_value();
 }
+
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
-    type WeightToFee = IdentityFee<Balance>;
+    type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ();
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
