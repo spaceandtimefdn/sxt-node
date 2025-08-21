@@ -18,12 +18,15 @@ snafu = { workspace = true }
 sp-core = { workspace = true, features = ["serde"], optional = true }
 sp-runtime-interface = { workspace = true, default-features = false, optional = true }
 sxt-core = { workspace = true, optional = true }
+proptest = { workspace = true, features = ["std"], optional = true }
+proptest-derive = { workspace = true, optional = true }
 
 [features]
 memory-commitment-map = ["std"]
 substrate = ["dep:frame-support", "dep:frame-system", "dep:codec", "dep:scale-info", "dep:sp-core", "dep:sxt-core", "dep:bincode", "dep:sp-runtime-interface"]
 std = []
 try-runtime = []
+proptest = ["dep:proptest", "dep:proptest-derive", "std"]
 
 [dev-dependencies]
 rand_chacha.workspace = true
