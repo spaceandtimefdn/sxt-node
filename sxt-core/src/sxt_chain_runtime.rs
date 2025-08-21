@@ -6,7 +6,7 @@ pub mod api {
     mod root_mod {
         pub use super::*;
     }
-    pub static PALLETS: [&str; 30usize] = [
+    pub static PALLETS: [&str; 31usize] = [
         "System",
         "Utility",
         "Babe",
@@ -37,8 +37,9 @@ pub mod api {
         "SystemTables",
         "SystemContracts",
         "Rewards",
+        "ZkPay",
     ];
-    pub static RUNTIME_APIS: [&str; 16usize] = [
+    pub static RUNTIME_APIS: [&str; 17usize] = [
         "Core",
         "Metadata",
         "BlockBuilder",
@@ -55,6 +56,7 @@ pub mod api {
         "GenesisBuilder",
         "AuthorityDiscoveryApi",
         "CommitmentsApi",
+        "TablesApi",
     ];
     #[doc = r" The error type that is returned when there is a runtime issue."]
     pub type DispatchError = runtime_types::sp_runtime::DispatchError;
@@ -137,6 +139,9 @@ pub mod api {
             }
             pub fn commitments_api(&self) -> commitments_api::CommitmentsApi {
                 commitments_api::CommitmentsApi
+            }
+            pub fn tables_api(&self) -> tables_api::TablesApi {
+                tables_api::TablesApi
             }
         }
         pub mod core {
@@ -229,7 +234,7 @@ pub mod api {
                 pub struct Version {}
                 pub mod execute_block {
                     use super::runtime_types;
-                    pub type Block = runtime_types :: sp_runtime :: generic :: block :: Block < runtime_types :: sp_runtime :: generic :: header :: Header < :: core :: primitive :: u32 > , :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: sp_runtime :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > > ;
+                    pub type Block = runtime_types :: sp_runtime :: generic :: block :: Block < runtime_types :: sp_runtime :: generic :: header :: Header < :: core :: primitive :: u32 > , :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: eth_ecdsa :: multi_signature :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > > ;
                     pub mod output {
                         use super::runtime_types;
                         pub type Output = ();
@@ -519,7 +524,7 @@ pub mod api {
                 use super::runtime_types;
                 pub mod apply_extrinsic {
                     use super::runtime_types;
-                    pub type Extrinsic = :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: sp_runtime :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > ;
+                    pub type Extrinsic = :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: eth_ecdsa :: multi_signature :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > ;
                     pub mod output {
                         use super::runtime_types;
                         pub type Output = :: core :: result :: Result < :: core :: result :: Result < () , runtime_types :: sp_runtime :: DispatchError > , runtime_types :: sp_runtime :: transaction_validity :: TransactionValidityError > ;
@@ -573,7 +578,7 @@ pub mod api {
                     pub type Inherent = runtime_types::sp_inherents::InherentData;
                     pub mod output {
                         use super::runtime_types;
-                        pub type Output = :: subxt :: ext :: subxt_core :: alloc :: vec :: Vec < :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: sp_runtime :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > > ;
+                        pub type Output = :: subxt :: ext :: subxt_core :: alloc :: vec :: Vec < :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: eth_ecdsa :: multi_signature :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > > ;
                     }
                 }
                 #[derive(
@@ -596,7 +601,7 @@ pub mod api {
                 }
                 pub mod check_inherents {
                     use super::runtime_types;
-                    pub type Block = runtime_types :: sp_runtime :: generic :: block :: Block < runtime_types :: sp_runtime :: generic :: header :: Header < :: core :: primitive :: u32 > , :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: sp_runtime :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > > ;
+                    pub type Block = runtime_types :: sp_runtime :: generic :: block :: Block < runtime_types :: sp_runtime :: generic :: header :: Header < :: core :: primitive :: u32 > , :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: eth_ecdsa :: multi_signature :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > > ;
                     pub type Data = runtime_types::sp_inherents::InherentData;
                     pub mod output {
                         use super::runtime_types;
@@ -669,7 +674,7 @@ pub mod api {
                     use super::runtime_types;
                     pub type Source =
                         runtime_types::sp_runtime::transaction_validity::TransactionSource;
-                    pub type Tx = :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: sp_runtime :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > ;
+                    pub type Tx = :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: eth_ecdsa :: multi_signature :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > ;
                     pub type BlockHash = ::subxt::ext::subxt_core::utils::H256;
                     pub mod output {
                         use super::runtime_types;
@@ -1766,7 +1771,7 @@ pub mod api {
                 use super::runtime_types;
                 pub mod query_info {
                     use super::runtime_types;
-                    pub type Uxt = :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: sp_runtime :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > ;
+                    pub type Uxt = :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: eth_ecdsa :: multi_signature :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > ;
                     pub type Len = ::core::primitive::u32;
                     pub mod output {
                         use super::runtime_types;
@@ -1798,7 +1803,7 @@ pub mod api {
                 }
                 pub mod query_fee_details {
                     use super::runtime_types;
-                    pub type Uxt = :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: sp_runtime :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > ;
+                    pub type Uxt = :: subxt :: ext :: subxt_core :: utils :: UncheckedExtrinsic < :: subxt :: ext :: subxt_core :: utils :: MultiAddress < :: subxt :: ext :: subxt_core :: utils :: AccountId32 , () > , runtime_types :: sxt_runtime :: RuntimeCall , runtime_types :: eth_ecdsa :: multi_signature :: MultiSignature , (runtime_types :: frame_system :: extensions :: check_non_zero_sender :: CheckNonZeroSender , runtime_types :: frame_system :: extensions :: check_spec_version :: CheckSpecVersion , runtime_types :: frame_system :: extensions :: check_tx_version :: CheckTxVersion , runtime_types :: frame_system :: extensions :: check_genesis :: CheckGenesis , runtime_types :: frame_system :: extensions :: check_mortality :: CheckMortality , runtime_types :: frame_system :: extensions :: check_nonce :: CheckNonce , runtime_types :: frame_system :: extensions :: check_weight :: CheckWeight , runtime_types :: pallet_transaction_payment :: ChargeTransactionPayment ,) > ;
                     pub type Len = ::core::primitive::u32;
                     pub mod output {
                         use super::runtime_types;
@@ -1899,10 +1904,10 @@ pub mod api {
                         "query_call_info",
                         types::QueryCallInfo { call, len },
                         [
-                            185u8, 36u8, 29u8, 202u8, 179u8, 110u8, 18u8, 107u8, 116u8, 100u8,
-                            43u8, 164u8, 91u8, 149u8, 146u8, 254u8, 122u8, 148u8, 245u8, 226u8,
-                            13u8, 248u8, 33u8, 188u8, 118u8, 134u8, 76u8, 203u8, 2u8, 176u8, 230u8,
-                            87u8,
+                            231u8, 63u8, 233u8, 207u8, 155u8, 123u8, 102u8, 6u8, 143u8, 126u8,
+                            21u8, 106u8, 42u8, 6u8, 125u8, 57u8, 77u8, 230u8, 100u8, 43u8, 159u8,
+                            162u8, 152u8, 244u8, 248u8, 6u8, 130u8, 131u8, 255u8, 149u8, 198u8,
+                            80u8,
                         ],
                     )
                 }
@@ -1920,9 +1925,10 @@ pub mod api {
                         "query_call_fee_details",
                         types::QueryCallFeeDetails { call, len },
                         [
-                            149u8, 87u8, 95u8, 144u8, 175u8, 106u8, 11u8, 44u8, 224u8, 52u8, 171u8,
-                            181u8, 11u8, 138u8, 222u8, 79u8, 52u8, 117u8, 114u8, 99u8, 82u8, 97u8,
-                            131u8, 46u8, 213u8, 197u8, 76u8, 70u8, 177u8, 225u8, 167u8, 107u8,
+                            11u8, 3u8, 135u8, 166u8, 119u8, 180u8, 132u8, 123u8, 178u8, 125u8,
+                            65u8, 105u8, 90u8, 212u8, 28u8, 62u8, 50u8, 6u8, 221u8, 49u8, 228u8,
+                            153u8, 10u8, 229u8, 203u8, 88u8, 112u8, 201u8, 236u8, 203u8, 250u8,
+                            3u8,
                         ],
                     )
                 }
@@ -2378,6 +2384,68 @@ pub mod api {
                 }
             }
         }
+        pub mod tables_api {
+            use super::{root_mod, runtime_types};
+            #[doc = " Runtime APIs for reading from pallet-tables."]
+            pub struct TablesApi;
+            impl TablesApi {
+                #[doc = " Returns the schema for the given table identifier, in the form of a simple mapping"]
+                #[doc = " between column name and type."]
+                pub fn table_schema(
+                    &self,
+                    table_identifier: types::table_schema::TableIdentifier,
+                ) -> ::subxt::ext::subxt_core::runtime_api::payload::StaticPayload<
+                    types::TableSchema,
+                    types::table_schema::output::Output,
+                > {
+                    ::subxt::ext::subxt_core::runtime_api::payload::StaticPayload::new_static(
+                        "TablesApi",
+                        "table_schema",
+                        types::TableSchema { table_identifier },
+                        [
+                            65u8, 176u8, 96u8, 199u8, 88u8, 190u8, 227u8, 114u8, 205u8, 43u8,
+                            216u8, 209u8, 176u8, 37u8, 228u8, 64u8, 253u8, 255u8, 122u8, 84u8,
+                            87u8, 245u8, 177u8, 169u8, 36u8, 65u8, 158u8, 93u8, 100u8, 100u8, 17u8,
+                            135u8,
+                        ],
+                    )
+                }
+            }
+            pub mod types {
+                use super::runtime_types;
+                pub mod table_schema {
+                    use super::runtime_types;
+                    pub type TableIdentifier = runtime_types::sxt_core::tables::TableIdentifier;
+                    pub mod output {
+                        use super::runtime_types;
+                        pub type Output = ::core::result::Result<
+                            ::subxt::ext::subxt_core::alloc::vec::Vec<
+                                runtime_types::sxt_core::tables::ScaleColumnSchema,
+                            >,
+                            runtime_types::sxt_core::tables::GetTableSchemaError,
+                        >;
+                    }
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub struct TableSchema {
+                    pub table_identifier: table_schema::TableIdentifier,
+                }
+            }
+        }
     }
     pub fn view_functions() -> ViewFunctionsApi {
         ViewFunctionsApi
@@ -2522,6 +2590,9 @@ pub mod api {
         pub fn rewards(&self) -> rewards::storage::StorageApi {
             rewards::storage::StorageApi
         }
+        pub fn zk_pay(&self) -> zk_pay::storage::StorageApi {
+            zk_pay::storage::StorageApi
+        }
     }
     pub struct TransactionApi;
     impl TransactionApi {
@@ -2596,6 +2667,9 @@ pub mod api {
         pub fn rewards(&self) -> rewards::calls::TransactionApi {
             rewards::calls::TransactionApi
         }
+        pub fn zk_pay(&self) -> zk_pay::calls::TransactionApi {
+            zk_pay::calls::TransactionApi
+        }
     }
     pub struct ViewFunctionsApi;
     impl ViewFunctionsApi {}
@@ -2608,9 +2682,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                178u8, 181u8, 3u8, 22u8, 25u8, 168u8, 80u8, 39u8, 177u8, 35u8, 6u8, 19u8, 57u8,
-                133u8, 221u8, 226u8, 255u8, 200u8, 119u8, 51u8, 210u8, 248u8, 89u8, 73u8, 142u8,
-                159u8, 250u8, 175u8, 30u8, 52u8, 19u8, 249u8,
+                109u8, 55u8, 14u8, 117u8, 22u8, 122u8, 42u8, 211u8, 48u8, 231u8, 59u8, 175u8,
+                214u8, 202u8, 51u8, 50u8, 217u8, 46u8, 24u8, 79u8, 105u8, 47u8, 116u8, 229u8, 27u8,
+                54u8, 138u8, 8u8, 252u8, 239u8, 171u8, 142u8,
             ]
     }
     pub mod system {
@@ -3767,9 +3841,10 @@ pub mod api {
                         "Events",
                         (),
                         [
-                            54u8, 61u8, 9u8, 105u8, 99u8, 169u8, 93u8, 145u8, 75u8, 232u8, 54u8,
-                            10u8, 187u8, 46u8, 210u8, 49u8, 92u8, 191u8, 46u8, 94u8, 224u8, 181u8,
-                            93u8, 141u8, 165u8, 128u8, 201u8, 64u8, 35u8, 191u8, 146u8, 59u8,
+                            175u8, 32u8, 109u8, 12u8, 164u8, 60u8, 232u8, 21u8, 94u8, 54u8, 14u8,
+                            58u8, 240u8, 182u8, 145u8, 127u8, 99u8, 82u8, 191u8, 242u8, 123u8,
+                            148u8, 50u8, 245u8, 193u8, 60u8, 40u8, 234u8, 50u8, 123u8, 246u8,
+                            150u8,
                         ],
                     )
                 }
@@ -4359,10 +4434,10 @@ pub mod api {
                         "batch",
                         types::Batch { calls },
                         [
-                            139u8, 30u8, 142u8, 154u8, 139u8, 211u8, 73u8, 244u8, 162u8, 198u8,
-                            197u8, 185u8, 56u8, 234u8, 86u8, 75u8, 234u8, 106u8, 93u8, 220u8,
-                            110u8, 97u8, 194u8, 116u8, 117u8, 102u8, 214u8, 23u8, 124u8, 121u8,
-                            43u8, 170u8,
+                            236u8, 37u8, 234u8, 169u8, 219u8, 183u8, 167u8, 222u8, 194u8, 193u8,
+                            99u8, 173u8, 49u8, 118u8, 131u8, 140u8, 228u8, 250u8, 29u8, 202u8,
+                            117u8, 145u8, 42u8, 2u8, 136u8, 22u8, 117u8, 129u8, 79u8, 176u8, 206u8,
+                            158u8,
                         ],
                     )
                 }
@@ -4393,9 +4468,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            190u8, 251u8, 107u8, 43u8, 67u8, 217u8, 71u8, 24u8, 117u8, 13u8, 170u8,
-                            61u8, 104u8, 147u8, 65u8, 239u8, 12u8, 80u8, 160u8, 45u8, 66u8, 73u8,
-                            147u8, 254u8, 56u8, 74u8, 118u8, 174u8, 145u8, 122u8, 10u8, 232u8,
+                            93u8, 156u8, 65u8, 178u8, 178u8, 66u8, 23u8, 195u8, 70u8, 72u8, 171u8,
+                            9u8, 159u8, 203u8, 37u8, 47u8, 123u8, 9u8, 80u8, 112u8, 117u8, 8u8,
+                            220u8, 226u8, 122u8, 76u8, 230u8, 33u8, 5u8, 132u8, 38u8, 252u8,
                         ],
                     )
                 }
@@ -4422,10 +4497,9 @@ pub mod api {
                         "batch_all",
                         types::BatchAll { calls },
                         [
-                            141u8, 240u8, 248u8, 161u8, 157u8, 238u8, 141u8, 8u8, 54u8, 104u8,
-                            15u8, 56u8, 200u8, 11u8, 208u8, 251u8, 147u8, 63u8, 238u8, 54u8, 36u8,
-                            134u8, 229u8, 233u8, 249u8, 163u8, 53u8, 19u8, 71u8, 129u8, 172u8,
-                            81u8,
+                            165u8, 240u8, 74u8, 169u8, 10u8, 192u8, 169u8, 33u8, 215u8, 7u8, 48u8,
+                            139u8, 197u8, 138u8, 247u8, 187u8, 189u8, 10u8, 157u8, 33u8, 136u8,
+                            85u8, 48u8, 85u8, 159u8, 192u8, 202u8, 109u8, 162u8, 98u8, 87u8, 134u8,
                         ],
                     )
                 }
@@ -4449,9 +4523,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            188u8, 125u8, 66u8, 62u8, 18u8, 96u8, 194u8, 88u8, 191u8, 39u8, 99u8,
-                            131u8, 74u8, 207u8, 147u8, 239u8, 108u8, 206u8, 28u8, 67u8, 117u8,
-                            162u8, 34u8, 23u8, 47u8, 142u8, 248u8, 161u8, 152u8, 72u8, 14u8, 122u8,
+                            48u8, 166u8, 243u8, 188u8, 5u8, 250u8, 205u8, 208u8, 85u8, 232u8,
+                            218u8, 57u8, 4u8, 234u8, 122u8, 246u8, 65u8, 19u8, 251u8, 210u8, 239u8,
+                            91u8, 243u8, 155u8, 8u8, 83u8, 27u8, 160u8, 15u8, 175u8, 127u8, 213u8,
                         ],
                     )
                 }
@@ -4478,9 +4552,10 @@ pub mod api {
                         "force_batch",
                         types::ForceBatch { calls },
                         [
-                            12u8, 236u8, 140u8, 13u8, 214u8, 201u8, 244u8, 134u8, 128u8, 201u8,
-                            152u8, 38u8, 225u8, 239u8, 119u8, 4u8, 47u8, 119u8, 31u8, 72u8, 187u8,
-                            198u8, 248u8, 78u8, 28u8, 63u8, 182u8, 3u8, 246u8, 232u8, 118u8, 130u8,
+                            97u8, 113u8, 197u8, 248u8, 12u8, 23u8, 229u8, 127u8, 38u8, 154u8,
+                            107u8, 9u8, 142u8, 165u8, 100u8, 232u8, 111u8, 40u8, 94u8, 148u8,
+                            238u8, 195u8, 72u8, 59u8, 28u8, 154u8, 35u8, 238u8, 254u8, 46u8, 15u8,
+                            203u8,
                         ],
                     )
                 }
@@ -4504,10 +4579,10 @@ pub mod api {
                             weight,
                         },
                         [
-                            114u8, 130u8, 60u8, 40u8, 57u8, 46u8, 155u8, 177u8, 39u8, 230u8, 254u8,
-                            20u8, 60u8, 178u8, 165u8, 226u8, 36u8, 223u8, 119u8, 67u8, 127u8,
-                            137u8, 130u8, 78u8, 153u8, 22u8, 55u8, 236u8, 94u8, 146u8, 247u8,
-                            255u8,
+                            89u8, 146u8, 134u8, 25u8, 60u8, 104u8, 167u8, 14u8, 234u8, 225u8,
+                            139u8, 32u8, 101u8, 116u8, 48u8, 224u8, 161u8, 172u8, 126u8, 10u8,
+                            223u8, 113u8, 36u8, 143u8, 55u8, 24u8, 160u8, 219u8, 191u8, 255u8,
+                            137u8, 63u8,
                         ],
                     )
                 }
@@ -14830,9 +14905,10 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            163u8, 46u8, 146u8, 16u8, 4u8, 205u8, 155u8, 205u8, 146u8, 24u8, 38u8,
-                            51u8, 249u8, 119u8, 92u8, 241u8, 179u8, 98u8, 235u8, 109u8, 200u8,
-                            135u8, 211u8, 25u8, 38u8, 103u8, 140u8, 226u8, 234u8, 37u8, 33u8, 61u8,
+                            117u8, 96u8, 69u8, 188u8, 58u8, 113u8, 92u8, 102u8, 195u8, 72u8, 104u8,
+                            235u8, 218u8, 96u8, 246u8, 203u8, 129u8, 200u8, 30u8, 189u8, 172u8,
+                            132u8, 31u8, 36u8, 12u8, 184u8, 203u8, 107u8, 234u8, 238u8, 107u8,
+                            165u8,
                         ],
                     )
                 }
@@ -14855,9 +14931,10 @@ pub mod api {
                             weight,
                         },
                         [
-                            170u8, 254u8, 222u8, 94u8, 90u8, 15u8, 126u8, 154u8, 77u8, 1u8, 216u8,
-                            29u8, 170u8, 124u8, 35u8, 83u8, 91u8, 82u8, 2u8, 236u8, 206u8, 92u8,
-                            129u8, 162u8, 92u8, 234u8, 31u8, 28u8, 129u8, 136u8, 96u8, 209u8,
+                            139u8, 49u8, 216u8, 114u8, 140u8, 230u8, 172u8, 192u8, 196u8, 207u8,
+                            250u8, 28u8, 154u8, 189u8, 128u8, 152u8, 18u8, 150u8, 118u8, 171u8,
+                            61u8, 12u8, 79u8, 35u8, 240u8, 195u8, 251u8, 39u8, 61u8, 159u8, 143u8,
+                            96u8,
                         ],
                     )
                 }
@@ -14897,9 +14974,10 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            51u8, 189u8, 241u8, 45u8, 151u8, 147u8, 66u8, 57u8, 238u8, 85u8, 51u8,
-                            39u8, 213u8, 43u8, 197u8, 243u8, 62u8, 242u8, 123u8, 81u8, 136u8,
-                            173u8, 92u8, 85u8, 122u8, 255u8, 149u8, 103u8, 137u8, 95u8, 107u8, 6u8,
+                            188u8, 202u8, 33u8, 105u8, 189u8, 184u8, 172u8, 140u8, 129u8, 127u8,
+                            234u8, 34u8, 178u8, 164u8, 93u8, 48u8, 195u8, 104u8, 93u8, 134u8,
+                            177u8, 137u8, 43u8, 149u8, 34u8, 232u8, 228u8, 253u8, 158u8, 226u8,
+                            186u8, 110u8,
                         ],
                     )
                 }
@@ -16137,9 +16215,10 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            31u8, 187u8, 84u8, 231u8, 182u8, 77u8, 160u8, 184u8, 149u8, 61u8, 80u8,
-                            105u8, 11u8, 255u8, 30u8, 232u8, 202u8, 28u8, 67u8, 254u8, 30u8, 226u8,
-                            58u8, 194u8, 109u8, 126u8, 112u8, 199u8, 19u8, 31u8, 119u8, 233u8,
+                            165u8, 126u8, 145u8, 112u8, 145u8, 122u8, 247u8, 229u8, 73u8, 192u8,
+                            168u8, 246u8, 201u8, 173u8, 124u8, 230u8, 95u8, 79u8, 232u8, 200u8,
+                            146u8, 194u8, 52u8, 200u8, 6u8, 77u8, 234u8, 139u8, 59u8, 35u8, 101u8,
+                            42u8,
                         ],
                     )
                 }
@@ -16202,9 +16281,9 @@ pub mod api {
                             max_weight,
                         },
                         [
-                            145u8, 153u8, 229u8, 192u8, 53u8, 196u8, 242u8, 113u8, 11u8, 202u8,
-                            137u8, 227u8, 77u8, 130u8, 34u8, 129u8, 2u8, 253u8, 211u8, 240u8, 65u8,
-                            42u8, 171u8, 108u8, 123u8, 145u8, 75u8, 77u8, 48u8, 87u8, 213u8, 212u8,
+                            39u8, 237u8, 27u8, 101u8, 190u8, 9u8, 143u8, 206u8, 76u8, 60u8, 95u8,
+                            66u8, 237u8, 172u8, 42u8, 227u8, 84u8, 25u8, 172u8, 186u8, 83u8, 241u8,
+                            220u8, 149u8, 254u8, 201u8, 58u8, 58u8, 251u8, 56u8, 67u8, 55u8,
                         ],
                     )
                 }
@@ -18116,7 +18195,7 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "TODO: add docs"]
+                #[doc = "Create table from a provided list with identifiers and DDLs"]
                 pub struct CreateTables {
                     pub tables: create_tables::Tables,
                 }
@@ -18354,7 +18433,7 @@ pub mod api {
             }
             pub struct TransactionApi;
             impl TransactionApi {
-                #[doc = "TODO: add docs"]
+                #[doc = "Create table from a provided list with identifiers and DDLs"]
                 pub fn create_tables(
                     &self,
                     tables: types::create_tables::Tables,
@@ -18365,10 +18444,9 @@ pub mod api {
                         "create_tables",
                         types::CreateTables { tables },
                         [
-                            18u8, 55u8, 209u8, 13u8, 254u8, 184u8, 133u8, 224u8, 168u8, 47u8,
-                            233u8, 59u8, 124u8, 3u8, 138u8, 197u8, 7u8, 205u8, 144u8, 71u8, 104u8,
-                            115u8, 54u8, 177u8, 69u8, 72u8, 249u8, 197u8, 132u8, 153u8, 126u8,
-                            32u8,
+                            175u8, 249u8, 175u8, 96u8, 17u8, 37u8, 45u8, 104u8, 177u8, 170u8, 25u8,
+                            164u8, 60u8, 137u8, 46u8, 184u8, 195u8, 33u8, 84u8, 54u8, 114u8, 187u8,
+                            238u8, 108u8, 111u8, 160u8, 225u8, 30u8, 252u8, 112u8, 162u8, 215u8,
                         ],
                     )
                 }
@@ -18388,9 +18466,10 @@ pub mod api {
                             tables,
                         },
                         [
-                            226u8, 178u8, 152u8, 191u8, 77u8, 153u8, 133u8, 232u8, 79u8, 7u8,
-                            114u8, 151u8, 41u8, 143u8, 156u8, 246u8, 191u8, 151u8, 9u8, 95u8, 75u8,
-                            167u8, 249u8, 50u8, 3u8, 191u8, 143u8, 45u8, 111u8, 132u8, 164u8, 96u8,
+                            22u8, 19u8, 188u8, 253u8, 165u8, 218u8, 74u8, 235u8, 84u8, 10u8, 190u8,
+                            250u8, 51u8, 128u8, 130u8, 181u8, 117u8, 136u8, 241u8, 17u8, 144u8,
+                            202u8, 156u8, 60u8, 243u8, 235u8, 209u8, 253u8, 110u8, 208u8, 65u8,
+                            86u8,
                         ],
                     )
                 }
@@ -18432,9 +18511,10 @@ pub mod api {
                             source,
                         },
                         [
-                            116u8, 82u8, 93u8, 45u8, 222u8, 148u8, 38u8, 19u8, 185u8, 25u8, 235u8,
-                            212u8, 174u8, 156u8, 248u8, 239u8, 53u8, 21u8, 84u8, 70u8, 242u8,
-                            215u8, 131u8, 103u8, 126u8, 85u8, 40u8, 97u8, 174u8, 58u8, 74u8, 228u8,
+                            229u8, 59u8, 106u8, 14u8, 149u8, 235u8, 248u8, 28u8, 121u8, 84u8,
+                            117u8, 236u8, 51u8, 63u8, 154u8, 14u8, 211u8, 15u8, 45u8, 196u8, 101u8,
+                            34u8, 229u8, 227u8, 205u8, 158u8, 186u8, 61u8, 75u8, 237u8, 161u8,
+                            118u8,
                         ],
                     )
                 }
@@ -18455,9 +18535,9 @@ pub mod api {
                             source,
                         },
                         [
-                            61u8, 45u8, 170u8, 188u8, 115u8, 250u8, 64u8, 95u8, 196u8, 47u8, 226u8,
-                            56u8, 72u8, 168u8, 173u8, 28u8, 225u8, 162u8, 230u8, 164u8, 133u8, 0u8,
-                            108u8, 145u8, 242u8, 130u8, 98u8, 124u8, 114u8, 28u8, 125u8, 38u8,
+                            182u8, 139u8, 47u8, 15u8, 218u8, 11u8, 131u8, 241u8, 3u8, 231u8, 22u8,
+                            184u8, 33u8, 137u8, 176u8, 84u8, 92u8, 127u8, 221u8, 85u8, 211u8, 96u8,
+                            129u8, 200u8, 214u8, 174u8, 74u8, 160u8, 167u8, 201u8, 150u8, 150u8,
                         ],
                     )
                 }
@@ -18788,6 +18868,12 @@ pub mod api {
                     pub type TableSources = runtime_types::sxt_core::tables::Source;
                     pub type Param0 = runtime_types::sxt_core::tables::TableIdentifier;
                 }
+                pub mod table_owners {
+                    use super::runtime_types;
+                    pub type TableOwners =
+                        ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>;
+                    pub type Param0 = runtime_types::sxt_core::tables::TableIdentifier;
+                }
             }
             pub struct StorageApi;
             impl StorageApi {
@@ -19064,10 +19150,10 @@ pub mod api {
                         "Identifiers",
                         (),
                         [
-                            69u8, 19u8, 110u8, 90u8, 77u8, 32u8, 185u8, 17u8, 121u8, 74u8, 175u8,
-                            116u8, 178u8, 136u8, 216u8, 228u8, 22u8, 92u8, 112u8, 152u8, 171u8,
-                            208u8, 195u8, 191u8, 165u8, 42u8, 139u8, 146u8, 87u8, 52u8, 14u8,
-                            246u8,
+                            139u8, 161u8, 90u8, 121u8, 161u8, 32u8, 232u8, 37u8, 179u8, 121u8,
+                            234u8, 96u8, 45u8, 170u8, 164u8, 124u8, 44u8, 72u8, 159u8, 113u8, 78u8,
+                            93u8, 237u8, 79u8, 126u8, 205u8, 121u8, 246u8, 198u8, 182u8, 41u8,
+                            169u8,
                         ],
                     )
                 }
@@ -19091,10 +19177,10 @@ pub mod api {
                             _0.borrow(),
                         ),
                         [
-                            69u8, 19u8, 110u8, 90u8, 77u8, 32u8, 185u8, 17u8, 121u8, 74u8, 175u8,
-                            116u8, 178u8, 136u8, 216u8, 228u8, 22u8, 92u8, 112u8, 152u8, 171u8,
-                            208u8, 195u8, 191u8, 165u8, 42u8, 139u8, 146u8, 87u8, 52u8, 14u8,
-                            246u8,
+                            139u8, 161u8, 90u8, 121u8, 161u8, 32u8, 232u8, 37u8, 179u8, 121u8,
+                            234u8, 96u8, 45u8, 170u8, 164u8, 124u8, 44u8, 72u8, 159u8, 113u8, 78u8,
+                            93u8, 237u8, 79u8, 126u8, 205u8, 121u8, 246u8, 198u8, 182u8, 41u8,
+                            169u8,
                         ],
                     )
                 }
@@ -19315,6 +19401,55 @@ pub mod api {
                             183u8, 116u8, 88u8, 199u8, 165u8, 146u8, 103u8, 14u8, 153u8, 124u8,
                             65u8, 46u8, 207u8, 215u8, 124u8, 103u8, 239u8, 228u8, 246u8, 102u8,
                             215u8,
+                        ],
+                    )
+                }
+                #[doc = " Maps a table identifier to the account that created it."]
+                #[doc = " Only used for community tables."]
+                pub fn table_owners_iter(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::table_owners::TableOwners,
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Tables",
+                        "TableOwners",
+                        (),
+                        [
+                            84u8, 229u8, 126u8, 53u8, 155u8, 240u8, 34u8, 56u8, 147u8, 34u8, 124u8,
+                            27u8, 120u8, 241u8, 109u8, 223u8, 154u8, 122u8, 84u8, 26u8, 2u8, 62u8,
+                            21u8, 206u8, 101u8, 128u8, 247u8, 4u8, 91u8, 151u8, 1u8, 145u8,
+                        ],
+                    )
+                }
+                #[doc = " Maps a table identifier to the account that created it."]
+                #[doc = " Only used for community tables."]
+                pub fn table_owners(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::table_owners::Param0>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                        types::table_owners::Param0,
+                    >,
+                    types::table_owners::TableOwners,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Tables",
+                        "TableOwners",
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                            _0.borrow(),
+                        ),
+                        [
+                            84u8, 229u8, 126u8, 53u8, 155u8, 240u8, 34u8, 56u8, 147u8, 34u8, 124u8,
+                            27u8, 120u8, 241u8, 109u8, 223u8, 154u8, 122u8, 84u8, 26u8, 2u8, 62u8,
+                            21u8, 206u8, 101u8, 128u8, 247u8, 4u8, 91u8, 151u8, 1u8, 145u8,
                         ],
                     )
                 }
@@ -20750,9 +20885,10 @@ pub mod api {
                         "add_smartcontract",
                         types::AddSmartcontract { contract, tables },
                         [
-                            236u8, 53u8, 97u8, 111u8, 210u8, 114u8, 252u8, 101u8, 85u8, 5u8, 141u8,
-                            219u8, 176u8, 181u8, 159u8, 142u8, 223u8, 72u8, 207u8, 181u8, 143u8,
-                            113u8, 93u8, 8u8, 50u8, 231u8, 120u8, 69u8, 144u8, 29u8, 118u8, 26u8,
+                            191u8, 129u8, 75u8, 108u8, 37u8, 28u8, 121u8, 230u8, 83u8, 203u8,
+                            233u8, 43u8, 183u8, 205u8, 246u8, 56u8, 11u8, 195u8, 169u8, 49u8,
+                            160u8, 34u8, 44u8, 52u8, 231u8, 127u8, 80u8, 42u8, 86u8, 211u8, 209u8,
+                            45u8,
                         ],
                     )
                 }
@@ -20948,9 +21084,9 @@ pub mod api {
                         "ContractTables",
                         (),
                         [
-                            198u8, 230u8, 164u8, 163u8, 197u8, 172u8, 156u8, 213u8, 246u8, 160u8,
-                            218u8, 208u8, 6u8, 67u8, 81u8, 19u8, 49u8, 246u8, 61u8, 192u8, 138u8,
-                            96u8, 28u8, 197u8, 54u8, 233u8, 235u8, 51u8, 119u8, 148u8, 68u8, 218u8,
+                            221u8, 247u8, 177u8, 150u8, 78u8, 50u8, 66u8, 165u8, 105u8, 76u8, 92u8,
+                            231u8, 155u8, 132u8, 173u8, 78u8, 133u8, 250u8, 2u8, 233u8, 22u8,
+                            190u8, 106u8, 12u8, 247u8, 61u8, 87u8, 79u8, 150u8, 141u8, 9u8, 145u8,
                         ],
                     )
                 }
@@ -20973,9 +21109,9 @@ pub mod api {
                             _0.borrow(),
                         ),
                         [
-                            198u8, 230u8, 164u8, 163u8, 197u8, 172u8, 156u8, 213u8, 246u8, 160u8,
-                            218u8, 208u8, 6u8, 67u8, 81u8, 19u8, 49u8, 246u8, 61u8, 192u8, 138u8,
-                            96u8, 28u8, 197u8, 54u8, 233u8, 235u8, 51u8, 119u8, 148u8, 68u8, 218u8,
+                            221u8, 247u8, 177u8, 150u8, 78u8, 50u8, 66u8, 165u8, 105u8, 76u8, 92u8,
+                            231u8, 155u8, 132u8, 173u8, 78u8, 133u8, 250u8, 2u8, 233u8, 22u8,
+                            190u8, 106u8, 12u8, 247u8, 61u8, 87u8, 79u8, 150u8, 141u8, 9u8, 145u8,
                         ],
                     )
                 }
@@ -21009,9 +21145,9 @@ pub mod api {
                             ),
                         ),
                         [
-                            198u8, 230u8, 164u8, 163u8, 197u8, 172u8, 156u8, 213u8, 246u8, 160u8,
-                            218u8, 208u8, 6u8, 67u8, 81u8, 19u8, 49u8, 246u8, 61u8, 192u8, 138u8,
-                            96u8, 28u8, 197u8, 54u8, 233u8, 235u8, 51u8, 119u8, 148u8, 68u8, 218u8,
+                            221u8, 247u8, 177u8, 150u8, 78u8, 50u8, 66u8, 165u8, 105u8, 76u8, 92u8,
+                            231u8, 155u8, 132u8, 173u8, 78u8, 133u8, 250u8, 2u8, 233u8, 22u8,
+                            190u8, 106u8, 12u8, 247u8, 61u8, 87u8, 79u8, 150u8, 141u8, 9u8, 145u8,
                         ],
                     )
                 }
@@ -21159,6 +21295,29 @@ pub mod api {
             impl ::subxt::ext::subxt_core::events::StaticEvent for ValidatorForceChilled {
                 const PALLET: &'static str = "SystemTables";
                 const EVENT: &'static str = "ValidatorForceChilled";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "Emitted when an unstake is claimed"]
+            pub struct UnstakingClaimed {
+                pub claimer: unstaking_claimed::Claimer,
+            }
+            pub mod unstaking_claimed {
+                use super::runtime_types;
+                pub type Claimer = ::subxt::ext::subxt_core::utils::AccountId32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for UnstakingClaimed {
+                const PALLET: &'static str = "SystemTables";
+                const EVENT: &'static str = "UnstakingClaimed";
             }
         }
         pub mod storage {
@@ -21755,6 +21914,359 @@ pub mod api {
             }
         }
     }
+    pub mod zk_pay {
+        use super::{root_mod, runtime_types};
+        #[doc = "Errors that can be returned by this pallet."]
+        pub type Error = runtime_types::pallet_zkpay::pallet::Error;
+        #[doc = "Contains a variant per dispatchable extrinsic that this pallet has."]
+        pub type Call = runtime_types::pallet_zkpay::pallet::Call;
+        pub mod calls {
+            use super::{root_mod, runtime_types};
+            type DispatchError = runtime_types::sp_runtime::DispatchError;
+            pub mod types {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "A helper extrinsic to set the contract address used for Compute Credit transactions"]
+                pub struct UpdateComputeCreditAddress {
+                    pub address: update_compute_credit_address::Address,
+                }
+                pub mod update_compute_credit_address {
+                    use super::runtime_types;
+                    pub type Address = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                        ::core::primitive::u8,
+                    >;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for UpdateComputeCreditAddress {
+                    const PALLET: &'static str = "ZkPay";
+                    const CALL: &'static str = "update_compute_credit_address";
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Add a supported asset and related metadata"]
+                pub struct SetSupportedAsset {
+                    pub asset: set_supported_asset::Asset,
+                }
+                pub mod set_supported_asset {
+                    use super::runtime_types;
+                    pub type Asset = runtime_types::pallet_zkpay::pallet::Asset;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for SetSupportedAsset {
+                    const PALLET: &'static str = "ZkPay";
+                    const CALL: &'static str = "set_supported_asset";
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Remove a supported asset"]
+                pub struct RemoveSupportedAsset {
+                    pub asset_address: remove_supported_asset::AssetAddress,
+                }
+                pub mod remove_supported_asset {
+                    use super::runtime_types;
+                    pub type AssetAddress =
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for RemoveSupportedAsset {
+                    const PALLET: &'static str = "ZkPay";
+                    const CALL: &'static str = "remove_supported_asset";
+                }
+            }
+            pub struct TransactionApi;
+            impl TransactionApi {
+                #[doc = "A helper extrinsic to set the contract address used for Compute Credit transactions"]
+                pub fn update_compute_credit_address(
+                    &self,
+                    address: types::update_compute_credit_address::Address,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<
+                    types::UpdateComputeCreditAddress,
+                > {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "ZkPay",
+                        "update_compute_credit_address",
+                        types::UpdateComputeCreditAddress { address },
+                        [
+                            88u8, 229u8, 16u8, 207u8, 98u8, 186u8, 73u8, 191u8, 150u8, 8u8, 250u8,
+                            62u8, 115u8, 123u8, 70u8, 7u8, 214u8, 44u8, 104u8, 233u8, 144u8, 167u8,
+                            54u8, 241u8, 126u8, 177u8, 100u8, 8u8, 211u8, 20u8, 44u8, 95u8,
+                        ],
+                    )
+                }
+                #[doc = "Add a supported asset and related metadata"]
+                pub fn set_supported_asset(
+                    &self,
+                    asset: types::set_supported_asset::Asset,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::SetSupportedAsset>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "ZkPay",
+                        "set_supported_asset",
+                        types::SetSupportedAsset { asset },
+                        [
+                            102u8, 194u8, 157u8, 82u8, 22u8, 73u8, 65u8, 71u8, 211u8, 6u8, 79u8,
+                            99u8, 224u8, 77u8, 251u8, 18u8, 156u8, 220u8, 108u8, 99u8, 246u8,
+                            249u8, 209u8, 0u8, 45u8, 188u8, 155u8, 83u8, 27u8, 111u8, 112u8, 4u8,
+                        ],
+                    )
+                }
+                #[doc = "Remove a supported asset"]
+                pub fn remove_supported_asset(
+                    &self,
+                    asset_address: types::remove_supported_asset::AssetAddress,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::RemoveSupportedAsset>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "ZkPay",
+                        "remove_supported_asset",
+                        types::RemoveSupportedAsset { asset_address },
+                        [
+                            80u8, 98u8, 103u8, 129u8, 178u8, 151u8, 148u8, 8u8, 130u8, 230u8,
+                            126u8, 53u8, 243u8, 12u8, 87u8, 193u8, 143u8, 13u8, 151u8, 136u8,
+                            238u8, 101u8, 52u8, 55u8, 185u8, 15u8, 112u8, 110u8, 142u8, 177u8,
+                            85u8, 157u8,
+                        ],
+                    )
+                }
+            }
+        }
+        #[doc = "Events that functions in this pallet can emit."]
+        pub type Event = runtime_types::pallet_zkpay::pallet::Event;
+        pub mod events {
+            use super::runtime_types;
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "We processed a ZKpay event"]
+            pub struct EventReceived {
+                pub event: event_received::Event,
+            }
+            pub mod event_received {
+                use super::runtime_types;
+                pub type Event = runtime_types::sxt_core::parse::ZKPayRequest;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for EventReceived {
+                const PALLET: &'static str = "ZkPay";
+                const EVENT: &'static str = "EventReceived";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "An error occurred processing a ZKpay Request"]
+            pub struct ZkPayProcessingError {
+                pub error: zk_pay_processing_error::Error,
+            }
+            pub mod zk_pay_processing_error {
+                use super::runtime_types;
+                pub type Error = runtime_types::sp_runtime::DispatchError;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for ZkPayProcessingError {
+                const PALLET: &'static str = "ZkPay";
+                const EVENT: &'static str = "ZkPayProcessingError";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "Compute credits were purchased for an account"]
+            pub struct ComputeCreditsPurchased {
+                pub amount: compute_credits_purchased::Amount,
+                pub account_id: compute_credits_purchased::AccountId,
+                pub sender: compute_credits_purchased::Sender,
+            }
+            pub mod compute_credits_purchased {
+                use super::runtime_types;
+                pub type Amount = ::core::primitive::u128;
+                pub type AccountId = ::subxt::ext::subxt_core::utils::AccountId32;
+                pub type Sender = ::subxt::ext::subxt_core::utils::AccountId32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for ComputeCreditsPurchased {
+                const PALLET: &'static str = "ZkPay";
+                const EVENT: &'static str = "ComputeCreditsPurchased";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "The smart contract address for the compute credit contract has changed"]
+            pub struct ComputeCreditAddressUpdated {
+                pub old_address: compute_credit_address_updated::OldAddress,
+                pub new_address: compute_credit_address_updated::NewAddress,
+            }
+            pub mod compute_credit_address_updated {
+                use super::runtime_types;
+                pub type OldAddress = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                    ::core::primitive::u8,
+                >;
+                pub type NewAddress = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                    ::core::primitive::u8,
+                >;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for ComputeCreditAddressUpdated {
+                const PALLET: &'static str = "ZkPay";
+                const EVENT: &'static str = "ComputeCreditAddressUpdated";
+            }
+        }
+        pub mod storage {
+            use super::runtime_types;
+            pub mod types {
+                use super::runtime_types;
+                pub mod compute_credit_address {
+                    use super::runtime_types;
+                    pub type ComputeCreditAddress =
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >;
+                }
+                pub mod supported_assets {
+                    use super::runtime_types;
+                    pub type SupportedAssets = runtime_types::pallet_zkpay::pallet::Asset;
+                    pub type Param0 = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                        ::core::primitive::u8,
+                    >;
+                }
+            }
+            pub struct StorageApi;
+            impl StorageApi {
+                pub fn compute_credit_address(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::compute_credit_address::ComputeCreditAddress,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "ZkPay",
+                        "ComputeCreditAddress",
+                        (),
+                        [
+                            77u8, 191u8, 68u8, 159u8, 132u8, 56u8, 218u8, 1u8, 35u8, 219u8, 177u8,
+                            195u8, 87u8, 172u8, 1u8, 142u8, 54u8, 76u8, 201u8, 150u8, 169u8, 214u8,
+                            13u8, 38u8, 224u8, 248u8, 137u8, 79u8, 94u8, 185u8, 104u8, 41u8,
+                        ],
+                    )
+                }
+                pub fn supported_assets_iter(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::supported_assets::SupportedAssets,
+                    (),
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "ZkPay",
+                        "SupportedAssets",
+                        (),
+                        [
+                            52u8, 117u8, 198u8, 142u8, 204u8, 65u8, 171u8, 67u8, 93u8, 242u8,
+                            248u8, 142u8, 214u8, 244u8, 21u8, 218u8, 100u8, 137u8, 14u8, 83u8,
+                            159u8, 220u8, 48u8, 99u8, 15u8, 93u8, 67u8, 4u8, 27u8, 119u8, 245u8,
+                            30u8,
+                        ],
+                    )
+                }
+                pub fn supported_assets(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::supported_assets::Param0>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                        types::supported_assets::Param0,
+                    >,
+                    types::supported_assets::SupportedAssets,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "ZkPay",
+                        "SupportedAssets",
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                            _0.borrow(),
+                        ),
+                        [
+                            52u8, 117u8, 198u8, 142u8, 204u8, 65u8, 171u8, 67u8, 93u8, 242u8,
+                            248u8, 142u8, 214u8, 244u8, 21u8, 218u8, 100u8, 137u8, 14u8, 83u8,
+                            159u8, 220u8, 48u8, 99u8, 15u8, 93u8, 67u8, 4u8, 27u8, 119u8, 245u8,
+                            30u8,
+                        ],
+                    )
+                }
+            }
+        }
+    }
     pub mod runtime_types {
         use super::runtime_types;
         pub mod bounded_collections {
@@ -21815,6 +22327,56 @@ pub mod api {
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
                 pub struct WeakBoundedVec<_0>(pub ::subxt::ext::subxt_core::alloc::vec::Vec<_0>);
+            }
+        }
+        pub mod eth_ecdsa {
+            use super::runtime_types;
+            pub mod multi_signature {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub enum MultiSignature {
+                    #[codec(index = 0)]
+                    Ed25519([::core::primitive::u8; 64usize]),
+                    #[codec(index = 1)]
+                    Sr25519([::core::primitive::u8; 64usize]),
+                    #[codec(index = 2)]
+                    Ecdsa([::core::primitive::u8; 65usize]),
+                    #[codec(index = 3)]
+                    EthEcdsa(runtime_types::eth_ecdsa::signature::EthEcdsaSignature),
+                }
+            }
+            pub mod signature {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub struct EthEcdsaSignature(pub [::core::primitive::u8; 65usize]);
             }
         }
         pub mod finality_grandpa {
@@ -23568,6 +24130,15 @@ pub mod api {
                     #[codec(index = 26)]
                     #[doc = "Table identifier already exists in commitment storage."]
                     TableAlreadyExists,
+                    #[codec(index = 27)]
+                    #[doc = "The insert cannot be performed as the resulting end row exceeds the limit"]
+                    InsertExceedsLimit,
+                    #[codec(index = 28)]
+                    #[doc = "Unable to construct table commitment due to negative range."]
+                    UnexpectedNegativeRange,
+                    #[codec(index = 29)]
+                    #[doc = "Utf8 error encountered after varbinary workaround."]
+                    VarcharColumnsNoLongerUtf8,
                 }
             }
         }
@@ -24324,6 +24895,9 @@ pub mod api {
                     #[codec(index = 17)]
                     #[doc = "Error deserializing the table as an OnChainTable"]
                     TableSerializationError,
+                    #[codec(index = 18)]
+                    #[doc = "Submitter Injection Failed"]
+                    SubmitterInjectionFailed,
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -26860,6 +27434,15 @@ pub mod api {
                     #[codec(index = 11)]
                     #[doc = "Empty Nomination Set"]
                     EmptyNominationSet,
+                    #[codec(index = 12)]
+                    #[doc = "An account provided for an unstaking action was not staked"]
+                    AccountNotStaked,
+                    #[codec(index = 13)]
+                    #[doc = "An account provided for an unstaking action was not unbonding"]
+                    AccountNotUnbonding,
+                    #[codec(index = 14)]
+                    #[doc = "Occurs when attempting to claim locked funds"]
+                    FundsLocked,
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -26894,6 +27477,11 @@ pub mod api {
                     ValidatorForceChilled {
                         validator: ::subxt::ext::subxt_core::utils::AccountId32,
                     },
+                    #[codec(index = 3)]
+                    #[doc = "Emitted when an unstake is claimed"]
+                    UnstakingClaimed {
+                        claimer: ::subxt::ext::subxt_core::utils::AccountId32,
+                    },
                 }
             }
         }
@@ -26919,7 +27507,7 @@ pub mod api {
                 #[doc = "The implementation for the pallet extrinsics"]
                 pub enum Call {
                     #[codec(index = 0)]
-                    #[doc = "TODO: add docs"]
+                    #[doc = "Create table from a provided list with identifiers and DDLs"]
                     create_tables {
                         tables: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             runtime_types::pallet_tables::pallet::UpdateTable,
@@ -27085,6 +27673,15 @@ pub mod api {
                     #[codec(index = 16)]
                     #[doc = "There was an error generating a uuid"]
                     UUIDGenerationError,
+                    #[codec(index = 17)]
+                    #[doc = "The provided namespace was invalid for the table"]
+                    InvalidNamespace,
+                    #[codec(index = 18)]
+                    #[doc = "The provided name was invalid for the table"]
+                    InvalidTableName,
+                    #[codec(index = 19)]
+                    #[doc = "The table used a reserved Column Name"]
+                    ReservedColumnName,
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -27563,6 +28160,153 @@ pub mod api {
                     DispatchedAs {
                         result:
                             ::core::result::Result<(), runtime_types::sp_runtime::DispatchError>,
+                    },
+                }
+            }
+        }
+        pub mod pallet_zkpay {
+            use super::runtime_types;
+            pub mod pallet {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub struct Asset {
+                    pub address: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                        ::core::primitive::u8,
+                    >,
+                    pub allowed_payment_types:
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                    pub price_feed: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                        ::core::primitive::u8,
+                    >,
+                    pub token_decimals: ::core::primitive::i16,
+                    pub stale_price_threshold_in_seconds: ::core::time::Duration,
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Contains a variant per dispatchable extrinsic that this pallet has."]
+                pub enum Call {
+                    #[codec(index = 0)]
+                    #[doc = "A helper extrinsic to set the contract address used for Compute Credit transactions"]
+                    update_compute_credit_address {
+                        address: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                    },
+                    #[codec(index = 1)]
+                    #[doc = "Add a supported asset and related metadata"]
+                    set_supported_asset {
+                        asset: runtime_types::pallet_zkpay::pallet::Asset,
+                    },
+                    #[codec(index = 2)]
+                    #[doc = "Remove a supported asset"]
+                    remove_supported_asset {
+                        asset_address: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                    },
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Errors that can be returned by this pallet."]
+                pub enum Error {
+                    #[codec(index = 0)]
+                    #[doc = "There was a missing field in the record batch we tried to parse"]
+                    MissingExpectedField,
+                    #[codec(index = 1)]
+                    #[doc = "The contract address supplied was not a 20 byte address"]
+                    ContractAddressError,
+                    #[codec(index = 2)]
+                    #[doc = "An account id provided was invalid"]
+                    InvalidAccountId,
+                    #[codec(index = 3)]
+                    #[doc = "The ZKpay event was for an unsupported asset address"]
+                    UnsupportedAsset,
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Events that functions in this pallet can emit."]
+                pub enum Event {
+                    #[codec(index = 0)]
+                    #[doc = "We processed a ZKpay event"]
+                    EventReceived {
+                        event: runtime_types::sxt_core::parse::ZKPayRequest,
+                    },
+                    #[codec(index = 1)]
+                    #[doc = "An error occurred processing a ZKpay Request"]
+                    ZkPayProcessingError {
+                        error: runtime_types::sp_runtime::DispatchError,
+                    },
+                    #[codec(index = 2)]
+                    #[doc = "Compute credits were purchased for an account"]
+                    ComputeCreditsPurchased {
+                        amount: ::core::primitive::u128,
+                        account_id: ::subxt::ext::subxt_core::utils::AccountId32,
+                        sender: ::subxt::ext::subxt_core::utils::AccountId32,
+                    },
+                    #[codec(index = 3)]
+                    #[doc = "The smart contract address for the compute credit contract has changed"]
+                    ComputeCreditAddressUpdated {
+                        old_address: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                        new_address: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
                     },
                 }
             }
@@ -29170,25 +29914,6 @@ pub mod api {
             #[codec(dumb_trait_bound)]
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            pub enum MultiSignature {
-                #[codec(index = 0)]
-                Ed25519([::core::primitive::u8; 64usize]),
-                #[codec(index = 1)]
-                Sr25519([::core::primitive::u8; 64usize]),
-                #[codec(index = 2)]
-                Ecdsa([::core::primitive::u8; 65usize]),
-            }
-            #[derive(
-                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
-                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
-                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
-            #[codec(dumb_trait_bound)]
-            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
             pub struct OpaqueValue(
                 pub ::subxt::ext::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
             );
@@ -29799,6 +30524,52 @@ pub mod api {
                         ::core::option::Option<runtime_types::sxt_core::keystore::EthereumKey>,
                 }
             }
+            pub mod parse {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub enum ZKPayRequest {
+                    #[codec(index = 0)]
+                    AssetAdded,
+                    #[codec(index = 1)]
+                    AssetRemoved,
+                    #[codec(index = 2)]
+                    CallbackFailed,
+                    #[codec(index = 3)]
+                    CallbackSucceeded,
+                    #[codec(index = 4)]
+                    Initialized,
+                    #[codec(index = 5)]
+                    NewQueryPayment,
+                    #[codec(index = 6)]
+                    PaymentRefunded,
+                    #[codec(index = 7)]
+                    PaymentSettled,
+                    #[codec(index = 8)]
+                    QueryCancelled,
+                    #[codec(index = 9)]
+                    QueryFulfilled,
+                    #[codec(index = 10)]
+                    QueryReceived,
+                    #[codec(index = 11)]
+                    SendPayment,
+                    #[codec(index = 12)]
+                    TreasurySet,
+                }
+            }
             pub mod permissions {
                 use super::runtime_types;
                 #[derive(
@@ -30169,6 +30940,31 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
+                pub enum GetTableSchemaError {
+                    #[codec(index = 0)]
+                    NoSuchTable,
+                    #[codec(index = 1)]
+                    StatementTooLarge,
+                    #[codec(index = 2)]
+                    NotUtf8,
+                    #[codec(index = 3)]
+                    Parse,
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
                 pub enum IndexerMode {
                     #[codec(index = 0)]
                     Core,
@@ -30228,6 +31024,25 @@ pub mod api {
                     Public,
                     #[codec(index = 1)]
                     Privileged,
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub struct ScaleColumnSchema {
+                    pub name: ::subxt::ext::subxt_core::alloc::string::String,
+                    pub data_type: ::subxt::ext::subxt_core::alloc::string::String,
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -30328,6 +31143,8 @@ pub mod api {
                     Community,
                     #[codec(index = 3)]
                     Testing(runtime_types::sxt_core::tables::InsertQuorumSize),
+                    #[codec(index = 4)]
+                    PublicPermissionless,
                 }
             }
         }
@@ -30615,6 +31432,8 @@ pub mod api {
                 SystemContracts(runtime_types::pallet_system_contracts::pallet::Call),
                 #[codec(index = 109)]
                 Rewards(runtime_types::pallet_rewards::pallet::Call),
+                #[codec(index = 110)]
+                ZkPay(runtime_types::pallet_zkpay::pallet::Call),
             }
             #[derive(
                 :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -30674,6 +31493,8 @@ pub mod api {
                 SystemTables(runtime_types::pallet_system_tables::pallet::Error),
                 #[codec(index = 109)]
                 Rewards(runtime_types::pallet_rewards::pallet::Error),
+                #[codec(index = 110)]
+                ZkPay(runtime_types::pallet_zkpay::pallet::Error),
             }
             #[derive(
                 :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -30737,6 +31558,8 @@ pub mod api {
                 SystemContracts(runtime_types::pallet_system_contracts::pallet::Event),
                 #[codec(index = 109)]
                 Rewards(runtime_types::pallet_rewards::pallet::Event),
+                #[codec(index = 110)]
+                ZkPay(runtime_types::pallet_zkpay::pallet::Event),
             }
             #[derive(
                 :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
