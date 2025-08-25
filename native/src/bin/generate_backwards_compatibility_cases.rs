@@ -25,10 +25,11 @@ pub struct Case<I, O> {
     output: O,
 }
 
-fn write_cases<S, I, O, F, P>(strategy: S, f: F, case_directory: P)
+fn write_cases<S, I, O, F, A, P>(strategy: S, f: F, assert: A, case_directory: P)
 where
     S: Strategy<Value = I>,
     F: Fn(I) -> O,
+    A: Fn(&I, &O) -> bool,
     I: Encode + Clone + std::fmt::Debug,
     O: Encode,
     P: AsRef<Path> + Clone,
@@ -52,6 +53,8 @@ where
             let input_bytes = input.encode();
 
             let input_hash = keccak_256(&input_bytes);
+
+            assert!(assert(&input, &output));
 
             let case = Case { input, output };
 
@@ -119,12 +122,13 @@ fn process_insert_input<'a>(
 fn write_process_insert_cases(cases_dir: impl AsRef<Path>) {
     let process_insert_dir = cases_dir.as_ref().join("process_insert");
 
-    // happy path:
+    // happy path
     write_cases(
         process_insert_input(*get_or_init_from_files_with_four_points_unchecked()),
         |(table_identifier, insert, commitments)| {
             interface::process_insert(table_identifier, insert, commitments)
         },
+        |_, o| o.is_ok(),
         process_insert_dir,
     );
 }
