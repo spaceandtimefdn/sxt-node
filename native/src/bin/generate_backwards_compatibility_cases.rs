@@ -120,11 +120,12 @@ fn process_insert_input<'a>(
 }
 
 fn main() {
+    let workspace_dir = std::env::var("CARGO_WORKSPACE_DIR").unwrap();
     write_cases(
         process_insert_input(*get_or_init_from_files_with_four_points_unchecked()),
         |(table_identifier, insert, commitments)| {
             interface::process_insert(table_identifier, insert, commitments)
         },
-        "backwards_compatibility_cases/process_insert",
+        format!("{workspace_dir}/native/backwards_compatibility_cases/process_insert"),
     );
 }
