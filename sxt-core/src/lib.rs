@@ -48,3 +48,6 @@ pub mod system_contracts;
 
 /// Utility functions for handling Runtime types
 pub mod utils;
+
+#[cfg(feature = "proptest")]
+pub mod proptest;
