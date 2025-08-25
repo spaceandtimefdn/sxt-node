@@ -17,7 +17,7 @@ use proof_of_sql_static_setups::io::{
     PUBLIC_SETUPS,
 };
 use proptest::prelude::*;
-use proptest::test_runner::{FileFailurePersistence, TestRunner};
+use proptest::test_runner::{FileFailurePersistence, TestRng, TestRunner};
 use sp_core::keccak_256;
 use sxt_core::native::OnChainTableBytes;
 use sxt_core::proptest::table_identifier;
@@ -37,10 +37,17 @@ where
     O: Encode,
     P: AsRef<Path> + Clone,
 {
-    let mut runner = TestRunner::new(proptest::test_runner::Config {
+    let config = proptest::test_runner::Config {
+        cases: 64,
         failure_persistence: Some(Box::new(FileFailurePersistence::Off)),
         ..Default::default()
-    });
+    };
+
+    // using a deterministic RNG essentially gives the generation some idempotency, we won't
+    // clutter the cases directory with new cases unless some strategy has changed.
+    let rng = TestRng::deterministic_rng(config.rng_algorithm);
+
+    let mut runner = TestRunner::new_with_rng(config, rng);
 
     runner
         .run(&strategy, move |input| {
