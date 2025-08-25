@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use codec::{Decode, Encode};
 use commitment_sql::proptest::table_commitment_per_commitment_scheme;
@@ -12,10 +11,7 @@ use proof_of_sql_commitment_map::{
     TableCommitmentBytesPerCommitmentSchemePassBy,
     TableCommitmentPerCommitmentScheme,
 };
-use proof_of_sql_static_setups::io::{
-    get_or_init_from_files_with_four_points_unchecked,
-    PUBLIC_SETUPS,
-};
+use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
 use proptest::prelude::*;
 use proptest::test_runner::{FileFailurePersistence, TestRng, TestRunner};
 use sp_core::keccak_256;
