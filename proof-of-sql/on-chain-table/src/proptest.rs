@@ -14,8 +14,10 @@ use sqlparser::ast::Ident;
 use crate::i256_conversion::arrow_i256_to_u256;
 use crate::{OnChainColumn, OnChainTable};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProofOfSqlSchema(Vec<(Ident, ColumnType)>);
 
+#[derive(Debug)]
 struct NoColumns;
 
 impl ProofOfSqlSchema {
@@ -41,7 +43,7 @@ impl ProofOfSqlSchema {
 }
 
 prop_compose! {
-    fn ident()(value in "[a-zA-Z_][a-zA-Z0-9_]{0,63}") -> Ident {
+    pub fn ident()(value in "[a-zA-Z_][a-zA-Z0-9_]{0,63}") -> Ident {
         Ident::new(value)
     }
 }
@@ -71,13 +73,18 @@ fn supported_column_type() -> impl Strategy<Value = ColumnType> {
     ]
 }
 
-fn proof_of_sql_schema<NC>(num_columns: NC) -> impl Strategy<Value = Vec<(Ident, ColumnType)>>
+pub fn proof_of_sql_schema<NC>(num_columns: NC) -> impl Strategy<Value = ProofOfSqlSchema>
 where
     NC: Strategy<Value = usize>,
 {
-    num_columns.prop_flat_map(|num_columns| {
-        proptest::collection::vec((ident(), supported_column_type()), num_columns.max(1))
-    })
+    num_columns
+        .prop_flat_map(|num_columns| {
+            proptest::collection::vec((ident(), supported_column_type()), num_columns.max(1))
+        })
+        .prop_map(|schema| {
+            ProofOfSqlSchema::try_from_iter(schema)
+                .expect("previous strategy guarantees schema has at least one column")
+        })
 }
 
 fn i256_with_max_num_digits(max_num_digits: u8) -> impl Strategy<Value = i256> {
@@ -141,7 +148,7 @@ where
     })
 }
 
-fn on_chain_table<S, NR>(schema: S, num_rows: NR) -> impl Strategy<Value = OnChainTable>
+pub fn on_chain_table<S, NR>(schema: S, num_rows: NR) -> impl Strategy<Value = OnChainTable>
 where
     S: Strategy<Value = ProofOfSqlSchema>,
     NR: Strategy<Value = usize>,
