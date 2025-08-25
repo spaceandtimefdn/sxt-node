@@ -148,6 +148,7 @@ mod tests {
     use arrow::array::{ArrayRef, Int32Array, RecordBatch, StringArray};
     use arrow::datatypes::{DataType, Field, Schema};
     use arrow::ipc::writer::StreamWriter;
+    use codec::{Decode, Encode};
     use commitment_sql::OnChainTableToTableCommitmentFn;
     use on_chain_table::{OnChainColumn, OnChainTable};
     use proof_of_sql::base::database::ColumnType;
@@ -155,6 +156,7 @@ mod tests {
     use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
     use proof_of_sql_commitment_map::TableCommitmentBytes;
     use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
+    use rayon::prelude::*;
     use sp_core::U256;
     use sp_runtime::BoundedVec;
     use sqlparser::ast::Ident;
@@ -331,5 +333,52 @@ mod tests {
         let result = interface::process_insert(table_id, insert_data_bytes, no_commitments);
 
         assert!(matches!(result, Err(NativeCommitmentError::NoCommitments)));
+    }
+
+    #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Encode, Decode)]
+    pub struct Case<I, O> {
+        input: I,
+        output: O,
+    }
+
+    #[test]
+    fn process_insert_output_is_backwards_compatible() {
+        let workspace_dir = std::env::var("CARGO_WORKSPACE_DIR").unwrap();
+        std::fs::read_dir(format!(
+            "{workspace_dir}/native/backwards_compatibility_cases/process_insert"
+        ))
+        .unwrap()
+        .par_bridge()
+        .for_each(|dir_entry| {
+            let case_bytes = std::fs::read(dir_entry.unwrap().path()).unwrap();
+
+            let case = Case::<
+                (
+                    TableIdentifier,
+                    OnChainTableBytes,
+                    TableCommitmentBytesPerCommitmentSchemePassBy,
+                ),
+                Result<
+                    (
+                        OnChainTableBytes,
+                        TableCommitmentBytesPerCommitmentSchemePassBy,
+                    ),
+                    NativeCommitmentError,
+                >,
+            >::decode(&mut case_bytes.as_slice())
+            .unwrap();
+
+            let output = interface::process_insert(
+                case.input.0.clone(),
+                case.input.1.clone(),
+                case.input.2.clone(),
+            );
+
+            assert_eq!(output, case.output);
+
+            let new_case_bytes = Case { output, ..case }.encode();
+
+            assert_eq!(case_bytes, new_case_bytes);
+        })
     }
 }
