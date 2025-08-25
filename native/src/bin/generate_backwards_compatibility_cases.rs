@@ -60,7 +60,8 @@ where
             std::fs::write(
                 case_directory.as_ref().join(hex::encode(input_hash)),
                 &case_bytes,
-            );
+            )
+            .unwrap();
 
             Ok(())
         })
