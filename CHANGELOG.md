@@ -1,3 +1,12 @@
+# [1.25.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.24.0...v1.25.0) (2025-08-25)
+
+
+### Features
+
+* Update sxt_chain_runtime.rs to be compatible with Runtime Version ([0bc4682](https://github.com/spaceandtimefdn/sxt-node/commit/0bc46822281a99fb834a6ba777ecad1fb5c13410))
+
+
+
 # [1.24.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.23.0...v1.24.0) (2025-08-11)
 
 
@@ -43,15 +52,6 @@
 ### Features
 
 * add support for funding compute credits with funded message ([7587cf2](https://github.com/spaceandtimefdn/sxt-node/commit/7587cf28bac3468a751eb71bda08b4b902feb42a))
-
-
-
-# [1.20.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.19.0...v1.20.0) (2025-08-08)
-
-
-### Features
-
-* inject meta_row_number as primary key during table creation ([30ab34f](https://github.com/spaceandtimefdn/sxt-node/commit/30ab34f24068adfc68c68b421d334997e9ad4758))
 
 
 
