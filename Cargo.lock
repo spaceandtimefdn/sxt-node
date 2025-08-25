@@ -3497,6 +3497,7 @@ dependencies = [
  "proof-of-sql-commitment-map",
  "proof-of-sql-static-setups",
  "proof-of-sql-unversioned",
+ "proptest",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rayon",
