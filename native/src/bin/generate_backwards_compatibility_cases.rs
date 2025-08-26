@@ -15,7 +15,7 @@ use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unch
 use proptest::prelude::*;
 use proptest::test_runner::{FileFailurePersistence, TestRng, TestRunner};
 use sp_core::keccak_256;
-use sxt_core::native::OnChainTableBytes;
+use sxt_core::native::{NativeCommitmentError, OnChainTableBytes};
 use sxt_core::proptest::table_identifier;
 use sxt_core::tables::TableIdentifier;
 
@@ -119,17 +119,74 @@ fn process_insert_input<'a>(
         )
 }
 
+fn process_insert_input_bad_commitments<'a>(
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'a>>,
+) -> impl Strategy<
+    Value = (
+        TableIdentifier,
+        OnChainTableBytes,
+        TableCommitmentBytesPerCommitmentSchemePassBy,
+    ),
+> + use<'a> {
+    process_insert_input(setups).prop_perturb(
+        |(table_identifier, on_chain_table, table_commitment_per_commitment_scheme), mut rng| {
+            let data = table_commitment_per_commitment_scheme
+                .data
+                .into_flat_iter()
+                .map(|any| {
+                    let scheme = any.to_scheme();
+                    let mut bytes = any.unwrap();
+
+                    // delete a random byte from an otherwise correct commitment
+                    bytes.data.remove(rng.random_range(0..bytes.data.len()));
+
+                    scheme.into_any_concrete(bytes)
+                })
+                .collect();
+
+            (
+                table_identifier,
+                on_chain_table,
+                TableCommitmentBytesPerCommitmentSchemePassBy { data },
+            )
+        },
+    )
+}
+
+fn process_insert_tuple(
+    (table_identifier, insert, commitments): (
+        TableIdentifier,
+        OnChainTableBytes,
+        TableCommitmentBytesPerCommitmentSchemePassBy,
+    ),
+) -> Result<
+    (
+        OnChainTableBytes,
+        TableCommitmentBytesPerCommitmentSchemePassBy,
+    ),
+    NativeCommitmentError,
+> {
+    interface::process_insert(table_identifier, insert, commitments)
+}
+
 fn write_process_insert_cases(cases_dir: impl AsRef<Path>) {
     let process_insert_dir = cases_dir.as_ref().join("process_insert");
 
+    let setups = get_or_init_from_files_with_four_points_unchecked();
+
     // happy path
     write_cases(
-        process_insert_input(*get_or_init_from_files_with_four_points_unchecked()),
-        |(table_identifier, insert, commitments)| {
-            interface::process_insert(table_identifier, insert, commitments)
-        },
+        process_insert_input(*setups),
+        process_insert_tuple,
         |_, o| o.is_ok(),
-        process_insert_dir,
+        &process_insert_dir,
+    );
+
+    write_cases(
+        process_insert_input_bad_commitments(*setups),
+        process_insert_tuple,
+        |_, o| o == &Err(NativeCommitmentError::CommitmentDeserialization),
+        &process_insert_dir,
     );
 }
 
