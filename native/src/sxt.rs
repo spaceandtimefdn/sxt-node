@@ -343,6 +343,8 @@ mod tests {
 
     #[test]
     fn process_insert_output_is_backwards_compatible() {
+        let _ = get_or_init_from_files_with_four_points_unchecked();
+
         let workspace_dir = std::env::var("CARGO_WORKSPACE_DIR").unwrap();
         std::fs::read_dir(format!(
             "{workspace_dir}/native/backwards_compatibility_cases/process_insert"
