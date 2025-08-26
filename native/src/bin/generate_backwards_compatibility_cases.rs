@@ -153,6 +153,37 @@ fn process_insert_input_bad_commitments<'a>(
     )
 }
 
+fn process_insert_input_bad_table<'a>(
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'a>>,
+) -> impl Strategy<
+    Value = (
+        TableIdentifier,
+        OnChainTableBytes,
+        TableCommitmentBytesPerCommitmentSchemePassBy,
+    ),
+> + use<'a> {
+    process_insert_input(setups).prop_perturb(
+        |(table_identifier, on_chain_table, table_commitment_per_commitment_scheme), mut rng| {
+            let mut on_chain_table_data = on_chain_table.data().clone();
+
+            // remove a couple bytes from an otherwise correct on chain table
+            on_chain_table_data.remove(rng.random_range(0..on_chain_table_data.len()));
+            on_chain_table_data.remove(rng.random_range(0..on_chain_table_data.len()));
+
+            let encoded_on_chain_table_bytes = on_chain_table_data.encode();
+
+            let on_chain_table_bytes =
+                OnChainTableBytes::decode(&mut encoded_on_chain_table_bytes.as_slice()).unwrap();
+
+            (
+                table_identifier,
+                on_chain_table_bytes,
+                table_commitment_per_commitment_scheme,
+            )
+        },
+    )
+}
+
 fn process_insert_tuple(
     (table_identifier, insert, commitments): (
         TableIdentifier,
@@ -186,6 +217,13 @@ fn write_process_insert_cases(cases_dir: impl AsRef<Path>) {
         process_insert_input_bad_commitments(*setups),
         process_insert_tuple,
         |_, o| o == &Err(NativeCommitmentError::CommitmentDeserialization),
+        &process_insert_dir,
+    );
+
+    write_cases(
+        process_insert_input_bad_table(*setups),
+        process_insert_tuple,
+        |_, o| o == &Err(NativeCommitmentError::TableDeserialization),
         &process_insert_dir,
     );
 }
