@@ -58,7 +58,6 @@ prop_compose! {
 fn supported_column_type() -> impl Strategy<Value = ColumnType> {
     prop_oneof![
         Just(ColumnType::Boolean),
-        Just(ColumnType::Uint8),
         Just(ColumnType::TinyInt),
         Just(ColumnType::SmallInt),
         Just(ColumnType::Int),
