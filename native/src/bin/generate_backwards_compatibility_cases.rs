@@ -184,6 +184,77 @@ fn process_insert_input_bad_table<'a>(
     )
 }
 
+fn process_insert_input_mismatched_schemas<'a>(
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'a>>,
+) -> impl Strategy<
+    Value = (
+        TableIdentifier,
+        OnChainTableBytes,
+        TableCommitmentBytesPerCommitmentSchemePassBy,
+    ),
+> + use<'a> {
+    (
+        proof_of_sql_schema(1..64usize),
+        proof_of_sql_schema(1..64usize),
+        0..4usize,
+    )
+        .prop_filter("schemas match", |(schema_a, schema_b, ..)| {
+            schema_a != schema_b
+        })
+        .prop_flat_map(move |(schema_a, schema_b, commitment_row_count)| {
+            (
+                table_identifier(),
+                on_chain_table(Just(schema_a), 0..(4 - commitment_row_count)),
+                table_commitment_per_commitment_scheme(
+                    setups,
+                    on_chain_table(Just(schema_b), Just(commitment_row_count)),
+                    commitment_scheme_flags(),
+                ),
+            )
+        })
+        .prop_map(
+            |(table_identifier, on_chain_table, table_commitment_per_commitment_scheme)| {
+                let on_chain_table_bytes = on_chain_table.try_into().unwrap();
+                let table_commitment_bytes_per_commitment_scheme_pass_by =
+                    TableCommitmentBytesPerCommitmentSchemePassBy {
+                        data: table_commitment_per_commitment_scheme.try_into().unwrap(),
+                    };
+
+                (
+                    table_identifier,
+                    on_chain_table_bytes,
+                    table_commitment_bytes_per_commitment_scheme_pass_by,
+                )
+            },
+        )
+}
+
+fn process_insert_input_no_commitments<'a>() -> impl Strategy<
+    Value = (
+        TableIdentifier,
+        OnChainTableBytes,
+        TableCommitmentBytesPerCommitmentSchemePassBy,
+    ),
+> + use<'a> {
+    (
+        table_identifier(),
+        on_chain_table(proof_of_sql_schema(1..64usize), 0..16usize),
+    )
+        .prop_map(|(table_identifier, on_chain_table)| {
+            let on_chain_table_bytes = on_chain_table.try_into().unwrap();
+            let table_commitment_bytes_per_commitment_scheme_pass_by =
+                TableCommitmentBytesPerCommitmentSchemePassBy {
+                    data: None.into_iter().collect(),
+                };
+
+            (
+                table_identifier,
+                on_chain_table_bytes,
+                table_commitment_bytes_per_commitment_scheme_pass_by,
+            )
+        })
+}
+
 fn process_insert_tuple(
     (table_identifier, insert, commitments): (
         TableIdentifier,
@@ -224,6 +295,20 @@ fn write_process_insert_cases(cases_dir: impl AsRef<Path>) {
         process_insert_input_bad_table(*setups),
         process_insert_tuple,
         |_, o| o == &Err(NativeCommitmentError::TableDeserialization),
+        &process_insert_dir,
+    );
+
+    write_cases(
+        process_insert_input_mismatched_schemas(*setups),
+        process_insert_tuple,
+        |_, o| o == &Err(NativeCommitmentError::ColumnCommitmentsMismatch),
+        &process_insert_dir,
+    );
+
+    write_cases(
+        process_insert_input_no_commitments(),
+        process_insert_tuple,
+        |_, o| o == &Err(NativeCommitmentError::NoCommitments),
         &process_insert_dir,
     );
 }
