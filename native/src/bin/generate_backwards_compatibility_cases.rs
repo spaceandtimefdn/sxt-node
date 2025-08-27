@@ -48,11 +48,18 @@ where
 
     runner
         .run(&strategy, move |input| {
-            let output = f(input.clone());
-
             let input_bytes = input.encode();
 
             let input_hash = keccak_256(&input_bytes);
+
+            let case_file = case_directory.as_ref().join(hex::encode(input_hash));
+
+            // skip cases we've already generated
+            if std::fs::exists(&case_file).unwrap() {
+                return Ok(());
+            }
+
+            let output = f(input.clone());
 
             assert!(assert(&input, &output));
 
@@ -60,11 +67,7 @@ where
 
             let case_bytes = case.encode();
 
-            std::fs::write(
-                case_directory.as_ref().join(hex::encode(input_hash)),
-                &case_bytes,
-            )
-            .unwrap();
+            std::fs::write(&case_file, &case_bytes).unwrap();
 
             Ok(())
         })
