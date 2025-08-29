@@ -29,6 +29,7 @@ proptest = { workspace = true, optional = true, features = ["std"] }
 hex = { workspace = true, optional = true }
 
 sxt-core.workspace = true
+proof-of-sql = { workspace = true, optional = true }
 
 [[bin]]
 name = "generate_backwards_compatibility_cases"
@@ -57,4 +58,4 @@ std = [
     "proof-of-sql/cpu-perf",
     "sxt-core/std",
 ]
-generate_backwards_compatibility_cases = ["std", "proptest", "dep:hex", "sxt-core/proptest", "proof-of-sql-commitment-map/proptest", "commitment-sql/proptest"]
+generate_backwards_compatibility_cases = ["std", "proptest", "dep:hex", "sxt-core/proptest", "proof-of-sql-commitment-map/proptest", "commitment-sql/proptest", "dep:proof-of-sql"]

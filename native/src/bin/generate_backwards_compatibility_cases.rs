@@ -3,7 +3,17 @@ use std::path::Path;
 use codec::{Decode, Encode};
 use commitment_sql::proptest::table_commitment_per_commitment_scheme;
 use native::interface;
-use on_chain_table::proptest::{on_chain_table, proof_of_sql_schema};
+use on_chain_table::proptest::{
+    decimal_75_column,
+    decimal_75_column_type,
+    i256,
+    ident,
+    on_chain_table,
+    proof_of_sql_schema,
+    ProofOfSqlSchema,
+};
+use on_chain_table::OnChainTable;
+use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
 use proof_of_sql_commitment_map::proptest::commitment_scheme_flags;
 use proof_of_sql_commitment_map::{
@@ -84,6 +94,30 @@ prop_compose! {
     }
 }
 
+fn process_insert_logical_to_passby_input(
+    (table_identifier, on_chain_table, table_commitment_per_commitment_scheme): (
+        TableIdentifier,
+        OnChainTable,
+        TableCommitmentPerCommitmentScheme,
+    ),
+) -> (
+    TableIdentifier,
+    OnChainTableBytes,
+    TableCommitmentBytesPerCommitmentSchemePassBy,
+) {
+    let on_chain_table_bytes = on_chain_table.try_into().unwrap();
+    let table_commitment_bytes_per_commitment_scheme_pass_by =
+        TableCommitmentBytesPerCommitmentSchemePassBy {
+            data: table_commitment_per_commitment_scheme.try_into().unwrap(),
+        };
+
+    (
+        table_identifier,
+        on_chain_table_bytes,
+        table_commitment_bytes_per_commitment_scheme_pass_by,
+    )
+}
+
 fn process_insert_input<'a>(
     setups: PerCommitmentScheme<AssociatedPublicSetupType<'a>>,
 ) -> impl Strategy<
@@ -105,21 +139,7 @@ fn process_insert_input<'a>(
                 ),
             )
         })
-        .prop_map(
-            |(table_identifier, on_chain_table, table_commitment_per_commitment_scheme)| {
-                let on_chain_table_bytes = on_chain_table.try_into().unwrap();
-                let table_commitment_bytes_per_commitment_scheme_pass_by =
-                    TableCommitmentBytesPerCommitmentSchemePassBy {
-                        data: table_commitment_per_commitment_scheme.try_into().unwrap(),
-                    };
-
-                (
-                    table_identifier,
-                    on_chain_table_bytes,
-                    table_commitment_bytes_per_commitment_scheme_pass_by,
-                )
-            },
-        )
+        .prop_map(process_insert_logical_to_passby_input)
 }
 
 fn process_insert_input_bad_commitments<'a>(
@@ -187,6 +207,45 @@ fn process_insert_input_bad_table<'a>(
     )
 }
 
+fn process_insert_input_out_of_scalar_bounds<'a>(
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'a>>,
+) -> impl Strategy<
+    Value = (
+        TableIdentifier,
+        OnChainTableBytes,
+        TableCommitmentBytesPerCommitmentSchemePassBy,
+    ),
+> + use<'a> {
+    (ident(), decimal_75_column_type())
+        .prop_flat_map(move |(column_name, column_type)| {
+            let column_name_clone = column_name.clone();
+            (
+                table_identifier(),
+                decimal_75_column(
+                    Precision::new(column_type.precision_value().unwrap()).unwrap(),
+                    column_type.scale().unwrap(),
+                    i256(),
+                    16..64usize,
+                )
+                .prop_map(move |col| {
+                    OnChainTable::try_from_iter([(column_name.clone(), col)]).unwrap()
+                }),
+                table_commitment_per_commitment_scheme(
+                    setups,
+                    on_chain_table(
+                        Just(
+                            ProofOfSqlSchema::try_from_iter([(column_name_clone, column_type)])
+                                .unwrap(),
+                        ),
+                        0..4usize,
+                    ),
+                    commitment_scheme_flags(),
+                ),
+            )
+        })
+        .prop_map(process_insert_logical_to_passby_input)
+}
+
 fn process_insert_input_mismatched_schemas<'a>(
     setups: PerCommitmentScheme<AssociatedPublicSetupType<'a>>,
 ) -> impl Strategy<
@@ -215,21 +274,7 @@ fn process_insert_input_mismatched_schemas<'a>(
                 ),
             )
         })
-        .prop_map(
-            |(table_identifier, on_chain_table, table_commitment_per_commitment_scheme)| {
-                let on_chain_table_bytes = on_chain_table.try_into().unwrap();
-                let table_commitment_bytes_per_commitment_scheme_pass_by =
-                    TableCommitmentBytesPerCommitmentSchemePassBy {
-                        data: table_commitment_per_commitment_scheme.try_into().unwrap(),
-                    };
-
-                (
-                    table_identifier,
-                    on_chain_table_bytes,
-                    table_commitment_bytes_per_commitment_scheme_pass_by,
-                )
-            },
-        )
+        .prop_map(process_insert_logical_to_passby_input)
 }
 
 fn process_insert_input_no_commitments<'a>() -> impl Strategy<
@@ -298,6 +343,13 @@ fn write_process_insert_cases(cases_dir: impl AsRef<Path>) {
         process_insert_input_bad_table(*setups),
         process_insert_tuple,
         |_, o| o == &Err(NativeCommitmentError::TableDeserialization),
+        &process_insert_dir,
+    );
+
+    write_cases(
+        process_insert_input_out_of_scalar_bounds(*setups),
+        process_insert_tuple,
+        |_, o| o == &Err(NativeCommitmentError::OutOfScalarBounds),
         &process_insert_dir,
     );
 
