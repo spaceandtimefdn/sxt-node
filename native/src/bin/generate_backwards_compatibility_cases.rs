@@ -319,6 +319,57 @@ fn process_insert_input_mismatched_lengths<'a>(
         .prop_map(process_insert_logical_to_passby_input)
 }
 
+fn process_insert_input_mismatched_column_order<'a>(
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'a>>,
+) -> impl Strategy<
+    Value = (
+        TableIdentifier,
+        OnChainTableBytes,
+        TableCommitmentBytesPerCommitmentSchemePassBy,
+    ),
+> + use<'a> {
+    (
+        proof_of_sql_schema(2..64usize)
+            .prop_flat_map(|schema| {
+                (
+                    Just(schema.clone()),
+                    Just(schema.into_vec())
+                        .prop_shuffle()
+                        .prop_map(|shuffled| ProofOfSqlSchema::try_from_iter(shuffled).unwrap()),
+                )
+            })
+            .prop_filter("schema orders match", |(schema_a, schema_b)| {
+                schema_a != schema_b
+            }),
+        0..4usize,
+    )
+        .prop_flat_map(move |((schema_a, schema_b), commitment_row_count)| {
+            (
+                table_identifier(),
+                on_chain_table(Just(schema_a.clone()), 0..(4 - commitment_row_count)),
+                (
+                    table_commitment_per_commitment_scheme(
+                        setups,
+                        on_chain_table(Just(schema_a), Just(commitment_row_count)),
+                        Just(CommitmentSchemeFlags::all()),
+                    ),
+                    table_commitment_per_commitment_scheme(
+                        setups,
+                        on_chain_table(Just(schema_b), Just(commitment_row_count)),
+                        Just(CommitmentSchemeFlags::all()),
+                    ),
+                )
+                    .prop_map(
+                        |(hyperkzg_commitments, dynamic_dory_commitments)| PerCommitmentScheme {
+                            hyper_kzg: hyperkzg_commitments.hyper_kzg,
+                            dynamic_dory: dynamic_dory_commitments.dynamic_dory,
+                        },
+                    ),
+            )
+        })
+        .prop_map(process_insert_logical_to_passby_input)
+}
+
 fn process_insert_input_no_commitments<'a>() -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -399,6 +450,13 @@ fn write_process_insert_cases(cases_dir: impl AsRef<Path>) {
         process_insert_input_mismatched_lengths(*setups),
         process_insert_tuple,
         |_, o| o == &Err(NativeCommitmentError::TableCommitmentRangeMismatch),
+        &process_insert_dir,
+    );
+
+    write_cases(
+        process_insert_input_mismatched_column_order(*setups),
+        process_insert_tuple,
+        |_, o| o == &Err(NativeCommitmentError::TableCommitmentColumnOrderMismatch),
         &process_insert_dir,
     );
 
