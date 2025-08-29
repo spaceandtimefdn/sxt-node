@@ -18,10 +18,10 @@ use crate::{OnChainColumn, OnChainTable};
 pub struct ProofOfSqlSchema(Vec<(Ident, ColumnType)>);
 
 #[derive(Debug)]
-struct NoColumns;
+pub struct NoColumns;
 
 impl ProofOfSqlSchema {
-    fn try_from_iter(
+    pub fn try_from_iter(
         iter: impl IntoIterator<Item = (Ident, ColumnType)>,
     ) -> Result<ProofOfSqlSchema, NoColumns> {
         let schema = iter.into_iter().collect::<Vec<_>>();
@@ -49,7 +49,7 @@ prop_compose! {
 }
 
 prop_compose! {
-    fn decimal_75_column_type()(scale in 0u8..=74)
+    pub fn decimal_75_column_type()(scale in 0u8..=74)
         (precision in (scale + 1)..=75, scale in Just(scale)) -> ColumnType {
         ColumnType::Decimal75(Precision::new(precision).expect("precision is < 75"), scale as i8)
     }
@@ -94,10 +94,32 @@ fn i256_with_max_num_digits(max_num_digits: u8) -> impl Strategy<Value = i256> {
         .prop_map(|string| i256::from_string(&string).expect("regex should produce a valid i256"))
 }
 
+prop_compose! {
+    pub fn i256()
+        (low in any::<u128>(), high in any::<i128>()) -> i256 {
+        i256::from_parts(low, high)
+    }
+}
+
+pub fn decimal_75_column<E>(
+    precision: Precision,
+    scale: i8,
+    element: E,
+    num_rows: impl Into<SizeRange>,
+) -> impl Strategy<Value = OnChainColumn>
+where
+    E: Strategy<Value = i256>,
+{
+    proptest::collection::vec(element, num_rows).prop_map(move |i256_col| {
+        let u256_col = i256_col.into_iter().map(arrow_i256_to_u256).collect();
+        OnChainColumn::Decimal75(precision, scale, u256_col)
+    })
+}
+
 fn on_chain_column<CT, NR>(column_type: CT, num_rows: NR) -> impl Strategy<Value = OnChainColumn>
 where
     CT: Strategy<Value = ColumnType>,
-    NR: Into<SizeRange> + Clone,
+    NR: Into<SizeRange> + Clone + 'static,
 {
     column_type.prop_flat_map(move |column_type| match column_type {
         ColumnType::Boolean => proptest::collection::vec(any::<bool>(), num_rows.clone())
@@ -137,11 +159,12 @@ where
                 })
                 .boxed()
         }
-        ColumnType::Decimal75(precision, scale) => proptest::collection::vec(
-            i256_with_max_num_digits(precision.value()).prop_map(arrow_i256_to_u256),
+        ColumnType::Decimal75(precision, scale) => decimal_75_column(
+            precision,
+            scale,
+            i256_with_max_num_digits(precision.value()),
             num_rows.clone(),
         )
-        .prop_map(move |values| OnChainColumn::Decimal75(precision, scale, values))
         .boxed(),
         _ => unimplemented!(),
     })
@@ -158,7 +181,10 @@ where
                 .into_vec()
                 .into_iter()
                 .map(|(ident, column_type)| {
-                    (Just(ident), on_chain_column(Just(column_type), num_rows))
+                    (
+                        Just(ident),
+                        on_chain_column(Just(column_type), num_rows..=num_rows),
+                    )
                 })
                 .collect::<Vec<_>>()
         })
