@@ -17,6 +17,7 @@ use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
 use proof_of_sql_commitment_map::proptest::commitment_scheme_flags;
 use proof_of_sql_commitment_map::{
+    CommitmentSchemeFlags,
     PerCommitmentScheme,
     TableCommitmentBytesPerCommitmentSchemePassBy,
     TableCommitmentPerCommitmentScheme,
@@ -277,6 +278,47 @@ fn process_insert_input_mismatched_schemas<'a>(
         .prop_map(process_insert_logical_to_passby_input)
 }
 
+fn process_insert_input_mismatched_lengths<'a>(
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'a>>,
+) -> impl Strategy<
+    Value = (
+        TableIdentifier,
+        OnChainTableBytes,
+        TableCommitmentBytesPerCommitmentSchemePassBy,
+    ),
+> + use<'a> {
+    (proof_of_sql_schema(1..64usize), 0..4usize, 0..4usize)
+        .prop_filter(
+            "lengths match",
+            |(_, hyperkzg_length, dynamic_dory_length)| hyperkzg_length != dynamic_dory_length,
+        )
+        .prop_flat_map(move |(schema, hyperkzg_length, dynamic_dory_length)| {
+            (
+                table_identifier(),
+                on_chain_table(Just(schema.clone()), 0..(4 - hyperkzg_length)),
+                (
+                    table_commitment_per_commitment_scheme(
+                        setups,
+                        on_chain_table(Just(schema.clone()), Just(hyperkzg_length)),
+                        Just(CommitmentSchemeFlags::all()),
+                    ),
+                    table_commitment_per_commitment_scheme(
+                        setups,
+                        on_chain_table(Just(schema), Just(dynamic_dory_length)),
+                        Just(CommitmentSchemeFlags::all()),
+                    ),
+                )
+                    .prop_map(
+                        |(hyperkzg_commitments, dynamic_dory_commitments)| PerCommitmentScheme {
+                            hyper_kzg: hyperkzg_commitments.hyper_kzg,
+                            dynamic_dory: dynamic_dory_commitments.dynamic_dory,
+                        },
+                    ),
+            )
+        })
+        .prop_map(process_insert_logical_to_passby_input)
+}
+
 fn process_insert_input_no_commitments<'a>() -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -350,6 +392,13 @@ fn write_process_insert_cases(cases_dir: impl AsRef<Path>) {
         process_insert_input_out_of_scalar_bounds(*setups),
         process_insert_tuple,
         |_, o| o == &Err(NativeCommitmentError::OutOfScalarBounds),
+        &process_insert_dir,
+    );
+
+    write_cases(
+        process_insert_input_mismatched_lengths(*setups),
+        process_insert_tuple,
+        |_, o| o == &Err(NativeCommitmentError::TableCommitmentRangeMismatch),
         &process_insert_dir,
     );
 
