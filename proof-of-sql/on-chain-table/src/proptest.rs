@@ -33,11 +33,11 @@ impl ProofOfSqlSchema {
         }
     }
 
-    fn as_slice(&self) -> &[(Ident, ColumnType)] {
+    pub fn as_slice(&self) -> &[(Ident, ColumnType)] {
         &self.0
     }
 
-    fn into_vec(self) -> Vec<(Ident, ColumnType)> {
+    pub fn into_vec(self) -> Vec<(Ident, ColumnType)> {
         self.0
     }
 }
