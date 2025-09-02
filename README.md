@@ -1,5 +1,7 @@
 # **SXT Chain**
 
+![Validator Banner](./docs/assets/validator-banner.png)
+
 **SXT Chain** is the decentralized validator set for the Space and Time ecosystem, delivered as a decentralized database designed to scale tamperproof tables. It provides the trustless infrastructure for validating indexed blockchain and application data, ensuring cryptographic integrity and enabling sophisticated onchain applications powered by verifiable data.
 
 Put simply, SXT Chain validators ensure inserts to tables are cryptographically tamperproof by witnessing the inserts. They come to BFT consensus, agreeing on the latest updated commitments for each table.
