@@ -378,7 +378,9 @@ mod tests {
         let data = ["lorem", "ipsum", "dolor"].map(String::from).to_vec();
         let on_chain_varchar_column = OnChainColumn::VarChar(data.clone());
         let owned_varchar_column = OwnedColumn::<S>::VarChar(data);
-        assert_eq!(
+        // For the time being, we do not commit to varchar columns the same way as proof-of-sql for
+        // backwards compatibility purposes
+        assert_ne!(
             on_chain_varchar_column
                 .try_to_committable_column::<S>()
                 .unwrap(),
