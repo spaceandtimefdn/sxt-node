@@ -1,3 +1,7 @@
+## [1.25.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.25.0...v1.25.1) (2025-09-02)
+
+
+
 # [1.25.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.24.0...v1.25.0) (2025-08-25)
 
 
@@ -43,15 +47,6 @@
 * add type alias TableCommitmentPerCommitmentScheme ([f151d41](https://github.com/spaceandtimefdn/sxt-node/commit/f151d4140c045ffeb858dfa23d6f5096d23cb205))
 * publicize no-std compatible indexmap aliases ([83cba52](https://github.com/spaceandtimefdn/sxt-node/commit/83cba52b27f09ba8f4eeb78a9290c64a6b9bd51f))
 * statelessly temporarily convert varchar columns to varbinary ([8714157](https://github.com/spaceandtimefdn/sxt-node/commit/87141579fa74af5dccaf96d5d70b10e41926dc37))
-
-
-
-# [1.21.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.20.0...v1.21.0) (2025-08-08)
-
-
-### Features
-
-* add support for funding compute credits with funded message ([7587cf2](https://github.com/spaceandtimefdn/sxt-node/commit/7587cf28bac3468a751eb71bda08b4b902feb42a))
 
 
 
