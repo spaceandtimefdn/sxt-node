@@ -18,6 +18,7 @@ snafu.workspace = true
 sqlparser = { workspace = true }
 proptest = { workspace = true, features = ["std"], optional = true }
 ark-ff = { workspace = true }
+blake3 = { workspace = true }
 
 [features]
 std = []
