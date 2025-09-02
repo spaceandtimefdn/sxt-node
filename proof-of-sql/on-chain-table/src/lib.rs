@@ -29,5 +29,8 @@ mod arrow_table_conversion;
 #[cfg(feature = "arrow")]
 pub use arrow_table_conversion::ArrowToOnChainTableError;
 
+mod mont_scalar_ext;
+pub use mont_scalar_ext::MontScalarExt;
+
 #[cfg(feature = "proptest")]
 pub mod proptest;

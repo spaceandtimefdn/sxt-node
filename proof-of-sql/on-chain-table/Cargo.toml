@@ -17,6 +17,7 @@ serde = { workspace = true, features = ["alloc"] }
 snafu.workspace = true
 sqlparser = { workspace = true }
 proptest = { workspace = true, features = ["std"], optional = true }
+ark-ff = { workspace = true }
 
 [features]
 std = []
