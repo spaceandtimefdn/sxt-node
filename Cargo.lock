@@ -9430,6 +9430,7 @@ dependencies = [
  "indexmap 2.8.0",
  "primitive-types 0.12.2",
  "proof-of-sql",
+ "proptest",
  "serde",
  "snafu 0.8.5",
  "sqlparser",

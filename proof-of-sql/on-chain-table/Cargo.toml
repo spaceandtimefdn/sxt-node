@@ -16,7 +16,9 @@ proof-of-sql.workspace = true
 serde = { workspace = true, features = ["alloc"] }
 snafu.workspace = true
 sqlparser = { workspace = true }
+proptest = { workspace = true, features = ["std"], optional = true }
 
 [features]
 std = []
 arrow = ["std", "dep:arrow"]
+proptest = ["dep:proptest", "arrow"]

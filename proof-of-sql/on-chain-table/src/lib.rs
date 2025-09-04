@@ -28,3 +28,6 @@ pub use table::{OnChainTable, OnChainTableError};
 mod arrow_table_conversion;
 #[cfg(feature = "arrow")]
 pub use arrow_table_conversion::ArrowToOnChainTableError;
+
+#[cfg(feature = "proptest")]
+pub mod proptest;
