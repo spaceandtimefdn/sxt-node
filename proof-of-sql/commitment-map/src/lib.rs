@@ -40,3 +40,6 @@ pub use commitment_storage_map::{
     TableCommitmentPerCommitmentScheme,
     TableCommitmentToBytesError,
 };
+
+#[cfg(feature = "proptest")]
+pub mod proptest;

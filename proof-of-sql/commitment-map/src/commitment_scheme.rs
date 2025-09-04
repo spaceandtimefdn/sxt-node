@@ -19,6 +19,7 @@ use crate::GenericOverCommitmentFn;
 /// Identifier for proof-of-sql commitment schemes.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "substrate", derive(Decode, Encode, MaxEncodedLen, TypeInfo))]
+#[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 pub enum CommitmentScheme {
     /// Scheme with commitments in the ristretto group, proven by inner-product-argument.
     HyperKzg,

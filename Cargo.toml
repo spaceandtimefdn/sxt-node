@@ -232,6 +232,8 @@ linked-list = { version = "0.1.0", default-features = false }
 base64 = { version = "0.21", default-features = false }
 regex = { version = "1.11.1", default-features = false }
 prometheus = "0.14.0"
+proptest = { version = "1.7.0", default-features = false }
+proptest-derive = { version = "0.6.0", default-features = false }
 
 [workspace.lints]
 rust.missing_docs = "warn"
