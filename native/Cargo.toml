@@ -24,12 +24,21 @@ arrow = { workspace = true, optional = true, features = ["ipc"]}
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
 proof-of-sql-static-setups = { workspace = true, optional = true, features = ["io"] }
 futures = { features = ["thread-pool"], workspace = true, optional = true }
+proptest = { workspace = true, optional = true, features = ["std"] }
+
+hex = { workspace = true, optional = true }
 
 sxt-core.workspace = true
+proof-of-sql = { workspace = true, optional = true }
+clap = { workspace = true, optional = true, features = ["env", "derive"] }
 
 [dev-dependencies]
 proof-of-sql = { workspace = true }
 sqlparser.workspace = true
+
+[[bin]]
+name = "generate-backwards-compatibility-cases"
+required-features = ["generate_backwards_compatibility_cases"]
 
 [features]
 default = ["std"]
@@ -49,3 +58,4 @@ std = [
     "proof-of-sql/cpu-perf",
     "sxt-core/std",
 ]
+generate_backwards_compatibility_cases = ["std", "dep:proptest", "dep:hex", "sxt-core/proptest", "proof-of-sql-commitment-map/proptest", "commitment-sql/proptest", "dep:proof-of-sql", "dep:clap"]
