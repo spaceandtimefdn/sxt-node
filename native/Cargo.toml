@@ -35,6 +35,7 @@ clap = { workspace = true, optional = true, features = ["env", "derive"] }
 [dev-dependencies]
 proof-of-sql = { workspace = true }
 sqlparser.workspace = true
+rayon.workspace = true
 
 [[bin]]
 name = "generate-backwards-compatibility-cases"
