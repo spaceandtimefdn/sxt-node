@@ -44,3 +44,6 @@ pub use insert::{
     InsertAndCommitmentMetadata,
     ProcessInsertError,
 };
+
+#[cfg(feature = "proptest")]
+pub mod proptest;

@@ -20,6 +20,7 @@ rayon = { workspace = true, optional = true }
 snafu.workspace = true
 sqlparser.workspace = true
 sxt-core.workspace = true
+proptest = { workspace = true, features = ["std"], optional = true }
 
 [dev-dependencies]
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
@@ -31,6 +32,7 @@ sxt-core = { workspace = true, features = ["std"] }
 [features]
 std = ["sxt-core/std"]
 cpu-perf = ["std", "dep:rayon", "proof-of-sql/cpu-perf"]
+proptest = ["std", "dep:proptest", "proof-of-sql-commitment-map/substrate"]
 
 [lints]
 workspace = true
