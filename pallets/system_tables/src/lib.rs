@@ -28,7 +28,7 @@ pub mod pallet {
     use frame_support::dispatch::{DispatchResult, RawOrigin};
     use frame_support::pallet_prelude::*;
     use frame_support::traits::StoredMap;
-    use frame_system::pallet_prelude::*;
+    use frame_system::pallet_prelude::{BlockNumberFor, *};
     use itertools::Itertools;
     use on_chain_table::OnChainTable;
     use pallet_session::historical::IdentificationTuple;
@@ -473,6 +473,17 @@ pub mod pallet {
     #[pallet::getter(fn last_processed_user_nonce)]
     pub(super) type LastProcessedUserNonce<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, U256>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn claimed_unstakes)]
+    pub(super) type ClaimedUnstakes<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        BlockNumberFor<T>,
+        Blake2_128Concat,
+        T::AccountId,
+        T::CurrencyBalance,
+    >;
 
     fn consume_nonce<T: Config>(nonce: U256, eth_sender: &T::AccountId) -> DispatchResult {
         let expected =
