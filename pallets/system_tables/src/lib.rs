@@ -346,9 +346,10 @@ pub mod pallet {
                             sxt_core::utils::eth_address_to_substrate_account_id::<T>(&staker)?;
 
                         // Make sure they're staked
-                        if pallet_staking::Ledger::<T>::get(&staker_id).is_none() {
+                        let Some(old_staking_ledger) = pallet_staking::Ledger::<T>::get(&staker_id)
+                        else {
                             return Err(Error::<T>::AccountNotStaked.into());
-                        }
+                        };
 
                         // Make sure they're in an unbonding state
                         if !(pallet_staking::Pallet::<T>::is_unbonding(&staker_id)?) {
@@ -366,15 +367,26 @@ pub mod pallet {
                             .map_err(|e| e.error)?;
 
                         // Check if the user still has entries in the staking ledger
-                        if let Some(ledger) = pallet_staking::Ledger::<T>::get(&staker_id) {
-                            // If this was a partial unlock we need to actually check if the locks
-                            // were removed by the withdrawal call. If they weren't the claim is
-                            // unsuccessful and we return an error. Otherwise we emit the event
-                            if pallet_staking::Pallet::<T>::is_unbonding(&staker_id)? {
-                                // The user's unstaked funds are still locked
-                                return Err(Error::<T>::FundsLocked.into());
+                        let amount_withdrawn = match pallet_staking::Ledger::<T>::get(&staker_id) {
+                            Some(new_staking_ledger) => {
+                                // If this was a partial unlock we need to actually check if the locks
+                                // were removed by the withdrawal call. If they weren't the claim is
+                                // unsuccessful and we return an error. Otherwise we emit the event
+                                if pallet_staking::Pallet::<T>::is_unbonding(&staker_id)? {
+                                    // The user's unstaked funds are still locked
+                                    return Err(Error::<T>::FundsLocked.into());
+                                };
+
+                                new_staking_ledger.active - old_staking_ledger.active
                             }
-                        }
+                            None => old_staking_ledger.active,
+                        };
+
+                        ClaimedUnstakes::<T>::insert(
+                            frame_system::Pallet::<T>::block_number(),
+                            &staker_id,
+                            amount_withdrawn,
+                        );
 
                         // User is fully unbonded, so we emit an event
                         Pallet::<T>::deposit_event(Event::<T>::UnstakingClaimed {
