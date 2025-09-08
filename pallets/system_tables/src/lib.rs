@@ -493,7 +493,7 @@ pub mod pallet {
     #[pallet::getter(fn claimed_unstakes)]
     pub(super) type ClaimedUnstakes<T: Config> = StorageDoubleMap<
         _,
-        Blake2_128Concat,
+        Identity,
         BlockNumberFor<T>,
         Blake2_128Concat,
         T::AccountId,
