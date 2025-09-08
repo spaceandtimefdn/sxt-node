@@ -367,20 +367,23 @@ pub mod pallet {
                             .map_err(|e| e.error)?;
 
                         // Check if the user still has entries in the staking ledger
-                        let amount_withdrawn = match pallet_staking::Ledger::<T>::get(&staker_id) {
-                            Some(new_staking_ledger) => {
-                                // If this was a partial unlock we need to actually check if the locks
-                                // were removed by the withdrawal call. If they weren't the claim is
-                                // unsuccessful and we return an error. Otherwise we emit the event
-                                if pallet_staking::Pallet::<T>::is_unbonding(&staker_id)? {
-                                    // The user's unstaked funds are still locked
-                                    return Err(Error::<T>::FundsLocked.into());
-                                };
+                        let maybe_new_staking_ledger = pallet_staking::Ledger::<T>::get(&staker_id);
 
-                                new_staking_ledger.active - old_staking_ledger.active
-                            }
-                            None => old_staking_ledger.active,
-                        };
+                        if maybe_new_staking_ledger.is_some() {
+                            // If this was a partial unlock we need to actually check if the locks
+                            // were removed by the withdrawal call. If they weren't the claim is
+                            // unsuccessful and we return an error. Otherwise we emit the event
+                            if pallet_staking::Pallet::<T>::is_unbonding(&staker_id)? {
+                                // The user's unstaked funds are still locked
+                                return Err(Error::<T>::FundsLocked.into());
+                            };
+                        }
+
+                        let new_active = maybe_new_staking_ledger
+                            .map(|ledger| ledger.active)
+                            .unwrap_or(0);
+
+                        let amount_withdrawn = old_staking_ledger.active.saturating_sub(new_active);
 
                         ClaimedUnstakes::<T>::insert(
                             frame_system::Pallet::<T>::block_number(),
