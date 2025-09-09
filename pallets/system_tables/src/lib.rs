@@ -386,8 +386,8 @@ pub mod pallet {
                         let amount_withdrawn = old_staking_ledger.active.saturating_sub(new_active);
 
                         ClaimedUnstakes::<T>::insert(
-                            frame_system::Pallet::<T>::block_number(),
                             &staker_id,
+                            frame_system::Pallet::<T>::block_number(),
                             amount_withdrawn,
                         );
 
@@ -493,10 +493,10 @@ pub mod pallet {
     #[pallet::getter(fn claimed_unstakes)]
     pub(super) type ClaimedUnstakes<T: Config> = StorageDoubleMap<
         _,
-        Identity,
-        BlockNumberFor<T>,
         Blake2_128Concat,
         T::AccountId,
+        Identity,
+        BlockNumberFor<T>,
         T::CurrencyBalance,
     >;
 
