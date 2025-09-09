@@ -128,6 +128,8 @@ pub mod pallet {
         AccountNotUnbonding,
         /// Occurs when attempting to claim locked funds
         FundsLocked,
+        /// Account was not claiming unstake.
+        NoSuchClaimedUnstake,
     }
 
     #[pallet::call]
@@ -322,6 +324,14 @@ pub mod pallet {
                             stake_amount.saturated_into(),
                             false,
                         )?;
+
+                        let block_number_to_remove = ClaimedUnstakes::<T>::iter_prefix(&staker_id)
+                            .find_map(|(block_number, amount)| {
+                                (amount == stake_amount).then_some(block_number)
+                            })
+                            .ok_or(Error::<T>::NoSuchClaimedUnstake)?;
+
+                        ClaimedUnstakes::<T>::remove(&staker_id, block_number_to_remove);
 
                         Ok(())
                     }
