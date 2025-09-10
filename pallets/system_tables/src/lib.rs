@@ -44,6 +44,7 @@ pub mod pallet {
         SystemRequest,
         SystemRequestType,
     };
+    use sxt_core::system_tables::ClaimedUnstake;
     use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
     use sxt_core::utils::eth_address_to_substrate_account_id;
 
@@ -160,6 +161,18 @@ pub mod pallet {
                 None => Ok(()),
                 Some(req) => process_request::<T>(req),
             }
+        }
+
+        pub fn claimed_unstakes() -> Vec<ClaimedUnstake<T>> {
+            ClaimedUnstakes::<T>::iter()
+                .map(
+                    |(staker, claim_block_number, claimed_amount)| ClaimedUnstake {
+                        staker,
+                        claim_block_number,
+                        claimed_amount,
+                    },
+                )
+                .collect()
         }
     }
 
