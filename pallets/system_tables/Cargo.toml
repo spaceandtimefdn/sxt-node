@@ -40,6 +40,7 @@ hex.workspace = true
 serde_json = { workspace = true, default-features = false, features = ["alloc"] }
 log.workspace = true
 itertools.workspace = true
+sp-api.workspace = true
 
 [dev-dependencies]
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
@@ -93,6 +94,7 @@ std = [
 	"sp-authority-discovery/std",
 	"sp-consensus-babe/std",
 	"sp-staking/std",
+	"sp-api/std",
 ]
 
 runtime-benchmarks = [

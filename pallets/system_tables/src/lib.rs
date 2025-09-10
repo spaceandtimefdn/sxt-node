@@ -19,6 +19,8 @@ mod tests;
 mod messages;
 mod templates;
 
+pub mod runtime_api;
+
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
