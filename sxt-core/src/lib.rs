@@ -46,5 +46,8 @@ pub mod smartcontracts;
 /// Types related to the system contracts pallet;
 pub mod system_contracts;
 
+/// Types related to the system tables pallet
+pub mod system_tables;
+
 /// Utility functions for handling Runtime types
 pub mod utils;

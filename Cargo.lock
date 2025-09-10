@@ -18471,6 +18471,7 @@ dependencies = [
  "hex",
  "k256",
  "on-chain-table",
+ "pallet-staking",
  "parity-scale-codec",
  "postcard",
  "proof-of-sql",
