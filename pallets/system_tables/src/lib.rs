@@ -440,12 +440,9 @@ pub mod pallet {
                         let staker_signer: OriginFor<T> =
                             RawOrigin::Signed(staker_id.clone()).into();
 
-                        let raw_balance: u128 =
+                        let staking_balance: T::CurrencyBalance =
                             pallet_balances::Pallet::<T>::free_balance(staker_id)
                                 .unique_saturated_into();
-                        let staking_balance: T::CurrencyBalance = T::CurrencyBalance::from(
-                            UniqueSaturatedInto::<u64>::unique_saturated_into(raw_balance),
-                        );
 
                         pallet_staking::Pallet::<T>::rebond(staker_signer, staking_balance)
                             .map_err(|e| e.error)?;
