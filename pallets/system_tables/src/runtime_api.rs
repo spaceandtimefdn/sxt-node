@@ -1,5 +1,7 @@
 //! Runtime APIs for reading from pallet-system-tables.
 
+use alloc::vec::Vec;
+
 use codec::FullCodec;
 use sxt_core::system_tables::ClaimedUnstake;
 
