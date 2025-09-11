@@ -165,7 +165,8 @@ pub mod pallet {
             }
         }
 
-        pub fn claimed_unstakes() -> Vec<ClaimedUnstake<T>> {
+        pub fn claimed_unstakes(
+        ) -> Vec<ClaimedUnstake<T::AccountId, BlockNumberFor<T>, T::CurrencyBalance>> {
             ClaimedUnstakes::<T>::iter()
                 .map(
                     |(staker, claim_block_number, claimed_amount)| ClaimedUnstake {

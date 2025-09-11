@@ -1,17 +1,14 @@
-use codec::{Decode, Encode, MaxEncodedLen};
-use frame_system::pallet_prelude::BlockNumberFor;
+use codec::{Decode, Encode, FullCodec};
 use scale_info::TypeInfo;
-use sp_core::RuntimeDebug;
-use sp_runtime_interface::pass_by::PassByCodec;
 
-use crate::system_contracts::ContractInfo;
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default)]
-pub struct ClaimedUnstake<T>
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Default, TypeInfo)]
+pub struct ClaimedUnstake<AccountId, BlockNumber, CurrencyBalance>
 where
-    T: pallet_staking::Config,
+    AccountId: FullCodec,
+    BlockNumber: FullCodec,
+    CurrencyBalance: FullCodec,
 {
-    pub staker: T::AccountId,
-    pub claim_block_number: BlockNumberFor<T>,
-    pub claimed_amount: T::CurrencyBalance,
+    pub staker: AccountId,
+    pub claim_block_number: BlockNumber,
+    pub claimed_amount: CurrencyBalance,
 }
