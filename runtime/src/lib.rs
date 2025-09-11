@@ -86,6 +86,7 @@ use sp_staking::SessionIndex;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
+use sxt_core::system_tables::ClaimedUnstake;
 pub use {
     pallet_attestation,
     pallet_authority_discovery,
@@ -1315,6 +1316,12 @@ impl_runtime_apis! {
     impl pallet_tables::runtime_api::TablesApi<Block> for Runtime {
         fn table_schema(table_identifier: sxt_core::tables::TableIdentifier) -> Result<sxt_core::tables::TableSchema, sxt_core::tables::GetTableSchemaError> {
             Tables::table_schema(table_identifier)
+        }
+    }
+
+    impl pallet_system_tables::runtime_api::SystemTablesApi<Block, AccountId, BlockNumber, Balance> for Runtime {
+        fn claimed_unstakes() -> Vec<ClaimedUnstake<AccountId, BlockNumber, Balance>> {
+            SystemTables::claimed_unstakes()
         }
     }
 }
