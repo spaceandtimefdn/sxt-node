@@ -4,7 +4,10 @@ use futures::{TryFutureExt, TryStreamExt};
 use pallet_system_contracts::_GeneratedPrefixForStorageStakingContract;
 use snafu::{ResultExt, Snafu};
 use subxt::backend::{BackendExt, StorageResponse};
+use subxt::utils::AccountId32;
 use subxt::{OnlineClient, PolkadotConfig};
+use sxt_core::sxt_chain_runtime::api::runtime_apis::system_tables_api::SystemTablesApi;
+use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::system_tables::ClaimedUnstake;
 use sxt_runtime::Runtime;
 use tokio::try_join;
 
@@ -101,4 +104,14 @@ pub async fn commitments_and_locks_and_staking_contract_info(
                 })
         }
     )
+}
+
+pub async fn claimed_unstakes(
+    api: &OnlineClient<PolkadotConfig>,
+    block_hash: subxt::utils::H256,
+) -> Result<Vec<ClaimedUnstake<AccountId32, u32, u128>>, subxt::Error> {
+    api.runtime_api()
+        .at(block_hash)
+        .call(SystemTablesApi.claimed_unstakes())
+        .await
 }
