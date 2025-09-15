@@ -233,7 +233,7 @@ At the last block of Epoch 5 in each era, the election will take place and keys 
   [0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839](https://sepolia.etherscan.io/token/0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839#writeContract) (SpaceAndTime)
 
 - **Testnet SessionKey Registration Contract**
-  [0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118](https://sepolia.etherscan.io/address/0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118#writeContract) (SXTChainMessaging)
+  [0xc2159191D147A8BBD937b0BAbbFF2e47889841AC](https://sepolia.etherscan.io/address/0xc2159191D147A8BBD937b0BAbbFF2e47889841AC#writeContract) (SXTChainMessaging)
 
 ---
 
@@ -297,7 +297,7 @@ You’ll receive a response like:
 ```
 
 - Copy the `result` hex string.
-- Go to SessionKey Registration Contract address in etherscan: [0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118](https://sepolia.etherscan.io/address/0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118#writeContract) (SXTChainMessaging)
+- Go to SessionKey Registration Contract address in etherscan: [0xc2159191D147A8BBD937b0BAbbFF2e47889841AC](https://sepolia.etherscan.io/address/0xc2159191D147A8BBD937b0BAbbFF2e47889841AC#writeContract) (SXTChainMessaging)
 - Paste the hex string into the `body` field of the **message transaction**.
 - This also triggers `validate()` to activate your node.
 
