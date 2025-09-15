@@ -244,8 +244,8 @@ async fn process_unbondings(
         first_attestation.block_number
     );
 
-    let (commitments, locks_staking, contract_info) =
-        attestation::fetch::commitments_and_locks_and_staking_contract_info(
+    let (commitments, locks_staking, contract_info, _) =
+        attestation::fetch::commitments_and_locks_and_staking_contract_info_and_claimed_unstakes(
             api,
             attested_block.hash(),
         )

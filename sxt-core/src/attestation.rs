@@ -5,7 +5,7 @@
 
 use alloc::vec::Vec;
 
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode, FullCodec, MaxEncodedLen};
 use k256::ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey};
 use scale_info::TypeInfo;
 use serde::{Serialize, Serializer};
@@ -15,7 +15,10 @@ use snafu::{ResultExt, Snafu};
 pub use sp_core::hashing::{blake2_128, blake2_256};
 use sp_core::{Bytes, ConstU32};
 pub use sp_core::{RuntimeDebug, H256};
-use sp_runtime::{format, BoundedVec};
+use sp_runtime::{format, AccountId32, BoundedVec};
+
+use crate::system_contracts::ContractInfo;
+use crate::system_tables::ClaimedUnstake;
 
 /// Hex serialization function.
 ///
@@ -303,6 +306,38 @@ pub fn create_attestation_message<BN: Into<u64>>(
     msg
 }
 
+/// Returns the "leaf" that is attested to for the single-element claimed unstake merkle trees.
+///
+/// This does not return the root hash of such a tree, just the leaf that needs to be hashed.
+pub fn claimed_unstake_attestation_leaf<BN: FullCodec>(
+    ClaimedUnstake {
+        staker,
+        claimed_amount,
+        ..
+    }: &ClaimedUnstake<AccountId32, BN, u128>,
+    ContractInfo { chain_id, address }: &ContractInfo,
+) -> Vec<u8> {
+    let chain_id_bytes = {
+        let mut bytes = [0u8; 32];
+        chain_id.to_big_endian(&mut bytes);
+        bytes
+    };
+
+    // encode amount as u248
+    // first we pad with 15 0-bytes
+    let encoded_amount = core::iter::repeat_n(0, 15)
+        // then we add the 16 bytes from the on-chain u128
+        .chain(claimed_amount.to_be_bytes());
+
+    staker
+        .encode()
+        .into_iter()
+        .chain(encoded_amount)
+        .chain(chain_id_bytes)
+        .chain(address.encode())
+        .collect()
+}
+
 /// The attested state root of the account and commitment merkle trie
 pub type AttestationStateRoot = BoundedVec<u8, ConstU32<64>>;
 
@@ -340,6 +375,7 @@ pub type Address20 = BoundedVec<u8, ConstU32<20>>;
 mod tests {
     use frame_support::assert_ok;
     use k256::elliptic_curve::rand_core::OsRng;
+    use sp_core::{H160, U256};
 
     use super::*;
 
@@ -416,6 +452,41 @@ mod tests {
             "array": "0x000102",
             "vec": "0x01ff",
         });
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn we_can_create_claimed_unstake_attestation_leaf() {
+        let claimed_unstake = ClaimedUnstake {
+            claimed_amount: 123u128,
+            staker: AccountId32::new((0..32).collect::<Vec<_>>().try_into().unwrap()),
+            claim_block_number: 456u32,
+        };
+
+        let contract_info = ContractInfo {
+            chain_id: U256::from(789u32),
+            address: H160::repeat_byte(1),
+        };
+
+        let expected_staker =
+            hex::decode("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+                .unwrap();
+        let expected_amount =
+            hex::decode("0000000000000000000000000000000000000000000000000000000000007b").unwrap();
+        let expected_chain_id =
+            hex::decode("0000000000000000000000000000000000000000000000000000000000000315")
+                .unwrap();
+        let expected_address = hex::decode("0101010101010101010101010101010101010101").unwrap();
+
+        let expected = expected_staker
+            .into_iter()
+            .chain(expected_amount)
+            .chain(expected_chain_id)
+            .chain(expected_address)
+            .collect::<Vec<_>>();
+
+        let actual = claimed_unstake_attestation_leaf(&claimed_unstake, &contract_info);
 
         assert_eq!(actual, expected);
     }
