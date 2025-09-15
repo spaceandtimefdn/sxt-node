@@ -39,7 +39,7 @@ pub mod api {
         "Rewards",
         "ZkPay",
     ];
-    pub static RUNTIME_APIS: [&str; 17usize] = [
+    pub static RUNTIME_APIS: [&str; 18usize] = [
         "Core",
         "Metadata",
         "BlockBuilder",
@@ -57,6 +57,7 @@ pub mod api {
         "AuthorityDiscoveryApi",
         "CommitmentsApi",
         "TablesApi",
+        "SystemTablesApi",
     ];
     #[doc = r" The error type that is returned when there is a runtime issue."]
     pub type DispatchError = runtime_types::sp_runtime::DispatchError;
@@ -142,6 +143,9 @@ pub mod api {
             }
             pub fn tables_api(&self) -> tables_api::TablesApi {
                 tables_api::TablesApi
+            }
+            pub fn system_tables_api(&self) -> system_tables_api::SystemTablesApi {
+                system_tables_api::SystemTablesApi
             }
         }
         pub mod core {
@@ -2446,9 +2450,65 @@ pub mod api {
                 }
             }
         }
-    }
-    pub fn view_functions() -> ViewFunctionsApi {
-        ViewFunctionsApi
+        pub mod system_tables_api {
+            use super::{root_mod, runtime_types};
+            #[doc = " Runtime APIs for reading from pallet-tables."]
+            pub struct SystemTablesApi;
+            impl SystemTablesApi {
+                #[doc = " Returns the schema for the given table identifier, in the form of a simple mapping"]
+                #[doc = " between column name and type."]
+                pub fn claimed_unstakes(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::runtime_api::payload::StaticPayload<
+                    types::ClaimedUnstakes,
+                    types::claimed_unstakes::output::Output,
+                > {
+                    ::subxt::ext::subxt_core::runtime_api::payload::StaticPayload::new_static(
+                        "SystemTablesApi",
+                        "claimed_unstakes",
+                        types::ClaimedUnstakes {},
+                        [
+                            120u8, 130u8, 108u8, 246u8, 246u8, 206u8, 131u8, 214u8, 46u8, 202u8,
+                            4u8, 234u8, 71u8, 118u8, 245u8, 5u8, 176u8, 251u8, 51u8, 84u8, 74u8,
+                            174u8, 140u8, 213u8, 184u8, 49u8, 32u8, 144u8, 89u8, 140u8, 25u8,
+                            210u8,
+                        ],
+                    )
+                }
+            }
+            pub mod types {
+                use super::runtime_types;
+                pub mod claimed_unstakes {
+                    use super::runtime_types;
+                    pub mod output {
+                        use super::runtime_types;
+                        pub type Output = ::subxt::ext::subxt_core::alloc::vec::Vec<
+                            runtime_types::sxt_core::system_tables::ClaimedUnstake<
+                                ::subxt::ext::subxt_core::utils::AccountId32,
+                                ::core::primitive::u32,
+                                ::core::primitive::u128,
+                            >,
+                        >;
+                    }
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub struct ClaimedUnstakes {}
+            }
+        }
     }
     pub fn custom() -> CustomValuesApi {
         CustomValuesApi
@@ -2671,8 +2731,6 @@ pub mod api {
             zk_pay::calls::TransactionApi
         }
     }
-    pub struct ViewFunctionsApi;
-    impl ViewFunctionsApi {}
     #[doc = r" check whether the metadata provided is aligned with this statically generated code."]
     pub fn is_codegen_valid_for(metadata: &::subxt::ext::subxt_core::Metadata) -> bool {
         let runtime_metadata_hash = metadata
@@ -2682,9 +2740,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                109u8, 55u8, 14u8, 117u8, 22u8, 122u8, 42u8, 211u8, 48u8, 231u8, 59u8, 175u8,
-                214u8, 202u8, 51u8, 50u8, 217u8, 46u8, 24u8, 79u8, 105u8, 47u8, 116u8, 229u8, 27u8,
-                54u8, 138u8, 8u8, 252u8, 239u8, 171u8, 142u8,
+                179u8, 236u8, 188u8, 156u8, 85u8, 5u8, 240u8, 184u8, 220u8, 82u8, 49u8, 44u8,
+                211u8, 237u8, 3u8, 23u8, 36u8, 203u8, 116u8, 204u8, 118u8, 143u8, 57u8, 200u8,
+                161u8, 229u8, 178u8, 59u8, 158u8, 74u8, 111u8, 220u8,
             ]
     }
     pub mod system {
@@ -21337,6 +21395,12 @@ pub mod api {
                     pub type LastProcessedUserNonce = runtime_types::primitive_types::U256;
                     pub type Param0 = ::subxt::ext::subxt_core::utils::AccountId32;
                 }
+                pub mod claimed_unstakes {
+                    use super::runtime_types;
+                    pub type ClaimedUnstakes = ::core::primitive::u128;
+                    pub type Param0 = ::subxt::ext::subxt_core::utils::AccountId32;
+                    pub type Param1 = ::core::primitive::u32;
+                }
             }
             pub struct StorageApi;
             impl StorageApi {
@@ -21425,6 +21489,87 @@ pub mod api {
                             17u8, 76u8, 178u8, 95u8, 186u8, 30u8, 65u8, 26u8, 105u8, 206u8, 182u8,
                             235u8, 200u8, 79u8, 2u8, 163u8, 81u8, 239u8, 53u8, 7u8, 226u8, 104u8,
                             98u8, 14u8, 169u8, 228u8, 160u8, 50u8, 73u8, 95u8, 190u8, 251u8,
+                        ],
+                    )
+                }
+                pub fn claimed_unstakes_iter(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::claimed_unstakes::ClaimedUnstakes,
+                    (),
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "SystemTables",
+                        "ClaimedUnstakes",
+                        (),
+                        [
+                            76u8, 86u8, 149u8, 184u8, 224u8, 65u8, 196u8, 11u8, 95u8, 243u8, 85u8,
+                            26u8, 92u8, 149u8, 34u8, 179u8, 4u8, 236u8, 77u8, 110u8, 35u8, 73u8,
+                            10u8, 104u8, 16u8, 106u8, 226u8, 91u8, 154u8, 190u8, 26u8, 193u8,
+                        ],
+                    )
+                }
+                pub fn claimed_unstakes_iter1(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::claimed_unstakes::Param0>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                        types::claimed_unstakes::Param0,
+                    >,
+                    types::claimed_unstakes::ClaimedUnstakes,
+                    (),
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "SystemTables",
+                        "ClaimedUnstakes",
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                            _0.borrow(),
+                        ),
+                        [
+                            76u8, 86u8, 149u8, 184u8, 224u8, 65u8, 196u8, 11u8, 95u8, 243u8, 85u8,
+                            26u8, 92u8, 149u8, 34u8, 179u8, 4u8, 236u8, 77u8, 110u8, 35u8, 73u8,
+                            10u8, 104u8, 16u8, 106u8, 226u8, 91u8, 154u8, 190u8, 26u8, 193u8,
+                        ],
+                    )
+                }
+                pub fn claimed_unstakes(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::claimed_unstakes::Param0>,
+                    _1: impl ::core::borrow::Borrow<types::claimed_unstakes::Param1>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                            types::claimed_unstakes::Param0,
+                        >,
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                            types::claimed_unstakes::Param1,
+                        >,
+                    ),
+                    types::claimed_unstakes::ClaimedUnstakes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "SystemTables",
+                        "ClaimedUnstakes",
+                        (
+                            ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                                _0.borrow(),
+                            ),
+                            ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                                _1.borrow(),
+                            ),
+                        ),
+                        [
+                            76u8, 86u8, 149u8, 184u8, 224u8, 65u8, 196u8, 11u8, 95u8, 243u8, 85u8,
+                            26u8, 92u8, 149u8, 34u8, 179u8, 4u8, 236u8, 77u8, 110u8, 35u8, 73u8,
+                            10u8, 104u8, 16u8, 106u8, 226u8, 91u8, 154u8, 190u8, 26u8, 193u8,
                         ],
                     )
                 }
@@ -27443,6 +27588,9 @@ pub mod api {
                     #[codec(index = 14)]
                     #[doc = "Occurs when attempting to claim locked funds"]
                     FundsLocked,
+                    #[codec(index = 15)]
+                    #[doc = "Account was not claiming unstake."]
+                    NoSuchClaimedUnstake,
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -30898,6 +31046,29 @@ pub mod api {
                 pub struct ContractInfo {
                     pub chain_id: runtime_types::primitive_types::U256,
                     pub address: ::subxt::ext::subxt_core::utils::H160,
+                }
+            }
+            pub mod system_tables {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub struct ClaimedUnstake<_0, _1, _2> {
+                    pub staker: _0,
+                    pub claim_block_number: _1,
+                    pub claimed_amount: _2,
                 }
             }
             pub mod tables {
