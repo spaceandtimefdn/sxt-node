@@ -5,7 +5,7 @@
 
 use alloc::vec::Vec;
 
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode, FullCodec, MaxEncodedLen};
 use k256::ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey};
 use scale_info::TypeInfo;
 use serde::{Serialize, Serializer};
@@ -15,7 +15,10 @@ use snafu::{ResultExt, Snafu};
 pub use sp_core::hashing::{blake2_128, blake2_256};
 use sp_core::{Bytes, ConstU32};
 pub use sp_core::{RuntimeDebug, H256};
-use sp_runtime::{format, BoundedVec};
+use sp_runtime::{format, AccountId32, BoundedVec};
+
+use crate::system_contracts::ContractInfo;
+use crate::system_tables::ClaimedUnstake;
 
 /// Hex serialization function.
 ///
@@ -301,6 +304,36 @@ pub fn create_attestation_message<BN: Into<u64>>(
     msg.extend_from_slice(state_root.as_ref());
     msg.extend_from_slice(&block_number.into().to_be_bytes());
     msg
+}
+
+pub fn claimed_unstake_attestion_message<BN: FullCodec>(
+    ClaimedUnstake {
+        staker,
+        claimed_amount,
+        ..
+    }: ClaimedUnstake<AccountId32, BN, u128>,
+    ContractInfo { chain_id, address }: ContractInfo,
+) -> Vec<u8> {
+    let chain_id_bytes = {
+        let mut bytes = [0u8; 32];
+        chain_id.to_big_endian(&mut bytes);
+        bytes
+    };
+
+    // encode amount as u248
+    let encoded_amount = std::iter::repeat(0)
+        // first we pad with 15 0-bytes
+        .take(15)
+        // then we add the 16 bytes from the on-chain u128
+        .chain(claimed_amount.to_be_bytes());
+
+    staker
+        .encode()
+        .into_iter()
+        .chain(encoded_amount)
+        .chain(chain_id_bytes)
+        .chain(address.encode())
+        .collect()
 }
 
 /// The attested state root of the account and commitment merkle trie
