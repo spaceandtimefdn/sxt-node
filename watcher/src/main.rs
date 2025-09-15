@@ -441,8 +441,8 @@ impl AttestationClient {
 
         info!("Processing block {:?}", block.number());
 
-        let (commitments, locks, contract_info) =
-            match attestation::fetch::commitments_and_locks_and_staking_contract_info(
+        let (commitments, locks, contract_info, _) =
+            match attestation::fetch::commitments_and_locks_and_staking_contract_info_and_claimed_unstakes(
                 &self.api,
                 block.hash(),
             )

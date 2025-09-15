@@ -39,6 +39,13 @@ pub enum FetchError {
         source: subxt::Error,
     },
 
+    /// Error encountered while fetching claimed unstake info from the blockchain.
+    #[snafu(display("Failed to fetch claimed unstakes: {source}"))]
+    ClaimedUnstakesFetch {
+        /// The underlying error from Substrate's storage fetch.
+        source: subxt::Error,
+    },
+
     /// Error encountered if fetching the staking contract succeeded, but it does not exist.
     #[snafu(display("Staking contract info does not exist"))]
     NoStakingContract,
@@ -55,10 +62,22 @@ pub enum FetchError {
 /// - list of commitment storage key-value pairs as raw bytes
 /// - list of locks storage key-value pairs as raw bytes
 /// - staking contract info as raw bytes
-pub async fn commitments_and_locks_and_staking_contract_info(
+pub async fn commitments_and_locks_and_staking_contract_info_and_claimed_unstakes(
     api: &OnlineClient<PolkadotConfig>,
     block_hash: subxt::utils::H256,
-) -> Result<(Vec<(Vec<u8>, Vec<u8>)>, Vec<(Vec<u8>, Vec<u8>)>, Vec<u8>), FetchError> {
+) -> Result<
+    (
+        // commitments keys and values
+        Vec<(Vec<u8>, Vec<u8>)>,
+        // staking locks keys and values
+        Vec<(Vec<u8>, Vec<u8>)>,
+        // staking contract info
+        Vec<u8>,
+        // claimed unstakes
+        Vec<ClaimedUnstake<AccountId32, u32, u128>>,
+    ),
+    FetchError,
+> {
     try_join!(
         async {
             api
@@ -102,6 +121,11 @@ pub async fn commitments_and_locks_and_staking_contract_info(
                 .and_then(|maybe_staking_contract| {
                     maybe_staking_contract.ok_or(FetchError::NoStakingContract)
                 })
+        },
+        async {
+            claimed_unstakes(api, block_hash)
+                .await
+                .context(ClaimedUnstakesFetchSnafu)
         }
     )
 }
