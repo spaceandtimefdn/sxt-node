@@ -148,7 +148,7 @@ pub mod pallet {
         /// * [`Error::CannotAttestCurrentBlock`]
         /// * [`Error::MaxAttestationsForBlockError`]
         /// * [`Error::AttestationAlreadyRecordedError`]
-        #[pallet::call_index(1)]
+        #[pallet::call_index(0)]
         #[pallet::weight(<T as Config>::WeightInfo::attest_block())]
         pub fn attest_block(
             origin: OriginFor<T>,
@@ -249,7 +249,7 @@ pub mod pallet {
         /// # Emits
         ///
         /// This function does **not** emit an event upon execution.
-        #[pallet::call_index(2)]
+        #[pallet::call_index(1)]
         #[pallet::weight(<T as Config>::WeightInfo::attest_block())]
         pub fn mark_block_forwarded(
             origin: OriginFor<T>,
