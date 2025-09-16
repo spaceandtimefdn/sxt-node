@@ -535,7 +535,8 @@ impl AttestationClient {
             {
                 log::info!("Error submitting tx: {:?}", e);
             };
-        });
+        })
+        .await;
 
         Ok(())
     }
