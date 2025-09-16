@@ -17,31 +17,41 @@
 //! ```sh
 //! cargo run -- integration-test
 //! ```
-use std::str::FromStr;
-use std::sync::Arc;
-
 use alloy::hex::FromHexError;
 use alloy::network::EthereumWallet;
-use alloy::primitives::Address;
+use alloy::primitives::{Address, FixedBytes, Uint};
 use alloy::providers::ProviderBuilder;
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::reqwest::Url;
 use clap::{Parser, Subcommand};
+use codec::{Decode, Encode};
 use event_forwarder::chain_listener::{ChainListener, IncrementingBlockStream};
-use event_forwarder::event_forwarder::{EventForwarderProcessor, ProviderInstance};
+use event_forwarder::event_forwarder::{EventForwarderInstance, ProviderInstance};
+use event_forwarder::event_forwarder_contract::EventForwarder;
 use event_forwarder::kitchen_sink::KitchenSinkProcessor;
 use hex::FromHex;
+use itertools::Itertools;
 use k256::ecdsa::SigningKey;
-use log::info;
+use log::{error, info};
 use sha3::digest::generic_array::GenericArray;
 use snafu::{ResultExt, Snafu};
+use sp_core::crypto::AccountId32;
+use std::collections::HashMap;
+use std::str::FromStr;
+use std::sync::Arc;
+use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
 use sxt_core::sxt_chain_runtime;
+use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::{
+    Attestation, EthereumSignature,
+};
+use sxt_core::system_tables::ClaimedUnstake;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tokio::sync::mpsc;
 use url::ParseError;
+use watcher::attestation::fetch::commitments_and_locks_and_staking_contract_info_and_claimed_unstakes;
 
 #[derive(Debug, Snafu)]
 enum EventForwarderError {
@@ -74,6 +84,9 @@ enum EventForwarderError {
 
     #[snafu(display("Error fetching initial nonce: {source}"))]
     FetchInitialNonceError { source: subxt::Error },
+
+    #[snafu(transparent)]
+    SubxtError { source: subxt::Error },
 }
 
 /// Type alias for returning results with `CustomError`
@@ -122,6 +135,113 @@ enum Commands {
     IntegrationTest,
 }
 
+#[derive(Debug, Snafu)]
+enum BlockProcessingError {
+    #[snafu(transparent)]
+    FetchError {
+        source: watcher::attestation::fetch::FetchError,
+    },
+    #[snafu(transparent)]
+    CodecError { source: codec::Error },
+    #[snafu(transparent)]
+    SubxtError { source: subxt::Error },
+}
+
+async fn attestations_per_root(
+    config: &Config,
+    block_number: u32,
+) -> Result<HashMap<Vec<u8>, Vec<EthereumSignature>>, subxt::Error> {
+    let attestations_storage_address = sxt_chain_runtime::api::storage()
+        .attestations()
+        .attestations(block_number);
+
+    let maybe_attestations = config
+        .api
+        .storage()
+        .at_latest()
+        .await?
+        .fetch(&attestations_storage_address)
+        .await?;
+
+    let attestations = maybe_attestations.map(|a| a.0).unwrap_or_default();
+
+    let result: HashMap<Vec<u8>, Vec<EthereumSignature>> = attestations
+        .into_iter()
+        .map(
+            |Attestation::EthereumAttestation {
+                 state_root,
+                 signature,
+                 ..
+             }| (state_root.0, signature),
+        )
+        .into_group_map();
+    Ok(result)
+}
+
+async fn attempt_fulfill_unstake(
+    contract: &EventForwarderInstance,
+    claimed_unstake: ClaimedUnstake<AccountId32, u32, u128>,
+    claim_attestations: &[EthereumSignature],
+) {
+    let staker = Address::from_slice(&<[u8; 32]>::from(claimed_unstake.staker)[12..32]);
+    let claimed_amount = Uint::from(claimed_unstake.claimed_amount);
+    let claim_block_number = claimed_unstake.claim_block_number.into();
+    let proof = vec![];
+    let (r, s, v) = claim_attestations
+        .iter()
+        .map(|e| (FixedBytes::from(e.r), FixedBytes::from(e.s), e.v))
+        .multiunzip();
+    match contract
+        .sxtFulfillUnstake(staker, claimed_amount, claim_block_number, proof, r, s, v)
+        .send()
+        .await
+    {
+        Ok(tx) => info!("sxtFulfillUnstake tx sent: {}", tx.tx_hash()),
+        Err(e) => error!("Failed to send transaction: {}", e),
+    }
+}
+
+async fn process_block(
+    config: &Config,
+    contract: &EventForwarderInstance,
+    block_hash: H256,
+    block_number: u32,
+) -> Result<(), BlockProcessingError> {
+    let (_, _, staking_contract_info, claimed_unstakes) =
+        commitments_and_locks_and_staking_contract_info_and_claimed_unstakes(
+            &config.api,
+            block_hash,
+        )
+        .await?;
+    let claimed_unstakes: Vec<_> = Decode::decode(&mut claimed_unstakes.encode().as_slice())?;
+    let contract_info = Decode::decode(&mut staking_contract_info.as_slice())?;
+
+    let attestations_per_root = attestations_per_root(config, block_number).await?;
+
+    for claimed_unstake in claimed_unstakes {
+        let claimed_unstake_attestation_leaf =
+            sxt_core::attestation::claimed_unstake_attestation_leaf::<u32>(
+                &claimed_unstake,
+                &contract_info,
+            );
+
+        let maybe_claim_attestations = attestations_per_root.get(&claimed_unstake_attestation_leaf);
+
+        info!(
+            "Found {} attestation(s) for claim ({}, {}, {}).",
+            maybe_claim_attestations.map(|m| m.len()).unwrap_or(0),
+            claimed_unstake.staker,
+            claimed_unstake.claim_block_number,
+            claimed_unstake.claimed_amount
+        );
+
+        if let Some(claim_attestations) = maybe_claim_attestations {
+            attempt_fulfill_unstake(contract, claimed_unstake, &claim_attestations);
+        }
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
@@ -142,26 +262,35 @@ async fn main() -> Result<()> {
         &args.substrate_rpc_url,
     )
     .await?;
-    let keypair = load_substrate_key(&args.substrate_key_path).await?;
-    let initial_nonce = fetch_initial_nonce(&config.api, &keypair).await?;
 
-    let (tx, rx) = mpsc::channel(1);
-    let start_block = fetch_start_block(&config.api).await?;
-    let stream = IncrementingBlockStream::new(start_block, rx, args.substrate_rpc_url);
+    let contract = EventForwarder::new(config.contract_address, config.provider.clone());
 
-    let processor = EventForwarderProcessor::new(
-        config.provider.clone(),
-        config.contract_address,
-        keypair,
-        Some(tx),
-        initial_nonce.into(),
-    );
+    let mut block_sub = config.api.blocks().subscribe_best().await?;
 
-    let chain_listener = ChainListener::new(processor, stream, config.api)
-        .await
-        .context(BlockchainProcessingSnafu)?;
+    while let Some(block) = block_sub.next().await {
+        match block {
+            Ok(block) => {
+                let block_hash = block.hash();
+                let block_number = block.number();
+                info!("Processing block: {} ({:?})", block_number, block_hash);
 
-    chain_listener.run().await;
+                match process_block(&config, &contract, block_hash, block_number).await {
+                    Ok(_) => {
+                        info!(
+                            "Successfuly processed block: {} ({:?})",
+                            block_number, block_hash
+                        );
+                    }
+                    Err(e) => {
+                        log::error!("Error processing block: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!("Error receiving block: {}", e);
+            }
+        }
+    }
     Ok(())
 }
 
