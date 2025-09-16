@@ -306,13 +306,13 @@ pub fn create_attestation_message<BN: Into<u64>>(
     msg
 }
 
-pub fn claimed_unstake_attestion_message<BN: FullCodec>(
+pub fn claimed_unstake_attestation_leaf<BN: FullCodec>(
     ClaimedUnstake {
         staker,
         claimed_amount,
         ..
-    }: ClaimedUnstake<AccountId32, BN, u128>,
-    ContractInfo { chain_id, address }: ContractInfo,
+    }: &ClaimedUnstake<AccountId32, BN, u128>,
+    ContractInfo { chain_id, address }: &ContractInfo,
 ) -> Vec<u8> {
     let chain_id_bytes = {
         let mut bytes = [0u8; 32];
