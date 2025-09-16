@@ -1,3 +1,12 @@
+## [1.26.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.1...v1.26.2) (2025-09-16)
+
+
+### Bug Fixes
+
+* avoid unnecessary truncation in `system_tables::process_unstake_cancelled` ([9dc47ec](https://github.com/spaceandtimefdn/sxt-node/commit/9dc47ec994117dc9a16937c469802fcc22c76ea2))
+
+
+
 ## [1.26.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.0...v1.26.1) (2025-09-16)
 
 
@@ -17,15 +26,6 @@
 
 
 ## [1.25.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.25.0...v1.25.1) (2025-09-02)
-
-
-
-# [1.25.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.24.0...v1.25.0) (2025-08-25)
-
-
-### Features
-
-* Update sxt_chain_runtime.rs to be compatible with Runtime Version ([0bc4682](https://github.com/spaceandtimefdn/sxt-node/commit/0bc46822281a99fb834a6ba777ecad1fb5c13410))
 
 
 
