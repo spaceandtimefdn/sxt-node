@@ -20289,6 +20289,7 @@ dependencies = [
  "k256",
  "log",
  "pallet-system-contracts",
+ "parity-scale-codec",
  "prometheus 0.12.0",
  "ratatui",
  "sha3",
