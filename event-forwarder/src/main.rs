@@ -18,17 +18,20 @@
 //! cargo run -- integration-test
 //! ```
 use alloy::hex::FromHexError;
+use alloy::network::Ethereum;
 use alloy::network::EthereumWallet;
 use alloy::primitives::{Address, FixedBytes, Uint};
+use alloy::providers::fillers::{
+    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+};
+use alloy::providers::Identity;
 use alloy::providers::ProviderBuilder;
+use alloy::providers::RootProvider;
 use alloy::signers::local::PrivateKeySigner;
+use alloy::sol;
 use alloy::transports::http::reqwest::Url;
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use codec::{Decode, Encode};
-use event_forwarder::chain_listener::{ChainListener, IncrementingBlockStream};
-use event_forwarder::event_forwarder::{EventForwarderInstance, ProviderInstance};
-use event_forwarder::event_forwarder_contract::EventForwarder;
-use event_forwarder::kitchen_sink::KitchenSinkProcessor;
 use hex::FromHex;
 use itertools::Itertools;
 use k256::ecdsa::SigningKey;
@@ -49,10 +52,29 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::{
 use sxt_core::system_tables::ClaimedUnstake;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
-use tokio::sync::mpsc;
 use url::ParseError;
 use watcher::attestation::fetch::commitments_and_locks_and_staking_contract_info_and_claimed_unstakes;
 
+sol!(
+    /// event forwarder contract
+    #[sol(rpc)]
+    EventForwarder,
+    "artifacts/EventForwarder.json"
+);
+
+type ProviderInstance = FillProvider<
+    JoinFill<
+        JoinFill<
+            Identity,
+            JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+        >,
+        WalletFiller<EthereumWallet>,
+    >,
+    RootProvider,
+    Ethereum,
+>;
+
+#[allow(clippy::missing_docs_in_private_items)]
 #[derive(Debug, Snafu)]
 enum EventForwarderError {
     #[snafu(display("Failed to parse URL: {}", source))]
@@ -79,25 +101,14 @@ enum EventForwarderError {
     #[snafu(display("Failed to create keypair from secret key"))]
     KeypairCreationError,
 
-    #[snafu(display("Error fetching last forwarded block: {source}"))]
-    LastForwardedBlockError { source: subxt::Error },
-
-    #[snafu(display("Error fetching initial nonce: {source}"))]
-    FetchInitialNonceError { source: subxt::Error },
-
     #[snafu(transparent)]
     SubxtError { source: subxt::Error },
 }
-
-/// Type alias for returning results with `CustomError`
-type Result<T, E = EventForwarderError> = std::result::Result<T, E>;
 
 /// CLI arguments parser using `clap` derive syntax
 #[derive(Parser, Debug)]
 #[command(
     name = "Space and Time Event Forwarder",
-    version = "1.0",
-    author = "zach.frederick@spaceandtime.io",
     about = "Forwards events from the SxT chain back to Ethereum for support of staking and ZKPay"
 )]
 struct Cli {
@@ -119,20 +130,9 @@ struct Cli {
     #[arg(long, default_value = ".substrate")]
     substrate_key_path: String,
 
-    /// Subcommands (e.g., integration-test)
-    #[command(subcommand)]
-    command: Option<Commands>,
-
     /// The substrate rpc url
     #[arg(long, default_value = "ws://127.0.0.1:9944")]
     substrate_rpc_url: String,
-}
-
-/// Defines the available subcommands
-#[derive(Subcommand, Debug)]
-enum Commands {
-    /// Runs an integration test for blockchain event processing
-    IntegrationTest,
 }
 
 #[derive(Debug, Snafu)]
@@ -178,8 +178,8 @@ async fn attestations_per_root(
     Ok(result)
 }
 
-async fn attempt_fulfill_unstake(
-    contract: &EventForwarderInstance,
+async fn attempt_fulfill_unstake<P: alloy::providers::Provider>(
+    contract: &EventForwarder::EventForwarderInstance<(), P>,
     claimed_unstake: ClaimedUnstake<AccountId32, u32, u128>,
     claim_attestations: &[EthereumSignature],
 ) {
@@ -201,9 +201,9 @@ async fn attempt_fulfill_unstake(
     }
 }
 
-async fn process_block(
+async fn process_block<P: alloy::providers::Provider>(
     config: &Config,
-    contract: &EventForwarderInstance,
+    contract: &EventForwarder::EventForwarderInstance<(), P>,
     block_hash: H256,
     block_number: u32,
 ) -> Result<(), BlockProcessingError> {
@@ -243,16 +243,11 @@ async fn process_block(
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), EventForwarderError> {
     env_logger::init();
 
     // Parse CLI arguments
     let args = Cli::parse();
-
-    // If a subcommand is provided, execute it
-    if let Some(Commands::IntegrationTest) = args.command {
-        return run_integration_test().await;
-    }
 
     // Run the normal blockchain processor
     let config = setup_config(
@@ -294,42 +289,6 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/// Runs the integration test
-async fn run_integration_test() -> Result<()> {
-    let config = setup_config(
-        "https://eth-sepolia.g.alchemy.com/v2/rkAXO6gJwI3eR9jVZeCcY5ejjpVxGkw8",
-        ".eth",
-        "0xf93fc53262fdb57302577Ab880150F626aE164ff",
-        "ws://127.0.0.1:9944",
-    )
-    .await?;
-
-    let keypair = load_substrate_key(".substrate").await?;
-    let initial_nonce = fetch_initial_nonce(&config.api, &keypair).await?;
-
-    let (tx, rx) = mpsc::channel(1);
-    let start_block = fetch_start_block(&config.api).await?;
-    let stream = IncrementingBlockStream::new(start_block, rx, "http://127.0.0.1:9944".into());
-
-    info!("Starting integration test...");
-    let processor = KitchenSinkProcessor::from_existing_deployment(
-        config.provider.clone(),
-        config.contract_address,
-        Some(tx),
-        keypair,
-        initial_nonce.into(),
-    )
-    .await
-    .context(BlockchainProcessingSnafu)?;
-
-    let chain_listener = ChainListener::new(processor, stream, config.api)
-        .await
-        .context(BlockchainProcessingSnafu)?;
-
-    chain_listener.run().await;
-    Ok(())
-}
-
 /// Holds shared configuration for the blockchain processor and integration test
 struct Config {
     provider: Arc<ProviderInstance>,
@@ -343,7 +302,7 @@ async fn setup_config(
     eth_key_path: &str,
     contract_address: &str,
     substrate_rpc_url: &str,
-) -> Result<Config> {
+) -> Result<Config, EventForwarderError> {
     let rpc_url = Url::from_str(rpc_url).context(UrlParseSnafu)?;
     let ethereum_signer = load_ethereum_key(eth_key_path).await?;
     let signer = PrivateKeySigner::from_signing_key(ethereum_signer);
@@ -367,52 +326,7 @@ async fn setup_config(
     })
 }
 
-/// Fetches the initial nonce for a given keypair
-async fn fetch_initial_nonce(api: &OnlineClient<PolkadotConfig>, keypair: &Keypair) -> Result<u32> {
-    let nonce_query = sxt_chain_runtime::api::storage()
-        .system()
-        .account(keypair.public_key().to_account_id());
-
-    let nonce = api
-        .storage()
-        .at_latest()
-        .await
-        .context(FetchInitialNonceSnafu)?
-        .fetch(&nonce_query)
-        .await
-        .context(FetchInitialNonceSnafu)?;
-
-    if let Some(nonce) = nonce {
-        return Ok(nonce.nonce);
-    }
-
-    Ok(0)
-}
-
-/// Fetches the start block based on the last forwarded block in the chain
-async fn fetch_start_block(api: &OnlineClient<PolkadotConfig>) -> Result<u32> {
-    let last_forwarded_block_query = sxt_chain_runtime::api::storage()
-        .attestations()
-        .last_forwarded_block();
-
-    let last_forwarded_block = api
-        .storage()
-        .at_latest()
-        .await
-        .context(LastForwardedBlockSnafu)?
-        .fetch(&last_forwarded_block_query)
-        .await
-        .context(LastForwardedBlockSnafu)?
-        .unwrap_or(0);
-
-    Ok(if last_forwarded_block == 0 {
-        0
-    } else {
-        last_forwarded_block + 1
-    })
-}
-
-async fn load_ethereum_key(path: &str) -> Result<SigningKey> {
+async fn load_ethereum_key(path: &str) -> Result<SigningKey, EventForwarderError> {
     let mut file = File::open(path).await.context(KeyFileReadSnafu {
         path: path.to_string(),
     })?;
@@ -428,7 +342,7 @@ async fn load_ethereum_key(path: &str) -> Result<SigningKey> {
     Ok(SigningKey::from_bytes(key_array).unwrap()) // `unwrap` is safe since key_array is always valid length
 }
 
-async fn load_substrate_key(file_path: &str) -> Result<Keypair> {
+async fn load_substrate_key(file_path: &str) -> Result<Keypair, EventForwarderError> {
     let mut file = File::open(file_path).await.context(KeyFileReadSnafu {
         path: file_path.to_string(),
     })?;
