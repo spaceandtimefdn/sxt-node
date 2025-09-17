@@ -86,6 +86,7 @@ use sp_staking::SessionIndex;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
+use sxt_core::system_tables::ClaimedUnstake;
 pub use {
     pallet_attestation,
     pallet_authority_discovery,
@@ -165,7 +166,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 234,
+    spec_version: 235,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1331,6 +1332,12 @@ impl_runtime_apis! {
     impl pallet_tables::runtime_api::TablesApi<Block> for Runtime {
         fn table_schema(table_identifier: sxt_core::tables::TableIdentifier) -> Result<sxt_core::tables::TableSchema, sxt_core::tables::GetTableSchemaError> {
             Tables::table_schema(table_identifier)
+        }
+    }
+
+    impl pallet_system_tables::runtime_api::SystemTablesApi<Block, AccountId, BlockNumber, Balance> for Runtime {
+        fn claimed_unstakes() -> Vec<ClaimedUnstake<AccountId, BlockNumber, Balance>> {
+            SystemTables::claimed_unstakes()
         }
     }
 }

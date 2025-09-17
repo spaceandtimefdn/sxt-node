@@ -11437,6 +11437,7 @@ dependencies = [
  "proof-of-sql-static-setups",
  "scale-info",
  "serde_json",
+ "sp-api",
  "sp-authority-discovery",
  "sp-consensus-babe",
  "sp-core",

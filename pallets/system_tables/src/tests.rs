@@ -4,7 +4,7 @@ use on_chain_table::OnChainTable;
 use sp_core::crypto::AccountId32;
 use sp_core::U256;
 use sp_runtime::traits::StaticLookup;
-use sp_runtime::{DispatchError, Perbill, TokenError};
+use sp_runtime::{DispatchError, Perbill};
 use sp_staking::StakingInterface;
 use sxt_core::parse::{
     MessageSystemRequest,
@@ -14,6 +14,7 @@ use sxt_core::parse::{
     SystemRequestType,
     SystemTableField,
 };
+use sxt_core::system_tables::ClaimedUnstake;
 use sxt_core::tables::TableIdentifier;
 use sxt_core::utils::{
     account_id_from_str,
@@ -439,8 +440,28 @@ fn unstaking_works_end_to_end_and_reduces_balance_when_claimed() {
         assert!(current_era() > duration_in_eras);
         System::reset_events();
 
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
+
         let claim_unstake = get_claim_unstake_message(ETH_TEST_WALLET);
         assert_ok!(crate::process_unstake_claimed::<Test>(claim_unstake));
+
+        //Ensure we can see the token burn
+        System::assert_has_event(RuntimeEvent::Balances(pallet_balances::Event::Burned {
+            who: transformed_eth_wallet.clone(),
+            amount: test_amount,
+        }));
+
+        let current_block_number = frame_system::Pallet::<Test>::block_number();
+
+        // Ensure the claimed unstake state has been populated
+        assert_eq!(
+            Pallet::<Test>::claimed_unstakes(),
+            vec![ClaimedUnstake {
+                staker: transformed_eth_wallet.clone(),
+                claim_block_number: current_block_number,
+                claimed_amount: test_amount
+            }]
+        );
 
         // Ensure the claim event has been emitted
         System::assert_has_event(RuntimeEvent::SystemTables(crate::Event::UnstakingClaimed {
@@ -451,11 +472,246 @@ fn unstaking_works_end_to_end_and_reduces_balance_when_claimed() {
         let unstaked = get_unstaked_message(ETH_TEST_WALLET, test_amount.into());
         assert_ok!(crate::process_unstaked::<Test>(unstaked));
 
+        // Ensure the claimed unstake state has been pruned
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
+    });
+}
+
+#[test]
+fn partial_unstaking_works_end_to_end_and_reduces_balance_when_claimed() {
+    new_test_ext().execute_with(|| {
+        // Start at era 1
+        crate::mock::start_active_era(1);
+        System::reset_events();
+
+        // Create a message to stake 100 using the ethereum address
+        let bonding = get_staked_message(ETH_TEST_WALLET, 100.into());
+
+        // Now we do lookups based on the converted address to assure that state is set correctly
+        let transformed_eth_wallet =
+            eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
+        // complicate the situation by adding some unlocked funds to the account too
+        pallet_balances::Pallet::<Test>::force_set_balance(
+            RawOrigin::Root.into(),
+            transformed_eth_wallet.clone(),
+            200,
+        )
+        .unwrap();
+
+        // Make sure the staking suceeded and events were emitted as expected
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::bonded(&transformed_eth_wallet),
+            None
+        );
+
+        // Process the staking request
+        assert_ok!(crate::process_staking::<Test>(bonding));
+
+        // Make sure the staking suceeded and events were emitted as expected
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::bonded(&transformed_eth_wallet),
+            Some(transformed_eth_wallet.clone())
+        );
+
+        // check that usable balance hasn't changed
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&transformed_eth_wallet),
+            300
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::usable_balance(&transformed_eth_wallet),
+            200
+        );
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::ledger(transformed_eth_wallet.clone().into())
+                .unwrap()
+                .total,
+            100
+        );
+        System::assert_has_event(RuntimeEvent::Staking(pallet_staking::Event::Bonded {
+            stash: transformed_eth_wallet.clone(),
+            amount: 100,
+        }));
+
+        // Now go to one era in the future
+        crate::mock::start_active_era(2);
+        System::reset_events();
+
+        let initiate_unstake = get_initiate_unstake_message(ETH_TEST_WALLET, 60.into());
+
+        // Call Unstake for only 60 tokens
+        assert_ok!(crate::process_unstake_initiated::<Test>(initiate_unstake));
+
+        // check that balance hasn't changed
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&transformed_eth_wallet),
+            300
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::usable_balance(&transformed_eth_wallet),
+            200
+        );
+
+        // Assert than an unbonded event has occurred for the user in the staking pallet
+        System::assert_has_event(RuntimeEvent::Staking(pallet_staking::Event::Unbonded {
+            stash: transformed_eth_wallet.clone(),
+            amount: 60,
+        }));
+
+        // Jump forward by one whole bonding duration + 1 era
+        let duration_in_eras = <Test as pallet_staking::Config>::BondingDuration::get() + 7;
+        crate::mock::start_active_era(current_era() + duration_in_eras + 1);
+
+        assert!(current_era() > duration_in_eras);
+        System::reset_events();
+
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
+
+        let claim_unstake = get_claim_unstake_message(ETH_TEST_WALLET);
+        assert_ok!(crate::process_unstake_claimed::<Test>(claim_unstake));
+
+        // check that free balance has been reduced and usable balance hasn't changed
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&transformed_eth_wallet),
+            240
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::usable_balance(&transformed_eth_wallet),
+            200
+        );
+
+        let current_block_number = frame_system::Pallet::<Test>::block_number();
+
+        // Ensure the claimed unstake state has been populated
+        assert_eq!(
+            Pallet::<Test>::claimed_unstakes(),
+            vec![ClaimedUnstake {
+                staker: transformed_eth_wallet.clone(),
+                claim_block_number: current_block_number,
+                claimed_amount: 60
+            }]
+        );
+
         //Ensure we can see the token burn
         System::assert_has_event(RuntimeEvent::Balances(pallet_balances::Event::Burned {
-            who: transformed_eth_wallet,
-            amount: test_amount,
+            who: transformed_eth_wallet.clone(),
+            amount: 60,
         }));
+
+        // Ensure the claim event has been emitted
+        System::assert_has_event(RuntimeEvent::SystemTables(crate::Event::UnstakingClaimed {
+            claimer: transformed_eth_wallet.clone(),
+        }));
+
+        // Confirm the unstake as if the contract did
+        let unstaked = get_unstaked_message(ETH_TEST_WALLET, 60.into());
+        assert_ok!(crate::process_unstaked::<Test>(unstaked));
+
+        // check that balance hasn't changed
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&transformed_eth_wallet),
+            240
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::usable_balance(&transformed_eth_wallet),
+            200
+        );
+
+        // Ensure the total is 40 (not 0)
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::ledger(transformed_eth_wallet.clone().into())
+                .unwrap()
+                .total,
+            40
+        );
+
+        // Ensure the claimed unstake state has been pruned
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
+
+        // unstake the rest
+        let initiate_unstake = get_initiate_unstake_message(ETH_TEST_WALLET, 40.into());
+
+        // Call Unstake
+        assert_ok!(crate::process_unstake_initiated::<Test>(initiate_unstake));
+
+        // check that balances haven't changed
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&transformed_eth_wallet),
+            240
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::usable_balance(&transformed_eth_wallet),
+            200
+        );
+
+        // Assert than an unbonded event has occurred for the user in the staking pallet
+        System::assert_has_event(RuntimeEvent::Staking(pallet_staking::Event::Unbonded {
+            stash: transformed_eth_wallet.clone(),
+            amount: 40,
+        }));
+
+        // Jump forward by one whole bonding duration + 1 era
+        let duration_in_eras = <Test as pallet_staking::Config>::BondingDuration::get() + 7;
+        crate::mock::start_active_era(current_era() + duration_in_eras + 1);
+
+        assert!(current_era() > duration_in_eras);
+        System::reset_events();
+
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
+
+        let claim_unstake = get_claim_unstake_message(ETH_TEST_WALLET);
+        assert_ok!(crate::process_unstake_claimed::<Test>(claim_unstake));
+
+        // check that free balance has reduced but usable hasn't changed
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&transformed_eth_wallet),
+            200
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::usable_balance(&transformed_eth_wallet),
+            200
+        );
+
+        let current_block_number = frame_system::Pallet::<Test>::block_number();
+
+        // Ensure the claimed unstake state has been populated
+        assert_eq!(
+            Pallet::<Test>::claimed_unstakes(),
+            vec![ClaimedUnstake {
+                staker: transformed_eth_wallet.clone(),
+                claim_block_number: current_block_number,
+                claimed_amount: 40
+            }]
+        );
+
+        //Ensure we can see the token burn
+        System::assert_has_event(RuntimeEvent::Balances(pallet_balances::Event::Burned {
+            who: transformed_eth_wallet.clone(),
+            amount: 40,
+        }));
+
+        // Ensure the claim event has been emitted
+        System::assert_has_event(RuntimeEvent::SystemTables(crate::Event::UnstakingClaimed {
+            claimer: transformed_eth_wallet.clone(),
+        }));
+
+        // Confirm the unstake as if the contract did
+        let unstaked = get_unstaked_message(ETH_TEST_WALLET, 40.into());
+        assert_ok!(crate::process_unstaked::<Test>(unstaked));
+
+        // check that balances haven't changed
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&transformed_eth_wallet),
+            200
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::usable_balance(&transformed_eth_wallet),
+            200
+        );
+
+        // Ensure the claimed unstake state has been pruned
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
     });
 }
 
@@ -501,9 +757,13 @@ fn attempting_to_claim_before_unbonding_period_produces_error() {
         crate::mock::start_active_era(3);
         System::reset_events();
 
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
+
         let claim_unstake = get_claim_unstake_message(ETH_TEST_WALLET);
 
         assert_ok!(crate::process_unstake_claimed::<Test>(claim_unstake));
+
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
 
         // Ensure there was an error emitted
         System::assert_has_event(RuntimeEvent::SystemTables(
@@ -517,6 +777,7 @@ fn attempting_to_claim_before_unbonding_period_produces_error() {
         // Make sure that even if we call unstake, we don't get the balance back
         let unstaked = get_unstaked_message(ETH_TEST_WALLET, test_amount.into());
         assert_ok!(crate::process_unstaked::<Test>(unstaked));
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
     });
 }
 
