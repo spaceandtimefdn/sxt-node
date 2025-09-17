@@ -177,6 +177,7 @@ mod tests {
     use proof_of_sql::base::database::OwnedColumn;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
     use proof_of_sql::proof_primitive::hyperkzg::BNScalar;
+    use proptest::prelude::*;
 
     use super::*;
 
@@ -465,5 +466,18 @@ mod tests {
     #[test]
     fn we_cannot_convert_out_of_bounds_on_chain_column_to_hyper_kzg_committable_column() {
         we_cannot_convert_out_of_bounds_on_chain_column_to_committable_column::<BNScalar>()
+    }
+
+    proptest! {
+        #[test]
+        fn bytes_to_limbs_does_not_panic(bytes in proptest::array::uniform::<_, 32>(any::<u8>())) {
+            let _does_not_panic = bytes_to_limbs_le(bytes);
+        }
+
+        #[test]
+        fn string_to_scalar_posql_0_99_does_not_panic(string in ".{0,256}") {
+            let _does_not_panic = string_to_scalar_posql_0_99::<DoryScalar>(&string);
+            let _does_not_panic = string_to_scalar_posql_0_99::<BNScalar>(&string);
+        }
     }
 }
