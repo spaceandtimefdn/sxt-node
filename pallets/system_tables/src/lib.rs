@@ -222,7 +222,7 @@ pub mod pallet {
                         )?;
 
                         // If the user already had a bonded amount use bond_extra
-                        if balance > 0 {
+                        if pallet_staking::Pallet::<T>::bonded(&staker_id).is_some() {
                             pallet_staking::Pallet::<T>::bond_extra(
                                 staker_signer.clone().into(),
                                 stake_amount,
