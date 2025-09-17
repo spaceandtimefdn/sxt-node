@@ -1,3 +1,20 @@
+# [1.27.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.4...v1.27.0) (2025-09-17)
+
+
+### Bug Fixes
+
+* bond_extra if staker is bonded, not if balance is nonzero ([3c35479](https://github.com/spaceandtimefdn/sxt-node/commit/3c35479d4d840d69f9fea1d153b1892927d6ced2))
+* burn tokens that are withdrawn immediately ([8779acb](https://github.com/spaceandtimefdn/sxt-node/commit/8779acbb1c6b7e824799f12e704455b85d4cf3f2))
+
+
+### Features
+
+* increment runtime spec_version to 235 ([771da65](https://github.com/spaceandtimefdn/sxt-node/commit/771da65cd3965099b99de3dc8d236144d867d9fd))
+* regenerate subxt file for runtime 235 ([6beb831](https://github.com/spaceandtimefdn/sxt-node/commit/6beb8316873f13ae57945878c77df154bbd026d5))
+* track unstakes that have been claimed via system tables pallet ([0380d30](https://github.com/spaceandtimefdn/sxt-node/commit/0380d30ca9ab9757bbf97fc77073a8706f351a0c))
+
+
+
 ## [1.26.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.3...v1.26.4) (2025-09-17)
 
 
@@ -26,16 +43,6 @@
 
 
 ## [1.26.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.0...v1.26.1) (2025-09-16)
-
-
-
-# [1.26.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.25.2...v1.26.0) (2025-09-16)
-
-
-### Features
-
-* adjust gas pricing based on testnet metrics ([4db0922](https://github.com/spaceandtimefdn/sxt-node/commit/4db0922ef4403e8090af83935e0071b0cc713b54))
-* Update gas pricing to target insert costs ([cb2129b](https://github.com/spaceandtimefdn/sxt-node/commit/cb2129bd2bb6b5739cf71a70f7e2c95b39d9eca6))
 
 
 
