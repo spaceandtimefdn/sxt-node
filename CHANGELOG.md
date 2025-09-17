@@ -1,3 +1,12 @@
+## [1.26.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.3...v1.26.4) (2025-09-17)
+
+
+### Bug Fixes
+
+* Fix Canary Logs ([ae29d9c](https://github.com/spaceandtimefdn/sxt-node/commit/ae29d9c5b8b356c7c892c088e76c23735d28cfbb))
+
+
+
 ## [1.26.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.2...v1.26.3) (2025-09-17)
 
 
@@ -27,10 +36,6 @@
 
 * adjust gas pricing based on testnet metrics ([4db0922](https://github.com/spaceandtimefdn/sxt-node/commit/4db0922ef4403e8090af83935e0071b0cc713b54))
 * Update gas pricing to target insert costs ([cb2129b](https://github.com/spaceandtimefdn/sxt-node/commit/cb2129bd2bb6b5739cf71a70f7e2c95b39d9eca6))
-
-
-
-## [1.25.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.25.1...v1.25.2) (2025-09-02)
 
 
 
