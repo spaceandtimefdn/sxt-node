@@ -4,6 +4,7 @@ use std::net::SocketAddr;
 use axum::routing::get;
 use axum::Router;
 use clap::Parser;
+use env_logger::Env;
 use event_forwarder::block_processing::fetch_events;
 use event_forwarder::chain_listener::{
     Block,
@@ -13,7 +14,7 @@ use event_forwarder::chain_listener::{
     API,
 };
 use lazy_static::lazy_static;
-use log::{error, info, warn};
+use log::{error, info};
 use prometheus::{
     register_gauge_vec,
     register_int_counter_vec,
@@ -118,7 +119,7 @@ pub struct CanaryConfig {
 
 #[tokio::main]
 async fn main() -> Result<(), CanaryError> {
-    env_logger::init();
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     info!("🚀 Starting Canary block listener...");
 
     let config = CanaryConfig::parse();
