@@ -1,3 +1,12 @@
+## [1.26.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.2...v1.26.3) (2025-09-17)
+
+
+### Bug Fixes
+
+* remove `system_tables::MessageNonce` for being unused ([1a8dea5](https://github.com/spaceandtimefdn/sxt-node/commit/1a8dea5aaa9ca4b6849b30bb626ff07ba2605833))
+
+
+
 ## [1.26.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.1...v1.26.2) (2025-09-16)
 
 
@@ -22,10 +31,6 @@
 
 
 ## [1.25.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.25.1...v1.25.2) (2025-09-02)
-
-
-
-## [1.25.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.25.0...v1.25.1) (2025-09-02)
 
 
 
