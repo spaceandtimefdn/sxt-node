@@ -4,6 +4,7 @@ use dotenv::dotenv;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::{ChainType, Properties};
 use serde::{Deserialize, Serialize};
+use snafu::Snafu;
 use sp_authority_discovery::AuthorityId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
@@ -53,6 +54,21 @@ pub struct Extensions {
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
+
+/// Chain spec error type.
+#[derive(Debug, Snafu)]
+pub enum ChainSpecError {
+    /// WASM binary is not available for the runtime.
+    #[snafu(display("Development wasm not available"))]
+    WasmNotAvailable,
+
+    /// Required environment variable is not set.
+    #[snafu(display("ERROR: {} ENV variable not set", variable))]
+    EnvVariableNotSet {
+        /// The name of the environment variable that is missing.
+        variable: String,
+    },
+}
 
 /// Generate a crypto pair from seed.
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -108,9 +124,9 @@ pub fn authority_keys_from_phrase(s: &str) -> NodeIdSet {
     }
 }
 
-pub fn devnet_config() -> Result<ChainSpec, String> {
+pub fn devnet_config() -> Result<ChainSpec, ChainSpecError> {
     Ok(ChainSpec::builder(
-        WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
+        WASM_BINARY.ok_or(ChainSpecError::WasmNotAvailable)?,
         Default::default(),
     )
     .with_name("SxT Devnet")
@@ -145,9 +161,9 @@ pub fn devnet_config() -> Result<ChainSpec, String> {
     .build())
 }
 
-pub fn development_config() -> Result<ChainSpec, String> {
+pub fn development_config() -> Result<ChainSpec, ChainSpecError> {
     Ok(ChainSpec::builder(
-        WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
+        WASM_BINARY.ok_or(ChainSpecError::WasmNotAvailable)?,
         Default::default(),
     )
     .with_name("Development")
@@ -176,9 +192,9 @@ pub fn development_config() -> Result<ChainSpec, String> {
     .build())
 }
 
-pub fn local_testnet_config() -> Result<ChainSpec, String> {
+pub fn local_testnet_config() -> Result<ChainSpec, ChainSpecError> {
     Ok(ChainSpec::builder(
-        WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
+        WASM_BINARY.ok_or(ChainSpecError::WasmNotAvailable)?,
         Default::default(),
     )
     .with_name("Sxt Local Testing Network")
@@ -218,41 +234,43 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
     .build())
 }
 
-fn get_env_or_panic(input: &str) -> String {
-    env::var(input).unwrap_or_else(|_| panic!("ERROR: {} ENV variable not set", input))
+fn get_env_or_error(input: &str) -> Result<String, ChainSpecError> {
+    env::var(input).map_err(|_| ChainSpecError::EnvVariableNotSet {
+        variable: input.to_string(),
+    })
 }
 
-fn validators_or_panic() -> (String, String, String) {
-    (
-        get_env_or_panic("SXT_VALIDATOR_1"),
-        get_env_or_panic("SXT_VALIDATOR_2"),
-        get_env_or_panic("SXT_VALIDATOR_3"),
-    )
+fn validators_or_error() -> Result<(String, String, String), ChainSpecError> {
+    Ok((
+        get_env_or_error("SXT_VALIDATOR_1")?,
+        get_env_or_error("SXT_VALIDATOR_2")?,
+        get_env_or_error("SXT_VALIDATOR_3")?,
+    ))
 }
 
-fn indexers_or_panic() -> (String, String, String, String, String) {
-    (
-        get_env_or_panic("SXT_INDEXER_1"),
-        get_env_or_panic("SXT_INDEXER_2"),
-        get_env_or_panic("SXT_INDEXER_3"),
-        get_env_or_panic("SXT_INDEXER_4"),
-        get_env_or_panic("SXT_INDEXER_5"),
-    )
+fn indexers_or_error() -> Result<(String, String, String, String, String), ChainSpecError> {
+    Ok((
+        get_env_or_error("SXT_INDEXER_1")?,
+        get_env_or_error("SXT_INDEXER_2")?,
+        get_env_or_error("SXT_INDEXER_3")?,
+        get_env_or_error("SXT_INDEXER_4")?,
+        get_env_or_error("SXT_INDEXER_5")?,
+    ))
 }
 
-fn sudo_key_or_panic() -> String {
-    get_env_or_panic("SXT_SUDO_KEY")
+fn sudo_key_or_error() -> Result<String, ChainSpecError> {
+    get_env_or_error("SXT_SUDO_KEY")
 }
 
-pub fn testnet_config() -> Result<ChainSpec, String> {
+pub fn testnet_config() -> Result<ChainSpec, ChainSpecError> {
     dotenv().ok();
 
-    let (validator1, validator2, validator3) = validators_or_panic();
-    let (indexer1, indexer2, indexer3, indexer4, indexer5) = indexers_or_panic();
-    let sudo_key = sudo_key_or_panic();
+    let (validator1, validator2, validator3) = validators_or_error()?;
+    let (indexer1, indexer2, indexer3, indexer4, indexer5) = indexers_or_error()?;
+    let sudo_key = sudo_key_or_error()?;
 
     Ok(ChainSpec::builder(
-        WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
+        WASM_BINARY.ok_or(ChainSpecError::WasmNotAvailable)?,
         Default::default(),
     )
     .with_name("Sxt Testnet")
@@ -296,17 +314,17 @@ pub fn testnet_config() -> Result<ChainSpec, String> {
     .build())
 }
 
-pub fn mainnet_config() -> Result<ChainSpec, String> {
+pub fn mainnet_config() -> Result<ChainSpec, ChainSpecError> {
     dotenv().ok();
 
-    let (validator1, validator2, validator3) = validators_or_panic();
-    let sudo_key = sudo_key_or_panic();
+    let (validator1, validator2, validator3) = validators_or_error()?;
+    let sudo_key = sudo_key_or_error()?;
 
     let initial_gas = 10 * DOLLARS;
     let initial_stake = DOLLARS;
 
     Ok(ChainSpec::builder(
-        WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
+        WASM_BINARY.ok_or(ChainSpecError::WasmNotAvailable)?,
         Default::default(),
     )
     .with_name("SXT Mainnet")

@@ -36,11 +36,13 @@ impl SubstrateCli for Cli {
 
     fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
         Ok(match id {
-            "dev" => Box::new(chain_spec::development_config()?),
-            "devnet" => Box::new(chain_spec::devnet_config()?),
-            "testnet" => Box::new(chain_spec::testnet_config()?),
-            "mainnet" => Box::new(chain_spec::mainnet_config()?),
-            "" | "local" => Box::new(chain_spec::local_testnet_config()?),
+            "dev" => Box::new(chain_spec::development_config().map_err(|e| format!("{e:?}"))?),
+            "devnet" => Box::new(chain_spec::devnet_config().map_err(|e| format!("{e:?}"))?),
+            "testnet" => Box::new(chain_spec::testnet_config().map_err(|e| format!("{e:?}"))?),
+            "mainnet" => Box::new(chain_spec::mainnet_config().map_err(|e| format!("{e:?}"))?),
+            "" | "local" => {
+                Box::new(chain_spec::local_testnet_config().map_err(|e| format!("{e:?}"))?)
+            }
             path => Box::new(chain_spec::ChainSpec::from_json_file(
                 std::path::PathBuf::from(path),
             )?),

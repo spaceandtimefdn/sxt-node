@@ -18497,6 +18497,7 @@ dependencies = [
  "sc-transaction-pool-api",
  "serde",
  "serde_json",
+ "snafu 0.8.5",
  "sp-api",
  "sp-authority-discovery",
  "sp-block-builder",
