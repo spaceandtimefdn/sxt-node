@@ -65,10 +65,6 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
     }
 
-    /// The last processed message
-    #[pallet::storage]
-    pub type MessageNonce<T: Config> = StorageValue<_, U256, ValueQuery>;
-
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {

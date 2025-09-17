@@ -21324,10 +21324,6 @@ pub mod api {
             use super::runtime_types;
             pub mod types {
                 use super::runtime_types;
-                pub mod message_nonce {
-                    use super::runtime_types;
-                    pub type MessageNonce = runtime_types::primitive_types::U256;
-                }
                 pub mod last_processed_nonce {
                     use super::runtime_types;
                     pub type LastProcessedNonce = runtime_types::primitive_types::U256;
@@ -21340,28 +21336,6 @@ pub mod api {
             }
             pub struct StorageApi;
             impl StorageApi {
-                #[doc = " The last processed message"]
-                pub fn message_nonce(
-                    &self,
-                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
-                    (),
-                    types::message_nonce::MessageNonce,
-                    ::subxt::ext::subxt_core::utils::Yes,
-                    ::subxt::ext::subxt_core::utils::Yes,
-                    (),
-                > {
-                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
-                        "SystemTables",
-                        "MessageNonce",
-                        (),
-                        [
-                            30u8, 32u8, 18u8, 2u8, 133u8, 25u8, 163u8, 107u8, 69u8, 156u8, 196u8,
-                            238u8, 26u8, 16u8, 189u8, 149u8, 123u8, 130u8, 15u8, 224u8, 107u8,
-                            105u8, 139u8, 137u8, 110u8, 104u8, 152u8, 227u8, 132u8, 174u8, 193u8,
-                            229u8,
-                        ],
-                    )
-                }
                 pub fn last_processed_nonce(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
