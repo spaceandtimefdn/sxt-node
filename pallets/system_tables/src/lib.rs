@@ -19,6 +19,8 @@ mod tests;
 mod messages;
 mod templates;
 
+pub mod runtime_api;
+
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
@@ -28,7 +30,7 @@ pub mod pallet {
     use frame_support::dispatch::{DispatchResult, RawOrigin};
     use frame_support::pallet_prelude::*;
     use frame_support::traits::StoredMap;
-    use frame_system::pallet_prelude::*;
+    use frame_system::pallet_prelude::{BlockNumberFor, *};
     use itertools::Itertools;
     use on_chain_table::OnChainTable;
     use pallet_session::historical::IdentificationTuple;
@@ -44,6 +46,7 @@ pub mod pallet {
         SystemRequest,
         SystemRequestType,
     };
+    use sxt_core::system_tables::ClaimedUnstake;
     use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
     use sxt_core::utils::eth_address_to_substrate_account_id;
 
@@ -124,6 +127,8 @@ pub mod pallet {
         AccountNotUnbonding,
         /// Occurs when attempting to claim locked funds
         FundsLocked,
+        /// Account was not claiming unstake.
+        NoSuchClaimedUnstake,
     }
 
     #[pallet::call]
@@ -154,6 +159,20 @@ pub mod pallet {
                 None => Ok(()),
                 Some(req) => process_request::<T>(req),
             }
+        }
+
+        /// Returns a list of all currently-processing claimed unstakes.
+        pub fn claimed_unstakes(
+        ) -> Vec<ClaimedUnstake<T::AccountId, BlockNumberFor<T>, T::CurrencyBalance>> {
+            ClaimedUnstakes::<T>::iter()
+                .map(
+                    |(staker, claim_block_number, claimed_amount)| ClaimedUnstake {
+                        staker,
+                        claim_block_number,
+                        claimed_amount,
+                    },
+                )
+                .collect()
         }
     }
 
@@ -310,6 +329,14 @@ pub mod pallet {
 
                         let stake_amount = amount.min(&U256::from(u128::MAX)).low_u128();
 
+                        let block_number_to_remove = ClaimedUnstakes::<T>::iter_prefix(&staker_id)
+                            .find_map(|(block_number, amount)| {
+                                (amount == stake_amount).then_some(block_number)
+                            })
+                            .ok_or(Error::<T>::NoSuchClaimedUnstake)?;
+
+                        ClaimedUnstakes::<T>::remove(&staker_id, block_number_to_remove);
+
                         Ok(())
                     }
                     _ => Err(Error::<T>::MissingExpectedField.into()),
@@ -333,9 +360,10 @@ pub mod pallet {
                             sxt_core::utils::eth_address_to_substrate_account_id::<T>(&staker)?;
 
                         // Make sure they're staked
-                        if pallet_staking::Ledger::<T>::get(&staker_id).is_none() {
+                        let Some(old_staking_ledger) = pallet_staking::Ledger::<T>::get(&staker_id)
+                        else {
                             return Err(Error::<T>::AccountNotStaked.into());
-                        }
+                        };
 
                         // Make sure they're in an unbonding state
                         if !(pallet_staking::Pallet::<T>::is_unbonding(&staker_id)?) {
@@ -353,7 +381,9 @@ pub mod pallet {
                             .map_err(|e| e.error)?;
 
                         // Check if the user still has entries in the staking ledger
-                        if let Some(ledger) = pallet_staking::Ledger::<T>::get(&staker_id) {
+                        let maybe_new_staking_ledger = pallet_staking::Ledger::<T>::get(&staker_id);
+
+                        if maybe_new_staking_ledger.is_some() {
                             // If this was a partial unlock we need to actually check if the locks
                             // were removed by the withdrawal call. If they weren't the claim is
                             // unsuccessful and we return an error. Otherwise we emit the event
@@ -362,6 +392,18 @@ pub mod pallet {
                                 return Err(Error::<T>::FundsLocked.into());
                             }
                         }
+
+                        let new_total = maybe_new_staking_ledger
+                            .map(|ledger| ledger.total)
+                            .unwrap_or(0);
+
+                        let amount_withdrawn = old_staking_ledger.total.saturating_sub(new_total);
+
+                        ClaimedUnstakes::<T>::insert(
+                            &staker_id,
+                            frame_system::Pallet::<T>::block_number(),
+                            amount_withdrawn,
+                        );
 
                         // User is fully unbonded, so we emit an event
                         Pallet::<T>::deposit_event(Event::<T>::UnstakingClaimed {
@@ -464,6 +506,20 @@ pub mod pallet {
     #[pallet::getter(fn last_processed_user_nonce)]
     pub(super) type LastProcessedUserNonce<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, U256>;
+
+    /// Unstakes that have been claimed through an `UNSTAKECLAIMED` insert.
+    ///
+    /// Pruned after processing via an `UNSTAKED` insert.
+    #[pallet::storage]
+    #[pallet::getter(fn claimed_unstake)]
+    pub(super) type ClaimedUnstakes<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        Blake2_128Concat,
+        BlockNumberFor<T>,
+        T::CurrencyBalance,
+    >;
 
     fn consume_nonce<T: Config>(nonce: U256, eth_sender: &T::AccountId) -> DispatchResult {
         let expected =
