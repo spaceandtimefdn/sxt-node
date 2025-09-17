@@ -1,8 +1,6 @@
 #[cfg(feature = "substrate")]
 use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
-use on_chain_table::MontScalarExt;
 use proof_of_sql::base::commitment::Commitment;
-use proof_of_sql::base::scalar::MontScalar;
 use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
 use proof_of_sql::proof_primitive::hyperkzg::HyperKZGCommitment;
 #[cfg(feature = "substrate")]
@@ -40,9 +38,7 @@ impl CommitmentScheme {
 }
 
 /// Trait for commitment types that defines their associated [`CommitmentScheme`].
-pub trait CommitmentId:
-    Commitment<Scalar: MontScalarExt> + Serialize + for<'de> Deserialize<'de>
-{
+pub trait CommitmentId: Commitment + Serialize + for<'de> Deserialize<'de> {
     /// The [`CommitmentScheme`] associated with this commitment type.
     const COMMITMENT_SCHEME: CommitmentScheme;
 }

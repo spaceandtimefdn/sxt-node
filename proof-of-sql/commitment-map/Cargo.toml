@@ -20,7 +20,6 @@ sp-runtime-interface = { workspace = true, default-features = false, optional = 
 sxt-core = { workspace = true, optional = true }
 proptest = { workspace = true, features = ["std"], optional = true }
 proptest-derive = { workspace = true, optional = true }
-on-chain-table = { workspace = true }
 
 [features]
 memory-commitment-map = ["std"]
@@ -33,6 +32,7 @@ proptest = ["dep:proptest", "dep:proptest-derive", "std"]
 rand_chacha.workspace = true
 proof-of-sql = { workspace = true, features = ["test"] }
 rand.workspace = true
+on-chain-table = { workspace = true }
 sxt-core = { workspace = true, features = ["std"] }
 sqlparser = { workspace = true }
 

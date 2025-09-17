@@ -9409,7 +9409,6 @@ name = "on-chain-table"
 version = "0.1.0"
 dependencies = [
  "ahash 0.8.11",
- "ark-ff 0.5.0",
  "arrow 54.2.1",
  "blake3",
  "indexmap 2.8.0",

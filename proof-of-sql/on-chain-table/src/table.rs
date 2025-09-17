@@ -10,7 +10,7 @@ use sqlparser::ast::Ident;
 
 use crate::column::OnChainColumn;
 use crate::map::IndexMap;
-use crate::{MontScalarExt, OutOfScalarBounds};
+use crate::OutOfScalarBounds;
 
 /// Table data type for all data types supported by sxt-node.
 ///
@@ -104,7 +104,7 @@ impl OnChainTable {
     /// Returns an iterator over this table with committable columns in the scalar field `S`.
     ///
     /// After the error is handled, this can be supplied to the `proof-of-sql` commitment API.
-    pub fn iter_committable<S: MontScalarExt>(
+    pub fn iter_committable<S: Scalar>(
         &self,
     ) -> impl Iterator<Item = Result<(&Ident, CommittableColumn), OutOfScalarBounds>> {
         self.iter().map(|(id, column)| {
@@ -333,7 +333,7 @@ mod tests {
         ));
     }
 
-    fn we_can_iter_table_with_committable_columns<S: MontScalarExt>() {
+    fn we_can_iter_table_with_committable_columns<S: Scalar>() {
         let bigint_id = Ident::new("BIGINT_COL");
         let bigint_data = vec![-10, 0, 3];
 

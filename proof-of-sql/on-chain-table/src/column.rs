@@ -11,7 +11,7 @@ use proof_of_sql::base::scalar::{Scalar, ScalarExt};
 use serde::{Deserialize, Serialize};
 
 use crate::u256_scalar_conversion::u256_to_scalar;
-use crate::{MontScalarExt, OutOfScalarBounds};
+use crate::OutOfScalarBounds;
 
 /// Column data type for all types supported by sxt-node.
 ///
@@ -101,7 +101,7 @@ impl OnChainColumn {
     }
 
     /// Performs conversion to a proof-of-sql `CommittableColumn` in the scalar field `S`.
-    pub fn try_to_committable_column<S: MontScalarExt>(
+    pub fn try_to_committable_column<S: Scalar>(
         &self,
     ) -> Result<CommittableColumn, OutOfScalarBounds> {
         match &self {
@@ -145,12 +145,16 @@ impl OnChainColumn {
     }
 }
 
+fn bytes_to_limbs_le(b: [u8; 32]) -> [u64; 4] {
+    core::array::from_fn(|i| u64::from_le_bytes(core::array::from_fn(|j| b[i * 8 + j])))
+}
+
 /// Before proof-of-sql `0.100`, strings were committed to via blake2 hash. After `0.100`, they use
 /// keccack hashes instead to make evm verification easier. The chain has committed to varchar
 /// columns with pre-`0.100` protocols in the past, so in order to preserve backwards
 /// compatibility of existing interfaces, we need to be able to compute commitments in the same way
 /// we used to.
-fn string_to_scalar_posql_0_99<S: MontScalarExt>(string: impl AsRef<str>) -> S {
+fn string_to_scalar_posql_0_99<S: Scalar>(string: impl AsRef<str>) -> S {
     let x = string.as_ref().as_bytes();
 
     if x.is_empty() {
@@ -163,7 +167,7 @@ fn string_to_scalar_posql_0_99<S: MontScalarExt>(string: impl AsRef<str>) -> S {
 
     bytes[31] &= 0b0000_1111_u8;
 
-    S::from_le_bytes_mod_order(&bytes)
+    S::from_wrapping(bytes_to_limbs_le(bytes).into())
 }
 
 #[cfg(test)]
@@ -294,7 +298,7 @@ mod tests {
         let _should_panic = OnChainColumn::empty_with_type(ColumnType::Scalar);
     }
 
-    fn we_can_convert_on_chain_column_to_committable_column<S: MontScalarExt>() {
+    fn we_can_convert_on_chain_column_to_committable_column<S: Scalar>() {
         let data = vec![true, false, true];
         let on_chain_bool_column = OnChainColumn::Boolean(data.clone());
         let owned_bool_column = OwnedColumn::<S>::Boolean(data);
@@ -440,7 +444,7 @@ mod tests {
         we_can_convert_on_chain_column_to_committable_column::<BNScalar>()
     }
 
-    fn we_cannot_convert_out_of_bounds_on_chain_column_to_committable_column<S: MontScalarExt>() {
+    fn we_cannot_convert_out_of_bounds_on_chain_column_to_committable_column<S: Scalar>() {
         let on_chain_decimal_column = OnChainColumn::Decimal75(
             Precision::new(75).unwrap(),
             0,
