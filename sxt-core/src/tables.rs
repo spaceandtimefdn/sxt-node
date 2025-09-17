@@ -437,7 +437,7 @@ pub fn create_statement(stmnt: &str) -> CreateStatement {
 }
 
 /// Errors that can occur when converting to/from a create statement.
-#[derive(Snafu, Debug)]
+#[derive(Snafu, Debug, PartialEq, Eq)]
 pub enum CreateStatementParseError {
     /// String representation of table definition exceeds maximum size.
     #[snafu(display("String representation of table definition exceeds maximum size."))]
@@ -463,6 +463,26 @@ impl From<sqlparser::parser::ParserError> for CreateStatementParseError {
     fn from(error: sqlparser::parser::ParserError) -> Self {
         CreateStatementParseError::Sqlparser { error }
     }
+}
+
+/// Errors that can occur when extracting UUIDs using sqlparser.
+#[derive(Debug, Snafu, PartialEq, Eq)]
+pub enum UuidExtractionError {
+    /// Attempt to set column uuid for a column name that does not exist in the table definition.
+    #[snafu(display("Column name not found"))]
+    ColumnNameNotFound,
+    /// String representation of column name exceeds maximum size.
+    #[snafu(display("String representation of column name exceeds maximum size."))]
+    ColumnNameTooLarge,
+    /// String representation of Column UUID exceeds maximum size.
+    #[snafu(display("String representation of Column UUID exceeds maximum size."))]
+    ColumnUuidTooLarge,
+    /// String representation of Table UUID exceeds maximum size.
+    #[snafu(display("String representation of Table UUID exceeds maximum size."))]
+    TableUuidTooLarge,
+    /// Too many columns in the table definition.
+    #[snafu(display("Too many columns in the table definition."))]
+    TooManyColumns,
 }
 
 /// Strips the WITH clause from a CREATE TABLE statement, preserving formatting.
@@ -635,53 +655,60 @@ pub fn extract_schema_uuid(sql: &str) -> Option<&str> {
 }
 
 fn extract_column_name(input: &str) -> Option<&str> {
-    if input.starts_with("column_") && input.ends_with("_uuid") {
+    if input.starts_with("column_")
+        && input.ends_with("_uuid")
+        && input.len() > "column__uuid".len()
+    {
         let start = "column_".len();
         let end = input.len() - "_uuid".len();
-        return Some(&input[start..end]);
-    }
-    None
-}
-
-/// Convenience wrapper around uuids_from_sqlparser that accepts a raw CreateStatement
-pub fn uuids_from_create_statement(
-    create_statement: CreateStatement,
-) -> Option<(TableUuid, ColumnUuidList)> {
-    match create_statement_to_sqlparser(create_statement) {
-        Ok(create_table) => Some(uuids_from_sqlparser(create_table)),
-        _ => None,
+        Some(&input[start..end])
+    } else {
+        None
     }
 }
 
 /// Extract Table and Column UUIDs for a given CREATE TABLE statement
-pub fn uuids_from_sqlparser(create_table: CreateTableBuilder) -> (TableUuid, ColumnUuidList) {
+pub fn uuids_from_sqlparser(
+    create_table: CreateTableBuilder,
+) -> Result<(TableUuid, ColumnUuidList), UuidExtractionError> {
     let options = create_table.with_options;
     let mut table_uuid: TableUuid = TableUuid::default();
-    let column_id_list = ColumnUuidList::try_from(
-        options
-            .iter()
-            .filter_map(|opt| {
-                extract_column_name(opt.name.value.as_str()).map(|name| ColumnUuid {
-                    name: ByteString::try_from(name.as_bytes().to_vec()).unwrap(),
-                    uuid: TableUuid::try_from(opt.value.to_string().as_bytes().to_vec()).unwrap(),
+    let column_names = create_table
+        .columns
+        .iter()
+        .map(|col| col.name.value.to_uppercase())
+        .collect::<Vec<String>>();
+
+    let column_uuids: Vec<ColumnUuid> = options
+        .iter()
+        .filter_map(|opt| {
+            extract_column_name(opt.name.value.as_str()).map(|name| {
+                if !column_names.contains(&name.to_uppercase()) {
+                    return Err(UuidExtractionError::ColumnNameNotFound);
+                }
+                let name_bytes = ByteString::try_from(name.as_bytes().to_vec())
+                    .map_err(|_| UuidExtractionError::ColumnNameTooLarge)?;
+                let uuid_bytes = TableUuid::try_from(opt.value.to_string().as_bytes().to_vec())
+                    .map_err(|_| UuidExtractionError::ColumnUuidTooLarge)?;
+                Ok(ColumnUuid {
+                    name: name_bytes,
+                    uuid: uuid_bytes,
                 })
             })
-            .collect::<Vec<_>>(),
-    )
-    .unwrap_or_else(|_| {
-        panic!(
-            "Column Ids List must not contain more than {}",
-            MAX_COLS_PER_TABLE
-        )
-    });
+        })
+        .collect::<Result<Vec<_>, UuidExtractionError>>()?;
+
+    let column_id_list =
+        ColumnUuidList::try_from(column_uuids).map_err(|_| UuidExtractionError::TooManyColumns)?;
 
     for opt in options.iter() {
         if opt.name.value.to_lowercase() == "table_uuid" {
-            table_uuid = TableUuid::try_from(opt.value.to_string().as_bytes().to_vec()).unwrap();
+            table_uuid = TableUuid::try_from(opt.value.to_string().as_bytes().to_vec())
+                .map_err(|_| UuidExtractionError::TableUuidTooLarge)?;
         }
     }
 
-    (table_uuid, column_id_list)
+    Ok((table_uuid, column_id_list))
 }
 
 /// Generate a new UUID for a given table name and namespace.
@@ -970,6 +997,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn extract_column_name_works() {
+        assert_eq!(extract_column_name("column_id_uuid"), Some("id"));
+        assert_eq!(extract_column_name("column_name_uuid"), Some("name"));
+        assert_eq!(extract_column_name("columnuuid"), None);
+        assert_eq!(extract_column_name("column_uuid"), None);
+        assert_eq!(extract_column_name("column__uuid"), None);
+        assert_eq!(extract_column_name("col_id_uuid"), None);
+        assert_eq!(extract_column_name("column_id_uuids"), None);
+        assert_eq!(extract_column_name("column_id_uuid_extra"), None);
+    }
+
+    #[test]
     fn checking_for_submitter_column_works() {
         let false_statement = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME) );";
         let false_table = create_statement_to_sqlparser(
@@ -1113,7 +1152,7 @@ mod tests {
 
         let create_table = create_statement_to_sqlparser(sample_statement).unwrap();
 
-        let (table_uuid, columns) = uuids_from_sqlparser(create_table);
+        let (table_uuid, columns) = uuids_from_sqlparser(create_table).unwrap();
 
         assert_eq!(table_uuid, expected_uuid);
         assert_eq!(columns, expected_columns);
@@ -1441,5 +1480,117 @@ mod tests {
         let create_statement = create_statement("SELECT * FROM NOT.CREATE");
 
         assert!(table_schema_from_create_statement(create_statement).is_err());
+    }
+
+    #[test]
+    fn uuids_from_sqlparser_returns_invalid_column_name_bytes_error() {
+        let long_column_name = "a".repeat(65);
+        let sql = format!(
+            "CREATE TABLE test.table ({} INT) WITH (column_{}_uuid=abc)",
+            long_column_name, long_column_name,
+        );
+
+        let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+            .try_with_sql(&sql)
+            .unwrap()
+            .parse_statement()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        let result = uuids_from_sqlparser(create_table);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), UuidExtractionError::ColumnNameTooLarge);
+    }
+
+    #[test]
+    fn uuids_from_sqlparser_returns_invalid_column_uuid_bytes_error() {
+        let long_uuid = "a".repeat(65);
+        let sql = format!(
+            "CREATE TABLE test.table (id INT) WITH (column_id_uuid={})",
+            long_uuid
+        );
+
+        let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+            .try_with_sql(&sql)
+            .unwrap()
+            .parse_statement()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        let result = uuids_from_sqlparser(create_table);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), UuidExtractionError::ColumnUuidTooLarge);
+    }
+
+    #[test]
+    fn uuids_from_sqlparser_returns_too_many_columns_for_table_error() {
+        let mut with_options = String::new();
+        let mut col_schema_text = String::new();
+        for i in 0..65 {
+            if !with_options.is_empty() {
+                with_options.push_str(", ");
+                col_schema_text.push_str(", ");
+            }
+            col_schema_text.push_str(&format!("col{} INT", i));
+            with_options.push_str(&format!("column_col{}_uuid=uuid{}", i, i));
+        }
+
+        let sql = format!(
+            "CREATE TABLE test.table ({}) WITH ({})",
+            col_schema_text, with_options
+        );
+
+        let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+            .try_with_sql(&sql)
+            .unwrap()
+            .parse_statement()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        let result = uuids_from_sqlparser(create_table);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), UuidExtractionError::TooManyColumns);
+    }
+
+    #[test]
+    fn uuids_from_sqlparser_returns_invalid_table_uuid_bytes_error() {
+        let long_uuid = "a".repeat(65);
+        let sql = format!(
+            "CREATE TABLE test.table (id INT) WITH (table_uuid={})",
+            long_uuid
+        );
+
+        let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+            .try_with_sql(&sql)
+            .unwrap()
+            .parse_statement()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        let result = uuids_from_sqlparser(create_table);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), UuidExtractionError::TableUuidTooLarge);
+    }
+
+    #[test]
+    fn uuids_from_sqlparser_returns_column_name_not_found_error() {
+        let sql =
+            "CREATE TABLE test.table (id INT) WITH (table_uuid=abc, column_notacolumn_uuid=def)";
+
+        let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+            .try_with_sql(sql)
+            .unwrap()
+            .parse_statement()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        let result = uuids_from_sqlparser(create_table);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), UuidExtractionError::ColumnNameNotFound);
     }
 }
