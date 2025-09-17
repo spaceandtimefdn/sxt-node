@@ -442,6 +442,12 @@ fn unstaking_works_end_to_end_and_reduces_balance_when_claimed() {
         let claim_unstake = get_claim_unstake_message(ETH_TEST_WALLET);
         assert_ok!(crate::process_unstake_claimed::<Test>(claim_unstake));
 
+        //Ensure we can see the token burn
+        System::assert_has_event(RuntimeEvent::Balances(pallet_balances::Event::Burned {
+            who: transformed_eth_wallet.clone(),
+            amount: test_amount,
+        }));
+
         // Ensure the claim event has been emitted
         System::assert_has_event(RuntimeEvent::SystemTables(crate::Event::UnstakingClaimed {
             claimer: transformed_eth_wallet.clone(),
@@ -450,12 +456,6 @@ fn unstaking_works_end_to_end_and_reduces_balance_when_claimed() {
         // Confirm the unstake as if the contract did
         let unstaked = get_unstaked_message(ETH_TEST_WALLET, test_amount.into());
         assert_ok!(crate::process_unstaked::<Test>(unstaked));
-
-        //Ensure we can see the token burn
-        System::assert_has_event(RuntimeEvent::Balances(pallet_balances::Event::Burned {
-            who: transformed_eth_wallet,
-            amount: test_amount,
-        }));
     });
 }
 

@@ -307,17 +307,8 @@ pub mod pallet {
                         let staker = hex::encode(staker);
                         let staker_id =
                             sxt_core::utils::eth_address_to_substrate_account_id::<T>(&staker)?;
-                        let staker_signer: OriginFor<T> =
-                            RawOrigin::Signed(staker_id.clone()).into();
 
                         let stake_amount = amount.min(&U256::from(u128::MAX)).low_u128();
-
-                        // Burn the unbonded amount from the account
-                        pallet_balances::Pallet::<T>::burn(
-                            staker_signer,
-                            stake_amount.saturated_into(),
-                            false,
-                        )?;
 
                         Ok(())
                     }
@@ -358,7 +349,7 @@ pub mod pallet {
                         // has all fields private to the staking crate. For now the
                         // best we can do is to call the withdraw function and see if there are any
                         // balance changes.
-                        pallet_staking::Pallet::<T>::withdraw_unbonded(staker_signer, 0u32)
+                        pallet_staking::Pallet::<T>::withdraw_unbonded(staker_signer.clone(), 0u32)
                             .map_err(|e| e.error)?;
 
                         // Check if the user still has entries in the staking ledger
@@ -376,6 +367,13 @@ pub mod pallet {
                         Pallet::<T>::deposit_event(Event::<T>::UnstakingClaimed {
                             claimer: staker_id.clone(),
                         });
+
+                        // Burn the unbonded amount from the account
+                        pallet_balances::Pallet::<T>::burn(
+                            staker_signer,
+                            amount_withdrawn.saturated_into(),
+                            false,
+                        )?;
 
                         Ok(())
                     }
