@@ -484,6 +484,7 @@ pub mod pallet {
                     error: e,
                     data: on_chain_table_bytes,
                 });
+                return Err(e);
             } else {
                 Pallet::<T, I>::deposit_event(Event::SystemTableUpdate {
                     table: quorum.table.clone(),
