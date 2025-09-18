@@ -447,8 +447,8 @@ impl AttestationClient {
 
         info!("Processing block {:?}", block.number());
 
-        let (commitments, locks, contract_info, claimed_unstakes) =
-            match attestation::fetch::commitments_and_locks_and_staking_contract_info_and_claimed_unstakes(
+        let (commitments, contract_info, claimed_unstakes) =
+            match attestation::fetch::commitments_and_staking_contract_info_and_claimed_unstakes(
                 &self.api,
                 block.hash(),
             )
@@ -461,11 +461,7 @@ impl AttestationClient {
                 }
             };
 
-        let tree = match attestation_tree_from_prefixes::<_, _, Runtime>(
-            commitments,
-            locks,
-            contract_info.clone(),
-        ) {
+        let tree = match attestation_tree_from_prefixes::<_, Runtime>(commitments) {
             Ok(result) => result,
             Err(e) => {
                 log::error!("Error creating attestation tree: {}", e);

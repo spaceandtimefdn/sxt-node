@@ -6,13 +6,11 @@ use attestation_tree::{
     prove_leaf_pair,
     storage_key_for_prefix_key_tuple,
     CommitmentMapPrefixFoliate,
-    LocksStakingPrefixFoliate,
     PrefixFoliate,
 };
 use codec::Decode;
 use frame_support::traits::StorageInstance;
 use pallet_commitments::runtime_api::CommitmentsApi;
-use pallet_system_contracts::_GeneratedPrefixForStorageStakingContract;
 use proof_of_sql::sql::evm_proof_plan::EVMProofPlan;
 use proof_of_sql::sql::proof::ProofPlan;
 use proof_of_sql::sql::proof_plans::DynProofPlan;
@@ -151,29 +149,9 @@ where
                 None,
             )?
             .map(|(key, data)| (key.0, data.0));
-        let locks_prefix_iter = self
-            .client
-            .storage_pairs(
-                at,
-                Some(&storage_key_for::<LocksStakingPrefixFoliate<Config>>()),
-                None,
-            )?
-            .map(|(key, data)| (key.0, data.0));
-        let storage_contract_info = self
-            .client
-            .storage(
-                at,
-                &StorageKey(
-                    _GeneratedPrefixForStorageStakingContract::<Config>::prefix_hash().to_vec(),
-                ),
-            )?
-            .ok_or(CommitmentsApiError::NoStakingContract)?;
 
-        let attestation_tree = attestation_tree_from_prefixes::<_, _, Config>(
-            commitments_prefix_iter,
-            locks_prefix_iter,
-            storage_contract_info.0,
-        )?;
+        let attestation_tree =
+            attestation_tree_from_prefixes::<_, Config>(commitments_prefix_iter)?;
 
         let verifiable_commitments = table_commitments
             .into_iter()

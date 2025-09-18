@@ -17,16 +17,23 @@
 //! ```sh
 //! cargo run -- integration-test
 //! ```
+use std::collections::HashMap;
+use std::str::FromStr;
+use std::sync::Arc;
+
 use alloy::hex::FromHexError;
-use alloy::network::Ethereum;
-use alloy::network::EthereumWallet;
+use alloy::network::{Ethereum, EthereumWallet};
 use alloy::primitives::{Address, FixedBytes, Uint};
 use alloy::providers::fillers::{
-    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+    BlobGasFiller,
+    ChainIdFiller,
+    FillProvider,
+    GasFiller,
+    JoinFill,
+    NonceFiller,
+    WalletFiller,
 };
-use alloy::providers::Identity;
-use alloy::providers::ProviderBuilder;
-use alloy::providers::RootProvider;
+use alloy::providers::{Identity, ProviderBuilder, RootProvider};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::reqwest::Url;
 use clap::Parser;
@@ -38,21 +45,18 @@ use log::{error, info};
 use sha3::digest::generic_array::GenericArray;
 use snafu::{ResultExt, Snafu};
 use sp_core::crypto::AccountId32;
-use std::collections::HashMap;
-use std::str::FromStr;
-use std::sync::Arc;
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
-use subxt_signer::sr25519::Keypair;
 use sxt_core::sxt_chain_runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::{
-    Attestation, EthereumSignature,
+    Attestation,
+    EthereumSignature,
 };
 use sxt_core::system_tables::ClaimedUnstake;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use url::ParseError;
-use watcher::attestation::fetch::commitments_and_locks_and_staking_contract_info_and_claimed_unstakes;
+use watcher::attestation::fetch::commitments_and_staking_contract_info_and_claimed_unstakes;
 
 #[allow(clippy::too_many_arguments, missing_docs)]
 mod event_forwarder_contract {
@@ -98,12 +102,6 @@ enum EventForwarderError {
 
     #[snafu(display("Blockchain processing error: {}", source))]
     BlockchainProcessing { source: Box<dyn std::error::Error> },
-
-    #[snafu(display("Invalid key length: expected 32 bytes, got {}", length))]
-    InvalidKeyLength { length: usize },
-
-    #[snafu(display("Failed to create keypair from secret key"))]
-    KeypairCreationError,
 
     #[snafu(transparent)]
     SubxtError { source: subxt::Error },
@@ -211,12 +209,8 @@ async fn process_block<P: alloy::providers::Provider>(
     block_hash: H256,
     block_number: u32,
 ) -> Result<(), BlockProcessingError> {
-    let (_, _, staking_contract_info, claimed_unstakes) =
-        commitments_and_locks_and_staking_contract_info_and_claimed_unstakes(
-            &config.api,
-            block_hash,
-        )
-        .await?;
+    let (_, staking_contract_info, claimed_unstakes) =
+        commitments_and_staking_contract_info_and_claimed_unstakes(&config.api, block_hash).await?;
     let claimed_unstakes: Vec<_> = Decode::decode(&mut claimed_unstakes.encode().as_slice())?;
     let contract_info = Decode::decode(&mut staking_contract_info.as_slice())?;
 
@@ -344,35 +338,4 @@ async fn load_ethereum_key(path: &str) -> Result<SigningKey, EventForwarderError
     let key_bytes = Vec::from_hex(hex_string.trim()).context(KeyParseSnafu)?;
     let key_array = GenericArray::from_slice(&key_bytes);
     Ok(SigningKey::from_bytes(key_array).unwrap()) // `unwrap` is safe since key_array is always valid length
-}
-
-async fn load_substrate_key(file_path: &str) -> Result<Keypair, EventForwarderError> {
-    let mut file = File::open(file_path).await.context(KeyFileReadSnafu {
-        path: file_path.to_string(),
-    })?;
-
-    let mut hex_string = String::new();
-    file.read_to_string(&mut hex_string)
-        .await
-        .context(KeyFileReadSnafu {
-            path: file_path.to_string(),
-        })?;
-
-    let key_bytes = Vec::from_hex(hex_string.trim()).context(KeyParseSnafu)?;
-
-    if key_bytes.len() != 32 {
-        return Err(EventForwarderError::InvalidKeyLength {
-            length: key_bytes.len(),
-        });
-    }
-
-    let key_bytes: [u8; 32] =
-        key_bytes
-            .clone()
-            .try_into()
-            .map_err(|_| EventForwarderError::InvalidKeyLength {
-                length: key_bytes.len(),
-            })?;
-
-    Keypair::from_secret_key(key_bytes).map_err(|_| EventForwarderError::KeypairCreationError)
 }
