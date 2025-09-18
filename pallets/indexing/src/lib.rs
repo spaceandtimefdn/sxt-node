@@ -281,7 +281,16 @@ pub mod pallet {
         let hash_input = (&data, block_number).encode();
         let data_hash = T::Hashing::hash(&hash_input);
 
-        let public_data_quorum = if can_submit_for_public_quorum {
+        let opt_data_quorum = if can_submit_for_privileged_quorum {
+            submit_data_and_find_quorum::<T, I>(
+                who.clone(),
+                batch_id,
+                data_hash,
+                table.clone(),
+                &table_insert_quorum,
+                &QuorumScope::Privileged,
+            )?
+        } else if can_submit_for_public_quorum {
             submit_data_and_find_quorum::<T, I>(
                 who.clone(),
                 batch_id.clone(),
@@ -294,20 +303,7 @@ pub mod pallet {
             None
         };
 
-        let privileged_data_quorum = if can_submit_for_privileged_quorum {
-            submit_data_and_find_quorum::<T, I>(
-                who.clone(),
-                batch_id,
-                data_hash,
-                table.clone(),
-                &table_insert_quorum,
-                &QuorumScope::Privileged,
-            )?
-        } else {
-            None
-        };
-
-        if let Some(data_quorum) = public_data_quorum.or(privileged_data_quorum) {
+        if let Some(data_quorum) = opt_data_quorum {
             finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
         }
 
