@@ -148,7 +148,7 @@ fn attest_block_fails_if_account_not_registered() {
 }
 
 #[test]
-fn attest_block_fails_if_duplicate_attestation() {
+fn attest_block_succeeds_with_multiple_attestations() {
     new_test_ext().execute_with(|| {
         System::set_block_number(15);
         let account_id: u64 = 1;
@@ -207,14 +207,11 @@ fn attest_block_fails_if_duplicate_attestation() {
         ));
 
         // Attempt to submit the same attestation again.
-        assert_err!(
-            Pallet::<Test>::attest_block(
-                RuntimeOrigin::signed(account_id),
-                block_number,
-                attestation
-            ),
-            Error::<Test>::AttestationAlreadyRecordedError
-        );
+        assert_ok!(Pallet::<Test>::attest_block(
+            RuntimeOrigin::signed(account_id),
+            block_number,
+            attestation
+        ));
     });
 }
 
