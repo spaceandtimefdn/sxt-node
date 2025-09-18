@@ -39,8 +39,8 @@ jobs:
 
       - name: Run clippy
         run: |
-          SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --quiet -- -Dclippy::all -Dmissing_docs
-          SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --workspace --quiet -- -Dclippy::all -Dmissing_docs
+          SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --quiet -- -Dwarnings
+          SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --workspace --quiet -- -Dwarnings
         timeout-minutes: 30
 
       - name: Run the tests
