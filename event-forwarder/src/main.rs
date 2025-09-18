@@ -28,7 +28,6 @@ use alloy::providers::Identity;
 use alloy::providers::ProviderBuilder;
 use alloy::providers::RootProvider;
 use alloy::signers::local::PrivateKeySigner;
-use alloy::sol;
 use alloy::transports::http::reqwest::Url;
 use clap::Parser;
 use codec::{Decode, Encode};
@@ -55,12 +54,17 @@ use tokio::io::AsyncReadExt;
 use url::ParseError;
 use watcher::attestation::fetch::commitments_and_locks_and_staking_contract_info_and_claimed_unstakes;
 
-sol!(
-    /// event forwarder contract
-    #[sol(rpc)]
-    EventForwarder,
-    "artifacts/EventForwarder.json"
-);
+#[allow(clippy::too_many_arguments, missing_docs)]
+mod event_forwarder_contract {
+    use alloy::sol;
+    sol!(
+        /// event forwarder contract
+        #[sol(rpc)]
+        EventForwarder,
+        "artifacts/EventForwarder.json"
+    );
+}
+use event_forwarder_contract::*;
 
 type ProviderInstance = FillProvider<
     JoinFill<
@@ -138,13 +142,13 @@ struct Cli {
 #[derive(Debug, Snafu)]
 enum BlockProcessingError {
     #[snafu(transparent)]
-    FetchError {
+    Fetch {
         source: watcher::attestation::fetch::FetchError,
     },
     #[snafu(transparent)]
-    CodecError { source: codec::Error },
+    Codec { source: codec::Error },
     #[snafu(transparent)]
-    SubxtError { source: subxt::Error },
+    Subxt { source: subxt::Error },
 }
 
 async fn attestations_per_root(
@@ -236,7 +240,7 @@ async fn process_block<P: alloy::providers::Provider>(
         );
 
         if let Some(claim_attestations) = maybe_claim_attestations {
-            attempt_fulfill_unstake(contract, claimed_unstake, &claim_attestations).await;
+            attempt_fulfill_unstake(contract, claimed_unstake, claim_attestations).await;
         }
     }
     Ok(())
