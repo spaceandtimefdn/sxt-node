@@ -1,3 +1,15 @@
+# [1.28.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.27.0...v1.28.0) (2025-09-18)
+
+
+### Features
+
+* extend proof-of-sql scalars with MontScalarExt ([18af7af](https://github.com/spaceandtimefdn/sxt-node/commit/18af7afd3beb707ae128f4b567503e6eba8286c3))
+* supertrait CommitmentId scalars with MontScalarExt ([0cc1d17](https://github.com/spaceandtimefdn/sxt-node/commit/0cc1d17445656de33cf0d32a313c949fe3211155))
+* upgrade proof-of-sql to 0.121.1 ([fd5cac4](https://github.com/spaceandtimefdn/sxt-node/commit/fd5cac47e2e8b19c8c034ac6d2a440e8a64d9c40))
+* use native blake3 conversion to scalar for varchar columns ([0253ae0](https://github.com/spaceandtimefdn/sxt-node/commit/0253ae06053454159f9d5ebd571fb191f9c8eacc))
+
+
+
 # [1.27.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.4...v1.27.0) (2025-09-17)
 
 
@@ -39,10 +51,6 @@
 ### Bug Fixes
 
 * avoid unnecessary truncation in `system_tables::process_unstake_cancelled` ([9dc47ec](https://github.com/spaceandtimefdn/sxt-node/commit/9dc47ec994117dc9a16937c469802fcc22c76ea2))
-
-
-
-## [1.26.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.0...v1.26.1) (2025-09-16)
 
 
 
