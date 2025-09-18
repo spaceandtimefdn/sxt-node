@@ -2739,9 +2739,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                154u8, 0u8, 117u8, 164u8, 118u8, 85u8, 231u8, 255u8, 7u8, 230u8, 172u8, 116u8,
-                245u8, 23u8, 228u8, 101u8, 56u8, 83u8, 225u8, 141u8, 55u8, 211u8, 199u8, 65u8,
-                114u8, 251u8, 14u8, 22u8, 103u8, 112u8, 32u8, 71u8,
+                180u8, 146u8, 94u8, 30u8, 4u8, 8u8, 111u8, 128u8, 140u8, 102u8, 185u8, 107u8, 37u8,
+                220u8, 155u8, 254u8, 54u8, 183u8, 177u8, 206u8, 16u8, 51u8, 246u8, 101u8, 13u8,
+                250u8, 239u8, 75u8, 85u8, 33u8, 242u8, 213u8,
             ]
     }
     pub mod system {
@@ -23240,7 +23240,7 @@ pub mod api {
                 )]
                 #[doc = "Pallet extrinsics implementation."]
                 pub enum Call {
-                    #[codec(index = 1)]
+                    #[codec(index = 0)]
                     #[doc = "Submit a block attestation."]
                     #[doc = ""]
                     #[doc = "# Arguments"]
@@ -23261,7 +23261,7 @@ pub mod api {
                             ::subxt::ext::subxt_core::utils::H256,
                         >,
                     },
-                    #[codec(index = 2)]
+                    #[codec(index = 1)]
                     #[doc = "Marks a block as forwarded on-chain."]
                     #[doc = ""]
                     #[doc = "This function allows authorized accounts to mark a specific block as \"forwarded.\""]
