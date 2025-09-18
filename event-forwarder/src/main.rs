@@ -236,7 +236,7 @@ async fn process_block<P: alloy::providers::Provider>(
         );
 
         if let Some(claim_attestations) = maybe_claim_attestations {
-            attempt_fulfill_unstake(contract, claimed_unstake, &claim_attestations);
+            attempt_fulfill_unstake(contract, claimed_unstake, &claim_attestations).await;
         }
     }
     Ok(())
