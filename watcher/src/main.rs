@@ -33,7 +33,9 @@ use subxt_signer::sr25519::Keypair;
 use sxt_core::attestation::{
     claimed_unstake_attestation_leaf,
     create_attestation_message,
+    encode_domain_and_state_root,
     verify_eth_signature,
+    AttestationDomain,
     EthereumSignature,
     RegisterExternalAddress,
 };
@@ -480,7 +482,18 @@ impl AttestationClient {
         let hex_decoded_state_root =
             hex::decode(state_root.data.clone()).expect("could not decode for msg creation");
 
-        let message = create_attestation_message(&hex_decoded_state_root, block.number());
+        let Ok(fixed_size_state_root) = <[u8; 32]>::try_from(hex_decoded_state_root)
+            .inspect_err(|e| log::error!("Error: computed commitments state root not 32 bytes"))
+        else {
+            return Ok(());
+        };
+
+        let partial_message = encode_domain_and_state_root(
+            Some(AttestationDomain::TableCommitments),
+            fixed_size_state_root,
+        );
+
+        let message = create_attestation_message(&partial_message, block.number());
 
         let signature = match generate_signature(private_key, &message) {
             Ok(sig) => sig,
@@ -514,12 +527,17 @@ impl AttestationClient {
                     &contract_info,
                 )));
 
-                let message =
-                    create_attestation_message(root_hash, claimed_unstake.claim_block_number);
+                // Should be a noop, but the consistency is nice
+                let partial_message = encode_domain_and_state_root(None, root_hash);
+
+                let message = create_attestation_message(
+                    partial_message.clone(),
+                    claimed_unstake.claim_block_number,
+                );
 
                 let signature = generate_signature(private_key, &message)?;
 
-                Ok((signature, root_hash.to_vec()))
+                Ok((signature, partial_message))
             })
             .collect::<Result<Vec<_>, AttestationError>>()
             .inspect_err(|e| log::error!("Error generating signature: {}", e))
@@ -529,12 +547,12 @@ impl AttestationClient {
 
         let block = &block;
         futures::stream::iter(
-            std::iter::once((signature, hex_decoded_state_root))
+            std::iter::once((signature, partial_message))
                 .chain(claimed_unstake_signatures_and_roots),
         )
-        .for_each(|(signature, root_hash)| async move {
+        .for_each(|(signature, partial_message)| async move {
             if let Err(e) = self
-                .submit_transaction_with_retry(block, private_key, signature, root_hash)
+                .submit_transaction_with_retry(block, private_key, signature, partial_message)
                 .await
             {
                 log::info!("Error submitting tx: {:?}", e);
@@ -550,11 +568,12 @@ impl AttestationClient {
         block: &BlockT<PolkadotConfig, OnlineClient<SxtConfig>>,
         private_key: &SigningKey,
         signature: EthereumSignature,
-        state_root: Vec<u8>,
+        partial_message: Vec<u8>,
     ) -> Result<(), AttestationError> {
         let header = block.header();
 
-        let attestation = create_attestation(header, private_key, signature, state_root.clone())?;
+        let attestation =
+            create_attestation(header, private_key, signature, partial_message.clone())?;
 
         let tx = runtime::api::tx()
             .attestations()

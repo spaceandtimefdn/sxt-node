@@ -287,21 +287,45 @@ fn slice_to_scalar(slice: &[u8]) -> Option<[u8; 32]> {
     slice.try_into().ok()
 }
 
+/// Domain for signing of attestation messages to avoid confusion between attestations.
+#[derive(
+    Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Serialize,
+)]
+pub enum AttestationDomain {
+    /// For attestations to the commitments merkle tree.
+    TableCommitments,
+}
+
+/// Returns a concatenated encoding of the domain (or lack thereof) and state root for use in
+/// attestation messages.
+pub fn encode_domain_and_state_root(
+    domain: Option<AttestationDomain>,
+    state_root: [u8; 32],
+) -> Vec<u8> {
+    let encoded_domain = domain.as_ref().map(Encode::encode);
+
+    encoded_domain
+        .into_iter()
+        .flatten()
+        .chain(state_root)
+        .collect()
+}
+
 /// Creates an attestation message by concatenating the state root and block number.
 ///
 /// # Arguments
-/// * `state_root` - A reference to the state root, typically a cryptographic hash.
+/// * `partial_message` - A reference to the encoded object being attested, typically a domain
+///   specifier and hash
 /// * `block_number` - The block number associated with this attestation.
 ///
 /// # Returns
 /// A `Vec<u8>` containing the serialized attestation message.
-///
 pub fn create_attestation_message<BN: Into<u64>>(
-    state_root: impl AsRef<[u8]>,
+    partial_message: impl AsRef<[u8]>,
     block_number: BN,
 ) -> Vec<u8> {
-    let mut msg = Vec::with_capacity(state_root.as_ref().len() + core::mem::size_of::<u64>());
-    msg.extend_from_slice(state_root.as_ref());
+    let mut msg = Vec::with_capacity(partial_message.as_ref().len() + core::mem::size_of::<u64>());
+    msg.extend_from_slice(partial_message.as_ref());
     msg.extend_from_slice(&block_number.into().to_be_bytes());
     msg
 }
@@ -489,5 +513,16 @@ mod tests {
         let actual = claimed_unstake_attestation_leaf(&claimed_unstake, &contract_info);
 
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn we_can_encode_domained_state_root() {
+        assert_eq!(encode_domain_and_state_root(None, [1; 32]), vec![1; 32]);
+        assert_eq!(
+            encode_domain_and_state_root(Some(AttestationDomain::TableCommitments), [2; 32]),
+            std::iter::once(0)
+                .chain(std::iter::repeat_n(2, 32))
+                .collect::<Vec<_>>(),
+        );
     }
 }
