@@ -114,6 +114,22 @@ fn update_contract_address_works() {
 }
 
 #[test]
+fn update_compute_credit_address_rejects_all_zero_address() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let sender = RawOrigin::Root;
+        let all_zero_address = ByteString::try_from(vec![0u8; 20]).unwrap();
+
+        // Attempting to set the all-zero address should fail with ContractAddressError
+        let result =
+            crate::Pallet::<Test>::update_compute_credit_address(sender.into(), all_zero_address);
+
+        assert_err!(result, crate::Error::<Test>::ContractAddressError);
+    })
+}
+
+#[test]
 fn buying_compute_credits_works() {
     new_test_ext().execute_with(|| {
         let test_amount = 100_000;
