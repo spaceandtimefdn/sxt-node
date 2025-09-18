@@ -236,9 +236,67 @@ proptest = { version = "1.7.0", default-features = false }
 proptest-derive = { version = "0.6.0", default-features = false }
 blake3 = { version = "1.6.1", default-features = false }
 
-[workspace.lints]
-rust.missing_docs = "warn"
-clippy.missing_docs_in_private_items = "warn"
+# NOTE: most, if not all, of these allows should be removed.
+# These are simply added to stop the bleeding. Please don't add more.
+# Write good code instead.
+
+[workspace.lints.rust]
+missing_docs = "warn"
+unused_imports = "allow"
+dead_code = "allow"
+unused_variables = "allow"
+unused_must_use = "allow"
+unused_mut = "allow"
+deprecated = "allow"
+unused_parens = "allow"
+non_local_definitions = "allow"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+missing_docs_in_private_items = "allow"
+cast_possible_truncation = "allow"
+cast_lossless = "allow"
+cast_possible_wrap = "allow"
+cast_precision_loss = "allow"
+cloned_instead_of_copied = "allow"
+default_trait_access = "allow"
+doc_markdown = "allow"
+enum_glob_use = "allow"
+explicit_iter_loop = "allow"
+flat_map_option = "allow"
+from_iter_instead_of_collect = "allow"
+if_not_else = "allow"
+ignored_unit_patterns = "allow"
+implicit_clone = "allow"
+implicit_hasher = "allow"
+inconsistent_struct_constructor = "allow"
+items_after_statements = "allow"
+manual_let_else = "allow"
+manual_string_new = "allow"
+map_unwrap_or = "allow"
+match_same_arms = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+needless_for_each = "allow"
+needless_pass_by_value = "allow"
+needless_raw_string_hashes = "allow"
+range_plus_one = "allow"
+redundant_closure_for_method_calls = "allow"
+redundant_else = "allow"
+return_self_not_must_use = "allow"
+semicolon_if_nothing_returned = "allow"
+single_match_else = "allow"
+struct_field_names = "allow"
+too_many_lines = "allow"
+trivially_copy_pass_by_ref = "allow"
+uninlined_format_args = "allow"
+unnecessary_literal_bound = "allow"
+unnecessary_wraps = "allow"
+unreadable_literal = "allow"
+unused_async = "allow"
+used_underscore_binding = "allow"
+wildcard_imports = "allow"
 
 [patch.crates-io]
 # patch for sqlparser no_std compatibility with the serde feature enabled.
