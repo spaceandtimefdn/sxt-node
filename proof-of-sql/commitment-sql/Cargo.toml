@@ -31,8 +31,8 @@ sxt-core = { workspace = true, features = ["std"] }
 
 [features]
 std = ["sxt-core/std"]
-cpu-perf = ["std", "dep:rayon", "proof-of-sql/cpu-perf"]
 proptest = ["std", "dep:proptest", "proof-of-sql-commitment-map/substrate"]
+cpu-perf = ["std", "dep:rayon"]
 
 [lints]
 workspace = true

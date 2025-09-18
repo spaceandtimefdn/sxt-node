@@ -17,6 +17,10 @@ serde = { workspace = true, features = ["alloc"] }
 snafu.workspace = true
 sqlparser = { workspace = true }
 proptest = { workspace = true, features = ["std"], optional = true }
+blake3 = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true, features = ["std"] }
 
 [features]
 std = []

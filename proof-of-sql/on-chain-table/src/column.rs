@@ -115,7 +115,7 @@ impl OnChainColumn {
             OnChainColumn::VarChar(strings) => Ok(CommittableColumn::VarChar(
                 strings
                     .iter()
-                    .map(Into::<S>::into)
+                    .map(string_to_scalar_posql_0_99::<S>)
                     .map(Into::<[u64; 4]>::into)
                     .collect(),
             )),
@@ -145,6 +145,31 @@ impl OnChainColumn {
     }
 }
 
+fn bytes_to_limbs_le(b: [u8; 32]) -> [u64; 4] {
+    core::array::from_fn(|i| u64::from_le_bytes(core::array::from_fn(|j| b[i * 8 + j])))
+}
+
+/// Before proof-of-sql `0.100`, strings were committed to via blake2 hash. After `0.100`, they use
+/// keccack hashes instead to make evm verification easier. The chain has committed to varchar
+/// columns with pre-`0.100` protocols in the past, so in order to preserve backwards
+/// compatibility of existing interfaces, we need to be able to compute commitments in the same way
+/// we used to.
+fn string_to_scalar_posql_0_99<S: Scalar>(string: impl AsRef<str>) -> S {
+    let x = string.as_ref().as_bytes();
+
+    if x.is_empty() {
+        return S::zero();
+    }
+
+    let hash = blake3::hash(x);
+
+    let mut bytes: [u8; 32] = hash.into();
+
+    bytes[31] &= 0b0000_1111_u8;
+
+    S::from_wrapping(bytes_to_limbs_le(bytes).into())
+}
+
 #[cfg(test)]
 mod tests {
     use alloc::vec;
@@ -152,6 +177,7 @@ mod tests {
     use proof_of_sql::base::database::OwnedColumn;
     use proof_of_sql::proof_primitive::dory::DoryScalar;
     use proof_of_sql::proof_primitive::hyperkzg::BNScalar;
+    use proptest::prelude::*;
 
     use super::*;
 
@@ -357,7 +383,9 @@ mod tests {
         let data = ["lorem", "ipsum", "dolor"].map(String::from).to_vec();
         let on_chain_varchar_column = OnChainColumn::VarChar(data.clone());
         let owned_varchar_column = OwnedColumn::<S>::VarChar(data);
-        assert_eq!(
+        // For the time being, we do not commit to varchar columns the same way as proof-of-sql for
+        // backwards compatibility purposes
+        assert_ne!(
             on_chain_varchar_column
                 .try_to_committable_column::<S>()
                 .unwrap(),
@@ -438,5 +466,18 @@ mod tests {
     #[test]
     fn we_cannot_convert_out_of_bounds_on_chain_column_to_hyper_kzg_committable_column() {
         we_cannot_convert_out_of_bounds_on_chain_column_to_committable_column::<BNScalar>()
+    }
+
+    proptest! {
+        #[test]
+        fn bytes_to_limbs_does_not_panic(bytes in proptest::array::uniform::<_, 32>(any::<u8>())) {
+            let _does_not_panic = bytes_to_limbs_le(bytes);
+        }
+
+        #[test]
+        fn string_to_scalar_posql_0_99_does_not_panic(string in ".{0,256}") {
+            let _does_not_panic = string_to_scalar_posql_0_99::<DoryScalar>(&string);
+            let _does_not_panic = string_to_scalar_posql_0_99::<BNScalar>(&string);
+        }
     }
 }

@@ -1886,15 +1886,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ascii-canvas"
-version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef1e3e699d84ab1b0911a1010c5c106aa34ae89aeac103be5ce0c3859db1e891"
-dependencies = [
- "term",
-]
-
-[[package]]
 name = "asn1-rs"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4620,7 +4611,7 @@ dependencies = [
  "itertools 0.12.1",
  "log",
  "paste",
- "petgraph 0.6.5",
+ "petgraph",
  "regex",
 ]
 
@@ -5122,15 +5113,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
-name = "ena"
-version = "0.14.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d248bdd43ce613d87415282f69b9bb99d947d290b10962dd6c56233312c2ad5"
-dependencies = [
- "log",
-]
-
-[[package]]
 name = "encode_unicode"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5312,7 +5294,7 @@ dependencies = [
  "colored",
  "csv",
  "hex",
- "petgraph 0.6.5",
+ "petgraph",
  "rust-crypto",
  "structopt",
 ]
@@ -5594,12 +5576,6 @@ name = "fixedbitset"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
-
-[[package]]
-name = "fixedbitset"
-version = "0.5.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d674e81391d1e1ab681a28d99df07927c6d4aa5b027d7da16ba32d1d21ecd99"
 
 [[package]]
 name = "flatbuffers"
@@ -6417,6 +6393,46 @@ dependencies = [
  "cfg-if",
  "crunchy",
  "num-traits",
+]
+
+[[package]]
+name = "halo2curves"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b756596082144af6e57105a20403b7b80fe9dccd085700b74fae3af523b74dba"
+dependencies = [
+ "blake2 0.10.6",
+ "digest 0.10.7",
+ "ff",
+ "group",
+ "halo2derive",
+ "lazy_static",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "pairing",
+ "paste",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "rayon",
+ "sha2 0.10.8",
+ "static_assertions",
+ "subtle 2.6.1",
+ "unroll",
+]
+
+[[package]]
+name = "halo2derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bdb99e7492b4f5ff469d238db464131b86c2eaac814a78715acba369f64d2c76"
+dependencies = [
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -7567,38 +7583,6 @@ dependencies = [
  "regex",
  "rocksdb",
  "smallvec",
-]
-
-[[package]]
-name = "lalrpop"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7047a26de42016abf8f181b46b398aef0b77ad46711df41847f6ed869a2a1d5b"
-dependencies = [
- "ascii-canvas",
- "bit-set",
- "ena",
- "itertools 0.14.0",
- "lalrpop-util",
- "petgraph 0.7.1",
- "pico-args",
- "regex",
- "regex-syntax 0.8.5",
- "sha3",
- "string_cache",
- "term",
- "unicode-xid",
- "walkdir",
-]
-
-[[package]]
-name = "lalrpop-util"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8d05b3fe34b8bd562c338db725dfa9beb9451a48f65f129ccb9538b48d2c93b"
-dependencies = [
- "regex-automata 0.4.9",
- "rustversion",
 ]
 
 [[package]]
@@ -9084,12 +9068,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "new_debug_unreachable"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
-
-[[package]]
 name = "nix"
 version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9432,6 +9410,7 @@ version = "0.1.0"
 dependencies = [
  "ahash 0.8.11",
  "arrow 54.2.1",
+ "blake3",
  "indexmap 2.8.0",
  "primitive-types 0.12.2",
  "proof-of-sql",
@@ -9524,6 +9503,15 @@ name = "overload"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
+
+[[package]]
+name = "pairing"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81fec4625e73cf41ef4bb6846cafa6d44736525f442ba45e407c4a000a13996f"
+dependencies = [
+ "group",
+]
 
 [[package]]
 name = "pallet-alliance"
@@ -12113,17 +12101,7 @@ version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
- "fixedbitset 0.4.2",
- "indexmap 2.8.0",
-]
-
-[[package]]
-name = "petgraph"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3672b37090dbd86368a4145bc067582552b29c27377cad4e0a306c97f9bd7772"
-dependencies = [
- "fixedbitset 0.5.7",
+ "fixedbitset",
  "indexmap 2.8.0",
 ]
 
@@ -12174,12 +12152,6 @@ checksum = "67eabc2ef2a60eb7faa00097bd1ffdb5bd28e62bf39990626a582201b7a754e5"
 dependencies = [
  "siphasher 1.0.1",
 ]
-
-[[package]]
-name = "pico-args"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5be167a7af36ee22fe3115051bc51f6e6c7054c9348e28deb4f49bd6f705a315"
 
 [[package]]
 name = "pin-project"
@@ -12950,12 +12922,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "precomputed-hash"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "925383efa346730478fb4838dbe9137d2a47675ad789c546d150a6e1dd4ab31c"
-
-[[package]]
 name = "predicates"
 version = "2.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13207,9 +13173,9 @@ dependencies = [
 
 [[package]]
 name = "proof-of-sql"
-version = "0.99.3"
+version = "0.121.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee2bf1a51c5572d108ffa38f31c16d6f980062481049180f4dbf81ae17310604"
+checksum = "48267eeff3bae538a1bc10bb696550c0ff9f12228dbb007e9c9d1efa22dcf80d"
 dependencies = [
  "ahash 0.8.11",
  "ark-bls12-381 0.5.0",
@@ -13224,7 +13190,6 @@ dependencies = [
  "bigdecimal",
  "bincode 2.0.0",
  "bit-iter",
- "blake3",
  "bnum",
  "bumpalo",
  "byte-slice-cast",
@@ -13233,12 +13198,12 @@ dependencies = [
  "curve25519-dalek",
  "derive_more 0.99.19",
  "enum_dispatch",
+ "halo2curves",
  "indexmap 2.8.0",
  "itertools 0.13.0",
  "num-bigint",
  "num-traits",
  "postcard",
- "proof-of-sql-parser",
  "rand 0.8.5",
  "rayon",
  "serde",
@@ -13277,33 +13242,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "proof-of-sql-parser"
-version = "0.99.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b4f527a70b1f94a0c05a7fcdae00ac841e1dd501cc6ad7a64c2587664a92258"
-dependencies = [
- "arrayvec 0.7.6",
- "bigdecimal",
- "chrono",
- "lalrpop",
- "lalrpop-util",
- "serde",
- "snafu 0.8.5",
- "sqlparser",
-]
-
-[[package]]
 name = "proof-of-sql-planner"
-version = "0.99.3"
+version = "0.121.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab2b58418cb80a1b048e2e7710c51a2b09b36fc17444e8f4ba4ffb29e5d2f468"
+checksum = "2f9af8ee38581e61a4fd2f443cfbd002347a8bd89cb861ee4060bf93cc813338"
 dependencies = [
  "ahash 0.8.11",
  "arrow 51.0.0",
+ "clap 4.5.32",
  "datafusion",
  "getrandom 0.2.15",
  "indexmap 2.8.0",
+ "postcard",
  "proof-of-sql",
+ "rand 0.8.5",
  "serde",
  "snafu 0.8.5",
  "sqlparser",
@@ -13407,7 +13359,7 @@ dependencies = [
  "lazy_static",
  "log",
  "multimap 0.8.3",
- "petgraph 0.6.5",
+ "petgraph",
  "prettyplease 0.1.25",
  "prost 0.11.9",
  "prost-types 0.11.9",
@@ -13429,7 +13381,7 @@ dependencies = [
  "log",
  "multimap 0.10.0",
  "once_cell",
- "petgraph 0.6.5",
+ "petgraph",
  "prettyplease 0.2.30",
  "prost 0.12.6",
  "prost-types 0.12.6",
@@ -13833,9 +13785,9 @@ checksum = "60a357793950651c4ed0f3f52338f53b2f809f32d83a07f72909fa13e4c6c1e3"
 
 [[package]]
 name = "rayon"
-version = "1.10.0"
+version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b418a60154510ca1a002a752ca9714984e21e4241e804d32555251faf8b78ffa"
+checksum = "368f01d005bf8fd9b1206fb6fa653e6c4a81ceb1466406b81792d87c5677a58f"
 dependencies = [
  "either",
  "rayon-core",
@@ -13843,9 +13795,9 @@ dependencies = [
 
 [[package]]
 name = "rayon-core"
-version = "1.12.1"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
+checksum = "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
@@ -18069,18 +18021,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "string_cache"
-version = "0.8.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "938d512196766101d333398efde81bc1f37b00cb42c2f8350e5df639f040bbbe"
-dependencies = [
- "new_debug_unreachable",
- "parking_lot 0.12.3",
- "phf_shared",
- "precomputed-hash",
-]
-
-[[package]]
 name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -18820,16 +18760,6 @@ dependencies = [
  "once_cell",
  "rustix 0.38.44",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "term"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3bb6001afcea98122260987f8b7b5da969ecad46dbf0b5453702f776b491a41"
-dependencies = [
- "home",
- "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -19636,6 +19566,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "unroll"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ad948c1cb799b1a70f836077721a92a35ac177d4daddf4c20a633786d4cf618"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "unsigned-varint"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -19766,12 +19706,11 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.15.1"
+version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0f540e3240398cce6128b64ba83fdbdd86129c16a3aa1a3a252efd66eb3d587"
+checksum = "b3758f5e68192bb96cc8f9b7e2c2cfdabb435499a28499a42f8f984092adad4b"
 dependencies = [
- "getrandom 0.3.1",
- "js-sys",
+ "getrandom 0.2.15",
  "wasm-bindgen",
 ]
 

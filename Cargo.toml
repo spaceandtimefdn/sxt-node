@@ -90,8 +90,8 @@ lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
 on-chain-table = { path = "./proof-of-sql/on-chain-table/", default-features = false }
 postcard = { version = "1.0.10", default-features = false }
 primitive-types = { version = "0.12.2", default-features = false }
-proof-of-sql = { version = "0.99.0", default-features = false }
-proof-of-sql-planner = { version = "0.99.0", default-features = false }
+proof-of-sql = { version = "0.121.1", default-features = false }
+proof-of-sql-planner = { version = "0.121.1", default-features = false }
 proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default-features = false }
 commitment-column-mapping = { path = "./proof-of-sql/commitment-column-mapping/", default-features = false }
 proof-of-sql-static-setups = { path = "./proof-of-sql/static-setups/", default-features = false }
@@ -234,6 +234,7 @@ regex = { version = "1.11.1", default-features = false }
 prometheus = "0.14.0"
 proptest = { version = "1.7.0", default-features = false }
 proptest-derive = { version = "0.6.0", default-features = false }
+blake3 = { version = "1.6.1", default-features = false }
 
 [workspace.lints]
 rust.missing_docs = "warn"

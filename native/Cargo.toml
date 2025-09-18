@@ -52,11 +52,14 @@ std = [
     "dep:proof-of-sql-static-setups",
     "dep:tonic",
     "dep:futures",
+    "dep:proof-of-sql",
     "sp-runtime/std",
     "frame-support/std",
     "frame-system/std",
     "sp-core/std",
-    "proof-of-sql/cpu-perf",
     "sxt-core/std",
 ]
 generate_backwards_compatibility_cases = ["std", "dep:proptest", "dep:hex", "sxt-core/proptest", "proof-of-sql-commitment-map/proptest", "commitment-sql/proptest", "dep:proof-of-sql", "dep:clap"]
+
+[target.'cfg(target_arch = "x84_64")'.dependencies]
+proof-of-sql = { workspace = true, optional = true, features = ["cpu-perf"] }

@@ -337,8 +337,8 @@ mod tests {
         let bigint_id = Ident::new("BIGINT_COL");
         let bigint_data = vec![-10, 0, 3];
 
-        let varchar_id = Ident::new("VARCHAR_COL");
-        let varchar_data = ["lorem", "ipsum", "dolor"].map(String::from).to_vec();
+        let varbinary_id = Ident::new("VARBINARY_COL");
+        let varbinary_data = [b"lorem", b"ipsum", b"dolor"].map(Vec::from).to_vec();
 
         let on_chain_data = [
             (
@@ -346,15 +346,15 @@ mod tests {
                 OnChainColumn::BigInt(bigint_data.clone()),
             ),
             (
-                varchar_id.clone(),
-                OnChainColumn::VarChar(varchar_data.clone()),
+                varbinary_id.clone(),
+                OnChainColumn::VarBinary(varbinary_data.clone()),
             ),
         ];
         let on_chain_table = OnChainTable::try_from_iter(on_chain_data.clone()).unwrap();
 
         let owned_table_data = [
             (bigint_id, OwnedColumn::<S>::BigInt(bigint_data)),
-            (varchar_id, OwnedColumn::<S>::VarChar(varchar_data)),
+            (varbinary_id, OwnedColumn::<S>::VarBinary(varbinary_data)),
         ];
         let owned_table = OwnedTable::<S>::try_from_iter(owned_table_data).unwrap();
 
