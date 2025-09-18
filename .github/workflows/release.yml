@@ -73,6 +73,8 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
           ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          fetch-tags: true
       - uses: jfrog/setup-jfrog-cli@v4
         env:
           JF_URL: https://${{ secrets.REGISTRY_URL }}
@@ -87,9 +89,23 @@ jobs:
         run: |-
           set -eux
           cargo build --locked --release
+          b2sum -l 256 target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm
           jf rt u --flat target/release/sxt-node sxtnode-generic-local/sxt-node/$VERSION/;
           jf rt u --flat target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm sxtnode-generic-local/sxt-node/$VERSION/;
         timeout-minutes: 90
+      
+      - name: Compute / Print hashes
+        if: ${{ !contains(matrix.os, 'macos') }}
+        run: |
+          echo "Recent Git Commits:"
+          git log --pretty=format:"%H %d %s" $(git describe --tags --abbrev=0)^..HEAD
+          echo "Runtime Code Hash:"
+          b2sum -l 256 target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm
+          echo "Sudo Call Data:"
+          cat <(echo -n "0x16000009") <(b2sum -l 256 target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm)
+          echo "Call Hash:"
+          cat <(echo -n "16000009") <(b2sum -l 256 target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm) | xxd -r -p | b2sum -l 256
+
       - uses: actions/upload-artifact@v4
         with:
           name: artifact_sxtnode
