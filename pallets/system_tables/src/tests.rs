@@ -1052,3 +1052,19 @@ fn test_funded_message_funds_account() {
         );
     });
 }
+
+#[test]
+fn we_can_get_account_id_from_str_for_20_byte_address() {
+    let address20 = "0x1234567890123456789012345678901234567890";
+    let address32 = "0x0000000000000000000000001234567890123456789012345678901234567890";
+    let parsed_address20 = account_id_from_str::<Test>(address20).unwrap();
+    let parsed_address32 = account_id_from_str::<Test>(address32).unwrap();
+    let expected_parsed_address = AccountId32::new(
+        hex::decode("0000000000000000000000001234567890123456789012345678901234567890")
+            .unwrap()
+            .try_into()
+            .unwrap(),
+    );
+    assert_eq!(parsed_address20, parsed_address32);
+    assert_eq!(parsed_address20, expected_parsed_address);
+}
