@@ -1,3 +1,12 @@
+## [1.29.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.1...v1.29.2) (2025-09-19)
+
+
+### Bug Fixes
+
+* validate env variables in `node/src/chain_spec.rs` ([903fdf1](https://github.com/spaceandtimefdn/sxt-node/commit/903fdf17540ba0db8cef730aa36ab6d631635d53))
+
+
+
 ## [1.29.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.0...v1.29.1) (2025-09-19)
 
 
@@ -34,15 +43,6 @@
 ### Bug Fixes
 
 * disallow zero address in `update_compute_credit_address` in `zkpay` pallet ([0f3203c](https://github.com/spaceandtimefdn/sxt-node/commit/0f3203c85bdc1102807a8df050b97747e276138e))
-
-
-
-## [1.28.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.1...v1.28.2) (2025-09-19)
-
-
-### Bug Fixes
-
-* disallow double submission and prioritize privileged quorum in `indexing::submit_data_inner` ([2946c00](https://github.com/spaceandtimefdn/sxt-node/commit/2946c00cc97c5ae56f49d14138f16faf86f6cc70))
 
 
 
