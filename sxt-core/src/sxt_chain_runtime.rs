@@ -28385,7 +28385,7 @@ pub mod api {
                     #[doc = "There was a missing field in the record batch we tried to parse"]
                     MissingExpectedField,
                     #[codec(index = 1)]
-                    #[doc = "The contract address supplied was not a 20 byte address"]
+                    #[doc = "The contract address supplied was not a 20 byte address or was the all-zero address"]
                     ContractAddressError,
                     #[codec(index = 2)]
                     #[doc = "An account id provided was invalid"]
