@@ -12,17 +12,6 @@
 /// processing them in real time, and integrating with custom event processors.
 pub mod chain_listener;
 
-/// The `event_forwarder` module is responsible for processing attestations and forwarding them
-/// to an Ethereum smart contract, ensuring the integrity of staking and Merkle tree proofs.
-pub mod event_forwarder;
-
-/// The event forwarder contract built with sol apis.
-pub mod event_forwarder_contract;
-
-/// The `kitchen_sink` module serves as an integration testing suite, ensuring that blockchain events
-/// are properly processed and forwarded in a full end-to-end setup.
-pub mod kitchen_sink;
-
 /// The `block_processing` module provides utilities for extracting, validating,
 /// and processing blockchain events from finalized blocks.
 ///

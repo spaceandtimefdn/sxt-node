@@ -14,9 +14,6 @@ pub use prefix_foliate::{
 mod commitment_map_prefix_foliate;
 pub use commitment_map_prefix_foliate::CommitmentMapPrefixFoliate;
 
-mod locks_staking_prefix_foliate;
-pub use locks_staking_prefix_foliate::{LocksStakingPrefixFoliate, STAKING_BALANCE_LOCK_ID};
-
 mod attestation_tree;
 pub use attestation_tree::{
     attestation_tree_from_prefixes,

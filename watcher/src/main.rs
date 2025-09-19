@@ -5,11 +5,12 @@ use std::io::{self, Read};
 use ::sxt_core::attestation::sign_eth_message;
 use attestation_tree::attestation_tree_from_prefixes;
 use clap::{Parser, Subcommand};
+use codec::{Decode, Encode};
 use crossterm::event::{read, Event, KeyCode};
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use env_logger::Env;
-use futures::StreamExt;
+use futures::stream::StreamExt;
 use hex::FromHex;
 use k256::ecdsa::SigningKey;
 use log::{error, info};
@@ -20,6 +21,8 @@ use ratatui::widgets::{Block, Borders, List, ListItem};
 use ratatui::Terminal;
 use runtime::api::runtime_types::sxt_core::attestation::Attestation;
 use sha3::digest::generic_array::GenericArray;
+use sp_core::crypto::AccountId32;
+use sp_core::keccak_256;
 use subxt::blocks::Block as BlockT;
 use subxt::config::substrate::{BlakeTwo256, SubstrateHeader};
 use subxt::config::Header;
@@ -28,13 +31,18 @@ use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
 use sxt_core::attestation::{
+    claimed_unstake_attestation_leaf,
     create_attestation_message,
+    encode_domain_and_state_root,
     verify_eth_signature,
+    AttestationDomain,
     EthereumSignature,
     RegisterExternalAddress,
 };
 use sxt_core::sxt_chain_runtime as runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
+use sxt_core::system_contracts::ContractInfo;
+use sxt_core::system_tables::ClaimedUnstake;
 use sxt_runtime::Runtime;
 use thiserror::Error;
 use tokio::sync::{mpsc, watch};
@@ -441,8 +449,8 @@ impl AttestationClient {
 
         info!("Processing block {:?}", block.number());
 
-        let (commitments, locks, contract_info) =
-            match attestation::fetch::commitments_and_locks_and_staking_contract_info(
+        let (commitments, contract_info, claimed_unstakes) =
+            match attestation::fetch::commitments_and_staking_contract_info_and_claimed_unstakes(
                 &self.api,
                 block.hash(),
             )
@@ -455,11 +463,7 @@ impl AttestationClient {
                 }
             };
 
-        let tree = match attestation_tree_from_prefixes::<_, _, Runtime>(
-            commitments,
-            locks,
-            contract_info,
-        ) {
+        let tree = match attestation_tree_from_prefixes::<_, Runtime>(commitments) {
             Ok(result) => result,
             Err(e) => {
                 log::error!("Error creating attestation tree: {}", e);
@@ -478,7 +482,18 @@ impl AttestationClient {
         let hex_decoded_state_root =
             hex::decode(state_root.data.clone()).expect("could not decode for msg creation");
 
-        let message = create_attestation_message(&hex_decoded_state_root, block.number());
+        let Ok(fixed_size_state_root) = <[u8; 32]>::try_from(hex_decoded_state_root)
+            .inspect_err(|e| log::error!("Error: computed commitments state root not 32 bytes"))
+        else {
+            return Ok(());
+        };
+
+        let partial_message = encode_domain_and_state_root(
+            Some(AttestationDomain::TableCommitments),
+            fixed_size_state_root,
+        );
+
+        let message = create_attestation_message(&partial_message, block.number());
 
         let signature = match generate_signature(private_key, &message) {
             Ok(sig) => sig,
@@ -488,26 +503,77 @@ impl AttestationClient {
             }
         };
 
-        if let Err(e) = self
-            .submit_transaction_with_retry(block, private_key, signature, hex_decoded_state_root)
-            .await
-        {
-            log::info!("Error submitting tx: {:?}", e);
-        }
+        // claimed_unstakes are currently the subxt type, not the core type.
+        let Ok(claimed_unstakes) = Vec::<ClaimedUnstake<AccountId32, u32, u128>>::decode(
+            &mut claimed_unstakes.encode().as_slice(),
+        )
+        .inspect_err(|e| log::error!("Error convering subxt ClaimedUnstake to core: {}", e)) else {
+            return Ok(());
+        };
+
+        let Ok(contract_info) =
+            ContractInfo::decode(&mut contract_info.as_slice()).inspect_err(|e| {
+                log::error!("Error convering stored contract info to core typ: {}", e)
+            })
+        else {
+            return Ok(());
+        };
+
+        let Ok(claimed_unstake_signatures_and_roots) = claimed_unstakes
+            .into_iter()
+            .map(|claimed_unstake| {
+                let root_hash = keccak_256(&keccak_256(&claimed_unstake_attestation_leaf(
+                    &claimed_unstake,
+                    &contract_info,
+                )));
+
+                // Should be a noop, but the consistency is nice
+                let partial_message = encode_domain_and_state_root(None, root_hash);
+
+                let message = create_attestation_message(
+                    partial_message.clone(),
+                    claimed_unstake.claim_block_number,
+                );
+
+                let signature = generate_signature(private_key, &message)?;
+
+                Ok((signature, partial_message))
+            })
+            .collect::<Result<Vec<_>, AttestationError>>()
+            .inspect_err(|e| log::error!("Error generating signature: {}", e))
+        else {
+            return Ok(());
+        };
+
+        let block = &block;
+        futures::stream::iter(
+            std::iter::once((signature, partial_message))
+                .chain(claimed_unstake_signatures_and_roots),
+        )
+        .for_each(|(signature, partial_message)| async move {
+            if let Err(e) = self
+                .submit_transaction_with_retry(block, private_key, signature, partial_message)
+                .await
+            {
+                log::info!("Error submitting tx: {:?}", e);
+            };
+        })
+        .await;
 
         Ok(())
     }
 
     async fn submit_transaction_with_retry(
         &self,
-        block: BlockT<PolkadotConfig, OnlineClient<SxtConfig>>,
+        block: &BlockT<PolkadotConfig, OnlineClient<SxtConfig>>,
         private_key: &SigningKey,
         signature: EthereumSignature,
-        state_root: Vec<u8>,
+        partial_message: Vec<u8>,
     ) -> Result<(), AttestationError> {
         let header = block.header();
 
-        let attestation = create_attestation(header, private_key, signature, state_root.clone())?;
+        let attestation =
+            create_attestation(header, private_key, signature, partial_message.clone())?;
 
         let tx = runtime::api::tx()
             .attestations()
