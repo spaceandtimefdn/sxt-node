@@ -1,3 +1,12 @@
+## [1.28.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.1...v1.28.2) (2025-09-19)
+
+
+### Bug Fixes
+
+* disallow double submission and prioritize privileged quorum in `indexing::submit_data_inner` ([2946c00](https://github.com/spaceandtimefdn/sxt-node/commit/2946c00cc97c5ae56f49d14138f16faf86f6cc70))
+
+
+
 ## [1.28.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.0...v1.28.1) (2025-09-19)
 
 
@@ -43,15 +52,6 @@
 ### Bug Fixes
 
 * Fix Canary Logs ([ae29d9c](https://github.com/spaceandtimefdn/sxt-node/commit/ae29d9c5b8b356c7c892c088e76c23735d28cfbb))
-
-
-
-## [1.26.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.2...v1.26.3) (2025-09-17)
-
-
-### Bug Fixes
-
-* remove `system_tables::MessageNonce` for being unused ([1a8dea5](https://github.com/spaceandtimefdn/sxt-node/commit/1a8dea5aaa9ca4b6849b30bb626ff07ba2605833))
 
 
 
