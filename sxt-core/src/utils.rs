@@ -23,6 +23,19 @@ pub fn parse_address_list_json<T: frame_system::Config>(input: &str) -> AddressL
     Ok(results)
 }
 
+fn try_get_account_from_20_byte_vec<T: frame_system::Config>(
+    addr_as_bytes: Vec<u8>,
+) -> Result<T::AccountId, DispatchError> {
+    let raw_addr: [u8; 20] = addr_as_bytes
+        .try_into()
+        .map_err(|_| "Expected 20-byte Ethereum address")?;
+
+    // Pad a 32-byte array with zeros on the left, copy the 20 bytes at the end.
+    let mut data = [0u8; 32];
+    data[12..32].copy_from_slice(&raw_addr);
+    convert_account_id::<T>(sp_runtime::AccountId32::from(data))
+}
+
 /// Build a substrate account id from a hex encoded string
 pub fn account_id_from_str<T: frame_system::Config>(
     addr: &str,
@@ -52,14 +65,7 @@ pub fn eth_address_to_substrate_account_id<T: frame_system::Config>(
     let hex_str = eth_addr_hex.trim_start_matches("0x");
     let raw_bytes = hex::decode(hex_str).map_err(|_| "Invalid hex address")?;
 
-    let raw_addr: [u8; 20] = raw_bytes
-        .try_into()
-        .map_err(|_| "Expected 20-byte Ethereum address")?;
-
-    // Pad a 32-byte array with zeros on the left, copy the 20 bytes at the end.
-    let mut data = [0u8; 32];
-    data[12..32].copy_from_slice(&raw_addr);
-    convert_account_id::<T>(sp_runtime::AccountId32::from(data))
+    try_get_account_from_20_byte_vec::<T>(raw_bytes)
 }
 
 /// Convert the supplied AccountId32 to the runtime's AccountId type
