@@ -661,7 +661,9 @@ pub mod pallet {
         ) -> DispatchResult {
             let mut identifiers = Identifiers::<T>::get(&table_type);
 
-            identifiers.try_push(ident.clone());
+            identifiers
+                .try_push(ident.clone())
+                .map_err(|_| Error::<T>::BoundedVecError)?;
             Identifiers::<T>::insert(&table_type, identifiers);
 
             let TableIdentifier { name, namespace } = ident.clone();
