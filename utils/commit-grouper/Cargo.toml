@@ -13,7 +13,7 @@ proof-of-sql-commitment-map = { workspace = true, features=["substrate"]}
 frame-support = { workspace = true }
 postcard = "1.0"
 sxt-core = { workspace = true, default-features = false, features=["std"]}
-codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
+codec = { workspace = true, default-features = false, features = [
     "derive",
     "std",
 ] }

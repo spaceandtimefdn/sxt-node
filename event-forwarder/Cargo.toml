@@ -20,7 +20,7 @@ sxt-core = { workspace = true, features = ["std"] }
 sxt-runtime = { workspace = true, features = ["std"] }
 hex = { workspace = true }
 sp-core = { workspace = true, features = ["std"] }
-codec = { workspace = true, package = "parity-scale-codec", default-features = false, features = ["derive", "std"] }
+codec = { workspace = true, default-features = false, features = ["derive", "std"] }
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
 anyhow = { workspace = true }
 k256 = { workspace = true, features = ["ecdsa"] }
