@@ -1,3 +1,12 @@
+## [1.28.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.2...v1.28.3) (2025-09-19)
+
+
+### Bug Fixes
+
+* disallow zero address in `update_compute_credit_address` in `zkpay` pallet ([0f3203c](https://github.com/spaceandtimefdn/sxt-node/commit/0f3203c85bdc1102807a8df050b97747e276138e))
+
+
+
 ## [1.28.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.1...v1.28.2) (2025-09-19)
 
 
@@ -43,15 +52,6 @@
 * increment runtime spec_version to 235 ([771da65](https://github.com/spaceandtimefdn/sxt-node/commit/771da65cd3965099b99de3dc8d236144d867d9fd))
 * regenerate subxt file for runtime 235 ([6beb831](https://github.com/spaceandtimefdn/sxt-node/commit/6beb8316873f13ae57945878c77df154bbd026d5))
 * track unstakes that have been claimed via system tables pallet ([0380d30](https://github.com/spaceandtimefdn/sxt-node/commit/0380d30ca9ab9757bbf97fc77073a8706f351a0c))
-
-
-
-## [1.26.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.3...v1.26.4) (2025-09-17)
-
-
-### Bug Fixes
-
-* Fix Canary Logs ([ae29d9c](https://github.com/spaceandtimefdn/sxt-node/commit/ae29d9c5b8b356c7c892c088e76c23735d28cfbb))
 
 
 
