@@ -199,11 +199,6 @@ pub mod pallet {
 
                     let mut attestations_for_block = Attestations::<T>::get(block_number);
 
-                    Self::must_not_have_submitted_attestation(
-                        &attestations_for_block,
-                        &attestor_pub_key,
-                    )?;
-
                     attestations_for_block
                         .try_push(attestation.clone())
                         .map_err(|_| Error::<T>::MaxAttestationsForBlockError)?;
@@ -263,38 +258,6 @@ pub mod pallet {
             )?;
 
             LastForwardedBlock::<T>::set(Some(block_number));
-
-            Ok(())
-        }
-    }
-
-    /// Utility functions for the pallet.
-    impl<T: Config> Pallet<T> {
-        /// Ensures that the attestor has not submitted an attestation for the given block.
-        ///
-        /// # Arguments
-        /// * `attestations_for_block` - A bounded vector of attestations already recorded for the block.
-        /// * `attestor_key` - The public key of the attestor in SEC1 format (33 bytes).
-        ///
-        /// # Returns
-        /// * `Ok(())` if the attestor has not submitted an attestation.
-        ///
-        /// # Errors
-        /// * [`Error::AttestationAlreadyRecordedError`] - If the attestor has already submitted an attestation.
-        pub fn must_not_have_submitted_attestation(
-            attestations_for_block: &BoundedVec<Attestation<T::Hash>, ConstU32<64>>,
-            attestor_key: &[u8; 33],
-        ) -> DispatchResult {
-            ensure!(
-                !attestations_for_block.iter().any(|x| {
-                    let Attestation::EthereumAttestation {
-                        proposed_pub_key, ..
-                    } = x;
-
-                    proposed_pub_key == attestor_key
-                }),
-                Error::<T>::AttestationAlreadyRecordedError
-            );
 
             Ok(())
         }
