@@ -45,15 +45,17 @@ pub fn account_id_from_str<T: frame_system::Config>(
 
     // Valid aaddresses are either 20 or 32 bytes. If we don't have that number of bytes,
     // return an error
-    if raw_bytes.len() != 20 && raw_bytes.len() != 32 {
-        return Err("Invalid Address Length. Must be 20 or 32 bytes".into());
+    match raw_bytes.len() {
+        20 => try_get_account_from_20_byte_vec::<T>(raw_bytes),
+        32 => {
+            let raw_bytes: [u8; 32] = raw_bytes
+                .try_into()
+                .map_err(|_| "Could not coerce account into 32 bytes")?;
+
+            convert_account_id::<T>(sp_runtime::AccountId32::from(raw_bytes))
+        }
+        _ => Err("Invalid Address Length. Must be 20 or 32 bytes".into()),
     }
-
-    let raw_bytes: [u8; 32] = raw_bytes
-        .try_into()
-        .map_err(|_| "Could not coerce account into 32 bytes")?;
-
-    convert_account_id::<T>(sp_runtime::AccountId32::from(raw_bytes))
 }
 
 /// This function takes a Ethereum Wallet Address and transforms it into a Substrate
