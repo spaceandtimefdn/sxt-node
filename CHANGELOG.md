@@ -1,3 +1,12 @@
+## [1.29.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.2...v1.29.3) (2025-09-19)
+
+
+### Bug Fixes
+
+* more complete cleanup in tables pallet in `drop_single_table` ([cf3ca2d](https://github.com/spaceandtimefdn/sxt-node/commit/cf3ca2d5680ba003acdeb90487c42e8675c2d7ff))
+
+
+
 ## [1.29.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.1...v1.29.2) (2025-09-19)
 
 
@@ -34,15 +43,6 @@
 
 
 ## [1.28.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.3...v1.28.4) (2025-09-19)
-
-
-
-## [1.28.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.2...v1.28.3) (2025-09-19)
-
-
-### Bug Fixes
-
-* disallow zero address in `update_compute_credit_address` in `zkpay` pallet ([0f3203c](https://github.com/spaceandtimefdn/sxt-node/commit/0f3203c85bdc1102807a8df050b97747e276138e))
 
 
 
