@@ -6,6 +6,8 @@
 // Re-export pallet items so that they can be accessed from the crate namespace.
 pub use pallet::*;
 
+extern crate alloc;
+
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
@@ -18,6 +20,8 @@ pub mod templates;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
+    use alloc::vec;
+
     // Import various useful types required by all FRAME pallets.
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
@@ -84,7 +88,7 @@ pub mod pallet {
     pub enum Error<T> {
         /// There was a missing field in the record batch we tried to parse
         MissingExpectedField,
-        /// The contract address supplied was not a 20 byte address
+        /// The contract address supplied was not a 20 byte address or was the all-zero address
         ContractAddressError,
         /// An account id provided was invalid
         InvalidAccountId,
@@ -134,6 +138,11 @@ pub mod pallet {
 
             // Address must be a valid 20 byte ethereum address
             if address.to_vec().len() != 20 {
+                return Err(Error::<T>::ContractAddressError.into());
+            }
+
+            // Address must not be the all-zero address
+            if address.to_vec() == vec![0u8; 20] {
                 return Err(Error::<T>::ContractAddressError.into());
             }
 
