@@ -112,14 +112,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/ubuntu-dependencies
 
-      - name: Build the Dockerfile
+      - name: Build
         run: |-
           cargo build --locked --release
+        timeout-minutes: 90
+
+      - name: Compute / Print hashes
+        run: |
+          echo "Recent Git Commits:"
+          git log --pretty=format:"%H %d %s" $(git describe --tags --abbrev=0)^..HEAD
+          echo "Runtime Code Hash:"
+          b2sum -l 256 target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm
+          echo "Sudo Call Data:"
+          cat <(echo -n "0x16000009") <(b2sum -l 256 target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm)
+          echo "Call Hash:"
+          cat <(echo -n "16000009") <(b2sum -l 256 target/release/wbuild/sxt-runtime/sxt_runtime.compact.compressed.wasm) | xxd -r -p | b2sum -l 256
+
+      - name: Build the Dockerfile
+        run: |-
           docker buildx version
           docker buildx ls
           docker buildx build -f ./sxtnode.Dockerfile . -t sxt-node
-        timeout-minutes: 90
