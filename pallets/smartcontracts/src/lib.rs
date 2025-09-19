@@ -155,7 +155,6 @@ pub mod pallet {
             if let Some(table_ids) = ContractTables::<T, I>::take(&source, &address) {
                 for (ident, table_type) in table_ids {
                     pallet_tables::Pallet::<T>::drop_single_table(table_type, ident.clone())?;
-                    pallet_tables::Pallet::<T>::remove_commits(ident);
                 }
             }
 

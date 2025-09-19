@@ -13,8 +13,11 @@ use sxt_core::permissions::{
     TablesPalletPermission,
 };
 use sxt_core::tables::{
+    ColumnUuid,
+    ColumnUuidList,
     CreateStatement,
     GetTableSchemaError,
+    InsertQuorumSize,
     Source,
     SourceAndMode,
     TableIdentifier,
@@ -23,14 +26,21 @@ use sxt_core::tables::{
     TableType,
     TableUuid,
 };
+use sxt_core::ByteString;
 
 use crate::mock::*;
 use crate::{
+    ColumnVersions,
     CommitmentCreationCmd,
     CreateTableList,
     Event,
+    Identifiers,
     NamespaceVersions,
+    Schemas,
+    Snapshots,
+    TableInsertQuorums,
     TableOwners,
+    TableSources,
     TableVersions,
     UpdateTable,
     UpdateTableList,
@@ -767,4 +777,221 @@ fn ensure_safe_name_works_for_ethereum_address() {
         test_account,
         test_identifier
     ));
+}
+
+#[test]
+fn table_removal_cleans_up_all_collections() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let test_identifier = TableIdentifier {
+            name: b"BLOCKS".to_vec().try_into().unwrap(),
+            namespace: b"ETHEREUM".to_vec().try_into().unwrap(),
+        };
+        let table_type = TableType::CoreBlockchain;
+        let source = Source::Ethereum;
+
+        // Create the table first
+        let ddl = r#"CREATE TABLE IF NOT EXISTS ETHEREUM.BLOCKS (
+            TIME_STAMP TIMESTAMP NOT NULL,
+            BLOCK_NUMBER BIGINT NOT NULL,
+            BLOCK_HASH BINARY NOT NULL,
+            GAS_LIMIT DECIMAL(75, 0) NOT NULL,
+            TRANSACTION_COUNT INT NOT NULL,
+            PRIMARY KEY (BLOCK_NUMBER)
+        ) WITH (TABLE_UUID=F801A872785FAB3F16C51CF7A1969000);"#;
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: table_type.clone(),
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+            source: source.clone(),
+        }])
+        .expect("Table list should fit in BoundedVec");
+
+        assert_ok!(Tables::create_tables(RuntimeOrigin::root(), tables));
+
+        // Verify the table exists in all collections before removal
+        assert!(Identifiers::<Test>::get(&table_type).contains(&test_identifier));
+        assert!(Schemas::<Test>::contains_key(
+            &test_identifier.namespace,
+            &test_identifier.name
+        ));
+        assert!(TableInsertQuorums::<Test>::contains_key(&test_identifier));
+        assert!(TableSources::<Test>::contains_key(&test_identifier));
+        assert!(TableOwners::<Test>::contains_key(&test_identifier));
+
+        // Drop the table
+        assert_ok!(Tables::drop_table(
+            RuntimeOrigin::root(),
+            table_type.clone(),
+            test_identifier.clone(),
+            source
+        ));
+
+        // Verify the table has been removed from all collections
+        assert!(!Identifiers::<Test>::get(&table_type).contains(&test_identifier));
+        assert!(!Schemas::<Test>::contains_key(
+            &test_identifier.namespace,
+            &test_identifier.name
+        ));
+        assert!(!TableInsertQuorums::<Test>::contains_key(&test_identifier));
+        assert!(!TableSources::<Test>::contains_key(&test_identifier));
+        assert!(!TableOwners::<Test>::contains_key(&test_identifier));
+
+        // Verify Snapshots is also cleaned up (if it was populated)
+        assert!(!Snapshots::<Test>::contains_key(&test_identifier));
+    });
+}
+
+#[test]
+fn table_removal_cleans_up_multiple_versions() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let test_identifier = TableIdentifier {
+            name: TableName::try_from("MULTI_VERSION_TABLE".as_bytes().to_vec()).unwrap(),
+            namespace: TableNamespace::try_from("TEST_NAMESPACE".as_bytes().to_vec()).unwrap(),
+        };
+        let table_type = TableType::CoreBlockchain;
+        let source = Source::Ethereum;
+
+        // Manually create multiple versions in TableVersions to test cleanup
+        let uuid1 = TableUuid::try_from("UUID1".as_bytes().to_vec()).unwrap();
+        let uuid2 = TableUuid::try_from("UUID2".as_bytes().to_vec()).unwrap();
+        let column_uuids: ColumnUuidList = BoundedVec::try_from(vec![
+            ColumnUuid {
+                name: ByteString::try_from("COL1".as_bytes().to_vec()).unwrap(),
+                uuid: uuid1.clone(),
+            },
+            ColumnUuid {
+                name: ByteString::try_from("COL2".as_bytes().to_vec()).unwrap(),
+                uuid: uuid1.clone(),
+            }
+        ]).unwrap();
+
+        TableVersions::<Test>::insert(&test_identifier, 0, uuid1);
+        TableVersions::<Test>::insert(&test_identifier, 1, uuid2);
+        ColumnVersions::<Test>::insert(&test_identifier, 0, column_uuids.clone());
+        ColumnVersions::<Test>::insert(&test_identifier, 1, column_uuids.clone());
+
+        // Set up other collections
+        let mut identifiers = Identifiers::<Test>::get(&table_type);
+        identifiers.try_push(test_identifier.clone()).unwrap();
+        Identifiers::<Test>::insert(&table_type, identifiers);
+
+        let ddl = "CREATE TABLE IF NOT EXISTS TEST_NAMESPACE.MULTI_VERSION_TABLE (ID BIGINT NOT NULL, PRIMARY KEY (ID));";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+        Schemas::<Test>::insert(&test_identifier.namespace, &test_identifier.name, create_statement);
+        TableInsertQuorums::<Test>::insert(&test_identifier, InsertQuorumSize {
+            privileged: None,
+            public: None,
+        });
+        TableSources::<Test>::insert(&test_identifier, source.clone());
+        TableOwners::<Test>::insert(&test_identifier, Some(user(1).0));
+
+        // Verify multiple versions exist
+        assert!(TableVersions::<Test>::contains_key(&test_identifier, 0));
+        assert!(TableVersions::<Test>::contains_key(&test_identifier, 1));
+        assert!(ColumnVersions::<Test>::contains_key(&test_identifier, 0));
+        assert!(ColumnVersions::<Test>::contains_key(&test_identifier, 1));
+
+        // Drop the table
+        assert_ok!(Tables::drop_table(
+            RuntimeOrigin::root(),
+            table_type.clone(),
+            test_identifier.clone(),
+            source
+        ));
+
+        // Verify other collections are also cleaned up
+        assert!(!Identifiers::<Test>::get(&table_type).contains(&test_identifier));
+        assert!(!Schemas::<Test>::contains_key(&test_identifier.namespace, &test_identifier.name));
+        assert!(!TableInsertQuorums::<Test>::contains_key(&test_identifier));
+        assert!(!TableSources::<Test>::contains_key(&test_identifier));
+        assert!(!TableOwners::<Test>::contains_key(&test_identifier));
+    });
+}
+
+#[test]
+fn table_removal_only_affects_target_table() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let table1 = TableIdentifier {
+            name: TableName::try_from("TABLE_ONE".as_bytes().to_vec()).unwrap(),
+            namespace: TableNamespace::try_from("TEST_NAMESPACE".as_bytes().to_vec()).unwrap(),
+        };
+        let table2 = TableIdentifier {
+            name: TableName::try_from("TABLE_TWO".as_bytes().to_vec()).unwrap(),
+            namespace: TableNamespace::try_from("TEST_NAMESPACE".as_bytes().to_vec()).unwrap(),
+        };
+        let table_type = TableType::CoreBlockchain;
+        let source = Source::Ethereum;
+
+        // Create both tables
+        let ddl1 = "CREATE TABLE IF NOT EXISTS TEST_NAMESPACE.TABLE_ONE (ID BIGINT NOT NULL, PRIMARY KEY (ID));";
+        let ddl2 = "CREATE TABLE IF NOT EXISTS TEST_NAMESPACE.TABLE_TWO (ID BIGINT NOT NULL, PRIMARY KEY (ID));";
+
+        let create_statement1: CreateStatement =
+            BoundedVec::try_from(ddl1.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+        let create_statement2: CreateStatement =
+            BoundedVec::try_from(ddl2.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![
+            UpdateTable {
+                ident: table1.clone(),
+                create_statement: create_statement1,
+                table_type: table_type.clone(),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+                source: source.clone(),
+            },
+            UpdateTable {
+                ident: table2.clone(),
+                create_statement: create_statement2,
+                table_type: table_type.clone(),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+                source: source.clone(),
+            }
+        ])
+        .expect("Table list should fit in BoundedVec");
+
+        assert_ok!(Tables::create_tables(RuntimeOrigin::root(), tables));
+
+        // Verify both tables exist
+        let identifiers_before = Identifiers::<Test>::get(&table_type);
+        assert!(identifiers_before.contains(&table1));
+        assert!(identifiers_before.contains(&table2));
+        assert!(Schemas::<Test>::contains_key(&table1.namespace, &table1.name));
+        assert!(Schemas::<Test>::contains_key(&table2.namespace, &table2.name));
+
+        // Drop only table1
+        assert_ok!(Tables::drop_table(
+            RuntimeOrigin::root(),
+            table_type.clone(),
+            table1.clone(),
+            source
+        ));
+
+        // Verify table1 is removed but table2 remains
+        let identifiers_after = Identifiers::<Test>::get(&table_type);
+        assert!(!identifiers_after.contains(&table1));
+        assert!(identifiers_after.contains(&table2));
+
+        assert!(!Schemas::<Test>::contains_key(&table1.namespace, &table1.name));
+        assert!(Schemas::<Test>::contains_key(&table2.namespace, &table2.name));
+
+        assert!(!TableInsertQuorums::<Test>::contains_key(&table1));
+        assert!(TableInsertQuorums::<Test>::contains_key(&table2));
+
+        assert!(!TableSources::<Test>::contains_key(&table1));
+        assert!(TableSources::<Test>::contains_key(&table2));
+
+        assert!(!TableOwners::<Test>::contains_key(&table1));
+        assert!(TableOwners::<Test>::contains_key(&table2));
+    });
 }

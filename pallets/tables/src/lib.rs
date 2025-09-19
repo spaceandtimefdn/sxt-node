@@ -513,7 +513,6 @@ pub mod pallet {
             )?;
 
             Self::drop_single_table(table_type.clone(), ident.clone())?;
-            Self::remove_commits(ident.clone());
             Self::deposit_event(Event::<T>::TableDropped(owner, table_type, ident, source));
 
             Ok(())
@@ -777,6 +776,24 @@ pub mod pallet {
             if TableInsertQuorums::<T>::contains_key(&ident) {
                 TableInsertQuorums::<T>::remove(&ident);
             }
+
+            // Remove the snapshots entry.
+            if Snapshots::<T>::contains_key(&ident) {
+                Snapshots::<T>::remove(&ident);
+            }
+
+            // Remove the table sources entry.
+            if TableSources::<T>::contains_key(&ident) {
+                TableSources::<T>::remove(&ident);
+            }
+
+            // Remove the table owner entry.
+            if TableOwners::<T>::contains_key(&ident) {
+                TableOwners::<T>::remove(&ident);
+            }
+
+            // Remove commits
+            Self::remove_commits(ident.clone());
 
             Ok(())
         }
