@@ -1,10 +1,10 @@
 use core::str::from_utf8;
 
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 use pallet_permissions::Pallet;
 use proof_of_sql::base::database::TableRef;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
-use sp_runtime::BoundedVec;
+use sp_runtime::{BoundedVec, DispatchError, ModuleError};
 use sqlparser::ast::{ColumnDef, DataType, ExactNumberInfo, Ident, TimezoneInfo};
 use sxt_core::permissions::{
     IndexingPalletPermission,
@@ -33,6 +33,7 @@ use crate::{
     ColumnVersions,
     CommitmentCreationCmd,
     CreateTableList,
+    Error,
     Event,
     Identifiers,
     NamespaceVersions,
@@ -994,4 +995,23 @@ fn table_removal_only_affects_target_table() {
         assert!(!TableOwners::<Test>::contains_key(&table1));
         assert!(TableOwners::<Test>::contains_key(&table2));
     });
+}
+
+#[test]
+fn insert_schema_should_fail_if_identifiers_are_too_large() {
+    new_test_ext().execute_with(|| {
+        let stmnt = CreateStatement::new();
+        let table_type = TableType::SCI;
+        let source = Source::Ethereum;
+        for i in 0..1024 {
+            let ident = TableIdentifier::from_str_unchecked(&i.to_string(), "namespace");
+            Tables::insert_schema(ident, stmnt.clone(), table_type.clone(), source.clone())
+                .unwrap();
+        }
+        let ident = TableIdentifier::from_str_unchecked("1024", "namespace");
+        assert_noop!(
+            Tables::insert_schema(ident, stmnt, table_type, source),
+            Error::<Test>::BoundedVecError
+        );
+    })
 }
