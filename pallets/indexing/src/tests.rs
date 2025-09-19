@@ -944,7 +944,7 @@ fn we_can_manage_quorum_state_for_both_scopes() {
         // both submission
         assert_ok!(submit_test_data(both_submitter, test_submission.clone()));
         let submissions = Indexing::submissions(&test_submission.batch_id, test_data_hash);
-        assert_eq!(submissions.len_of_scope(&QuorumScope::Public), 2);
+        assert_eq!(submissions.len_of_scope(&QuorumScope::Public), 1);
         assert_eq!(submissions.len_of_scope(&QuorumScope::Privileged), 1);
         assert!(Indexing::final_data(&test_submission.batch_id).is_none());
 
@@ -975,7 +975,7 @@ fn we_can_manage_quorum_state_for_both_scopes() {
 }
 
 #[test]
-fn reaching_quorum_for_both_scopes_simultaneously_produces_one_quorum_reached_event() {
+fn reaching_quorum_for_both_scopes_simultaneously_produces_privileged_quorum_reached_event() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         let (table_id, create_statement) = sample_table_definition();
@@ -1027,8 +1027,8 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_one_quorum_reached_ev
 
         assert_eq!(final_data.data_hash, test_data_hash);
         assert_eq!(final_data.table, test_submission.table);
-        // Public quorum is selected over privileged in this case
-        assert_eq!(final_data.quorum_scope, QuorumScope::Public);
+        // Privileged quorum is selected over public in this case
+        assert_eq!(final_data.quorum_scope, QuorumScope::Privileged);
 
         // Verify that the old data was successfully removed for this batch
         let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
