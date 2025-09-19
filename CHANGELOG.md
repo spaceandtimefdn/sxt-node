@@ -1,3 +1,13 @@
+## [1.28.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.0...v1.28.1) (2025-09-19)
+
+
+### Bug Fixes
+
+* fix pallet call index in attestation ([b830e6a](https://github.com/spaceandtimefdn/sxt-node/commit/b830e6a0182602f6794350945af48761025b9cc4))
+* regenerate chain runtime ([ca01577](https://github.com/spaceandtimefdn/sxt-node/commit/ca01577f041a4353f4f2b3cd62444918f0ba8e8f))
+
+
+
 # [1.28.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.27.0...v1.28.0) (2025-09-18)
 
 
@@ -42,15 +52,6 @@
 ### Bug Fixes
 
 * remove `system_tables::MessageNonce` for being unused ([1a8dea5](https://github.com/spaceandtimefdn/sxt-node/commit/1a8dea5aaa9ca4b6849b30bb626ff07ba2605833))
-
-
-
-## [1.26.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.26.1...v1.26.2) (2025-09-16)
-
-
-### Bug Fixes
-
-* avoid unnecessary truncation in `system_tables::process_unstake_cancelled` ([9dc47ec](https://github.com/spaceandtimefdn/sxt-node/commit/9dc47ec994117dc9a16937c469802fcc22c76ea2))
 
 
 
