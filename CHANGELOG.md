@@ -1,3 +1,12 @@
+## [1.29.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.0...v1.29.1) (2025-09-19)
+
+
+### Bug Fixes
+
+* allow multiple attestations per block ([d7f6436](https://github.com/spaceandtimefdn/sxt-node/commit/d7f6436df06de4df73531a60b9db7aaa23cdbfa5))
+
+
+
 # [1.29.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.4...v1.29.0) (2025-09-19)
 
 
@@ -34,16 +43,6 @@
 ### Bug Fixes
 
 * disallow double submission and prioritize privileged quorum in `indexing::submit_data_inner` ([2946c00](https://github.com/spaceandtimefdn/sxt-node/commit/2946c00cc97c5ae56f49d14138f16faf86f6cc70))
-
-
-
-## [1.28.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.0...v1.28.1) (2025-09-19)
-
-
-### Bug Fixes
-
-* fix pallet call index in attestation ([b830e6a](https://github.com/spaceandtimefdn/sxt-node/commit/b830e6a0182602f6794350945af48761025b9cc4))
-* regenerate chain runtime ([ca01577](https://github.com/spaceandtimefdn/sxt-node/commit/ca01577f041a4353f4f2b3cd62444918f0ba8e8f))
 
 
 
