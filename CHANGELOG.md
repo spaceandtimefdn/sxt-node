@@ -1,3 +1,20 @@
+# [1.29.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.4...v1.29.0) (2025-09-19)
+
+
+### Bug Fixes
+
+* execute attempt_fulfill_unstake future in event-forwarder ([9de5530](https://github.com/spaceandtimefdn/sxt-node/commit/9de553058ddfae72a4f8c13842551e77af18842a))
+* use domain to distinguish commitment and unstake attestations ([4634696](https://github.com/spaceandtimefdn/sxt-node/commit/4634696bba38d121dcbb1698d0f95aa03eae66b3))
+
+
+### Features
+
+* attest to claimed unstakes ([678093c](https://github.com/spaceandtimefdn/sxt-node/commit/678093c87192fb92787d3a44b40c0ada733afd65))
+* remove locks from attestation tree ([650ba96](https://github.com/spaceandtimefdn/sxt-node/commit/650ba96f489221917a275854104d7edf2adbf2d3))
+* rewrite event forwarder ([c93b1ac](https://github.com/spaceandtimefdn/sxt-node/commit/c93b1ac065b52cfda103c4fa757838fd2fdabad8))
+
+
+
 ## [1.28.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.3...v1.28.4) (2025-09-19)
 
 
@@ -27,18 +44,6 @@
 
 * fix pallet call index in attestation ([b830e6a](https://github.com/spaceandtimefdn/sxt-node/commit/b830e6a0182602f6794350945af48761025b9cc4))
 * regenerate chain runtime ([ca01577](https://github.com/spaceandtimefdn/sxt-node/commit/ca01577f041a4353f4f2b3cd62444918f0ba8e8f))
-
-
-
-# [1.28.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.27.0...v1.28.0) (2025-09-18)
-
-
-### Features
-
-* extend proof-of-sql scalars with MontScalarExt ([18af7af](https://github.com/spaceandtimefdn/sxt-node/commit/18af7afd3beb707ae128f4b567503e6eba8286c3))
-* supertrait CommitmentId scalars with MontScalarExt ([0cc1d17](https://github.com/spaceandtimefdn/sxt-node/commit/0cc1d17445656de33cf0d32a313c949fe3211155))
-* upgrade proof-of-sql to 0.121.1 ([fd5cac4](https://github.com/spaceandtimefdn/sxt-node/commit/fd5cac47e2e8b19c8c034ac6d2a440e8a64d9c40))
-* use native blake3 conversion to scalar for varchar columns ([0253ae0](https://github.com/spaceandtimefdn/sxt-node/commit/0253ae06053454159f9d5ebd571fb191f9c8eacc))
 
 
 
