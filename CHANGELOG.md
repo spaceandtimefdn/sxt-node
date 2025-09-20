@@ -1,3 +1,13 @@
+# [1.30.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.3...v1.30.0) (2025-09-20)
+
+
+### Features
+
+* increment runtime spec version to 236 ([54a2e32](https://github.com/spaceandtimefdn/sxt-node/commit/54a2e325234c265cc6ec05f47b4f586cc0cec533))
+* upgrade the node version to 1.2.0 ([3c0675d](https://github.com/spaceandtimefdn/sxt-node/commit/3c0675d6e5fd2f3c69e97119077b539ffa8257c1))
+
+
+
 ## [1.29.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.2...v1.29.3) (2025-09-19)
 
 
@@ -39,10 +49,6 @@
 * attest to claimed unstakes ([678093c](https://github.com/spaceandtimefdn/sxt-node/commit/678093c87192fb92787d3a44b40c0ada733afd65))
 * remove locks from attestation tree ([650ba96](https://github.com/spaceandtimefdn/sxt-node/commit/650ba96f489221917a275854104d7edf2adbf2d3))
 * rewrite event forwarder ([c93b1ac](https://github.com/spaceandtimefdn/sxt-node/commit/c93b1ac065b52cfda103c4fa757838fd2fdabad8))
-
-
-
-## [1.28.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.28.3...v1.28.4) (2025-09-19)
 
 
 
