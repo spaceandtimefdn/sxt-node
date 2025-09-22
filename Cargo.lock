@@ -10049,6 +10049,7 @@ dependencies = [
  "proof-of-sql",
  "proof-of-sql-commitment-map",
  "proof-of-sql-static-setups",
+ "proof-of-sql-unchecked-deserialize",
  "scale-info",
  "snafu 0.8.5",
  "sp-api",
@@ -13279,6 +13280,16 @@ dependencies = [
  "snafu 0.8.5",
  "tokio",
  "url",
+]
+
+[[package]]
+name = "proof-of-sql-unchecked-deserialize"
+version = "0.1.0"
+dependencies = [
+ "ark-serialize 0.5.0",
+ "derive_more 0.99.19",
+ "proof-of-sql",
+ "serde",
 ]
 
 [[package]]
