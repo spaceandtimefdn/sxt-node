@@ -347,9 +347,28 @@ pub mod pallet {
 
             let commitments_bytes = commitments_bytes.data;
 
-            let commitments = commitments_bytes
-                .try_into()
+            let PerCommitmentScheme {
+                hyper_kzg: maybe_hyper_kzg_commitment_bytes,
+                dynamic_dory: maybe_dynamic_dory_commitment_bytes,
+            } = commitments_bytes;
+            let maybe_hyper_kzg_commitment = maybe_hyper_kzg_commitment_bytes
+                .map(|hyper_kzg_commitment_bytes| (&hyper_kzg_commitment_bytes).try_into())
+                .transpose()
                 .map_err(|_| Error::DeserializeCommitment)?;
+            let maybe_dynamic_dory_commitment = maybe_dynamic_dory_commitment_bytes
+                .map(|dynamic_dory_commitment_bytes| (&dynamic_dory_commitment_bytes).try_into())
+                .transpose()
+                .map_err(|_| Error::DeserializeCommitment)?
+                .map(|unchecked_dynamic_dory_commitment| {
+                    proof_of_sql_unchecked_deserialize::map_table_commitment(
+                        &unchecked_dynamic_dory_commitment,
+                        Into::into,
+                    )
+                });
+            let commitments = PerCommitmentScheme {
+                hyper_kzg: maybe_hyper_kzg_commitment,
+                dynamic_dory: maybe_dynamic_dory_commitment,
+            };
 
             let insert_with_meta_columns = insert_with_meta_columns_bytes
                 .try_into()
