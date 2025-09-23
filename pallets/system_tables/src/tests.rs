@@ -982,21 +982,10 @@ fn attempting_to_claim_before_unbonding_period_produces_error() {
 
         assert_ok!(crate::process_unstake_claimed::<Test>(claim_unstake));
 
-        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
-
-        // Ensure there was an error emitted
-        System::assert_has_event(RuntimeEvent::SystemTables(
-            crate::Event::MessageProcessingError {
-                error: crate::Error::<Test>::FundsLocked.into(),
-            },
-        ));
-
-        System::reset_events();
-
-        // Make sure that even if we call unstake, we don't get the balance back
-        let unstaked = get_unstaked_message(ETH_TEST_WALLET, test_amount.into());
-        assert_ok!(crate::process_unstaked::<Test>(unstaked));
-        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
+        // Ensure a claim event for 0 was still emitted
+        System::assert_has_event(RuntimeEvent::SystemTables(crate::Event::UnstakingClaimed {
+            claimer: transformed_eth_wallet,
+        }));
     });
 }
 

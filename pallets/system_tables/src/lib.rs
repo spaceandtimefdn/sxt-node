@@ -359,45 +359,27 @@ pub mod pallet {
                         let staker_id =
                             sxt_core::utils::eth_address_to_substrate_account_id::<T>(&staker)?;
 
-                        // Make sure they're staked
-                        let Some(old_staking_ledger) = pallet_staking::Ledger::<T>::get(&staker_id)
-                        else {
-                            return Err(Error::<T>::AccountNotStaked.into());
-                        };
-
-                        // Make sure they're in an unbonding state
-                        if !(pallet_staking::Pallet::<T>::is_unbonding(&staker_id)?) {
-                            return Err(Error::<T>::AccountNotUnbonding.into());
-                        }
-
                         let staker_signer: OriginFor<T> =
                             RawOrigin::Signed(staker_id.clone()).into();
 
-                        // The struct that represents when a particular batch of funds will unlock
-                        // has all fields private to the staking crate. For now the
-                        // best we can do is to call the withdraw function and see if there are any
-                        // balance changes.
-                        pallet_staking::Pallet::<T>::withdraw_unbonded(staker_signer.clone(), 0u32)
-                            .map_err(|e| e.error)?;
-
-                        // Check if the user still has entries in the staking ledger
-                        let maybe_new_staking_ledger = pallet_staking::Ledger::<T>::get(&staker_id);
-
-                        if maybe_new_staking_ledger.is_some() {
-                            // If this was a partial unlock we need to actually check if the locks
-                            // were removed by the withdrawal call. If they weren't the claim is
-                            // unsuccessful and we return an error. Otherwise we emit the event
-                            if pallet_staking::Pallet::<T>::is_unbonding(&staker_id)? {
-                                // The user's unstaked funds are still locked
-                                return Err(Error::<T>::FundsLocked.into());
-                            }
-                        }
-
-                        let new_total = maybe_new_staking_ledger
+                        let old_total = pallet_staking::Ledger::<T>::get(&staker_id)
                             .map(|ledger| ledger.total)
                             .unwrap_or(0);
 
-                        let amount_withdrawn = old_staking_ledger.total.saturating_sub(new_total);
+                        // Even if the withdraw returns an error, we want to make sure we emit the
+                        // event and log that a claim was attempted. For now that means holding
+                        // onto the error
+                        let maybe_error = pallet_staking::Pallet::<T>::withdraw_unbonded(
+                            staker_signer.clone(),
+                            0u32,
+                        )
+                        .map_err(|e| e.error);
+
+                        let new_total = pallet_staking::Ledger::<T>::get(&staker_id)
+                            .map(|ledger| ledger.total)
+                            .unwrap_or(0);
+
+                        let amount_withdrawn = old_total.saturating_sub(new_total);
 
                         ClaimedUnstakes::<T>::insert(
                             &staker_id,
@@ -409,6 +391,10 @@ pub mod pallet {
                         Pallet::<T>::deposit_event(Event::<T>::UnstakingClaimed {
                             claimer: staker_id.clone(),
                         });
+
+                        // Now that we've logged the claim and emitted the event, return any
+                        // possible error so that it is emitted as an event
+                        maybe_error?;
 
                         // Burn the unbonded amount from the account
                         pallet_balances::Pallet::<T>::burn(
@@ -450,6 +436,22 @@ pub mod pallet {
                         // the amount to the available stake
                         let stake_amount = amount.min(&U256::from(u128::MAX)).low_u128();
                         let unstake_amount = stake_amount.min(staking_ledger.active);
+
+                        // How much will be active after the unbonding. Is it less than the
+                        let remaining_active = staking_ledger.active - unstake_amount;
+
+                        if let Some(nominations) = pallet_staking::Nominators::<T>::get(&staker_id)
+                        {
+                            if remaining_active < pallet_staking::MinNominatorBond::<T>::get() {
+                                pallet_staking::Pallet::<T>::chill(staker_signer.clone())?;
+                            }
+                        }
+
+                        if pallet_staking::Validators::<T>::contains_key(&staker_id)
+                            && remaining_active < pallet_staking::MinValidatorBond::<T>::get()
+                        {
+                            pallet_staking::Pallet::<T>::chill(staker_signer.clone())?;
+                        }
 
                         pallet_staking::Pallet::<T>::unbond(staker_signer, unstake_amount)
                             .map_err(|e| e.error)?;
