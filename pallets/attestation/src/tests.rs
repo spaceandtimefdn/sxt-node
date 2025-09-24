@@ -101,7 +101,7 @@ fn attest_block_success() {
         // Submit the attestation.
         assert_ok!(Pallet::<Test>::attest_block(
             RuntimeOrigin::signed(account_id),
-            block_number,
+            Some(block_number),
             attestation.clone()
         ));
 
@@ -110,6 +110,79 @@ fn attest_block_success() {
         assert!(attestations
             .iter()
             .any(|stored_attestation| *stored_attestation == attestation));
+    });
+}
+
+#[test]
+fn attest_block_uses_current_block_by_default() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(15);
+        let account_id: u64 = 1;
+        let block_number: u32 = 10;
+
+        // Generate a keypair and create a signed message.
+        let (private_key, public_key, signature) = create_signed_message_and_keypair(account_id);
+
+        // Compute the address20 from the public key.
+        let address20 =
+            sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
+
+        // Register the attestation key for the account.
+        let registration = RegisterExternalAddress::EthereumAddress {
+            signature,
+            proposed_pub_key: public_key,
+            address20: address20.clone(),
+        };
+
+        assert_ok!(Keystore::register_key(
+            RuntimeOrigin::root(),
+            account_id,
+            registration
+        ));
+
+        let permissions = PermissionList::try_from(vec![PermissionLevel::AttestationPallet(
+            AttestationPalletPermission::AttestBlock,
+        )])
+        .unwrap();
+        assert_ok!(Permissions::set_permissions(
+            RuntimeOrigin::root(),
+            account_id,
+            permissions
+        ));
+
+        // Create an attestation using the same signature and public key.
+        let data: Vec<u8> = vec![0xFF; 64];
+
+        // Convert to BoundedVec<u8, ConstU32<64>>
+        let state_root = BoundedVec::try_from(data).expect("Should fit");
+        let attestation_message =
+            create_attestation_message(state_root.clone().into_inner(), block_number);
+        let attestation_signature = sign_eth_message(&private_key.to_bytes(), &attestation_message)
+            .expect("could not sign");
+
+        let attestation = Attestation::EthereumAttestation {
+            signature: attestation_signature,
+            proposed_pub_key: public_key,
+            address20,
+            state_root,
+            block_number,
+            block_hash: H256::zero(),
+        };
+
+        // Submit the attestation.
+        assert_ok!(Pallet::<Test>::attest_block(
+            RuntimeOrigin::signed(account_id),
+            None,
+            attestation.clone()
+        ));
+
+        // Verify that the attestation is stored in the current block, not the attested block
+        let attestations = Pallet::<Test>::attestations(15);
+        assert!(attestations
+            .iter()
+            .any(|stored_attestation| *stored_attestation == attestation));
+
+        assert!(Pallet::<Test>::attestations(10).is_empty());
     });
 }
 
@@ -139,7 +212,7 @@ fn attest_block_fails_if_account_not_registered() {
         assert_err!(
             Pallet::<Test>::attest_block(
                 RuntimeOrigin::signed(account_id),
-                block_number,
+                Some(block_number),
                 attestation
             ),
             pallet_permissions::Error::<Test>::InsufficientPermissions
@@ -202,14 +275,14 @@ fn attest_block_succeeds_with_multiple_attestations() {
         // Submit the attestation.
         assert_ok!(Pallet::<Test>::attest_block(
             RuntimeOrigin::signed(account_id),
-            block_number,
+            Some(block_number),
             attestation.clone()
         ));
 
         // Attempt to submit the same attestation again.
         assert_ok!(Pallet::<Test>::attest_block(
             RuntimeOrigin::signed(account_id),
-            block_number,
+            Some(block_number),
             attestation
         ));
     });
@@ -262,7 +335,7 @@ fn attest_block_fails_if_future_block() {
         assert_err!(
             Pallet::<Test>::attest_block(
                 RuntimeOrigin::signed(account_id),
-                future_block_number,
+                Some(future_block_number),
                 attestation
             ),
             Error::<Test>::CannotAttestFutureBlock
