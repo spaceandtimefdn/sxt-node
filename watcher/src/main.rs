@@ -537,7 +537,7 @@ impl AttestationClient {
 
                 let signature = generate_signature(private_key, &message)?;
 
-                Ok((signature, partial_message))
+                Ok((signature, partial_message, None))
             })
             .collect::<Result<Vec<_>, AttestationError>>()
             .inspect_err(|e| log::error!("Error generating signature: {}", e))
@@ -547,17 +547,25 @@ impl AttestationClient {
 
         let block = &block;
         futures::stream::iter(
-            std::iter::once((signature, partial_message))
+            std::iter::once((signature, partial_message, Some(block.number())))
                 .chain(claimed_unstake_signatures_and_roots),
         )
-        .for_each(|(signature, partial_message)| async move {
-            if let Err(e) = self
-                .submit_transaction_with_retry(block, private_key, signature, partial_message)
-                .await
-            {
-                log::info!("Error submitting tx: {:?}", e);
-            };
-        })
+        .for_each(
+            |(signature, partial_message, attestation_key_block_number)| async move {
+                if let Err(e) = self
+                    .submit_transaction_with_retry(
+                        block,
+                        private_key,
+                        signature,
+                        partial_message,
+                        attestation_key_block_number,
+                    )
+                    .await
+                {
+                    log::info!("Error submitting tx: {:?}", e);
+                };
+            },
+        )
         .await;
 
         Ok(())
@@ -569,6 +577,7 @@ impl AttestationClient {
         private_key: &SigningKey,
         signature: EthereumSignature,
         partial_message: Vec<u8>,
+        attestation_key_block_number: Option<u32>,
     ) -> Result<(), AttestationError> {
         let header = block.header();
 
@@ -577,7 +586,7 @@ impl AttestationClient {
 
         let tx = runtime::api::tx()
             .attestations()
-            .attest_block(block.number(), attestation);
+            .attest_block(attestation_key_block_number, attestation);
 
         match self
             .tx_submitter
