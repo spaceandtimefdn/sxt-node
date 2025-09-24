@@ -110,8 +110,6 @@ pub mod pallet {
     /// What type of commitment to create
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum CommitmentCreationCmd {
-        /// From a preexisting commitment
-        FromSnapshot(SnapshotUrl, TableCommitmentBytesPerCommitmentScheme),
         /// An empty commitment
         Empty(CommitmentSchemeFlags),
     }
@@ -365,61 +363,8 @@ pub mod pallet {
             Self::create_tables_inner(origin, tables)
         }
 
-        /// Create tables with a known commit and snapshot url from which data can be loaded
-        #[pallet::call_index(1)]
-        #[pallet::weight(<T as Config>::WeightInfo::create_tables_with_snapshot_and_commitment())]
-        pub fn create_tables_with_snapshot_and_commitment(
-            origin: OriginFor<T>,
-            source_and_mode: SourceAndMode,
-            tables: CreateTableList,
-        ) -> DispatchResult {
-            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin,
-                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
-            )?;
-
-            let tables = tables
-                .into_iter()
-                .map(|table| {
-                    Self::insert_schema(
-                        table.table_name.clone(),
-                        table.ddl.clone(),
-                        table.table_type.clone(),
-                        source_and_mode.source.clone(),
-                    );
-
-                    let statement_with_metadata = Self::insert_initial_commitment(
-                        table.table_name.clone(),
-                        table.ddl,
-                        table.commitment.clone(),
-                        table.snapshot_url.clone(),
-                    )?;
-                    let out = CreateTableRequest {
-                        table_uuid: table.table_uuid,
-                        table_version: table.table_version,
-                        column_uuids: table.column_uuids,
-                        table_name: table.table_name,
-                        ddl: statement_with_metadata,
-                        commitment: table.commitment,
-                        snapshot_url: table.snapshot_url,
-                        table_type: table.table_type,
-                    };
-                    Ok(out)
-                })
-                .collect::<Result<Vec<_>, DispatchError>>()?
-                .try_into()
-                .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
-
-            Self::deposit_event(Event::<T>::TablesCreatedWithCommitments {
-                source_and_mode,
-                table_list: tables,
-            });
-
-            Ok(())
-        }
-
         /// Clear schemas and tables from chain state for all namespaces and identifiers
-        #[pallet::call_index(3)]
+        #[pallet::call_index(1)]
         #[pallet::weight(<T as Config>::WeightInfo::clear_tables())]
         pub fn clear_tables(origin: OriginFor<T>) -> DispatchResult {
             // Only sudo can call this
@@ -457,7 +402,7 @@ pub mod pallet {
 
         /// Used to create a new namespace/schema on chain. Stores the associated UUID and emits
         /// an event containing the CREATE statement
-        #[pallet::call_index(4)]
+        #[pallet::call_index(2)]
         #[pallet::weight(<T as Config>::WeightInfo::create_namespace())]
         pub fn create_namespace(
             origin: OriginFor<T>,
@@ -499,7 +444,7 @@ pub mod pallet {
         }
 
         /// Drop a single table
-        #[pallet::call_index(5)]
+        #[pallet::call_index(3)]
         #[pallet::weight(<T as Config>::WeightInfo::drop_table())]
         pub fn drop_table(
             origin: OriginFor<T>,
@@ -519,7 +464,7 @@ pub mod pallet {
         }
 
         /// TODO remove this function
-        #[pallet::call_index(6)]
+        #[pallet::call_index(4)]
         #[pallet::weight(<T as Config>::WeightInfo::drop_table())]
         pub fn drop_invalid_commits(
             origin: OriginFor<T>,
@@ -533,7 +478,7 @@ pub mod pallet {
         }
 
         /// Update the UUID for the specificed namespace and version to the provided UUID
-        #[pallet::call_index(7)]
+        #[pallet::call_index(5)]
         #[pallet::weight(<T as Config>::WeightInfo::update_namespace_uuid())]
         pub fn update_namespace_uuid(
             origin: OriginFor<T>,
@@ -560,7 +505,7 @@ pub mod pallet {
         }
 
         /// Update the UUID for the specified table and version to the provided UUID
-        #[pallet::call_index(8)]
+        #[pallet::call_index(6)]
         #[pallet::weight(<T as Config>::WeightInfo::update_table_uuid())]
         pub fn update_table_uuid(
             origin: OriginFor<T>,
@@ -868,13 +813,6 @@ pub mod pallet {
                             pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_scheme(
                                 create_table,
                                 scheme,
-                            )?
-                        }
-                        CommitmentCreationCmd::FromSnapshot(ref snapshot_url, ref per_commitment_scheme) => {
-                            Snapshots::<T>::insert(table.ident.clone(), snapshot_url.clone());
-                            pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
-                                create_table,
-                                per_commitment_scheme.clone(),
                             )?
                         }
                     };
