@@ -1,3 +1,12 @@
+## [1.31.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.31.0...v1.31.1) (2025-09-24)
+
+
+### Bug Fixes
+
+* retrieve correct attestation list to update in attest_block ([d0bada8](https://github.com/spaceandtimefdn/sxt-node/commit/d0bada8a64854d49ed5b87c4b24fcc7c980439b4))
+
+
+
 # [1.31.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.30.1...v1.31.0) (2025-09-24)
 
 
@@ -40,15 +49,6 @@
 ### Bug Fixes
 
 * more complete cleanup in tables pallet in `drop_single_table` ([cf3ca2d](https://github.com/spaceandtimefdn/sxt-node/commit/cf3ca2d5680ba003acdeb90487c42e8675c2d7ff))
-
-
-
-## [1.29.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.1...v1.29.2) (2025-09-19)
-
-
-### Bug Fixes
-
-* validate env variables in `node/src/chain_spec.rs` ([903fdf1](https://github.com/spaceandtimefdn/sxt-node/commit/903fdf17540ba0db8cef730aa36ab6d631635d53))
 
 
 
