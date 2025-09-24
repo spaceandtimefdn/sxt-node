@@ -28,6 +28,7 @@ pub use weights::*;
 pub mod pallet {
     use frame_support::dispatch::DispatchResult;
     use frame_support::pallet_prelude::{OptionQuery, *};
+    use frame_support::sp_runtime::traits::UniqueSaturatedInto;
     use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
     use sxt_core::attestation::{create_attestation_message, Attestation, AttestationKey};
@@ -137,7 +138,7 @@ pub mod pallet {
         /// Submit a block attestation.
         ///
         /// # Arguments
-        /// * `block_number` - The block being attested.
+        /// * `block_number` - The block being attested. If not provided, uses the current block.
         /// * `attestation` - The attestation details.
         ///
         /// # Emits
@@ -147,26 +148,27 @@ pub mod pallet {
         /// * [`Error::CannotAttestFutureBlock`]
         /// * [`Error::CannotAttestCurrentBlock`]
         /// * [`Error::MaxAttestationsForBlockError`]
-        /// * [`Error::AttestationAlreadyRecordedError`]
         #[pallet::call_index(0)]
         #[pallet::weight(<T as Config>::WeightInfo::attest_block())]
         pub fn attest_block(
             origin: OriginFor<T>,
-            block_number: BlockNumber,
+            block_number: Option<BlockNumber>,
             attestation: Attestation<T::Hash>,
         ) -> DispatchResult {
             let who = ensure_signed(origin.clone())?;
 
-            let current_block = frame_system::Pallet::<T>::block_number();
+            let current_block = frame_system::Pallet::<T>::block_number().unique_saturated_into();
 
-            ensure!(
-                current_block > block_number.into(),
-                Error::<T>::CannotAttestFutureBlock
-            );
-            ensure!(
-                current_block != block_number.into(),
-                Error::<T>::CannotAttestCurrentBlock
-            );
+            if let Some(block_number) = block_number {
+                ensure!(
+                    current_block > block_number,
+                    Error::<T>::CannotAttestFutureBlock
+                );
+                ensure!(
+                    current_block != block_number,
+                    Error::<T>::CannotAttestCurrentBlock
+                );
+            }
 
             pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin,
@@ -179,7 +181,7 @@ pub mod pallet {
                     proposed_pub_key: attestor_pub_key,
                     ref address20,
                     ref state_root,
-                    block_number,
+                    block_number: attested_block_number,
                     ..
                 } => {
                     let proposed_key = EthereumKey {
@@ -188,7 +190,7 @@ pub mod pallet {
                     };
 
                     let state_root_inner = state_root.clone().into_inner();
-                    let msg = create_attestation_message(state_root_inner, block_number);
+                    let msg = create_attestation_message(state_root_inner, attested_block_number);
 
                     pallet_keystore::Pallet::<T>::verify_ethereum_msg(
                         &who,
@@ -197,16 +199,19 @@ pub mod pallet {
                         &signature,
                     )?;
 
-                    let mut attestations_for_block = Attestations::<T>::get(block_number);
+                    let mut attestations_for_block = Attestations::<T>::get(attested_block_number);
 
                     attestations_for_block
                         .try_push(attestation.clone())
                         .map_err(|_| Error::<T>::MaxAttestationsForBlockError)?;
 
-                    Attestations::<T>::insert(block_number, attestations_for_block);
+                    Attestations::<T>::insert(
+                        block_number.unwrap_or(current_block),
+                        attestations_for_block,
+                    );
 
                     Self::deposit_event(Event::<T>::BlockAttested {
-                        block_number,
+                        block_number: block_number.unwrap_or(current_block),
                         attestation,
                         who,
                     });

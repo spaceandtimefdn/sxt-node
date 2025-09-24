@@ -130,7 +130,7 @@ mod benchmarks {
         #[extrinsic_call]
         attest_block(
             RawOrigin::Signed(caller.clone()),
-            block_number,
+            Some(block_number),
             attestation.clone(),
         );
 
