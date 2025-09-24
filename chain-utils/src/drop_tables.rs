@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{anyhow, Error};
 use log::{error, info};
@@ -19,7 +20,6 @@ use sxt_core::sxt_chain_runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
 use sxt_core::sxt_chain_runtime::api::runtime_types::pallet_tables::pallet::{CommitmentCreationCmd, UpdateTable};
 use sxt_core::sxt_chain_runtime::api::runtime_types::proof_of_sql_commitment_map::commitment_scheme::CommitmentSchemeFlags;
-use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::smartcontracts::{Contract, ContractDetails, EventDetails, NormalContract};
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
     IndexerMode,
     InsertQuorumSize,
@@ -27,12 +27,17 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
     SourceAndMode,
     TableIdentifier, TableType,
 };
+use sxt_core::sxt_chain_runtime::api::tables::calls::types::DropTable;
+use subxt::tx::DefaultPayload;
 use sxt_core::sxt_chain_runtime::api::tx;
 use tokio::sync::Mutex;
 use url::Url;
+use sxt_chain_runtime::api::runtime_types::{
+    sxt_runtime::RuntimeCall,
+    pallet_tables::pallet::Call as TablesCall,
+};
 use sxt_core::tables::convert_ignite_create_statement;
 use crate::common;
-use crate::{SxtNetwork, SystemContract};
 
 fn read_file(filename: &str) -> Result<String, std::io::Error> {
     info!("Reading file: {}", filename);
@@ -49,13 +54,7 @@ fn format_statements(statements: &[sqlparser::ast::Statement]) -> Vec<String> {
     statements.iter().map(|stmt| stmt.to_string()).collect()
 }
 
-fn extract_table_data(statement: &Statement, network: SxtNetwork) -> Option<UpdateTable> {
-    let source = match network {
-        SxtNetwork::Devnet => Source::Sepolia,
-        SxtNetwork::Testnet => Source::Sepolia,
-        SxtNetwork::Mainnet => Source::Ethereum,
-    };
-
+fn create_drop_table_tx(statement: &Statement) -> Option<Vec<RuntimeCall>> {
     if let Statement::CreateTable { name, .. } = statement {
         info!("Extracting table data from statement: {}", statement);
         let table_id = TableIdentifier {
@@ -63,19 +62,23 @@ fn extract_table_data(statement: &Statement, network: SxtNetwork) -> Option<Upda
             namespace: BoundedVec(name.0.first()?.value.as_bytes().to_vec()),
         };
 
-        let encoded_schema = BoundedVec(statement.to_string().into_bytes());
-
-        let item = UpdateTable {
-            ident: table_id,
-            create_statement: encoded_schema,
+        // Build the enum variant for the pallet's call and wrap it in the top-level RuntimeCall:
+        let drop_table = RuntimeCall::Tables(TablesCall::drop_table {
             table_type: TableType::SCI,
-            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
-                hyper_kzg: true,
-                dynamic_dory: false,
-            }),
-            source,
+            ident: table_id,
+            source: Source::Sepolia,
+        });
+
+        let table_id = TableIdentifier {
+            name: BoundedVec(name.0.get(1)?.value.as_bytes().to_vec()),
+            namespace: BoundedVec(name.0.first()?.value.as_bytes().to_vec()),
         };
-        return Some(item);
+        let drop_commit = RuntimeCall::Tables(TablesCall::drop_invalid_commits { ident: table_id });
+
+        return Some(vec![
+            //drop_table,
+            drop_commit,
+        ]);
     }
     None
 }
@@ -86,19 +89,16 @@ async fn send_to_substrate(
     client: Arc<Mutex<OnlineClient<PolkadotConfig>>>,
     keypair: &Keypair,
     nonce: Arc<AtomicU64>,
-    network: SxtNetwork,
-    contract: SystemContract,
 ) {
-    let table_data: Vec<_> = statements
+    let drop_table_calls: Vec<_> = statements
         .iter()
-        .filter_map(|s| extract_table_data(s, network))
+        .filter_map(create_drop_table_tx)
+        .flatten()
         .collect();
 
     let client = client.lock().await;
-    let tx = tx().smartcontracts().add_smartcontract(
-        crate::contracts::get_contract(network, contract),
-        BoundedVec(table_data),
-    );
+
+    let tx = tx().utility().batch(drop_table_calls);
 
     let nonce_value = nonce.load(Ordering::Acquire);
     info!("Submitting transaction with nonce: {}", nonce_value);
@@ -118,14 +118,8 @@ async fn send_to_substrate(
     }
 }
 
-/// Handles the `load-contract` command
-pub(crate) async fn load_contract(
-    file: PathBuf,
-    private_key: &str,
-    rpc: &Url,
-    network: SxtNetwork,
-    contract: SystemContract,
-) -> anyhow::Result<()> {
+/// Handles the `drop-tables` command
+pub(crate) async fn drop_tables(file: PathBuf, private_key: &str, rpc: &Url) -> anyhow::Result<()> {
     let signer = Keypair::from_uri(&SecretUri::from_str(private_key)?)?;
     let ddl_content = fs::read_to_string(file)?;
     let fixed_ddl = convert_ignite_create_statement(&ddl_content);
@@ -138,6 +132,6 @@ pub(crate) async fn load_contract(
     let nonce_start = common::get_starting_nonce(subxt_client.clone(), id).await;
     let nonce = Arc::new(AtomicU64::new(nonce_start));
 
-    send_to_substrate(statements, subxt_client, &signer, nonce, network, contract).await;
+    send_to_substrate(statements, subxt_client, &signer, nonce).await;
     Ok(())
 }

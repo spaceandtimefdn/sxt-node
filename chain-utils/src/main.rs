@@ -3,6 +3,7 @@
 
 mod common;
 mod contracts;
+mod drop_tables;
 mod fetch_submissions;
 mod load_contract;
 mod load_tables;
@@ -66,7 +67,20 @@ enum Commands {
         #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
         rpc: url::Url,
     },
+    /// Drop tables listed in the supplied DDL File and submit to the SXT Chain
+    DropTables {
+        /// Path to the SQL DDL file
+        #[arg(short, long)]
+        file: PathBuf,
 
+        /// Private key URI to sign transactions
+        #[arg(short, long)]
+        private_key: String,
+
+        /// Node RPC endpoint
+        #[arg(short, long, default_value = "ws://127.0.0.1:9944")]
+        rpc: url::Url,
+    },
     // Load tables and ABIs for Smart Contracts like Staking, Messaging, and zkPay
     LoadContract {
         /// Path to the SQL DDL file for the contract's DDL
@@ -172,6 +186,16 @@ async fn main() {
         } => {
             if let Err(e) = load_tables::load_tables(file, &private_key, &rpc).await {
                 error!("Failed to load tables: {}", e);
+                process::exit(1);
+            }
+        }
+        Commands::DropTables {
+            file,
+            private_key,
+            rpc,
+        } => {
+            if let Err(e) = drop_tables::drop_tables(file, &private_key, &rpc).await {
+                error!("Failed to drop tables: {}", e);
                 process::exit(1);
             }
         }

@@ -26,6 +26,9 @@ pub fn testnet_messaging() -> Contract {
 pub fn testnet_staking() -> Contract {
     staking_contract("7B3cBAaFE8Ff3cbf4553893fdcaD8d5c46DB90Ab", Source::Sepolia, 8173966)
 }
+pub fn testnet_faster_staking() -> Contract {
+    staking_contract("0Ed4e306B11349f875B167FcA1C2BC314489234f", Source::Sepolia, 9237050)
+}
 pub fn testnet_zkpay() -> Contract {
     zkpay_contract("a735143283a6e686723403a820841e5774951a63", Source::Sepolia, 8126513)
 }
