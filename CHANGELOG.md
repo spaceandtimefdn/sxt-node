@@ -1,3 +1,12 @@
+# [1.32.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.31.1...v1.32.0) (2025-09-24)
+
+
+### Features
+
+* increment runtime spec version to 238 ([930cacb](https://github.com/spaceandtimefdn/sxt-node/commit/930cacb97b5d81970a82664e14f6470a69d6216f))
+
+
+
 ## [1.31.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.31.0...v1.31.1) (2025-09-24)
 
 
@@ -40,15 +49,6 @@
 
 * increment runtime spec version to 236 ([54a2e32](https://github.com/spaceandtimefdn/sxt-node/commit/54a2e325234c265cc6ec05f47b4f586cc0cec533))
 * upgrade the node version to 1.2.0 ([3c0675d](https://github.com/spaceandtimefdn/sxt-node/commit/3c0675d6e5fd2f3c69e97119077b539ffa8257c1))
-
-
-
-## [1.29.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.2...v1.29.3) (2025-09-19)
-
-
-### Bug Fixes
-
-* more complete cleanup in tables pallet in `drop_single_table` ([cf3ca2d](https://github.com/spaceandtimefdn/sxt-node/commit/cf3ca2d5680ba003acdeb90487c42e8675c2d7ff))
 
 
 
