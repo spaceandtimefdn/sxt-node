@@ -45,6 +45,7 @@ use log::{error, info};
 use sha3::digest::generic_array::GenericArray;
 use snafu::{ResultExt, Snafu};
 use sp_core::crypto::AccountId32;
+use sp_core::keccak_256;
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use sxt_core::sxt_chain_runtime;
@@ -223,7 +224,10 @@ async fn process_block<P: alloy::providers::Provider>(
                 &contract_info,
             );
 
-        let maybe_claim_attestations = attestations_per_root.get(&claimed_unstake_attestation_leaf);
+        let claimed_unstake_root_hash =
+            keccak_256(&keccak_256(&claimed_unstake_attestation_leaf)).to_vec();
+
+        let maybe_claim_attestations = attestations_per_root.get(&claimed_unstake_root_hash);
 
         info!(
             "Found {} attestation(s) for claim ({}, {}, {}).",
