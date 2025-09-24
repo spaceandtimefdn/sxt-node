@@ -1,3 +1,19 @@
+# [1.31.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.30.1...v1.31.0) (2025-09-24)
+
+
+### Bug Fixes
+
+* always use the attested block number in attestation struct ([e1eba2d](https://github.com/spaceandtimefdn/sxt-node/commit/e1eba2d6dc1ea5e89d7aa9cdc26743a64d58b191))
+* attest in current block for claimed unstakes ([1cb9d82](https://github.com/spaceandtimefdn/sxt-node/commit/1cb9d82c5513924a1142bb07749cefb158d02557))
+
+
+### Features
+
+* increment runtime spec version to 237 ([e746672](https://github.com/spaceandtimefdn/sxt-node/commit/e74667296ae64bf0935f86dd19d334d3a1935ea3))
+* make block number optional in attest_block extrinsic ([adfc421](https://github.com/spaceandtimefdn/sxt-node/commit/adfc4211e541874bfd5a6f5781c498fbbe500c1d))
+
+
+
 ## [1.30.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.30.0...v1.30.1) (2025-09-24)
 
 
@@ -33,15 +49,6 @@
 ### Bug Fixes
 
 * validate env variables in `node/src/chain_spec.rs` ([903fdf1](https://github.com/spaceandtimefdn/sxt-node/commit/903fdf17540ba0db8cef730aa36ab6d631635d53))
-
-
-
-## [1.29.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.0...v1.29.1) (2025-09-19)
-
-
-### Bug Fixes
-
-* allow multiple attestations per block ([d7f6436](https://github.com/spaceandtimefdn/sxt-node/commit/d7f6436df06de4df73531a60b9db7aaa23cdbfa5))
 
 
 
