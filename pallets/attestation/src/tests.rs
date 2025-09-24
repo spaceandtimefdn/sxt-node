@@ -283,8 +283,24 @@ fn attest_block_succeeds_with_multiple_attestations() {
         assert_ok!(Pallet::<Test>::attest_block(
             RuntimeOrigin::signed(account_id),
             Some(block_number),
-            attestation
+            attestation.clone()
         ));
+
+        // Attempt to submit the same attestation again.
+        assert_ok!(Pallet::<Test>::attest_block(
+            RuntimeOrigin::signed(account_id),
+            None,
+            attestation.clone()
+        ));
+
+        assert_eq!(crate::Attestations::<Test>::get(10).into_iter().count(), 2);
+        assert!(crate::Attestations::<Test>::get(10)
+            .into_iter()
+            .all(|actual_attestation| actual_attestation == attestation));
+        assert_eq!(crate::Attestations::<Test>::get(15).into_iter().count(), 1);
+        assert!(crate::Attestations::<Test>::get(15)
+            .into_iter()
+            .all(|actual_attestation| actual_attestation == attestation));
     });
 }
 

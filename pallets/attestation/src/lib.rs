@@ -199,7 +199,8 @@ pub mod pallet {
                         &signature,
                     )?;
 
-                    let mut attestations_for_block = Attestations::<T>::get(attested_block_number);
+                    let mut attestations_for_block =
+                        Attestations::<T>::get(block_number.unwrap_or(current_block));
 
                     attestations_for_block
                         .try_push(attestation.clone())
