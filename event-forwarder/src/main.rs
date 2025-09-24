@@ -215,8 +215,6 @@ async fn process_block<P: alloy::providers::Provider>(
     let claimed_unstakes: Vec<_> = Decode::decode(&mut claimed_unstakes.encode().as_slice())?;
     let contract_info = Decode::decode(&mut staking_contract_info.as_slice())?;
 
-    let attestations_per_root = attestations_per_root(config, block_number).await?;
-
     for claimed_unstake in claimed_unstakes {
         let claimed_unstake_attestation_leaf =
             sxt_core::attestation::claimed_unstake_attestation_leaf::<u32>(
@@ -226,6 +224,9 @@ async fn process_block<P: alloy::providers::Provider>(
 
         let claimed_unstake_root_hash =
             keccak_256(&keccak_256(&claimed_unstake_attestation_leaf)).to_vec();
+
+        let attestations_per_root =
+            attestations_per_root(config, claimed_unstake.claim_block_number).await?;
 
         let maybe_claim_attestations = attestations_per_root.get(&claimed_unstake_root_hash);
 
