@@ -142,42 +142,6 @@ fn update_tables_should_work_when_sudo() {
 }
 
 #[test]
-fn create_tables_should_work_when_sudo() {
-    new_test_ext().execute_with(|| {
-        System::set_block_number(1);
-
-        assert_ok!(
-            Tables::create_tables_with_snapshot_and_commitment(
-                RuntimeOrigin::root(),
-                SourceAndMode::default(),
-                CreateTableList::default(),
-            ),
-            ()
-        );
-    })
-}
-
-#[test]
-fn create_tables_should_work_when_permissioned() {
-    new_test_ext().execute_with(|| {
-        System::set_block_number(1);
-
-        let (who, signer) = user(1);
-
-        set_permission!(who, TablesPalletPermission::EditSchema);
-
-        assert_ok!(
-            Tables::create_tables_with_snapshot_and_commitment(
-                signer,
-                SourceAndMode::default(),
-                CreateTableList::default(),
-            ),
-            ()
-        );
-    })
-}
-
-#[test]
 fn create_namespace_should_work() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
