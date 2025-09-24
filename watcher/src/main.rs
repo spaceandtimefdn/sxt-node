@@ -493,14 +493,13 @@ impl AttestationClient {
             fixed_size_state_root,
         );
 
-        let message = create_attestation_message(&partial_message, block.number());
-
-        let signature = match generate_signature(private_key, &message) {
-            Ok(sig) => sig,
-            Err(e) => {
-                log::error!("Error generating signature: {}", e);
-                return Ok(());
-            }
+        let Ok(commitments_attestation) =
+            create_attestation(block.hash(), private_key, partial_message, block.number())
+                .inspect_err(|e| {
+                    log::error!("Error generating attestation for commitments: {}", e)
+                })
+        else {
+            return Ok(());
         };
 
         // claimed_unstakes are currently the subxt type, not the core type.
@@ -530,58 +529,36 @@ impl AttestationClient {
                 // Should be a noop, but the consistency is nice
                 let partial_message = encode_domain_and_state_root(None, root_hash);
 
-                let message = create_attestation_message(
-                    partial_message.clone(),
-                    claimed_unstake.claim_block_number,
-                );
-
-                let signature = generate_signature(private_key, &message)?;
-
-                Ok((
-                    signature,
+                let attestation = create_attestation(
+                    block.hash(),
+                    private_key,
                     partial_message,
-                    None,
                     claimed_unstake.claim_block_number,
-                ))
+                )?;
+
+                Ok((attestation, None))
             })
             .collect::<Result<Vec<_>, AttestationError>>()
-            .inspect_err(|e| log::error!("Error generating signature: {}", e))
+            .inspect_err(|e| {
+                log::error!("Error generating attestation for claimed unstake: {}", e)
+            })
         else {
             return Ok(());
         };
 
         let block = &block;
         futures::stream::iter(
-            std::iter::once((
-                signature,
-                partial_message,
-                Some(block.number()),
-                block.number(),
-            ))
-            .chain(claimed_unstake_signatures_and_roots),
+            std::iter::once((commitments_attestation, Some(block.number())))
+                .chain(claimed_unstake_signatures_and_roots),
         )
-        .for_each(
-            |(
-                signature,
-                partial_message,
-                attestation_key_block_number,
-                attestation_block_number,
-            )| async move {
-                if let Err(e) = self
-                    .submit_transaction_with_retry(
-                        block,
-                        private_key,
-                        signature,
-                        partial_message,
-                        attestation_key_block_number,
-                        attestation_block_number,
-                    )
-                    .await
-                {
-                    log::info!("Error submitting tx: {:?}", e);
-                };
-            },
-        )
+        .for_each(|(attestation, attestation_key_block_number)| async move {
+            if let Err(e) = self
+                .submit_transaction_with_retry(block, attestation_key_block_number, attestation)
+                .await
+            {
+                log::info!("Error submitting tx: {:?}", e);
+            };
+        })
         .await;
 
         Ok(())
@@ -590,22 +567,9 @@ impl AttestationClient {
     async fn submit_transaction_with_retry(
         &self,
         block: &BlockT<PolkadotConfig, OnlineClient<SxtConfig>>,
-        private_key: &SigningKey,
-        signature: EthereumSignature,
-        partial_message: Vec<u8>,
         attestation_key_block_number: Option<u32>,
-        attestation_block_number: u32,
+        attestation: runtime::api::runtime_types::sxt_core::attestation::Attestation<H256>,
     ) -> Result<(), AttestationError> {
-        let header = block.header();
-
-        let attestation = create_attestation(
-            header,
-            private_key,
-            signature,
-            partial_message.clone(),
-            attestation_block_number,
-        )?;
-
         let tx = runtime::api::tx()
             .attestations()
             .attest_block(attestation_key_block_number, attestation);
@@ -633,17 +597,16 @@ impl AttestationClient {
 }
 
 fn create_attestation(
-    header: &SubstrateHeader<u32, BlakeTwo256>,
+    block_hash: H256,
     private_key: &SigningKey,
-    signature: EthereumSignature,
-    state_root: Vec<u8>,
+    partial_message: Vec<u8>,
     attestation_block_number: u32,
 ) -> Result<runtime::api::runtime_types::sxt_core::attestation::Attestation<H256>, AttestationError>
 {
-    let sxt_core::attestation::EthereumSignature { r, s, v } = signature;
-    let proposed_pub_key = get_proposed_pub_key(private_key)?;
+    let message = create_attestation_message(partial_message.clone(), attestation_block_number);
 
-    let block_hash = header.hash();
+    let EthereumSignature { r, s, v } = generate_signature(private_key, &message)?;
+    let proposed_pub_key = get_proposed_pub_key(private_key)?;
 
     let address20 = sxt_core::attestation::uncompressed_public_key_to_address(&proposed_pub_key)?;
     let address20 = BoundedVec(address20.as_slice().to_vec());
@@ -656,7 +619,7 @@ fn create_attestation(
                 v,
             },
             proposed_pub_key,
-            state_root: BoundedVec(state_root),
+            state_root: BoundedVec(partial_message),
             address20,
             block_number: attestation_block_number,
             block_hash,
