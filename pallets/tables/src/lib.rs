@@ -730,10 +730,11 @@ pub mod pallet {
         ) -> Result<(TableUuid, ColumnUuidList), DispatchError> {
             // Try parsing the statement
             if let Ok(parsed) = create_statement_to_sqlparser(raw.clone()) {
-                let (table_uuid, column_uuids) = uuids_from_sqlparser(parsed);
-                let has_any = table_uuid != TableUuid::default() || !column_uuids.is_empty();
-                if has_any {
-                    return Ok((table_uuid, column_uuids));
+                if let Ok((table_uuid, column_uuids)) = uuids_from_sqlparser(parsed) {
+                    let has_any = table_uuid != TableUuid::default() || !column_uuids.is_empty();
+                    if has_any {
+                        return Ok((table_uuid, column_uuids));
+                    }
                 }
             }
 
