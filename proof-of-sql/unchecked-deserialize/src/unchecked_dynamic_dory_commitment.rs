@@ -1,5 +1,6 @@
 //! This module provides `UncheckedDynamicDoryCommitment`, a wrapper around `DynamicDoryCommitment` that allows for unchecked deserialization.
 
+use alloc::vec::Vec;
 use core::ops::Mul;
 
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
