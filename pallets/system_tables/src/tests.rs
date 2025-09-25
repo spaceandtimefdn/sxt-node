@@ -25,8 +25,15 @@ use sxt_core::utils::{
 use crate::mock::*;
 use crate::Pallet;
 
+/// Returns input * 10^18
+fn add_zeros(input: u128) -> u128 {
+    input.saturating_mul(1_000_000_000_000_000_000u128)
+}
+
 // Example SCALE encoded Session keys from calling author_rotateKeys() on Alice
 const ALICE_SESSION_KEYS: &str = "3084486e870e12fc551eacc173291f0d75ac5fed823aeb1e158bc98db215936202a555f88490d19f7fbacac7078fc87886084efd8227187a73ad05aee6da8ad38edd8739daa5689e9e118eb3be0330bbf80a30ad7639d4f0d70970dbccff9c4a";
+const ALICE_HEX_PUB_KEY: &str =
+    "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
 const ETH_TEST_WALLET: &str = "44bCf7001D9C3fe8b7aA2BBaaf1B94410db31f5c";
 const EXPECTED_TRANSFORMED_ETH_TEST_WALLET_HEX: &str =
     "00000000000000000000000044bCf7001D9C3fe8b7aA2BBaaf1B94410db31f5c";
@@ -41,6 +48,24 @@ fn get_staked_message(wallet: &str, amount: U256) -> SystemRequest {
                 SystemFieldValue::Bytes(wallet_bytes),
             ),
             SystemTableField::with_value("AMOUNT".to_string(), SystemFieldValue::Decimal(amount)),
+        ],
+    }
+}
+
+fn get_nominate_message(wallet: &str, target: &Vec<&str>) -> SystemRequest {
+    let wallet_bytes = hex::decode(wallet).unwrap();
+    SystemRequest {
+        request_type: SystemRequestType::Staking(StakingSystemRequest::Nominate),
+        table_id: TableIdentifier::from_str_unchecked("NOMINATED", "SXT_SYSTEM_STAKING"),
+        fields: vec![
+            SystemTableField::with_value(
+                "NOMINATOR".to_string(),
+                SystemFieldValue::Bytes(wallet_bytes),
+            ),
+            SystemTableField::with_value(
+                "NODESED25519PUBKEYS".to_string(),
+                SystemFieldValue::Varchar(serde_json::to_string(target).unwrap()),
+            ),
         ],
     }
 }
@@ -231,6 +256,157 @@ fn set_session_keys_works_if_stash_is_bonded() {
         let wallet = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
         assert!(pallet_staking::Validators::<Test>::contains_key(&wallet));
         assert!(pallet_session::NextKeys::<Test>::contains_key(&wallet));
+    });
+}
+
+#[test]
+fn set_nominations_works_if_stash_is_bonded() {
+    new_test_ext().execute_with(|| {
+        // We have to bond an amount to establish the stash/controller accounts
+        let test_amount = 100;
+        let bonding = get_staked_message(ETH_TEST_WALLET, test_amount.into());
+        assert_ok!(crate::process_staking::<Test>(bonding));
+
+        // Setup nominations for Alice
+        let nomination_targets = vec![ALICE_HEX_PUB_KEY];
+
+        let nominate = get_nominate_message(ETH_TEST_WALLET, &nomination_targets);
+        assert_ok!(crate::process_nominating::<Test>(nominate));
+        let found = pallet_staking::Nominators::<Test>::drain().any(|(nominator, _)| true);
+
+        assert!(found, "Expected nominator not found in staking nominators");
+    });
+}
+
+#[test]
+fn set_nominations_fails_if_stash_is_not_bonded_first() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        // Setup nominations for Alice
+
+        let nomination_targets = vec![ALICE_HEX_PUB_KEY];
+
+        let nominate = get_nominate_message(ETH_TEST_WALLET, &nomination_targets);
+        assert_ok!(crate::process_nominating::<Test>(nominate));
+
+        let events = System::events();
+        match events.last().map(|e| &e.event) {
+            Some(RuntimeEvent::SystemTables(crate::Event::MessageProcessingError { error })) => {
+                assert_eq!(
+                    error,
+                    &DispatchError::from(pallet_staking::Error::<Test>::NotController)
+                );
+            }
+            _ => panic!("Expected MessageProcessingError event not found"),
+        }
+    });
+}
+
+#[test]
+fn full_unstake_works_even_if_user_is_nominating() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let test_account = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
+        // Ensure the minimum is set to 100 SXT
+        pallet_staking::MinNominatorBond::<Test>::set(add_zeros(100));
+        assert_eq!(Staking::minimum_nominator_bond(), add_zeros(100));
+
+        // We have to bond an amount to establish the stash/controller accounts
+        let test_amount = add_zeros(100);
+        let bonding = get_staked_message(ETH_TEST_WALLET, test_amount.into());
+        assert_ok!(crate::process_staking::<Test>(bonding));
+
+        // Assert that we bonded 100SXT and then reset the events
+        System::assert_has_event(RuntimeEvent::Staking(pallet_staking::Event::Bonded {
+            stash: test_account.clone(),
+            amount: test_amount,
+        }));
+        System::reset_events();
+
+        // Setup nominations for Alice
+        let nomination_targets = vec![ALICE_HEX_PUB_KEY];
+
+        let nominate = get_nominate_message(ETH_TEST_WALLET, &nomination_targets);
+        assert_ok!(crate::process_nominating::<Test>(nominate));
+        assert_eq!(
+            pallet_staking::Nominators::<Test>::get(test_account)
+                .unwrap()
+                .targets
+                .len(),
+            1
+        );
+
+        // Now try to fully unstake
+        let unstake = get_unstaked_message(ETH_TEST_WALLET, test_amount.into());
+        assert_ok!(crate::process_unstake_initiated::<Test>(unstake));
+
+        // Now we do lookups based on the converted address to assure that state is set correctly
+        let transformed_eth_wallet =
+            eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
+        // Check that the unbonded event was emitted with the correct values
+        System::assert_has_event(RuntimeEvent::Staking(
+            pallet_staking::Event::<Test>::Unbonded {
+                stash: transformed_eth_wallet,
+                amount: test_amount,
+            },
+        ));
+    });
+}
+
+#[test]
+fn unstaking_more_than_account_balance_succeeds_and_unbonds_available_balance_instead() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let test_account = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
+        // Ensure the minimum is set to 100 SXT
+        pallet_staking::MinNominatorBond::<Test>::set(add_zeros(100));
+        assert_eq!(Staking::minimum_nominator_bond(), add_zeros(100));
+
+        // We have to bond an amount to establish the stash/controller accounts
+        let test_amount = add_zeros(100);
+        let bonding = get_staked_message(ETH_TEST_WALLET, test_amount.into());
+        assert_ok!(crate::process_staking::<Test>(bonding));
+
+        // Assert that we bonded 100SXT and then reset the events
+        System::assert_has_event(RuntimeEvent::Staking(pallet_staking::Event::Bonded {
+            stash: test_account.clone(),
+            amount: test_amount,
+        }));
+        System::reset_events();
+
+        // Setup nominations for Alice
+        let nomination_targets = vec![ALICE_HEX_PUB_KEY];
+
+        let nominate = get_nominate_message(ETH_TEST_WALLET, &nomination_targets);
+        assert_ok!(crate::process_nominating::<Test>(nominate));
+        assert_eq!(
+            pallet_staking::Nominators::<Test>::get(test_account)
+                .unwrap()
+                .targets
+                .len(),
+            1
+        );
+
+        // Now try to unstake DOUBLE the staked amount
+        let unstake = get_unstaked_message(ETH_TEST_WALLET, (test_amount * 2).into());
+        assert_ok!(crate::process_unstake_initiated::<Test>(unstake));
+
+        // Check that the unbonded event was emitted with the correct values
+        // indicating that only the available balance was unbonded
+        let transformed_eth_wallet =
+            eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
+        System::assert_has_event(RuntimeEvent::Staking(
+            pallet_staking::Event::<Test>::Unbonded {
+                stash: transformed_eth_wallet,
+                amount: test_amount,
+            },
+        ));
     });
 }
 
