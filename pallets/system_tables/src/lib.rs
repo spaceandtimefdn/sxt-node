@@ -521,16 +521,13 @@ pub mod pallet {
         T::CurrencyBalance,
     >;
 
-    fn consume_nonce<T: Config>(nonce: U256, eth_sender: &T::AccountId) -> DispatchResult {
+    fn validate_nonce<T: Config>(nonce: U256, eth_sender: &T::AccountId) -> DispatchResult {
         let expected =
             LastProcessedUserNonce::<T>::get(eth_sender).unwrap_or(U256::from(0)) + U256::from(1);
         match nonce.cmp(&expected) {
             Ordering::Less => Err(Error::<T>::LateNonce.into()),
             Ordering::Greater => Err(Error::<T>::FutureNonce.into()),
-            Ordering::Equal => {
-                LastProcessedUserNonce::<T>::set(eth_sender, Some(nonce));
-                Ok(())
-            }
+            Ordering::Equal => Ok(()),
         }
     }
 
@@ -548,8 +545,10 @@ pub mod pallet {
                     ) => {
                         let eth_sender =
                             eth_address_to_substrate_account_id::<T>(&hex::encode(sender))?;
-                        consume_nonce::<T>(*nonce, &eth_sender)?;
-                        messages::handle_message::<T>(eth_sender, body.to_vec())?;
+                        let nonce = *nonce;
+                        validate_nonce::<T>(nonce, &eth_sender)?;
+                        messages::handle_message::<T>(eth_sender.clone(), body.to_vec())?;
+                        LastProcessedUserNonce::<T>::set(eth_sender, Some(nonce));
                         Ok(())
                     }
                     _ => Err(Error::<T>::MissingExpectedField.into()),
@@ -582,13 +581,15 @@ pub mod pallet {
                     ) => {
                         let eth_sender =
                             eth_address_to_substrate_account_id::<T>(&hex::encode(sender))?;
-                        consume_nonce::<T>(*nonce, &eth_sender)?;
+                        let nonce = *nonce;
+                        validate_nonce::<T>(nonce, &eth_sender)?;
                         pallet_zkpay::Pallet::<T>::fund_compute_credits(
                             target,
                             body,
                             amount.as_u128().saturated_into(),
                             sender,
                         )?;
+                        LastProcessedUserNonce::<T>::set(eth_sender, Some(nonce));
                         Ok(())
                     }
                     _ => Err(Error::<T>::MissingExpectedField.into()),
