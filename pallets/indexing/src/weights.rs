@@ -20,45 +20,50 @@
 // --output
 // weights.rs
 
-#![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
 #![allow(unused_imports)]
 #![allow(missing_docs)]
 
-use frame_support::{traits::Get, weights::Weight};
 use core::marker::PhantomData;
+
+use frame_support::traits::Get;
+use frame_support::weights::Weight;
+
 use crate::{pallet, Config};
 
 /// Weight functions for `pallet_indexing`.
 pub trait WeightInfo {
     fn submit_data() -> Weight;
+    /// Storage: `Tables::TableInsertQuorums` (r:1 w:0)
+    /// Proof: `Tables::TableInsertQuorums` (`max_values`: None, `max_size`: Some(152), added: 2627, mode: `MaxEncodedLen`)
     /// Storage: `Permissions::Permissions` (r:1 w:0)
-    /// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: Some(2193), added: 4668, mode: `MaxEncodedLen`)
-    /// Storage: `Tables::Schemas` (r:1 w:0)
-    /// Proof: `Tables::Schemas` (`max_values`: None, `max_size`: Some(8358), added: 10833, mode: `MaxEncodedLen`)
+    /// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: None, mode: `Measured`)
     /// Storage: `Indexing::FinalData` (r:1 w:0)
-    /// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2336), added: 4811, mode: `MaxEncodedLen`)
-    /// Storage: `Indexing::Submissions` (r:1 w:1)
-    /// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(1126), added: 3601, mode: `MaxEncodedLen`)
-    fn submit_data_quorum_not_reached() -> Weight;
-    /// Storage: `Permissions::Permissions` (r:1 w:0)
-    /// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: Some(2193), added: 4668, mode: `MaxEncodedLen`)
+    /// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2337), added: 4812, mode: `MaxEncodedLen`)
     /// Storage: `Tables::Schemas` (r:1 w:0)
     /// Proof: `Tables::Schemas` (`max_values`: None, `max_size`: Some(8358), added: 10833, mode: `MaxEncodedLen`)
+    /// Storage: `Indexing::Submissions` (r:1 w:1)
+    /// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(2151), added: 4626, mode: `MaxEncodedLen`)
+    fn submit_data_quorum_not_reached() -> Weight;
+    /// Storage: `Tables::TableInsertQuorums` (r:1 w:0)
+    /// Proof: `Tables::TableInsertQuorums` (`max_values`: None, `max_size`: Some(152), added: 2627, mode: `MaxEncodedLen`)
+    /// Storage: `Permissions::Permissions` (r:1 w:0)
+    /// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: None, mode: `Measured`)
     /// Storage: `Indexing::FinalData` (r:1 w:1)
-    /// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2336), added: 4811, mode: `MaxEncodedLen`)
+    /// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2337), added: 4812, mode: `MaxEncodedLen`)
+    /// Storage: `Tables::Schemas` (r:1 w:0)
+    /// Proof: `Tables::Schemas` (`max_values`: None, `max_size`: Some(8358), added: 10833, mode: `MaxEncodedLen`)
     /// Storage: `Indexing::Submissions` (r:2 w:1)
-    /// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(1126), added: 3601, mode: `MaxEncodedLen`)
-    /// Storage: `Commitments::CommitmentStorageMap` (r:2 w:1)
+    /// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(2151), added: 4626, mode: `MaxEncodedLen`)
+    /// Storage: `Tables::Identifiers` (r:1 w:0)
+    /// Proof: `Tables::Identifiers` (`max_values`: None, `max_size`: Some(135191), added: 137666, mode: `MaxEncodedLen`)
+    /// Storage: `Commitments::CommitmentStorageMap` (r:2 w:2)
     /// Proof: `Commitments::CommitmentStorageMap` (`max_values`: None, `max_size`: Some(45497), added: 47972, mode: `MaxEncodedLen`)
-    /// Storage: `Indexing::BlockNumbers` (r:0 w:1)
-    /// Proof: `Indexing::BlockNumbers` (`max_values`: None, `max_size`: Some(156), added: 2631, mode: `MaxEncodedLen`)
     fn submit_data_quorum_reached() -> Weight;
 }
 
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-
     /// When submitting data we don't know if we'll reach quorum until after we execute the
     /// transaction. Because of this, we manually implement this weight which assumes that in
     /// 4 submissions we will have 3 with no quorum and 1 with a quorum.
@@ -68,50 +73,56 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
         let submit_w_quorum = <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached();
 
         // Assume in 4 submissions, one will have a quorum event
-        let submit_avg_time = ((3 * submit_no_quorum.ref_time()) + (1 * submit_w_quorum.ref_time()) / 4);
-        let submit_avg_proof = ((3 * submit_no_quorum.proof_size()) + (1 * submit_w_quorum.proof_size()) / 4);
+        let submit_avg_time =
+            ((3 * submit_no_quorum.ref_time()) + (1 * submit_w_quorum.ref_time()) / 4);
+        let submit_avg_proof =
+            ((3 * submit_no_quorum.proof_size()) + (1 * submit_w_quorum.proof_size()) / 4);
 
         Weight::from_parts(submit_avg_time, submit_avg_proof)
     }
 
+    /// Storage: `Tables::TableInsertQuorums` (r:1 w:0)
+    /// Proof: `Tables::TableInsertQuorums` (`max_values`: None, `max_size`: Some(152), added: 2627, mode: `MaxEncodedLen`)
     /// Storage: `Permissions::Permissions` (r:1 w:0)
-    /// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: Some(2193), added: 4668, mode: `MaxEncodedLen`)
+    /// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: None, mode: `Measured`)
+    /// Storage: `Indexing::FinalData` (r:1 w:0)
+    /// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2337), added: 4812, mode: `MaxEncodedLen`)
     /// Storage: `Tables::Schemas` (r:1 w:0)
     /// Proof: `Tables::Schemas` (`max_values`: None, `max_size`: Some(8358), added: 10833, mode: `MaxEncodedLen`)
-    /// Storage: `Indexing::FinalData` (r:1 w:0)
-    /// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2336), added: 4811, mode: `MaxEncodedLen`)
     /// Storage: `Indexing::Submissions` (r:1 w:1)
-    /// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(1126), added: 3601, mode: `MaxEncodedLen`)
+    /// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(2151), added: 4626, mode: `MaxEncodedLen`)
     fn submit_data_quorum_not_reached() -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `851`
+        //  Measured:  `546`
         //  Estimated: `11823`
-        // Minimum execution time: 64_872_000 picoseconds.
-        Weight::from_parts(65_403_000, 0)
-                .saturating_add(Weight::from_parts(0, 11823))
-                .saturating_add(T::DbWeight::get().reads(4))
-                .saturating_add(T::DbWeight::get().writes(1))
+        // Minimum execution time: 272_122_000 picoseconds.
+        Weight::from_parts(277_713_000, 0)
+            .saturating_add(Weight::from_parts(0, 11823))
+            .saturating_add(T::DbWeight::get().reads(5))
+            .saturating_add(T::DbWeight::get().writes(1))
     }
+    /// Storage: `Tables::TableInsertQuorums` (r:1 w:0)
+    /// Proof: `Tables::TableInsertQuorums` (`max_values`: None, `max_size`: Some(152), added: 2627, mode: `MaxEncodedLen`)
     /// Storage: `Permissions::Permissions` (r:1 w:0)
-    /// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: Some(2193), added: 4668, mode: `MaxEncodedLen`)
+    /// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: None, mode: `Measured`)
+    /// Storage: `Indexing::FinalData` (r:1 w:1)
+    /// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2337), added: 4812, mode: `MaxEncodedLen`)
     /// Storage: `Tables::Schemas` (r:1 w:0)
     /// Proof: `Tables::Schemas` (`max_values`: None, `max_size`: Some(8358), added: 10833, mode: `MaxEncodedLen`)
-    /// Storage: `Indexing::FinalData` (r:1 w:1)
-    /// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2336), added: 4811, mode: `MaxEncodedLen`)
     /// Storage: `Indexing::Submissions` (r:2 w:1)
-    /// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(1126), added: 3601, mode: `MaxEncodedLen`)
-    /// Storage: `Commitments::CommitmentStorageMap` (r:2 w:1)
+    /// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(2151), added: 4626, mode: `MaxEncodedLen`)
+    /// Storage: `Tables::Identifiers` (r:1 w:0)
+    /// Proof: `Tables::Identifiers` (`max_values`: None, `max_size`: Some(135191), added: 137666, mode: `MaxEncodedLen`)
+    /// Storage: `Commitments::CommitmentStorageMap` (r:2 w:2)
     /// Proof: `Commitments::CommitmentStorageMap` (`max_values`: None, `max_size`: Some(45497), added: 47972, mode: `MaxEncodedLen`)
-    /// Storage: `Indexing::BlockNumbers` (r:0 w:1)
-    /// Proof: `Indexing::BlockNumbers` (`max_values`: None, `max_size`: Some(156), added: 2631, mode: `MaxEncodedLen`)
     fn submit_data_quorum_reached() -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `8014`
-        //  Estimated: `96934`
-        // Minimum execution time: 65_486_261_000 picoseconds.
-        Weight::from_parts(65_686_228_000, 0)
-                .saturating_add(Weight::from_parts(0, 96934))
-                .saturating_add(T::DbWeight::get().reads(7))
-                .saturating_add(T::DbWeight::get().writes(4))
+        //  Measured:  `45993`
+        //  Estimated: `138656`
+        // Minimum execution time: 730_499_332_000 picoseconds.
+        Weight::from_parts(742_674_591_000, 0)
+            .saturating_add(Weight::from_parts(0, 138656))
+            .saturating_add(T::DbWeight::get().reads(9))
+            .saturating_add(T::DbWeight::get().writes(4))
     }
 }
