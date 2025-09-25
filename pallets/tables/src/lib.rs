@@ -386,7 +386,7 @@ pub mod pallet {
                         table.ddl.clone(),
                         table.table_type.clone(),
                         source_and_mode.source.clone(),
-                    );
+                    )?;
 
                     let statement_with_metadata = Self::insert_initial_commitment(
                         table.table_name.clone(),
@@ -658,10 +658,12 @@ pub mod pallet {
             stmnt: CreateStatement,
             table_type: TableType,
             source: Source,
-        ) {
+        ) -> DispatchResult {
             let mut identifiers = Identifiers::<T>::get(&table_type);
 
-            identifiers.try_push(ident.clone());
+            identifiers
+                .try_push(ident.clone())
+                .map_err(|_| Error::<T>::BoundedVecError)?;
             Identifiers::<T>::insert(&table_type, identifiers);
 
             let TableIdentifier { name, namespace } = ident.clone();
@@ -670,6 +672,7 @@ pub mod pallet {
 
             TableInsertQuorums::<T>::insert(&ident, quorum);
             TableSources::<T>::insert(&ident, source);
+            Ok(())
         }
 
         /// Insert the initial commit for this table using the commitments-sql pallet.
@@ -843,7 +846,7 @@ pub mod pallet {
                         updated_create_statement.clone(),
                         table.table_type.clone(),
                         table.source.clone(),
-                    );
+                    )?;
 
                     // Parse and remove WITH clause
                     let (mut create_table, with_options) = create_statement_to_sqlparser_remove_with(
