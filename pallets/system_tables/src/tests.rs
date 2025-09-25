@@ -323,6 +323,7 @@ fn unstaked_users_can_cancel_unstaking_in_progress() {
     new_test_ext().execute_with(|| {
         crate::mock::run_to_block(1);
         let test_amount = 100;
+        let unstake_amount = 20;
         // Create a message to stake 100 using the ethereum address
         let bonding = get_staked_message(ETH_TEST_WALLET, test_amount.into());
 
@@ -352,7 +353,7 @@ fn unstaked_users_can_cancel_unstaking_in_progress() {
 
         crate::mock::run_to_block(100);
 
-        let initiate_unstake = get_initiate_unstake_message(ETH_TEST_WALLET, test_amount.into());
+        let initiate_unstake = get_initiate_unstake_message(ETH_TEST_WALLET, unstake_amount.into());
 
         // Call Unstake
         assert_ok!(crate::process_unstake_initiated::<Test>(initiate_unstake));
@@ -360,7 +361,7 @@ fn unstaked_users_can_cancel_unstaking_in_progress() {
         // Ensure than an unbonded event has occurred for the user
         System::assert_has_event(RuntimeEvent::Staking(pallet_staking::Event::Unbonded {
             stash: transformed_eth_wallet.clone(),
-            amount: test_amount,
+            amount: unstake_amount,
         }));
 
         System::reset_events();
@@ -368,14 +369,56 @@ fn unstaked_users_can_cancel_unstaking_in_progress() {
         // Cancel at the next block
         crate::mock::run_to_block(101);
 
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&transformed_eth_wallet),
+            100
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::usable_balance(&transformed_eth_wallet),
+            0
+        );
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::ledger(transformed_eth_wallet.clone().into())
+                .unwrap()
+                .total,
+            test_amount
+        );
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::ledger(transformed_eth_wallet.clone().into())
+                .unwrap()
+                .active,
+            test_amount - unstake_amount
+        );
+
         let cancel_unstake = get_cancel_unstake_message(ETH_TEST_WALLET);
         assert_ok!(crate::process_unstake_cancelled::<Test>(cancel_unstake));
 
         // Make sure the total was rebonded
         System::assert_has_event(RuntimeEvent::Staking(pallet_staking::Event::Bonded {
             stash: transformed_eth_wallet.clone(),
-            amount: test_amount,
+            amount: unstake_amount,
         }));
+
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&transformed_eth_wallet),
+            100
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::usable_balance(&transformed_eth_wallet),
+            0
+        );
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::ledger(transformed_eth_wallet.clone().into())
+                .unwrap()
+                .total,
+            test_amount
+        );
+        assert_eq!(
+            pallet_staking::Pallet::<Test>::ledger(transformed_eth_wallet.clone().into())
+                .unwrap()
+                .active,
+            test_amount
+        );
 
         // Double check that the staking pallet knows this user is no longer unbonding
         let is_unbonding =
