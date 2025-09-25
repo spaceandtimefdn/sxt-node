@@ -1,3 +1,12 @@
+## [1.32.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.0...v1.32.1) (2025-09-25)
+
+
+### Bug Fixes
+
+* let tables::insert_schema error out if Identifiers is too large ([fc455f7](https://github.com/spaceandtimefdn/sxt-node/commit/fc455f7a3e7ff34b78991ab8f8aad1cba4a00d48))
+
+
+
 # [1.32.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.31.1...v1.32.0) (2025-09-24)
 
 
@@ -39,16 +48,6 @@
 
 * account_id_from_str 20 byte conversion ([5dab86e](https://github.com/spaceandtimefdn/sxt-node/commit/5dab86e5d0da9da5e491b3aca05d05178d148c8b))
 * add failing account_id_from_str test ([5eb3a27](https://github.com/spaceandtimefdn/sxt-node/commit/5eb3a27765ff652f7279760e38bd038ffdcd4459))
-
-
-
-# [1.30.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.29.3...v1.30.0) (2025-09-20)
-
-
-### Features
-
-* increment runtime spec version to 236 ([54a2e32](https://github.com/spaceandtimefdn/sxt-node/commit/54a2e325234c265cc6ec05f47b4f586cc0cec533))
-* upgrade the node version to 1.2.0 ([3c0675d](https://github.com/spaceandtimefdn/sxt-node/commit/3c0675d6e5fd2f3c69e97119077b539ffa8257c1))
 
 
 
