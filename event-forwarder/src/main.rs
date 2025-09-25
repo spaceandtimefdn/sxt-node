@@ -17,7 +17,7 @@
 //! ```sh
 //! cargo run -- integration-test
 //! ```
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -33,9 +33,9 @@ use alloy::providers::fillers::{
     NonceFiller,
     WalletFiller,
 };
-use alloy::providers::{Identity, ProviderBuilder, RootProvider};
+use alloy::providers::{Identity, ProviderBuilder, RootProvider, WsConnect};
 use alloy::signers::local::PrivateKeySigner;
-use alloy::transports::http::reqwest::Url;
+use alloy::transports::TransportError;
 use clap::Parser;
 use codec::{Decode, Encode};
 use hex::FromHex;
@@ -45,6 +45,7 @@ use log::{error, info};
 use sha3::digest::generic_array::GenericArray;
 use snafu::{ResultExt, Snafu};
 use sp_core::crypto::AccountId32;
+use sp_core::keccak_256;
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use sxt_core::sxt_chain_runtime;
@@ -55,7 +56,6 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::{
 use sxt_core::system_tables::ClaimedUnstake;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
-use url::ParseError;
 use watcher::attestation::fetch::commitments_and_staking_contract_info_and_claimed_unstakes;
 
 #[allow(clippy::too_many_arguments, missing_docs)]
@@ -85,8 +85,8 @@ type ProviderInstance = FillProvider<
 #[allow(clippy::missing_docs_in_private_items)]
 #[derive(Debug, Snafu)]
 enum EventForwarderError {
-    #[snafu(display("Failed to parse URL: {}", source))]
-    UrlParse { source: ParseError },
+    #[snafu(transparent)]
+    AlloyTransportError { source: TransportError },
 
     #[snafu(display("Failed to read Ethereum key from file '{}': {}", path, source))]
     KeyFileRead {
@@ -152,7 +152,7 @@ enum BlockProcessingError {
 async fn attestations_per_root(
     config: &Config,
     block_number: u32,
-) -> Result<HashMap<Vec<u8>, Vec<EthereumSignature>>, subxt::Error> {
+) -> Result<HashMap<Vec<u8>, BTreeMap<String, EthereumSignature>>, subxt::Error> {
     let attestations_storage_address = sxt_chain_runtime::api::storage()
         .attestations()
         .attestations(block_number);
@@ -167,31 +167,35 @@ async fn attestations_per_root(
 
     let attestations = maybe_attestations.map(|a| a.0).unwrap_or_default();
 
-    let result: HashMap<Vec<u8>, Vec<EthereumSignature>> = attestations
+    let result: HashMap<Vec<u8>, BTreeMap<String, EthereumSignature>> = attestations
         .into_iter()
-        .map(
-            |Attestation::EthereumAttestation {
-                 state_root,
-                 signature,
-                 ..
-             }| (state_root.0, signature),
-        )
-        .into_group_map();
+        .fold(HashMap::new(), |mut acc, attestation| {
+            let Attestation::EthereumAttestation {
+                state_root,
+                address20,
+                signature,
+                ..
+            } = attestation;
+            acc.entry(state_root.0)
+                .or_default()
+                .insert(hex::encode(address20.0), signature);
+            acc
+        });
     Ok(result)
 }
 
 async fn attempt_fulfill_unstake<P: alloy::providers::Provider>(
     contract: &EventForwarder::EventForwarderInstance<(), P>,
     claimed_unstake: ClaimedUnstake<AccountId32, u32, u128>,
-    claim_attestations: &[EthereumSignature],
+    claim_attestations: impl IntoIterator<Item = &EthereumSignature>,
 ) {
     let staker = Address::from_slice(&<[u8; 32]>::from(claimed_unstake.staker)[12..32]);
     let claimed_amount = Uint::from(claimed_unstake.claimed_amount);
     let claim_block_number = claimed_unstake.claim_block_number.into();
     let proof = vec![];
     let (r, s, v) = claim_attestations
-        .iter()
-        .map(|e| (FixedBytes::from(e.r), FixedBytes::from(e.s), e.v))
+        .into_iter()
+        .map(|e| (FixedBytes::from(e.r), FixedBytes::from(e.s), e.v + 27))
         .multiunzip();
     match contract
         .sxtFulfillUnstake(staker, claimed_amount, claim_block_number, proof, r, s, v)
@@ -223,18 +227,21 @@ async fn process_block<P: alloy::providers::Provider>(
                 &contract_info,
             );
 
-        let maybe_claim_attestations = attestations_per_root.get(&claimed_unstake_attestation_leaf);
+        let claimed_unstake_root_hash =
+            keccak_256(&keccak_256(&claimed_unstake_attestation_leaf)).to_vec();
+
+        let maybe_claim_attestations = attestations_per_root.get(&claimed_unstake_root_hash);
 
         info!(
             "Found {} attestation(s) for claim ({}, {}, {}).",
             maybe_claim_attestations.map(|m| m.len()).unwrap_or(0),
             claimed_unstake.staker,
             claimed_unstake.claim_block_number,
-            claimed_unstake.claimed_amount
+            claimed_unstake.claimed_amount,
         );
 
         if let Some(claim_attestations) = maybe_claim_attestations {
-            attempt_fulfill_unstake(contract, claimed_unstake, claim_attestations).await;
+            attempt_fulfill_unstake(contract, claimed_unstake, claim_attestations.values()).await;
         }
     }
     Ok(())
@@ -258,7 +265,7 @@ async fn main() -> Result<(), EventForwarderError> {
 
     let contract = EventForwarder::new(config.contract_address, config.provider.clone());
 
-    let mut block_sub = config.api.blocks().subscribe_best().await?;
+    let mut block_sub = config.api.blocks().subscribe_finalized().await?;
 
     while let Some(block) = block_sub.next().await {
         match block {
@@ -301,13 +308,13 @@ async fn setup_config(
     contract_address: &str,
     substrate_rpc_url: &str,
 ) -> Result<Config, EventForwarderError> {
-    let rpc_url = Url::from_str(rpc_url).context(UrlParseSnafu)?;
+    let rpc_url = WsConnect::new(rpc_url);
     let ethereum_signer = load_ethereum_key(eth_key_path).await?;
     let signer = PrivateKeySigner::from_signing_key(ethereum_signer);
     let wallet = EthereumWallet::from(signer.clone());
 
     let provider: Arc<ProviderInstance> =
-        Arc::new(ProviderBuilder::new().wallet(wallet).on_http(rpc_url));
+        Arc::new(ProviderBuilder::new().wallet(wallet).on_ws(rpc_url).await?);
 
     let contract_address = Address::from_str(contract_address.trim()).context(AddressParseSnafu)?;
 
