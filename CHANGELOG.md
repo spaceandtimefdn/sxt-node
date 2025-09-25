@@ -1,3 +1,7 @@
+## [1.32.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.3...v1.32.4) (2025-09-25)
+
+
+
 ## [1.32.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.2...v1.32.3) (2025-09-25)
 
 
@@ -31,15 +35,6 @@
 ### Features
 
 * increment runtime spec version to 238 ([930cacb](https://github.com/spaceandtimefdn/sxt-node/commit/930cacb97b5d81970a82664e14f6470a69d6216f))
-
-
-
-## [1.31.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.31.0...v1.31.1) (2025-09-24)
-
-
-### Bug Fixes
-
-* retrieve correct attestation list to update in attest_block ([d0bada8](https://github.com/spaceandtimefdn/sxt-node/commit/d0bada8a64854d49ed5b87c4b24fcc7c980439b4))
 
 
 
