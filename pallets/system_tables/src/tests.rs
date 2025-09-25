@@ -1111,3 +1111,155 @@ fn we_can_get_account_id_from_str_for_20_byte_address() {
     assert_eq!(parsed_address20, parsed_address32);
     assert_eq!(parsed_address20, expected_parsed_address);
 }
+
+#[test]
+fn nonce_should_not_be_consumed_on_failure_of_process_evm_message() {
+    new_test_ext().execute_with(|| {
+        let sender_account = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+        let request = get_register_keys_message(ETH_TEST_WALLET, ALICE_SESSION_KEYS, U256::from(1));
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(&sender_account),
+            None
+        );
+        assert_ok!(crate::process_evm_message::<Test>(request));
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(&sender_account),
+            None
+        );
+    });
+}
+
+#[test]
+fn nonce_should_not_be_consumed_on_failure_of_process_evm_funded_message() {
+    new_test_ext().execute_with(|| {
+        const COMPUTE_CREDIT_ADDRESS: &str = "0123456789ABCDEF0123456789ABCDEF012345";
+        const SENDER_WALLET: &str = "AAAAA00000BBBBB00000CCCCC00000DDDDD00000";
+        const FUNDED_ACCOUNT: &str = "00";
+        let compute_credit_address = hex::decode(COMPUTE_CREDIT_ADDRESS).unwrap();
+        let funded_address = hex::decode(FUNDED_ACCOUNT).unwrap();
+        pallet_zkpay::ComputeCreditAddress::<Test>::put(
+            sxt_core::ByteString::try_from(compute_credit_address.clone()).unwrap(),
+        );
+
+        let sender_account = eth_address_to_substrate_account_id::<Test>(SENDER_WALLET).unwrap();
+
+        let request = get_funded_message(
+            hex::decode(SENDER_WALLET).unwrap(),
+            funded_address,
+            1.into(),
+            compute_credit_address,
+            1000u64.into(),
+        );
+
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(&sender_account),
+            None
+        );
+
+        assert_ok!(crate::process_evm_funded_message::<Test>(request));
+
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(&sender_account),
+            None
+        );
+    });
+}
+
+#[test]
+fn process_evm_message_should_not_change_state_if_nonce_is_invalid() {
+    new_test_ext().execute_with(|| {
+        // We have to bond an amount to establish the stash/controller accounts
+        let test_amount = 100;
+        let bonding = get_staked_message(ETH_TEST_WALLET, test_amount.into());
+        assert_ok!(crate::process_staking::<Test>(bonding));
+
+        // Test registering Alice's Keys
+        let request = get_register_keys_message(ETH_TEST_WALLET, ALICE_SESSION_KEYS, U256::from(2));
+        assert_ok!(crate::process_evm_message::<Test>(request));
+
+        let wallet = eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+        assert_eq!(crate::LastProcessedUserNonce::<Test>::get(&wallet), None);
+        assert!(!pallet_staking::Validators::<Test>::contains_key(&wallet));
+        assert!(!pallet_session::NextKeys::<Test>::contains_key(&wallet));
+        let request = get_register_keys_message(ETH_TEST_WALLET, ALICE_SESSION_KEYS, U256::from(1));
+        assert_ok!(crate::process_evm_message::<Test>(request));
+
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(&wallet),
+            Some(1.into())
+        );
+        assert!(pallet_staking::Validators::<Test>::contains_key(&wallet));
+        assert!(pallet_session::NextKeys::<Test>::contains_key(&wallet));
+        let request = get_register_keys_message(ETH_TEST_WALLET, ALICE_SESSION_KEYS, U256::from(3));
+        assert_ok!(crate::process_evm_message::<Test>(request));
+
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(&wallet),
+            Some(1.into())
+        );
+    });
+}
+
+#[test]
+fn process_evm_funded_message_should_not_change_state_if_nonce_is_invalid() {
+    new_test_ext().execute_with(|| {
+        const COMPUTE_CREDIT_ADDRESS: &str = "0123456789ABCDEF0123456789ABCDEF01234567";
+        const SENDER_WALLET: &str = "AAAAA00000BBBBB00000CCCCC00000DDDDD00000";
+        const FUNDED_ACCOUNT: &str =
+            "0000111122223333444455556666777788889999AAAABBBBCCCCDDDDEEEEFFFF";
+        let compute_credit_address = hex::decode(COMPUTE_CREDIT_ADDRESS).unwrap();
+        let sender_wallet = hex::decode(SENDER_WALLET).unwrap();
+        let funded_address = hex::decode(FUNDED_ACCOUNT).unwrap();
+
+        let sender_account = eth_address_to_substrate_account_id::<Test>(SENDER_WALLET).unwrap();
+        let funded_account = account_id_from_str::<Test>(FUNDED_ACCOUNT).unwrap();
+
+        pallet_zkpay::ComputeCreditAddress::<Test>::put(
+            sxt_core::ByteString::try_from(compute_credit_address.clone()).unwrap(),
+        );
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&funded_account),
+            0
+        );
+
+        let request = get_funded_message(
+            sender_wallet.clone(),
+            funded_address.clone(),
+            1.into(),
+            compute_credit_address.clone(),
+            1000u64.into(),
+        );
+
+        assert_ok!(crate::process_evm_funded_message::<Test>(request));
+
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&funded_account),
+            1000
+        );
+
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(&sender_account),
+            Some(1.into())
+        );
+
+        let request_2 = get_funded_message(
+            sender_wallet,
+            funded_address,
+            3.into(),
+            compute_credit_address.clone(),
+            1000u64.into(),
+        );
+
+        assert_ok!(crate::process_evm_funded_message::<Test>(request_2));
+
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&funded_account),
+            1000
+        );
+
+        assert_eq!(
+            crate::LastProcessedUserNonce::<Test>::get(&sender_account),
+            Some(1.into())
+        );
+    });
+}
