@@ -1,3 +1,12 @@
+## [1.32.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.1...v1.32.2) (2025-09-25)
+
+
+### Bug Fixes
+
+* correct event-forwarder ([63520a6](https://github.com/spaceandtimefdn/sxt-node/commit/63520a6ad6adcde1c4f8e3c66cede8b95492eb9c))
+
+
+
 ## [1.32.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.0...v1.32.1) (2025-09-25)
 
 
@@ -38,16 +47,6 @@
 
 * increment runtime spec version to 237 ([e746672](https://github.com/spaceandtimefdn/sxt-node/commit/e74667296ae64bf0935f86dd19d334d3a1935ea3))
 * make block number optional in attest_block extrinsic ([adfc421](https://github.com/spaceandtimefdn/sxt-node/commit/adfc4211e541874bfd5a6f5781c498fbbe500c1d))
-
-
-
-## [1.30.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.30.0...v1.30.1) (2025-09-24)
-
-
-### Bug Fixes
-
-* account_id_from_str 20 byte conversion ([5dab86e](https://github.com/spaceandtimefdn/sxt-node/commit/5dab86e5d0da9da5e491b3aca05d05178d148c8b))
-* add failing account_id_from_str test ([5eb3a27](https://github.com/spaceandtimefdn/sxt-node/commit/5eb3a27765ff652f7279760e38bd038ffdcd4459))
 
 
 
