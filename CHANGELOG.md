@@ -1,3 +1,12 @@
+## [1.32.5](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.4...v1.32.5) (2025-09-26)
+
+
+### Bug Fixes
+
+* fix failing tests in system_tables ([8492c45](https://github.com/spaceandtimefdn/sxt-node/commit/8492c453c2c1dbf7f925d43a24a9fa7551ec4fca))
+
+
+
 ## [1.32.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.3...v1.32.4) (2025-09-25)
 
 
@@ -26,15 +35,6 @@
 ### Bug Fixes
 
 * let tables::insert_schema error out if Identifiers is too large ([fc455f7](https://github.com/spaceandtimefdn/sxt-node/commit/fc455f7a3e7ff34b78991ab8f8aad1cba4a00d48))
-
-
-
-# [1.32.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.31.1...v1.32.0) (2025-09-24)
-
-
-### Features
-
-* increment runtime spec version to 238 ([930cacb](https://github.com/spaceandtimefdn/sxt-node/commit/930cacb97b5d81970a82664e14f6470a69d6216f))
 
 
 
