@@ -1,12 +1,12 @@
 //! Module containing utility functions `TableCommitment`s.
 
-use proof_of_sql::base::commitment::{Commitment, TableCommitment};
+use proof_of_sql::base::commitment::{Commitment, NegativeRange, TableCommitment};
 
 /// Map a `TableCommitment<A>` to a `TableCommitment<B>` by applying `f` to each column commitment.
 pub fn map_table_commitment<'a, A: Commitment, B: Commitment, F: Fn(&'a A) -> B>(
     table_commitment: &'a TableCommitment<A>,
     f: F,
-) -> TableCommitment<B> {
+) -> Result<TableCommitment<B>, NegativeRange> {
     TableCommitment::try_new(
         table_commitment
             .column_commitments()
@@ -15,5 +15,4 @@ pub fn map_table_commitment<'a, A: Commitment, B: Commitment, F: Fn(&'a A) -> B>
             .collect(),
         table_commitment.range().clone(),
     )
-    .expect("range was cloned from existing commitment, so valid")
 }
