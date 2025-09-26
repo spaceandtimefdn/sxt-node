@@ -303,6 +303,65 @@ fn set_nominations_fails_if_stash_is_not_bonded_first() {
 }
 
 #[test]
+fn initiate_unstake_fails_if_stash_is_not_bonded_first() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        // Setup nominations for Alice
+
+        // Try to unstake 100 SXT without bonding first
+        let unstake = get_unstaked_message(ETH_TEST_WALLET, add_zeros(100).into());
+        assert_ok!(crate::process_unstake_initiated::<Test>(unstake));
+
+        let events = System::events();
+        match events.last().map(|e| &e.event) {
+            Some(RuntimeEvent::SystemTables(crate::Event::MessageProcessingError { error })) => {
+                assert_eq!(
+                    error,
+                    &DispatchError::from(pallet_staking::Error::<Test>::NotStash)
+                );
+            }
+            _ => panic!("Expected MessageProcessingError event not found"),
+        }
+    });
+}
+
+#[test]
+fn if_withdraw_unbonded_produces_error_during_claim_events_still_emit() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        System::reset_events();
+
+        let transformed_eth_wallet =
+            eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
+        // Now we'll manually screw up the stash/controller relationship so that the
+        // withdraw_unbonded will fail
+        //       pallet_staking::StakingLedger::<Test>::set(transformed_eth_wallet, Default::default());
+
+        let claim = get_claim_unstake_message(ETH_TEST_WALLET);
+        assert_ok!(crate::process_unstake_claimed::<Test>(claim));
+
+        let maybe_claims: Vec<_> =
+            crate::ClaimedUnstakes::<Test>::iter_prefix(&transformed_eth_wallet).collect();
+
+        // Assert we have one pending claim
+        assert_eq!(maybe_claims.len(), 1);
+
+        // Now we want to see an event for the claim with an amount of 0
+        // and an event for the withdraw_unbonded error to prove it still threw one
+        System::assert_has_event(RuntimeEvent::SystemTables(crate::Event::UnstakingClaimed {
+            claimer: transformed_eth_wallet,
+        }));
+
+        System::assert_has_event(RuntimeEvent::SystemTables(
+            crate::Event::MessageProcessingError {
+                error: DispatchError::from(pallet_staking::Error::<Test>::NotController),
+            },
+        ));
+    });
+}
+
+#[test]
 fn full_unstake_works_even_if_user_is_nominating() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
@@ -935,7 +994,7 @@ fn partial_unstaking_works_end_to_end_and_reduces_balance_when_claimed() {
 }
 
 #[test]
-fn attempting_to_claim_before_unbonding_period_produces_error() {
+fn attempting_to_claim_before_unbonding_period_emits_a_claim_event_without_balance_change() {
     new_test_ext().execute_with(|| {
         crate::mock::start_active_era(1);
         let test_amount = 100;
@@ -981,6 +1040,10 @@ fn attempting_to_claim_before_unbonding_period_produces_error() {
         let claim_unstake = get_claim_unstake_message(ETH_TEST_WALLET);
 
         assert_ok!(crate::process_unstake_claimed::<Test>(claim_unstake));
+
+        let claims: Vec<_> =
+            crate::ClaimedUnstakes::<Test>::iter_prefix(&transformed_eth_wallet).collect();
+        assert_eq!(claims.len(), 1);
 
         // Ensure a claim event for 0 was still emitted
         System::assert_has_event(RuntimeEvent::SystemTables(crate::Event::UnstakingClaimed {
