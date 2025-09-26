@@ -1,0 +1,20 @@
+[package]
+name = "proof-of-sql-unchecked-deserialize"
+version = "0.1.0"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+proof-of-sql.workspace = true
+ark-serialize.workspace = true
+derive_more.workspace = true
+serde.workspace = true
+
+[lints]
+workspace = true
+
+
+
