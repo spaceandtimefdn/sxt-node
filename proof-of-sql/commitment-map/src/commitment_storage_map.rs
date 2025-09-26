@@ -13,6 +13,7 @@ use sp_core::{ConstU32, RuntimeDebug, TypedGet};
 use sp_runtime_interface::pass_by::PassByCodec;
 use sxt_core::native::NativeCommitmentError;
 use sxt_core::tables::{MaxColsPerTable, TableIdentifier};
+use sxt_core::utils::proof_of_sql_bincode_config;
 
 use crate::commitment_map_implementor::CommitmentMapImplementor;
 use crate::commitment_scheme::{AnyCommitmentScheme, CommitmentScheme};
@@ -88,9 +89,7 @@ impl<C: Commitment + Serialize> TryFrom<&TableCommitment<C>> for TableCommitment
 
         let bytes = bincode::serde::encode_to_vec(
             value,
-            bincode::config::legacy()
-                .with_fixed_int_encoding()
-                .with_big_endian(),
+            proof_of_sql_bincode_config::<{ TABLE_COMMITMENT_MAX_LENGTH as usize }>(),
         )?;
 
         Ok(TableCommitmentBytes {
@@ -128,9 +127,7 @@ where
     fn try_from(value: &TableCommitmentBytes) -> Result<Self, Self::Error> {
         let (commitment, _) = bincode::serde::decode_from_slice(
             value.data.as_slice(),
-            bincode::config::legacy()
-                .with_fixed_int_encoding()
-                .with_big_endian(),
+            proof_of_sql_bincode_config::<{ TABLE_COMMITMENT_MAX_LENGTH as usize }>(),
         )?;
         Ok(commitment)
     }
