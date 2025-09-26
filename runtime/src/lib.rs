@@ -366,7 +366,7 @@ pub const AVERAGE_INSERT_TARGET_COST: u128 = MILLICENTS
 pub const TARGET_BYTE_FEE: u128 =
     AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_SIZE_BYTES);
 /// Approximated Average Insert Weight from actual transactions on testnet
-pub const AVERAGE_INSERT_CALL_WEIGHT: u128 = 65_686_228_000;
+pub const AVERAGE_INSERT_CALL_WEIGHT: u128 = 742_674_591_000;
 pub const WEIGHT_FEE: u128 = AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_CALL_WEIGHT);
 
 parameter_types! {
