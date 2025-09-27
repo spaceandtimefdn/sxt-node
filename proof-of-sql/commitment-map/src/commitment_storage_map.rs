@@ -5,7 +5,8 @@ use core::marker::PhantomData;
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::storage::StorageDoubleMap;
 use frame_support::BoundedVec;
-use proof_of_sql::base::commitment::{Commitment, TableCommitment};
+use proof_of_sql::base::commitment::{Commitment, NegativeRange, TableCommitment};
+use proof_of_sql_unchecked_deserialize::{map_table_commitment, UncheckedDynamicDoryCommitment};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
@@ -133,20 +134,54 @@ where
     }
 }
 
+/// Errors that can occur when converting [`TableCommitmentBytesPerCommitmentScheme`] to
+/// [`TableCommitmentPerCommitmentScheme`].
+#[derive(Debug, Snafu)]
+pub enum TableCommitmentFromBytesError {
+    /// Failed to decode commitment.
+    #[snafu(display("failed to decode commitment: {error}"))]
+    Decode {
+        /// The source bincode error.
+        error: bincode::error::DecodeError,
+    },
+    /// Decoded commitment fails validation (currently only possible if, for some reason, the
+    /// serialized commitment has a negative range).
+    #[snafu(
+        display("decoded commitment fails validation: {source}"),
+        context(false)
+    )]
+    Validation {
+        /// The source negative range error.
+        source: NegativeRange,
+    },
+}
+
+impl From<bincode::error::DecodeError> for TableCommitmentFromBytesError {
+    fn from(error: bincode::error::DecodeError) -> Self {
+        TableCommitmentFromBytesError::Decode { error }
+    }
+}
+
 // This conversion cannot be implemented with `GenericOverCommitmentFn` because it imposes
 // additional trait bounds on `WithCommitment<C>` (`C: Deserialize`).
 impl TryFrom<TableCommitmentBytesPerCommitmentScheme> for TableCommitmentPerCommitmentScheme {
-    type Error = bincode::error::DecodeError;
+    type Error = TableCommitmentFromBytesError;
 
     fn try_from(value: TableCommitmentBytesPerCommitmentScheme) -> Result<Self, Self::Error> {
         value
             .into_flat_iter()
             .map(|any| match &any {
                 AnyCommitmentScheme::HyperKzg(commitment) => {
-                    commitment.try_into().map(AnyCommitmentScheme::HyperKzg)
+                    Ok(commitment.try_into().map(AnyCommitmentScheme::HyperKzg)?)
                 }
                 AnyCommitmentScheme::DynamicDory(commitment) => {
-                    commitment.try_into().map(AnyCommitmentScheme::DynamicDory)
+                    let unchecked_table_commitment =
+                        TableCommitment::<UncheckedDynamicDoryCommitment>::try_from(commitment)?;
+
+                    let dynamic_dory_commitment =
+                        map_table_commitment(&unchecked_table_commitment, Into::into)?;
+
+                    Ok(AnyCommitmentScheme::DynamicDory(dynamic_dory_commitment))
                 }
             })
             .collect()

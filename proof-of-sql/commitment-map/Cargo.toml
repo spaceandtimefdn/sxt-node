@@ -20,6 +20,7 @@ sp-runtime-interface = { workspace = true, default-features = false, optional = 
 sxt-core = { workspace = true, optional = true }
 proptest = { workspace = true, features = ["std"], optional = true }
 proptest-derive = { workspace = true, optional = true }
+proof-of-sql-unchecked-deserialize.workspace = true
 
 [features]
 memory-commitment-map = ["std"]

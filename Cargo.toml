@@ -22,6 +22,7 @@ members = [
     "proof-of-sql/on-chain-table",
     "proof-of-sql/commitment-sql",
     "proof-of-sql/static-setups",
+    "proof-of-sql/unchecked-deserialize",
     "proof-of-sql/unversioned",
     "native",
     "native-api",
@@ -96,6 +97,7 @@ proof-of-sql-commitment-map = { path = "./proof-of-sql/commitment-map/", default
 commitment-column-mapping = { path = "./proof-of-sql/commitment-column-mapping/", default-features = false }
 proof-of-sql-static-setups = { path = "./proof-of-sql/static-setups/", default-features = false }
 proof-of-sql-unversioned = { path = "./proof-of-sql/unversioned/", default-features = false }
+proof-of-sql-unchecked-deserialize = { path = "./proof-of-sql/unchecked-deserialize/", default-features = false }
 rand = { version = "0.8.5", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 rayon = { version = "1.10.0" }
@@ -235,6 +237,7 @@ prometheus = "0.14.0"
 proptest = { version = "1.7.0", default-features = false }
 proptest-derive = { version = "0.6.0", default-features = false }
 blake3 = { version = "1.6.1", default-features = false }
+derive_more = { version = "0.99" }
 
 [workspace.lints]
 rust.missing_docs = "warn"
