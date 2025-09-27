@@ -1,3 +1,27 @@
+# [1.33.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.7...v1.33.0) (2025-09-27)
+
+
+### Bug Fixes
+
+* make proof-of-sql-unchecked-deserialize no-std ([0c881e5](https://github.com/spaceandtimefdn/sxt-node/commit/0c881e559e5c31459217dd4fde94a738c6eb8133))
+* make table_commitment_util fallible ([46f59ad](https://github.com/spaceandtimefdn/sxt-node/commit/46f59ad4a5290de9d9b83daae98fb7d27c5cd646))
+
+
+### Features
+
+* add `proof-of-sql-unchecked-deserialize` crate ([9badb1d](https://github.com/spaceandtimefdn/sxt-node/commit/9badb1df58174ee1d1c72734bf7d873f83b59026))
+
+
+### Performance Improvements
+
+* increment node version to 1.2.1 ([ffad438](https://github.com/spaceandtimefdn/sxt-node/commit/ffad438c8086d72ede50f8a1baa0ad939a4b1949))
+* increment runtime spec version to 239 ([ff3b6ec](https://github.com/spaceandtimefdn/sxt-node/commit/ff3b6ec63c6e00dd355770beaee36cb117b33be1))
+* recalculate weights after unchecked deserialization change ([ebb38b8](https://github.com/spaceandtimefdn/sxt-node/commit/ebb38b85c117e07b770b20bc07001812b2fa197e))
+* use new pallet-indexing weights to calculate fees ([7dd3c1a](https://github.com/spaceandtimefdn/sxt-node/commit/7dd3c1a56464396c7d3ad2a5c3f6a63243ba64e9))
+* use unchecked deserialize in canonical commitment bytes conversion ([140a740](https://github.com/spaceandtimefdn/sxt-node/commit/140a7404e066ad6ba6f13e5bc35a49302d5feecf))
+
+
+
 ## [1.32.7](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.6...v1.32.7) (2025-09-27)
 
 
@@ -28,15 +52,6 @@
 
 
 ## [1.32.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.3...v1.32.4) (2025-09-25)
-
-
-
-## [1.32.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.2...v1.32.3) (2025-09-25)
-
-
-### Bug Fixes
-
-* make sure `sxt_core::tables::uuids_from_sqlparser` return result ([acc3623](https://github.com/spaceandtimefdn/sxt-node/commit/acc36230302b7d8d3e2f95235132c72e7b530ebd))
 
 
 
