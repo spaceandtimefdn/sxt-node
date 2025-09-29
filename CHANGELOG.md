@@ -1,3 +1,16 @@
+## [1.33.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.33.0...v1.33.1) (2025-09-29)
+
+
+### Performance Improvements
+
+* cpu-perf-enabled pallet-indexing weights to calculate fees ([0a6b184](https://github.com/spaceandtimefdn/sxt-node/commit/0a6b184c20f3766c6fb63449abc75d03256babcb))
+* enable cpu-perf for all non-aarch64 targets ([66ad54d](https://github.com/spaceandtimefdn/sxt-node/commit/66ad54d86da9eb5be31dd763d78102e8064706e4))
+* increment node version to 1.2.2 ([c7cccf7](https://github.com/spaceandtimefdn/sxt-node/commit/c7cccf7ca3fac3e610f9b21be40e9321fd7e9b08))
+* increment runtime spec version to 240 ([4fd0378](https://github.com/spaceandtimefdn/sxt-node/commit/4fd0378147ef104231674f8aa5f22a998c2792ed))
+* recalculate weights after re-enabling cpu-perf ([75acab0](https://github.com/spaceandtimefdn/sxt-node/commit/75acab0d540362567041a7ac321fc5cd7960707f))
+
+
+
 # [1.33.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.7...v1.33.0) (2025-09-27)
 
 
@@ -48,10 +61,6 @@
 ### Bug Fixes
 
 * fix failing tests in system_tables ([8492c45](https://github.com/spaceandtimefdn/sxt-node/commit/8492c453c2c1dbf7f925d43a24a9fa7551ec4fca))
-
-
-
-## [1.32.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.3...v1.32.4) (2025-09-25)
 
 
 
