@@ -95,7 +95,7 @@ impl BlockProcessor for DummyProcessor {
         // Count all the events in the block by their pallet and variant
         let mut event_count = HashMap::<String, u64>::new();
         for e in events.iter() {
-            let label = format!("{:?}.{:?}", e.pallet_name(), e.variant_name());
+            let label = format!("{:?}-{:?}", e.pallet_name(), e.variant_name());
             match event_count.get(&label) {
                 Some(count) => {
                     event_count.insert(label, count + 1);
@@ -112,8 +112,42 @@ impl BlockProcessor for DummyProcessor {
 
         count_reward_stats(&block, &events, _api, self.annualizer).await;
 
+        count_staking_stats(&events);
         count_balance_stats(&events);
     }
+}
+
+fn count_staking_stats(events: &Vec<EventDetails<PolkadotConfig>>) {
+    use sxt_core::sxt_chain_runtime::api::staking::events::{
+        Bonded,
+        Rewarded,
+        Slashed,
+        Unbonded,
+        Withdrawn,
+    };
+
+    events.iter().for_each(|event| {
+        if event.pallet_name().contains("Staking") {
+            if let Ok(Some(e)) = event.as_event::<Bonded>() {
+                record_staking(event.variant_name(), e.amount);
+            } else if let Ok(Some(e)) = event.as_event::<Unbonded>() {
+                record_staking(event.variant_name(), e.amount);
+            } else if let Ok(Some(e)) = event.as_event::<Withdrawn>() {
+                record_staking(event.variant_name(), e.amount);
+            } else if let Ok(Some(e)) = event.as_event::<Rewarded>() {
+                record_staking(event.variant_name(), e.amount);
+            } else if let Ok(Some(e)) = event.as_event::<Slashed>() {
+                record_staking(event.variant_name(), e.amount);
+            }
+        }
+    });
+}
+
+fn record_staking(label: &str, amount: u128) {
+    use subxt::ext::sp_runtime::SaturatedConversion;
+    STAKING_COUNTER
+        .with_label_values(&[label])
+        .inc_by(amount.saturated_into());
 }
 
 fn count_balance_stats(events: &Vec<EventDetails<PolkadotConfig>>) {
@@ -164,7 +198,7 @@ fn count_balance_stats(events: &Vec<EventDetails<PolkadotConfig>>) {
 
 fn record_balance(label: &str, amount: u128) {
     use subxt::ext::sp_runtime::SaturatedConversion;
-
+    log::info!("Recording balance label {label:?} with amount {amount:?}");
     BALANCE_COUNTER
         .with_label_values(&[label])
         .inc_by(amount.saturated_into());

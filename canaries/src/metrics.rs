@@ -75,4 +75,9 @@ lazy_static! {
         "Total of amounts of Balance pallet events",
         &["type"]
     ).unwrap();
+    pub static ref STAKING_COUNTER: IntCounterVec = register_int_counter_vec!(
+        "canary_staking_events",
+        "Total of amounts of Staking pallet events",
+        &["type"]
+    ).unwrap();
 }
