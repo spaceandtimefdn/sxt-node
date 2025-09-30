@@ -5,7 +5,7 @@ use axum::routing::get;
 use axum::Router;
 use clap::Parser;
 use env_logger::Env;
-use event_forwarder::block_processing::fetch_events;
+use event_forwarder::block_processing::{fetch_all_events, fetch_events, filter_events};
 use event_forwarder::chain_listener::{
     Block,
     BlockProcessor,
@@ -70,6 +70,7 @@ lazy_static! {
         "Annualizer multiplier used in APR calculation",
         &["era"]
     ).unwrap();
+
 }
 
 /// Serve prometheus metrics
@@ -157,68 +158,40 @@ async fn main() -> Result<(), CanaryError> {
 struct DummyProcessor {
     annualizer: f64,
 }
-
+use std::collections::HashMap;
 #[async_trait::async_trait]
 impl BlockProcessor for DummyProcessor {
     async fn process_block(&mut self, _api: &API, block: Block) {
         let block_number = block.number();
+        let events = fetch_all_events(&block).await.unwrap_or_default();
 
-        let attested = fetch_events::<BlockAttested>(&block)
-            .await
-            .unwrap_or_default();
-
-        let submitted = fetch_events::<DataSubmitted>(&block)
-            .await
-            .unwrap_or_default();
-
-        let quorum = fetch_events::<QuorumReached>(&block)
-            .await
-            .unwrap_or_default();
-
-        let era_paid = fetch_events::<EraPaid>(&block)
-            .await
-            .unwrap_or_default()
-            .len();
-        let payout_error = fetch_events::<PayoutError>(&block)
-            .await
-            .unwrap_or_default()
-            .len();
-        let setup_error = fetch_events::<SetupError>(&block)
-            .await
-            .unwrap_or_default()
-            .len();
-        let payout = fetch_events::<Payout>(&block)
-            .await
-            .unwrap_or_default()
-            .len();
+        let attested = filter_events::<BlockAttested>(&events);
+        let submitted = filter_events::<DataSubmitted>(&events);
+        let quorum = filter_events::<QuorumReached>(&events);
 
         let attested_count = attested.len();
         let submitted_count = submitted.len();
         let quorum_count = quorum.len();
 
-        EVENT_COUNTER
-            .with_label_values(&["BlockAttested"])
-            .inc_by(attested_count as u64);
-        EVENT_COUNTER
-            .with_label_values(&["DataSubmitted"])
-            .inc_by(submitted_count as u64);
-        EVENT_COUNTER
-            .with_label_values(&["QuorumReached"])
-            .inc_by(quorum_count as u64);
-        EVENT_COUNTER
-            .with_label_values(&["EraPaid"])
-            .inc_by(era_paid as u64);
-        EVENT_COUNTER
-            .with_label_values(&["SetupError"])
-            .inc_by(setup_error as u64);
-        EVENT_COUNTER
-            .with_label_values(&["PayoutError"])
-            .inc_by(payout_error as u64);
-        EVENT_COUNTER
-            .with_label_values(&["Payout"])
-            .inc_by(payout as u64);
+        // Count all the events in the block by their pallet and variant
+        let mut event_count = HashMap::<String, u64>::new();
+        for e in events.iter() {
+            let label = format!("{:?}.{:?}", e.pallet_name(), e.variant_name());
+            match event_count.get(&label) {
+                Some(count) => {
+                    event_count.insert(label, count + 1);
+                }
+                None => {
+                    event_count.insert(label, 1);
+                }
+            }
+        }
 
-        let session_events = fetch_events::<NewSession>(&block).await.unwrap_or_default();
+        event_count.iter().for_each(|(label, count)| {
+            EVENT_COUNTER.with_label_values(&[label]).inc_by(*count);
+        });
+
+        let session_events = filter_events::<NewSession>(&events);
 
         if let Some(event) = session_events.first() {
             let session_index = event.session_index;
