@@ -77,7 +77,21 @@ lazy_static! {
     ).unwrap();
     pub static ref STAKING_COUNTER: IntCounterVec = register_int_counter_vec!(
         "canary_staking_events",
-        "Total of amounts of Staking pallet events",
+        "Total of amounts of Balance pallet events",
         &["type"]
     ).unwrap();
+}
+
+pub(crate) fn record_staking(label: &str, amount: u128) {
+    use subxt::ext::sp_runtime::SaturatedConversion;
+    STAKING_COUNTER
+        .with_label_values(&[label])
+        .inc_by(amount.saturated_into());
+}
+
+pub(crate) fn record_balance(label: &str, amount: u128) {
+    use subxt::ext::sp_runtime::SaturatedConversion;
+    BALANCE_COUNTER
+        .with_label_values(&[label])
+        .inc_by(amount.saturated_into());
 }

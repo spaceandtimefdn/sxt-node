@@ -1,5 +1,6 @@
 //! Canary prototype
 mod metrics;
+mod parsing;
 use std::net::SocketAddr;
 
 use clap::Parser;
@@ -21,6 +22,7 @@ use sxt_core::sxt_chain_runtime::api::session::events::NewSession;
 use url::Url;
 
 use crate::metrics::*;
+use crate::parsing::*;
 
 /// Canary: Substrate Finalized Block Event Monitor
 #[derive(Debug, Parser)]
@@ -112,96 +114,14 @@ impl BlockProcessor for DummyProcessor {
 
         count_reward_stats(&block, &events, _api, self.annualizer).await;
 
-        count_staking_stats(&events);
-        count_balance_stats(&events);
+        parse_staking_stats(&events)
+            .iter()
+            .for_each(|(name, val)| record_staking(name, *val));
+
+        parse_balance_stats(&events)
+            .iter()
+            .for_each(|(name, val)| record_balance(name, *val));
     }
-}
-
-fn count_staking_stats(events: &Vec<EventDetails<PolkadotConfig>>) {
-    use sxt_core::sxt_chain_runtime::api::staking::events::{
-        Bonded,
-        Rewarded,
-        Slashed,
-        Unbonded,
-        Withdrawn,
-    };
-
-    events.iter().for_each(|event| {
-        if event.pallet_name().contains("Staking") {
-            if let Ok(Some(e)) = event.as_event::<Bonded>() {
-                record_staking(event.variant_name(), e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Unbonded>() {
-                record_staking(event.variant_name(), e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Withdrawn>() {
-                record_staking(event.variant_name(), e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Rewarded>() {
-                record_staking(event.variant_name(), e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Slashed>() {
-                record_staking(event.variant_name(), e.amount);
-            }
-        }
-    });
-}
-
-fn record_staking(label: &str, amount: u128) {
-    use subxt::ext::sp_runtime::SaturatedConversion;
-    STAKING_COUNTER
-        .with_label_values(&[label])
-        .inc_by(amount.saturated_into());
-}
-
-fn count_balance_stats(events: &Vec<EventDetails<PolkadotConfig>>) {
-    use sxt_core::sxt_chain_runtime::api::balances::events::{
-        Burned,
-        Frozen,
-        Issued,
-        Locked,
-        Minted,
-        Rescinded,
-        Reserved,
-        Thawed,
-        Transfer,
-        Unlocked,
-        Unreserved,
-    };
-    // Unfortunately Prometheus is natively using 64 bit numbers, so the best we can do  for
-    // balance handling is saturated_into and then make sure the time frame we look at on the
-    // dashboard is using the rate instead of the absolute total value
-    events.iter().for_each(|event| {
-        if event.pallet_name().contains("Balances") {
-            if let Ok(Some(e)) = event.as_event::<Issued>() {
-                record_balance("Issued", e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Burned>() {
-                record_balance("Burned", e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Unreserved>() {
-                record_balance("Unreserved", e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Frozen>() {
-                record_balance("Frozen", e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Thawed>() {
-                record_balance("Thawed", e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Locked>() {
-                record_balance("Locked", e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Minted>() {
-                record_balance("Minted", e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Reserved>() {
-                record_balance("Reserved", e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Transfer>() {
-                record_balance("Transfer", e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Unlocked>() {
-                record_balance("Unlocked", e.amount);
-            } else if let Ok(Some(e)) = event.as_event::<Rescinded>() {
-                record_balance("Rescinded", e.amount);
-            }
-        }
-    });
-}
-
-fn record_balance(label: &str, amount: u128) {
-    use subxt::ext::sp_runtime::SaturatedConversion;
-    log::info!("Recording balance label {label:?} with amount {amount:?}");
-    BALANCE_COUNTER
-        .with_label_values(&[label])
-        .inc_by(amount.saturated_into());
 }
 
 async fn count_reward_stats(
