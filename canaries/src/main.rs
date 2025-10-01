@@ -1,6 +1,7 @@
 //! Canary prototype
 mod metrics;
 mod parsing;
+mod storage;
 use std::net::SocketAddr;
 
 use clap::Parser;
@@ -17,12 +18,12 @@ use log::{error, info};
 use snafu::{ResultExt, Snafu};
 use subxt::events::EventDetails;
 use subxt::{OnlineClient, PolkadotConfig};
-use sxt_core::sxt_chain_runtime;
 use sxt_core::sxt_chain_runtime::api::session::events::NewSession;
 use url::Url;
 
 use crate::metrics::*;
 use crate::parsing::*;
+use crate::storage::*;
 
 /// Canary: Substrate Finalized Block Event Monitor
 #[derive(Debug, Parser)]
@@ -88,29 +89,16 @@ async fn main() -> Result<(), CanaryError> {
 struct DummyProcessor {
     annualizer: f64,
 }
-use std::collections::HashMap;
+
 #[async_trait::async_trait]
 impl BlockProcessor for DummyProcessor {
     async fn process_block(&mut self, _api: &API, block: Block) {
         let events = fetch_all_events(&block).await.unwrap_or_default();
 
-        // Count all the events in the block by their pallet and variant
-        let mut event_count = HashMap::<String, u64>::new();
-        for e in events.iter() {
-            let label = format!("{:?}-{:?}", e.pallet_name(), e.variant_name());
-            match event_count.get(&label) {
-                Some(count) => {
-                    event_count.insert(label, count + 1);
-                }
-                None => {
-                    event_count.insert(label, 1);
-                }
-            }
-        }
-
-        event_count.iter().for_each(|(label, count)| {
-            EVENT_COUNTER.with_label_values(&[label]).inc_by(*count);
-        });
+        // Parse the event names and record each one
+        parse_event_names(&events)
+            .iter()
+            .for_each(|name| record_event(name));
 
         count_reward_stats(&block, &events, _api, self.annualizer).await;
 
@@ -130,93 +118,27 @@ async fn count_reward_stats(
     api: &API,
     annualizer: f64,
 ) {
-    let session_events = filter_events::<NewSession>(&events);
-
-    if let Some(event) = session_events.first() {
-        let session_index = event.session_index;
-        info!("🧭 New session detected: {}", session_index);
-
-        let active_era_query = sxt_chain_runtime::api::storage().staking().active_era();
-        let active_era = match api
-            .storage()
-            .at(block.hash())
-            .fetch(&active_era_query)
-            .await
-        {
-            Ok(Some(info)) => info.index,
+    if let Some(new_session) = filter_events::<NewSession>(&events).first() {
+        match read_active_era(block, api).await {
+            Ok(Some(active)) => {
+                // We have an active era, so let's try to get rewards details
+                let prev_era = active.saturating_sub(1);
+                let label = &prev_era.to_string();
+                if let Ok(Some(rewards)) = read_era_rewards(prev_era, block, api).await {
+                    record_era_rewards(prev_era, rewards);
+                }
+                if let Ok(Some(total_staked)) = read_total_staked(prev_era, block, api).await {
+                    record_era_total_stake(prev_era, total_staked);
+                }
+            }
             Ok(None) => {
-                info!("No active era found at block {}", block.number());
-                return;
+                // There was no error retriving the era from the chain, but the current era was
+                // None
             }
             Err(e) => {
-                error!("❌ Failed to fetch active era: {:?}", e);
-                return;
+                log::error!("Error trying to retrieve active_era {e:?}");
             }
-        };
-
-        let prev_era = active_era.saturating_sub(1);
-
-        let era_reward_query = sxt_chain_runtime::api::storage()
-            .staking()
-            .eras_validator_reward(prev_era);
-        let era_reward = match api
-            .storage()
-            .at(block.hash())
-            .fetch(&era_reward_query)
-            .await
-        {
-            Ok(Some(val)) => val,
-            Ok(None) => {
-                info!("No reward data found for era {}", prev_era);
-                return;
-            }
-            Err(e) => {
-                error!("❌ Failed to fetch validator reward: {:?}", e);
-                return;
-            }
-        };
-
-        let total_staked_query = sxt_chain_runtime::api::storage()
-            .staking()
-            .eras_total_stake(prev_era);
-        let total_staked = match api
-            .storage()
-            .at(block.hash())
-            .fetch(&total_staked_query)
-            .await
-        {
-            Ok(Some(val)) => val,
-            Ok(None) => {
-                info!("No total stake found for era {}", prev_era);
-                return;
-            }
-            Err(e) => {
-                error!("❌ Failed to fetch total stake: {:?}", e);
-                return;
-            }
-        };
-
-        if total_staked == 0 {
-            info!("⚠️ Total stake for era {} is zero, skipping", prev_era);
-            return;
         }
-
-        let reward_rate = era_reward as f64 / total_staked as f64;
-        let annualized_rate = reward_rate * annualizer;
-
-        let era_label = &prev_era.to_string();
-
-        REWARD_RATE
-            .with_label_values(&[era_label])
-            .set(annualized_rate * 100.0);
-
-        TOTAL_STAKED
-            .with_label_values(&[era_label])
-            .set(total_staked as f64);
-        VALIDATOR_REWARD
-            .with_label_values(&[era_label])
-            .set(era_reward as f64);
-        ANNUALIZER.with_label_values(&[era_label]).set(annualizer);
     }
 }
 
