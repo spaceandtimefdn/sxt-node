@@ -102,3 +102,15 @@ pub(crate) fn record_balance(label: &str, amount: u128) {
         .with_label_values(&[label])
         .inc_by(amount.saturated_into());
 }
+
+pub(crate) fn record_era_rewards(era: u32, amount: u128) {
+    VALIDATOR_REWARD
+        .with_label_values(&[era.to_string()])
+        .set(amount as f64);
+}
+
+pub(crate) fn record_era_total_stake(era: u32, amount: u128) {
+    TOTAL_STAKED
+        .with_label_values(&[era.to_string()])
+        .set(amount as f64);
+}
