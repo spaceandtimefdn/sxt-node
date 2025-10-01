@@ -82,6 +82,12 @@ lazy_static! {
     ).unwrap();
 }
 
+/// Add a count for the given event name
+pub(crate) fn record_event(label: &str) {
+    EVENT_COUNTER.with_label_values(&[label]).inc_by(1);
+}
+
+/// Add the provided amount to the metric for the provided label
 pub(crate) fn record_staking(label: &str, amount: u128) {
     use subxt::ext::sp_runtime::SaturatedConversion;
     STAKING_COUNTER
@@ -89,6 +95,7 @@ pub(crate) fn record_staking(label: &str, amount: u128) {
         .inc_by(amount.saturated_into());
 }
 
+/// Add the provided amount to the metric for the provided label
 pub(crate) fn record_balance(label: &str, amount: u128) {
     use subxt::ext::sp_runtime::SaturatedConversion;
     BALANCE_COUNTER

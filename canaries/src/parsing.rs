@@ -1,6 +1,13 @@
 use subxt::events::EventDetails;
 use subxt::PolkadotConfig;
 
+pub(crate) fn parse_event_names(events: &Vec<EventDetails<PolkadotConfig>>) -> Vec<String> {
+    events
+        .iter()
+        .map(|e| format!("{:?}-{:?}", e.pallet_name(), e.variant_name()))
+        .collect::<Vec<_>>()
+}
+
 /// Parses a given Vec of events, returning a tuple of variant name and amount for staking events
 pub(crate) fn parse_staking_stats(events: &Vec<EventDetails<PolkadotConfig>>) -> Vec<(&str, u128)> {
     use sxt_core::sxt_chain_runtime::api::staking::events::{
