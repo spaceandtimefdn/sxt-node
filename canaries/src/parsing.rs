@@ -1,3 +1,4 @@
+use event_forwarder::block_processing::filter_events;
 use subxt::events::EventDetails;
 use subxt::PolkadotConfig;
 
@@ -88,4 +89,10 @@ pub(crate) fn parse_balance_stats(events: &Vec<EventDetails<PolkadotConfig>>) ->
             None
         })
         .collect::<Vec<_>>()
+}
+
+/// Returns true if the provided event list has a NewSession event in it
+pub(crate) fn has_new_session(events: &Vec<EventDetails<PolkadotConfig>>) -> bool {
+    use sxt_core::sxt_chain_runtime::api::session::events::NewSession;
+    !filter_events::<NewSession>(events).is_empty()
 }

@@ -92,8 +92,6 @@ impl BlockProcessor for SimpleProcessor {
             .iter()
             .for_each(|name| record_event(name));
 
-        count_reward_stats(&block, &events, api).await;
-
         parse_staking_stats(&events)
             .iter()
             .for_each(|(name, val)| record_staking(name, *val));
@@ -101,29 +99,28 @@ impl BlockProcessor for SimpleProcessor {
         parse_balance_stats(&events)
             .iter()
             .for_each(|(name, val)| record_balance(name, *val));
-    }
-}
 
-async fn count_reward_stats(block: &Block, events: &Vec<EventDetails<PolkadotConfig>>, api: &API) {
-    if let Some(new_session) = filter_events::<NewSession>(&events).first() {
-        match read_active_era(block, api).await {
-            Ok(Some(active)) => {
-                // We have an active era, so let's try to get rewards details
-                let prev_era = active.saturating_sub(1);
-                let label = &prev_era.to_string();
-                if let Ok(Some(rewards)) = read_era_rewards(prev_era, block, api).await {
-                    record_era_rewards(prev_era, rewards);
+        // If it's a new session, record rewards and total stake as well
+        if has_new_session(&events) {
+            match read_active_era(&block, api).await {
+                Ok(Some(active)) => {
+                    // We have an active era, so let's try to get rewards details
+                    let prev_era = active.saturating_sub(1);
+                    if let Ok(Some(rewards)) = read_era_rewards(prev_era, &block, api).await {
+                        record_era_rewards(prev_era, rewards);
+                    }
+                    if let Ok(Some(total_staked)) = read_total_staked(prev_era, &block, api).await {
+                        record_era_total_stake(prev_era, total_staked);
+                    }
                 }
-                if let Ok(Some(total_staked)) = read_total_staked(prev_era, block, api).await {
-                    record_era_total_stake(prev_era, total_staked);
+                Ok(None) => {
+                    // There was no error retriving the era from the chain, but the current era was
+                    // None
+                    log::warn!("Active Era was None for block {:?}", block.hash());
                 }
-            }
-            Ok(None) => {
-                // There was no error retriving the era from the chain, but the current era was
-                // None
-            }
-            Err(e) => {
-                log::error!("Error trying to retrieve active_era {e:?}");
+                Err(e) => {
+                    log::error!("Error trying to retrieve active_era {e:?}");
+                }
             }
         }
     }
