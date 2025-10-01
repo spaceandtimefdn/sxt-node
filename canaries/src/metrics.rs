@@ -43,13 +43,6 @@ lazy_static! {
     )
     .unwrap();
 
-    /// Annualized Reward rate tracker
-    pub static ref REWARD_RATE: GaugeVec = register_gauge_vec!(
-        "canary_era_reward_rate",
-        "Annualized staking reward rate per era",
-        &["era"]
-    ).unwrap();
-
     /// Total staked tracker
     pub static ref TOTAL_STAKED: GaugeVec = register_gauge_vec!(
         "canary_era_total_staked",

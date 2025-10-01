@@ -43,10 +43,6 @@ pub struct CanaryConfig {
     /// Bind address for Prometheus metrics (e.g., 0.0.0.0:9000)
     #[arg(long, env = "CANARY_METRICS_BIND", default_value = "0.0.0.0:9000")]
     pub metrics_bind: SocketAddr,
-
-    /// Multiplier used to annualize per-era reward rates
-    #[arg(long, env = "CANARY_ANNUALIZER", default_value_t = 8760.0)]
-    pub annualizer: f64,
 }
 
 #[tokio::main]
@@ -73,9 +69,7 @@ async fn main() -> Result<(), CanaryError> {
 
     // Set up the listener
     let stream = FinalizedBlockStream;
-    let processor = DummyProcessor {
-        annualizer: config.annualizer,
-    };
+    let processor = SimpleProcessor {};
 
     let listener = ChainListener::new(processor, stream, api)
         .await
@@ -86,13 +80,11 @@ async fn main() -> Result<(), CanaryError> {
     Ok(())
 }
 
-struct DummyProcessor {
-    annualizer: f64,
-}
+struct SimpleProcessor {}
 
 #[async_trait::async_trait]
-impl BlockProcessor for DummyProcessor {
-    async fn process_block(&mut self, _api: &API, block: Block) {
+impl BlockProcessor for SimpleProcessor {
+    async fn process_block(&mut self, api: &API, block: Block) {
         let events = fetch_all_events(&block).await.unwrap_or_default();
 
         // Parse the event names and record each one
@@ -100,7 +92,7 @@ impl BlockProcessor for DummyProcessor {
             .iter()
             .for_each(|name| record_event(name));
 
-        count_reward_stats(&block, &events, _api, self.annualizer).await;
+        count_reward_stats(&block, &events, api).await;
 
         parse_staking_stats(&events)
             .iter()
@@ -112,12 +104,7 @@ impl BlockProcessor for DummyProcessor {
     }
 }
 
-async fn count_reward_stats(
-    block: &Block,
-    events: &Vec<EventDetails<PolkadotConfig>>,
-    api: &API,
-    annualizer: f64,
-) {
+async fn count_reward_stats(block: &Block, events: &Vec<EventDetails<PolkadotConfig>>, api: &API) {
     if let Some(new_session) = filter_events::<NewSession>(&events).first() {
         match read_active_era(block, api).await {
             Ok(Some(active)) => {
