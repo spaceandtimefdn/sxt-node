@@ -2,7 +2,7 @@ use event_forwarder::block_processing::filter_events;
 use subxt::events::EventDetails;
 use subxt::PolkadotConfig;
 
-pub(crate) fn parse_event_names(events: &Vec<EventDetails<PolkadotConfig>>) -> Vec<String> {
+pub(crate) fn parse_event_names(events: &[EventDetails<PolkadotConfig>]) -> Vec<String> {
     events
         .iter()
         .map(|e| format!("{:?}-{:?}", e.pallet_name(), e.variant_name()))
@@ -10,7 +10,7 @@ pub(crate) fn parse_event_names(events: &Vec<EventDetails<PolkadotConfig>>) -> V
 }
 
 /// Parses a given Vec of events, returning a tuple of variant name and amount for staking events
-pub(crate) fn parse_staking_stats(events: &Vec<EventDetails<PolkadotConfig>>) -> Vec<(&str, u128)> {
+pub(crate) fn parse_staking_stats(events: &[EventDetails<PolkadotConfig>]) -> Vec<(&str, u128)> {
     use sxt_core::sxt_chain_runtime::api::staking::events::{
         Bonded,
         Rewarded,
@@ -42,7 +42,7 @@ pub(crate) fn parse_staking_stats(events: &Vec<EventDetails<PolkadotConfig>>) ->
 }
 
 /// Parses a given Vec of events, returning a tuple of variant name and amount for balance events
-pub(crate) fn parse_balance_stats(events: &Vec<EventDetails<PolkadotConfig>>) -> Vec<(&str, u128)> {
+pub(crate) fn parse_balance_stats(events: &[EventDetails<PolkadotConfig>]) -> Vec<(&str, u128)> {
     use sxt_core::sxt_chain_runtime::api::balances::events::{
         Burned,
         Frozen,
@@ -92,7 +92,7 @@ pub(crate) fn parse_balance_stats(events: &Vec<EventDetails<PolkadotConfig>>) ->
 }
 
 /// Returns true if the provided event list has a NewSession event in it
-pub(crate) fn has_new_session(events: &Vec<EventDetails<PolkadotConfig>>) -> bool {
+pub(crate) fn has_new_session(events: &[EventDetails<PolkadotConfig>]) -> bool {
     use sxt_core::sxt_chain_runtime::api::session::events::NewSession;
     !filter_events::<NewSession>(events).is_empty()
 }

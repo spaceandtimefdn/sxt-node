@@ -101,7 +101,7 @@ pub async fn fetch_all_events(
 
 /// This function takes a list of generic events and filters it to type T
 pub fn filter_events<T: subxt::events::StaticEvent + 'static>(
-    events: &Vec<subxt::events::EventDetails<PolkadotConfig>>,
+    events: &[subxt::events::EventDetails<PolkadotConfig>],
 ) -> Vec<T> {
     events
         .iter()
