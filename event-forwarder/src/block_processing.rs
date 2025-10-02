@@ -44,10 +44,13 @@ use log::{error, info, warn};
 use snafu::{ResultExt, Snafu};
 use sp_core::crypto::AccountId32;
 use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;
+use subxt::PolkadotConfig;
 use subxt_signer::sr25519::Keypair;
 use sxt_core::sxt_chain_runtime::api::attestations::events::BlockAttested;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::Attestation::EthereumAttestation;
+use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_runtime::RuntimeEvent;
 use sxt_core::sxt_chain_runtime::api::staking::events::Unbonded;
+use sxt_core::sxt_chain_runtime::api::Event;
 use sxt_core::sxt_chain_runtime::{self};
 use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
@@ -81,6 +84,29 @@ pub async fn fetch_attested_block(api: &API, attestation: &BlockAttested) -> Res
                 block_number: *block_number,
             }),
     }
+}
+
+/// Fetches all events from a block.
+pub async fn fetch_all_events(
+    block: &Block,
+) -> Result<Vec<subxt::events::EventDetails<PolkadotConfig>>, Error> {
+    Ok(block
+        .events()
+        .await
+        .context(FetchAttestationSnafu)?
+        .iter()
+        .flatten()
+        .collect::<Vec<_>>())
+}
+
+/// This function takes a list of generic events and filters it to type T
+pub fn filter_events<T: subxt::events::StaticEvent + 'static>(
+    events: &[subxt::events::EventDetails<PolkadotConfig>],
+) -> Vec<T> {
+    events
+        .iter()
+        .filter_map(|e| e.as_event::<T>().ok().flatten())
+        .collect::<Vec<_>>()
 }
 
 /// Fetches events of type `T` from a block.
