@@ -1,3 +1,12 @@
+# [1.34.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.33.1...v1.34.0) (2025-10-02)
+
+
+### Features
+
+* Add more functionality to Canary Service ([#92](https://github.com/spaceandtimefdn/sxt-node/issues/92)) ([c5d43a1](https://github.com/spaceandtimefdn/sxt-node/commit/c5d43a1a37c87d7495c9bbdd32be134990cc5022))
+
+
+
 ## [1.33.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.33.0...v1.33.1) (2025-09-29)
 
 
@@ -52,15 +61,6 @@
 ### Bug Fixes
 
 * add allocation limit to TableCommitment bincode ([3717f44](https://github.com/spaceandtimefdn/sxt-node/commit/3717f443118d21ddcbcac7c8ca0b2c5ffadd0c18))
-
-
-
-## [1.32.5](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.4...v1.32.5) (2025-09-26)
-
-
-### Bug Fixes
-
-* fix failing tests in system_tables ([8492c45](https://github.com/spaceandtimefdn/sxt-node/commit/8492c453c2c1dbf7f925d43a24a9fa7551ec4fca))
 
 
 
