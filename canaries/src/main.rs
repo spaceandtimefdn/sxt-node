@@ -92,13 +92,9 @@ impl BlockProcessor for SimpleProcessor {
             .iter()
             .for_each(|name| record_event(name));
 
-        parse_staking_stats(&events)
-            .iter()
-            .for_each(|(name, val)| record_staking(name, *val));
+        parse_staking_stats(&events).iter().for_each(record_staking);
 
-        parse_balance_stats(&events)
-            .iter()
-            .for_each(|(name, val)| record_balance(name, *val));
+        parse_balance_stats(&events).iter().for_each(record_balance);
 
         // If it's a new session, record rewards and total stake as well
         if has_new_session(&events) {

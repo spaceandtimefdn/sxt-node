@@ -13,6 +13,8 @@ use prometheus::{
 };
 use tokio::net::TcpListener;
 
+use crate::parsing::{BalanceEvent, StakingEvent};
+
 /// Serve prometheus metrics
 pub async fn serve_metrics(bind_addr: SocketAddr) -> anyhow::Result<()> {
     let app = Router::new().route("/metrics", get(metrics_handler));
@@ -81,19 +83,19 @@ pub(crate) fn record_event(label: &str) {
 }
 
 /// Add the provided amount to the metric for the provided label
-pub(crate) fn record_staking(label: &str, amount: u128) {
+pub(crate) fn record_staking(e: &StakingEvent) {
     use subxt::ext::sp_runtime::SaturatedConversion;
     STAKING_COUNTER
-        .with_label_values(&[label])
-        .inc_by(amount.saturated_into());
+        .with_label_values(&[e.label])
+        .inc_by(e.amount.saturated_into());
 }
 
 /// Add the provided amount to the metric for the provided label
-pub(crate) fn record_balance(label: &str, amount: u128) {
+pub(crate) fn record_balance(e: &BalanceEvent) {
     use subxt::ext::sp_runtime::SaturatedConversion;
     BALANCE_COUNTER
-        .with_label_values(&[label])
-        .inc_by(amount.saturated_into());
+        .with_label_values(&[e.label])
+        .inc_by(e.amount.saturated_into());
 }
 
 pub(crate) fn record_era_rewards(era: u32, amount: u128) {
