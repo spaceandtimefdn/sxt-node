@@ -58,6 +58,8 @@ pub trait WeightInfo {
 	fn update_namespace_uuid() -> Weight;
 	/// Weight for updated a table UUID
 	fn update_table_uuid() -> Weight;
+        /// Weight for updating a table's quorum
+        fn update_table_quorum() -> Weight;
 }
 
 /// TODO: add docs
@@ -99,6 +101,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn update_table_uuid() -> Weight {
 		Weight::from_parts(0,0)
 	}
+        fn update_table_quorum() -> Weight {
+            Weight::from_parts(0,0)
+        }
 }
 
 // For backwards compatibility and tests
@@ -136,4 +141,7 @@ impl WeightInfo for () {
 	fn update_table_uuid() -> Weight {
 		Weight::from_parts(0,0)
 	}
+        fn update_table_quorum() -> Weight {
+            Weight::from_parts(0,0)
+        }
 }
