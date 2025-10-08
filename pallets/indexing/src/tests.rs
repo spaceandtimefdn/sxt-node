@@ -51,18 +51,22 @@ fn submit_test_data(signer: RuntimeOrigin, submission: TestSubmission) -> Dispat
     )
 }
 
-fn row_data() -> RowData {
+fn row_data_with_count(rows: i32) -> RowData {
     let schema = Arc::new(Schema::new(vec![Field::new(
         "int_column",
         DataType::Int32,
         false,
     )]));
 
-    let int_data = Arc::new(Int32Array::from(vec![1, 2, 3, 4])) as ArrayRef;
+    let int_data = Arc::new(Int32Array::from((0..rows).collect::<Vec<i32>>())) as ArrayRef;
 
     let batch = RecordBatch::try_new(schema.clone(), vec![int_data]).unwrap();
 
     record_batch_to_row_data(batch, schema)
+}
+
+fn row_data() -> RowData {
+    row_data_with_count(4)
 }
 
 fn diff_row_data() -> RowData {
@@ -1370,5 +1374,123 @@ fn no_block_number_stored_when_implicit_and_empty_data() {
 
         let stored = Indexing::block_numbers(&table_id);
         assert_eq!(stored, None);
+    });
+}
+
+#[test]
+fn we_can_reach_quorum_before_and_after_changing_quorum_size() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_statement) = sample_table_definition();
+
+        let test_quorum = InsertQuorumSize {
+            public: None,
+            privileged: Some(0),
+        };
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::Testing(test_quorum),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: true,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let test_submission = TestSubmission {
+            table: table_id.clone(),
+            batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
+            data: row_data_with_count(1),
+        };
+        let test_data_hash = hash_row_data_with_block_number::<Test>(&test_submission.data, None);
+
+        // Add permissions for the test accounts
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_id.clone()),
+        )])
+        .unwrap();
+
+        let origin = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(origin.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+
+        // Send the final required submission
+        assert_ok!(submit_test_data(origin, test_submission.clone()));
+
+        let maybe_final_data = Indexing::final_data(test_submission.batch_id.clone());
+        assert!(maybe_final_data.is_some());
+
+        let fd = maybe_final_data.unwrap();
+        assert_eq!(fd.data_hash, test_data_hash);
+        assert_eq!(fd.table, test_submission.table);
+        assert_eq!(fd.quorum_scope, QuorumScope::Privileged);
+
+        // Verify that the old data was successfully removed for this batch
+        let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
+        assert!(submitters.scope_is_empty(&QuorumScope::Public));
+        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+
+        // Now update the quorum to make this table public
+        let new_quorum = InsertQuorumSize {
+            privileged: None,
+            public: Some(0),
+        };
+
+        assert_ok!(Tables::update_table_quorum(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            new_quorum
+        ));
+
+        // Ensure the event was emitted as expected
+        System::assert_has_event(RuntimeEvent::Tables(
+            pallet_tables::Event::<Test>::QuorumUpdated {
+                table: table_id.clone(),
+                old_quorum: Some(test_quorum),
+                new_quorum,
+            },
+        ));
+
+        // Now submit with an account that has "public" data submission permissions
+        let test_submission_2 = TestSubmission {
+            table: table_id.clone(),
+            batch_id: BatchId::try_from(b"test_batch2".to_vec()).unwrap(),
+            data: row_data_with_count(1),
+        };
+        let test_data_hash = hash_row_data_with_block_number::<Test>(&test_submission.data, None);
+
+        // Add permissions for the test accounts
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+
+        let origin = RuntimeOrigin::signed(sp_runtime::AccountId32::new([2; 32]));
+        let who = ensure_signed(origin.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+
+        // Send the data
+        assert_ok!(submit_test_data(origin, test_submission_2.clone()));
+
+        let maybe_final_data = Indexing::final_data(test_submission.batch_id.clone());
+
+        assert!(maybe_final_data.is_some());
+
+        let fd = maybe_final_data.unwrap();
+        assert_eq!(fd.data_hash, test_data_hash);
+        assert_eq!(fd.table, test_submission.table);
+        assert_eq!(fd.quorum_scope, QuorumScope::Privileged);
+
+        // Verify that the old data was successfully removed for this batch
+        let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
+        assert!(submitters.scope_is_empty(&QuorumScope::Public));
+        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
     });
 }
