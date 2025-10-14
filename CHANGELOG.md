@@ -1,3 +1,12 @@
+# [1.35.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.34.1...v1.35.0) (2025-10-14)
+
+
+### Features
+
+* clamp unstaking claim amounts to be at least 1 ([18de587](https://github.com/spaceandtimefdn/sxt-node/commit/18de587562f1dfbf04f05cd40b9d724929e40d43))
+
+
+
 ## [1.34.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.34.0...v1.34.1) (2025-10-07)
 
 
@@ -45,17 +54,6 @@
 * recalculate weights after unchecked deserialization change ([ebb38b8](https://github.com/spaceandtimefdn/sxt-node/commit/ebb38b85c117e07b770b20bc07001812b2fa197e))
 * use new pallet-indexing weights to calculate fees ([7dd3c1a](https://github.com/spaceandtimefdn/sxt-node/commit/7dd3c1a56464396c7d3ad2a5c3f6a63243ba64e9))
 * use unchecked deserialize in canonical commitment bytes conversion ([140a740](https://github.com/spaceandtimefdn/sxt-node/commit/140a7404e066ad6ba6f13e5bc35a49302d5feecf))
-
-
-
-## [1.32.7](https://github.com/spaceandtimefdn/sxt-node/compare/v1.32.6...v1.32.7) (2025-09-27)
-
-
-### Bug Fixes
-
-* Add more unit tests covering nominators ([233815f](https://github.com/spaceandtimefdn/sxt-node/commit/233815f790d0da12ba8c53685bceb665b8616602))
-* Added more unit tests for Staking/Unstaking ([42deda7](https://github.com/spaceandtimefdn/sxt-node/commit/42deda78c87737a6089b97ecd947ecba2779c0a9))
-* make `process_unstake_claimed` infallible ([588d0ee](https://github.com/spaceandtimefdn/sxt-node/commit/588d0eed8b1d03d7b1e3555cedb4692c723bc30c))
 
 
 
