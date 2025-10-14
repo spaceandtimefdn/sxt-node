@@ -379,7 +379,9 @@ pub mod pallet {
                             .map(|ledger| ledger.total)
                             .unwrap_or(0);
 
-                        let amount_withdrawn = old_total.saturating_sub(new_total);
+                        // We want to enforce a minimum of 1 'wei' to prevent stuck states in the
+                        // staking contract
+                        let amount_withdrawn = old_total.saturating_sub(new_total).max(1);
 
                         ClaimedUnstakes::<T>::insert(
                             &staker_id,

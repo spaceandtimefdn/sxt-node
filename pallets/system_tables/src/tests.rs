@@ -1491,3 +1491,47 @@ fn process_evm_funded_message_should_not_change_state_if_nonce_is_invalid() {
         );
     });
 }
+
+#[test]
+fn invalid_claimed_unstakes_are_one_instead_of_zero_amount() {
+    new_test_ext().execute_with(|| {
+        // Start at era 1
+        crate::mock::start_active_era(1);
+        System::reset_events();
+
+        // The amount we expect the chain to use for events etc
+        let expected_amount = 1;
+
+        let transformed_eth_wallet =
+            eth_address_to_substrate_account_id::<Test>(ETH_TEST_WALLET).unwrap();
+
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
+
+        let claim_unstake = get_claim_unstake_message(ETH_TEST_WALLET);
+        assert_ok!(crate::process_unstake_claimed::<Test>(claim_unstake));
+
+        let current_block_number = frame_system::Pallet::<Test>::block_number();
+
+        // Ensure the claimed unstake state has been populated
+        assert_eq!(
+            Pallet::<Test>::claimed_unstakes(),
+            vec![ClaimedUnstake {
+                staker: transformed_eth_wallet.clone(),
+                claim_block_number: current_block_number,
+                claimed_amount: expected_amount
+            }]
+        );
+
+        // Ensure the claim event has been emitted
+        System::assert_has_event(RuntimeEvent::SystemTables(crate::Event::UnstakingClaimed {
+            claimer: transformed_eth_wallet.clone(),
+        }));
+
+        // Confirm the unstake as if the contract did
+        let unstaked = get_unstaked_message(ETH_TEST_WALLET, expected_amount.into());
+        assert_ok!(crate::process_unstaked::<Test>(unstaked));
+
+        // Ensure the claimed unstake state has been pruned
+        assert!(Pallet::<Test>::claimed_unstakes().is_empty());
+    });
+}
