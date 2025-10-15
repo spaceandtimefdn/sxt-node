@@ -174,10 +174,10 @@ impl TableIdentifier {
     }
 
     /// Takes a given Table Identifier and coerces it to uppercase
-    pub fn normalized(ident: TableIdentifier) -> Self {
-        let name = from_utf8(&ident.name).unwrap();
-        let namespace = from_utf8(&ident.namespace).unwrap();
-        Self::from_str_unchecked(name, namespace)
+    pub fn normalized(ident: TableIdentifier) -> Result<Self, Utf8Error> {
+        let name = from_utf8(&ident.name)?;
+        let namespace = from_utf8(&ident.namespace)?;
+        Ok(Self::from_str_unchecked(name, namespace))
     }
 
     /// Optimistically create a Table Identifier from a given name and namespace. If the
