@@ -477,10 +477,32 @@ pub mod pallet {
             table_type: TableType,
             source: Source,
         ) -> DispatchResult {
-            pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                origin,
+            // If all the tables being submitted are public or community, then we only need the transaction to
+            // be signed, not specially permissioned
+            let is_public =
+                table_type == TableType::PublicPermissionless || table_type == TableType::Community;
+
+            let is_privileged = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
-            )?;
+            );
+
+            let maybe_owner = ensure_signed(origin.clone());
+            match (is_public, is_privileged, maybe_owner) {
+                (true, Err(_), Ok(owner)) => {
+                    // A user without elevated permissions is trying to create a namespace for a public table type
+                    // Ensure a safe name
+                    ensure_safe_namespace::<T>(&owner, &schema_name)?;
+                }
+                (_, Ok(_), _) => {
+                    // A user with elevated permission is trying to create a new namespace
+                    // No Checks
+                }
+                _ => {
+                    Err(pallet_permissions::Error::<T>::InsufficientPermissions)?;
+                }
+            }
+
             let raw_sql =
                 from_utf8(&create_statement).map_err(|_| Error::<T>::CreateStatementParseError)?;
 
@@ -878,37 +900,49 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Create a table. Exactly the same as the extrinsic but available to other pallets
+        /// Create a table. Exactly the same as the extrinsic
         pub fn create_tables_inner(
             origin: OriginFor<T>,
             tables: UpdateTableList,
         ) -> DispatchResult {
-            // If all the tables being submitted are public, then we only need the transaction to
+            // If all the tables being submitted are public or community, then we only need the transaction to
             // be signed, not specially permissioned
-            let all_public = tables
-                .iter()
-                .all(|table| table.table_type == TableType::PublicPermissionless);
+            let all_public = tables.iter().all(|table| {
+                table.table_type == TableType::PublicPermissionless
+                    || table.table_type == TableType::Community
+            });
+            let is_privileged = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            );
 
-            let owner: Option<T::AccountId> = if all_public {
-                Some(ensure_signed(origin)?)
-            } else {
-                pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
-                    origin.clone(),
-                    &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
-                )?
+            let owner = match (all_public, is_privileged, ensure_signed(origin.clone())) {
+                (true, Err(_), Ok(o)) => {
+                    // A user without elevated permissions is trying to create public tables
+                    // Ensure safe names
+                    for t in tables.iter() {
+                        ensure_safe_namespace::<T>(&o, &t.ident.namespace)?;
+                    }
+                    Some(o)
+                }
+                (_, Ok(_), Ok(o)) => {
+                    // A user with elevated permission is trying to create a new namespace
+                    // No Checks, but return the account for processing
+                    Some(o)
+                }
+                (_, Ok(_), Err(_)) => {
+                    // Elevated permissions, but no account. Likely a sudo call or a unit test
+                    None
+                }
+                _ => {
+                    return Err(pallet_permissions::Error::<T>::InsufficientPermissions.into());
+                }
             };
 
             let tables_with_meta_columns = tables
-                .into_iter()
-                .map(|mut table| {
-                    let is_public = table.table_type == TableType::PublicPermissionless;
-
-                    if is_public && owner.is_some() {
-                        ensure_safe_name::<T>(
-                            owner.clone().expect("owner.is_some"),
-                            table.ident.clone(),
-                        )?;
-                    }
+        .into_iter()
+        .map(|mut table| {
+            let is_permissionless = table.table_type == TableType::PublicPermissionless;
 
                     // Generate or extract UUIDs
                     let (table_uuid, column_uuids) =
@@ -955,7 +989,7 @@ pub mod pallet {
                     }?;
 
                     // Inject submitter column if this is a permissionless table
-                    if is_public {
+                    if is_permissionless {
                         if sxt_core::tables::has_submitter_column(&create_table) {
                             return Err(Error::<T>::ReservedColumnName.into());
                         }
@@ -1059,15 +1093,15 @@ pub mod pallet {
 
     // Check if a public table has a safe name. Accepts an account ID and a table Identifier and determines if the table identifier is
     // valid for the provided table owner.
-    pub(crate) fn ensure_safe_name<T: Config>(
-        who: T::AccountId,
-        ident: TableIdentifier,
+    pub(crate) fn ensure_safe_namespace<T: Config>(
+        who: &T::AccountId,
+        namespace: &ByteString,
     ) -> Result<(), DispatchError>
     where
         T::AccountId: Ss58Codec,
     {
         // Get the namespace as a string
-        let val = from_utf8(&ident.namespace).map_err(|_| Error::<T>::UtfConversionError)?;
+        let val = from_utf8(namespace).map_err(|_| Error::<T>::UtfConversionError)?;
 
         // Substrate addresses are 32 bytes, which, in hex string format, exceeds our character
         // limit. Because of this, substrate addresses must use their SS58 format, but to improve user
@@ -1077,7 +1111,7 @@ pub mod pallet {
         // Check if this address has the ten leading 0's
         let is_ethereum = is_ethereum_address::<T>(who.clone());
         let is_valid_eth_namespace = is_valid_eth_user_namespace(val, who.clone().encode());
-        let is_valid_ss58 = is_valid_ss58_user_namespace(val, Ss58Codec::to_ss58check(&who));
+        let is_valid_ss58 = is_valid_ss58_user_namespace(val, Ss58Codec::to_ss58check(who));
 
         if is_ethereum && is_valid_eth_namespace {
             return Ok(());
