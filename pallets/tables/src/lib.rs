@@ -180,6 +180,16 @@ pub mod pallet {
 
         /// A table has been successfully dropped
         TableDropped(Option<T::AccountId>, TableType, TableIdentifier, Source),
+
+        /// A table had its quorum requirements updated
+        QuorumUpdated {
+            /// The table that was updated
+            table: TableIdentifier,
+            /// The old quorum settings
+            old_quorum: Option<InsertQuorumSize>,
+            /// The new quorum Settings
+            new_quorum: InsertQuorumSize,
+        },
     }
 
     /// A Map of Column UUIDs by Table Identifier and Version
@@ -595,6 +605,62 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// Transaction for updating the quorum of a particular table
+        #[pallet::call_index(9)]
+        #[pallet::weight(<T as Config>::WeightInfo::update_table_quorum())]
+        pub fn update_table_quorum(
+            origin: OriginFor<T>,
+            table: TableIdentifier,
+            new_quorum: InsertQuorumSize,
+        ) -> DispatchResult {
+            let _ = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            )?;
+
+            let old_quorum = Self::inner_update_table_quorum(&table, new_quorum);
+
+            Self::deposit_event(Event::QuorumUpdated {
+                table,
+                new_quorum,
+                old_quorum,
+            });
+            Ok(())
+        }
+
+        /// Transaction for updating the quorum of all tables in the provided Schema
+        #[pallet::call_index(10)]
+        #[pallet::weight(<T as Config>::WeightInfo::update_table_quorum() * 10)]
+        pub fn update_schema_quorum(
+            origin: OriginFor<T>,
+            schema_name: sxt_core::tables::TableNamespace,
+            new_quorum: InsertQuorumSize,
+        ) -> DispatchResult {
+            let _ = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+                origin.clone(),
+                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            )?;
+
+            let tables: Vec<TableIdentifier> = Schemas::<T>::iter_key_prefix(&schema_name)
+                .map(|name: TableName| TableIdentifier {
+                    name,
+                    namespace: schema_name.clone(),
+                })
+                .collect();
+
+            tables.iter().for_each(|table: &TableIdentifier| {
+                let old_quorum = Self::inner_update_table_quorum(table, new_quorum);
+
+                Self::deposit_event(Event::QuorumUpdated {
+                    table: table.clone(),
+                    new_quorum,
+                    old_quorum,
+                });
+            });
+
+            Ok(())
+        }
     }
 
     fn map_uuid_error<T: Config>(error: UpdateUuidError) -> DispatchError {
@@ -615,6 +681,18 @@ pub mod pallet {
                     pallet_commitments::CommitmentStorageMap::<T>::remove(&ident, k2);
                 }
             }
+        }
+
+        /// Update the quorum entry for the provided table, returning the old quorum, if present
+        pub fn inner_update_table_quorum(
+            id: &TableIdentifier,
+            new_quorum: InsertQuorumSize,
+        ) -> Option<InsertQuorumSize> {
+            let old_quorum = TableInsertQuorums::<T>::get(id);
+
+            TableInsertQuorums::<T>::set(id, new_quorum);
+
+            Some(old_quorum)
         }
 
         /// Insert a given Namespace's UUID along with the corresponding version

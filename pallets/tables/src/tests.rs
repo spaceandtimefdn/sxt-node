@@ -1015,3 +1015,148 @@ fn insert_schema_should_fail_if_identifiers_are_too_large() {
         );
     })
 }
+
+#[test]
+fn update_quorum_size_for_existing_table_works_and_emits_event() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let test_identifier = TableIdentifier {
+            name: b"BLOCKS".to_vec().try_into().unwrap(),
+            namespace: b"ETHEREUM".to_vec().try_into().unwrap(),
+        };
+
+        assert!(matches!(
+            Tables::table_schema(test_identifier.clone()),
+            Err(GetTableSchemaError::NoSuchTable)
+        ));
+
+        let ddl = r#"CREATE TABLE IF NOT EXISTS ETHEREUM.BLOCKS (
+            TIME_STAMP TIMESTAMP NOT NULL,
+            BLOCK_NUMBER BIGINT NOT NULL,
+            BLOCK_HASH BINARY NOT NULL,
+            GAS_LIMIT DECIMAL(75, 0) NOT NULL,
+            TRANSACTION_COUNT INT NOT NULL,
+            PRIMARY KEY (BLOCK_NUMBER)
+        ) WITH (TABLE_UUID=F801A872785FAB3F16C51CF7A1969000);"#;
+
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let table_type = TableType::CoreBlockchain;
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::CoreBlockchain,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+            source: Source::Ethereum,
+        }])
+        .expect("Table list should fit in BoundedVec");
+
+        assert_ok!(Tables::create_tables(RuntimeOrigin::root(), tables.clone()));
+
+        let new_quorum = InsertQuorumSize {
+            public: None,
+            privileged: Some(0),
+        };
+
+        // Try to update the quorum on the test table
+        assert_ok!(Tables::update_table_quorum(
+            RuntimeOrigin::root(),
+            test_identifier.clone(),
+            new_quorum,
+        ));
+
+        // Verify the event was emitted as expected with the correct new and old quorums
+        System::assert_has_event(RuntimeEvent::Tables(Event::QuorumUpdated {
+            table: test_identifier.clone(),
+            old_quorum: Some(InsertQuorumSize::from(table_type)),
+            new_quorum,
+        }));
+
+        assert_eq!(TableInsertQuorums::<Test>::get(test_identifier), new_quorum);
+    });
+}
+
+#[test]
+fn updating_quorum_for_schema_updates_only_intended_tables_and_emits_events() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        // Start by creating the storage state for our test setup
+        let target_namespace = TableNamespace::try_from("TARGET_NAMESPACE".as_bytes().to_vec()).unwrap();
+        let target_table_one = "TABLE_ONE";
+        let target_table_two = "TABLE_TWO";
+
+        let table1 = TableIdentifier {
+            name: TableName::try_from(target_table_one.as_bytes().to_vec()).unwrap(),
+            namespace: target_namespace.clone(),
+        };
+        let table2 = TableIdentifier {
+            name: TableName::try_from(target_table_two.as_bytes().to_vec()).unwrap(),
+            namespace: target_namespace.clone(),
+        };
+        let table3 = TableIdentifier {
+            name: TableName::try_from("A_DIFFERENT_NAMESPACE".as_bytes().to_vec()).unwrap(),
+            namespace: TableNamespace::try_from("OTHER_NAMESPACE".as_bytes().to_vec()).unwrap(),
+        };
+        let table_type = TableType::CoreBlockchain;
+        let source = Source::Ethereum;
+
+        // Create both tables
+        let ddl1 = "CREATE TABLE IF NOT EXISTS TEST_NAMESPACE.TABLE_ONE (ID BIGINT NOT NULL, PRIMARY KEY (ID));";
+        let ddl2 = "CREATE TABLE IF NOT EXISTS TEST_NAMESPACE.TABLE_TWO (ID BIGINT NOT NULL, PRIMARY KEY (ID));";
+        let ddl3 = "CREATE TABLE IF NOT EXISTS OTHER_NAMESPACE.A_DIFFERENT_NAMESPACE (ID BIGINT NOT NULL, PRIMARY KEY (ID));";
+
+        let create_statement1: CreateStatement =
+            BoundedVec::try_from(ddl1.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+        let create_statement2: CreateStatement =
+            BoundedVec::try_from(ddl2.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+        let create_statement3: CreateStatement =
+            BoundedVec::try_from(ddl3.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![
+            UpdateTable {
+                ident: table1.clone(),
+                create_statement: create_statement1,
+                table_type: table_type.clone(),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+                source: source.clone(),
+            },
+            UpdateTable {
+                ident: table2.clone(),
+                create_statement: create_statement2,
+                table_type: table_type.clone(),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+                source: source.clone(),
+            },
+            UpdateTable {
+                ident: table3.clone(),
+                create_statement: create_statement3,
+                table_type: table_type.clone(),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+                source: source.clone(),
+            }
+        ])
+        .expect("Table list should fit in BoundedVec");
+
+        assert_ok!(Tables::create_tables(RuntimeOrigin::root(), tables));
+
+        // Now that the tables are ready, let's test
+
+        let new_quorum = InsertQuorumSize { public: None, privileged: Some(3)};
+
+        assert_ok!(Tables::update_schema_quorum(RuntimeOrigin::root(), target_namespace, new_quorum));
+
+        let old_quorum = InsertQuorumSize::from(table_type);
+
+        System::assert_has_event(RuntimeEvent::Tables(Event::QuorumUpdated { table: table1.clone(), old_quorum: Some(old_quorum), new_quorum }));
+        System::assert_has_event(RuntimeEvent::Tables(Event::QuorumUpdated { table: table2.clone(), old_quorum: Some(old_quorum), new_quorum }));
+
+        // Make sure that table1 and table2 are updated to the new qourum
+        assert_eq!(TableInsertQuorums::<Test>::get(table1), new_quorum);
+        assert_eq!(TableInsertQuorums::<Test>::get(table2), new_quorum);
+
+        // Also make sure that the other table in the other namespace was unaffected
+        assert_eq!(TableInsertQuorums::<Test>::get(table3), old_quorum);
+    });
+}
