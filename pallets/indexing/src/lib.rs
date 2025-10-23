@@ -240,7 +240,7 @@ pub mod pallet {
     fn submit_data_inner<T, I>(
         origin: OriginFor<T>,
         table: TableIdentifier,
-        batch_id: BatchId,
+        outer_batch_id: BatchId,
         data: RowData,
         block_number: Option<u64>,
     ) -> DispatchResult
@@ -275,6 +275,15 @@ pub mod pallet {
             can_submit_for_public_quorum || can_submit_for_privileged_quorum,
             Error::<T, I>::UnauthorizedSubmitter
         );
+
+        ensure!(
+            !is_legacy_duplicate::<T, I>(&outer_batch_id, &table),
+            Error::<T, I>::LateBatch
+        );
+
+        ensure!(!outer_batch_id.is_empty(), Error::<T, I>::InvalidBatch);
+
+        let batch_id = build_inner_batch_id::<T, I>(&outer_batch_id, &table);
 
         validate_submission::<T, I>(&table, &batch_id, &data)?;
 
@@ -491,6 +500,36 @@ pub mod pallet {
         Ok(())
     }
 
+    pub(crate) fn build_inner_batch_id<T, I>(
+        outer_batch_id: &BatchId,
+        table: &TableIdentifier,
+    ) -> BatchId
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        BatchId::truncate_from(
+            T::Hashing::hash(&(&table, outer_batch_id).encode())
+                .as_ref()
+                .to_vec(),
+        )
+    }
+
+    pub(crate) fn is_legacy_duplicate<T, I>(
+        outer_batch_id: &BatchId,
+        table_id: &TableIdentifier,
+    ) -> bool
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        if let Some(old_final_data) = FinalData::<T, I>::get(outer_batch_id) {
+            &old_final_data.table == table_id
+        } else {
+            false
+        }
+    }
+
     /// Run some checks to verify that table, batch_id, and data are reasonable, non-empty values\
     /// If the transaction is considered invalid, a relevant error will be returned
     pub fn validate_submission<T, I>(
@@ -512,7 +551,6 @@ pub mod pallet {
             Error::<T, I>::InvalidTable
         );
         ensure!(!data.is_empty(), Error::<T, I>::NoData);
-        ensure!(!batch_id.is_empty(), Error::<T, I>::InvalidBatch);
         // Make sure the schema exists for this table
         ensure!(
             pallet_tables::Schemas::<T>::contains_key(&table.namespace, &table.name),

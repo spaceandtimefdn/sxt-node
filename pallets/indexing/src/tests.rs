@@ -31,7 +31,7 @@ use sxt_core::tables::{
 };
 
 use crate::mock::*;
-use crate::{BatchId, Event, RowData};
+use crate::{build_inner_batch_id, BatchId, Event, RowData};
 
 /// Used as a convenience wrapper for data we need to submit
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -208,10 +208,11 @@ fn inserting_data_succeeds_when_data_is_good() {
 
         let hash = hash_row_data_with_block_number::<Test>(&test_data, None);
 
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&test_batch, &table_id);
         // Verify that the submission was stored as expected
         // and the hash was generated from the submitted data
         assert_eq!(
-            Indexing::submissions(test_batch.clone(), hash).len_of_scope(&QuorumScope::Public),
+            Indexing::submissions(internal_batch_id, hash).len_of_scope(&QuorumScope::Public),
             1
         );
     })
@@ -260,10 +261,13 @@ fn submission_fails_when_data_is_already_submitted() {
         hash_input.extend(None::<u64>.encode());
         let hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&hash_input);
 
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&test_batch, &table_id);
+
         // Verify that the submission was stored as expected
         // and the hash was generated from the submitted data
         assert_eq!(
-            Indexing::submissions(test_batch.clone(), hash).len_of_scope(&QuorumScope::Public),
+            Indexing::submissions(internal_batch_id.clone(), hash)
+                .len_of_scope(&QuorumScope::Public),
             1
         );
 
@@ -337,7 +341,7 @@ fn data_is_decided_on_after_required_submissions() {
         .unwrap();
 
         let test_submission = TestSubmission {
-            table: table_id,
+            table: table_id.clone(),
             batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
             data: row_data(),
         };
@@ -378,9 +382,11 @@ fn data_is_decided_on_after_required_submissions() {
             RuntimeOrigin::signed(sp_runtime::AccountId32::new([4; 32])),
             test_submission.clone()
         ));
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
 
         // Now that we have 4 submissions, verify that the data was decided on
-        let maybe_final_data = Indexing::final_data(test_submission.batch_id.clone());
+        let maybe_final_data = Indexing::final_data(&internal_batch_id);
         assert!(maybe_final_data.is_some());
 
         let fd = maybe_final_data.unwrap();
@@ -389,7 +395,7 @@ fn data_is_decided_on_after_required_submissions() {
         assert_eq!(fd.quorum_scope, QuorumScope::Public);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
+        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
         assert!(submitters.scope_is_empty(&QuorumScope::Public));
         assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
     })
@@ -434,6 +440,8 @@ fn correct_data_is_decided_on_after_required_submissions() {
         }
 
         let test_batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&test_batch_id, &table_id);
+
         let test_submission = TestSubmission {
             table: table_id.clone(),
             batch_id: test_batch_id.clone(),
@@ -456,11 +464,11 @@ fn correct_data_is_decided_on_after_required_submissions() {
         ));
 
         // We haven't reached enough submissions yet, so this should not be decided on
-        assert!(Indexing::final_data(test_submission.batch_id.clone()).is_none());
+        assert!(Indexing::final_data(&internal_batch_id).is_none());
 
         // Send a submission that is with different data
         let differing_submission = TestSubmission {
-            table: table_id,
+            table: table_id.clone(),
             batch_id: test_batch_id,
             data: diff_row_data(),
         };
@@ -470,7 +478,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
         ));
 
         // This should still not be decided on yet, so double check
-        assert!(Indexing::final_data(test_submission.batch_id.clone()).is_none());
+        assert!(Indexing::final_data(&internal_batch_id).is_none());
 
         // Now submit a final matching entry
         assert_ok!(submit_test_data(
@@ -479,7 +487,7 @@ fn correct_data_is_decided_on_after_required_submissions() {
         ));
 
         // Now that we have 4 submissions, verify that the data was decided on
-        let final_data = Indexing::final_data(test_submission.batch_id.clone());
+        let final_data = Indexing::final_data(&internal_batch_id);
         assert!(final_data.is_some());
 
         // Verify that it matches the originally submitted test data
@@ -487,10 +495,8 @@ fn correct_data_is_decided_on_after_required_submissions() {
 
         // Verify that the old data was successfully removed for this batch
         for _i in 1..4 {
-            assert!(
-                Indexing::submissions(test_submission.batch_id.clone(), data_hash)
-                    .scope_is_empty(&QuorumScope::Public)
-            )
+            assert!(Indexing::submissions(&internal_batch_id, data_hash)
+                .scope_is_empty(&QuorumScope::Public))
         }
     })
 }
@@ -724,7 +730,7 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
 
         let test_batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
         let test_submission = TestSubmission {
-            table: table_id,
+            table: table_id.clone(),
             batch_id: test_batch_id.clone(),
             data: row_data(),
         };
@@ -740,8 +746,11 @@ fn inserting_data_fails_when_batch_id_has_already_been_decided_on() {
             ));
         }
 
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
+
         // Verify that the data is finalized
-        let maybe_data = Indexing::final_data(test_submission.batch_id.clone());
+        let maybe_data = Indexing::final_data(&internal_batch_id);
         assert!(maybe_data.is_some());
         let quorum = maybe_data.unwrap();
         assert_eq!(quorum.data_hash, data_hash);
@@ -824,10 +833,11 @@ fn submit_data_with_mothership_key_work() {
 
         let hash = hash_row_data_with_block_number::<Test>(&test_data, None);
 
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&test_batch, &test_identifier);
         // Verify that the submission was stored as expected
         // and the hash was generated from the submitted data
         assert_eq!(
-            Indexing::submissions(test_batch.clone(), hash).len_of_scope(&QuorumScope::Public),
+            Indexing::submissions(internal_batch_id, hash).len_of_scope(&QuorumScope::Public),
             1
         );
     })
@@ -867,7 +877,7 @@ fn we_can_reach_privileged_quorum() {
 
         // Add permissions for the test accounts
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_id),
+            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_id.clone()),
         )])
         .unwrap();
 
@@ -877,8 +887,10 @@ fn we_can_reach_privileged_quorum() {
 
         // Send the final required submission
         assert_ok!(submit_test_data(origin, test_submission.clone()));
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
 
-        let maybe_final_data = Indexing::final_data(test_submission.batch_id.clone());
+        let maybe_final_data = Indexing::final_data(&internal_batch_id);
         assert!(maybe_final_data.is_some());
 
         let fd = maybe_final_data.unwrap();
@@ -887,7 +899,7 @@ fn we_can_reach_privileged_quorum() {
         assert_eq!(fd.quorum_scope, QuorumScope::Privileged);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
+        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
         assert!(submitters.scope_is_empty(&QuorumScope::Public));
         assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
     })
@@ -929,7 +941,7 @@ fn we_can_manage_quorum_state_for_both_scopes() {
         let public_permission =
             PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum);
         let privileged_permission = PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_id),
+            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_id.clone()),
         );
 
         let public_submitter = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
@@ -955,31 +967,36 @@ fn we_can_manage_quorum_state_for_both_scopes() {
 
         // public submission
         assert_ok!(submit_test_data(public_submitter, test_submission.clone()));
-        let submissions = Indexing::submissions(&test_submission.batch_id, test_data_hash);
+
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
+
+        let submissions = Indexing::submissions(&internal_batch_id, test_data_hash);
         assert_eq!(submissions.len_of_scope(&QuorumScope::Public), 1);
         assert!(submissions.scope_is_empty(&QuorumScope::Privileged));
-        assert!(Indexing::final_data(&test_submission.batch_id).is_none());
+        assert!(Indexing::final_data(&internal_batch_id).is_none());
 
         // both submission
         assert_ok!(submit_test_data(both_submitter, test_submission.clone()));
-        let submissions = Indexing::submissions(&test_submission.batch_id, test_data_hash);
+
+        let submissions = Indexing::submissions(&internal_batch_id, test_data_hash);
         assert_eq!(submissions.len_of_scope(&QuorumScope::Public), 1);
         assert_eq!(submissions.len_of_scope(&QuorumScope::Privileged), 1);
-        assert!(Indexing::final_data(&test_submission.batch_id).is_none());
+        assert!(Indexing::final_data(&internal_batch_id).is_none());
 
         // privileged submission
         assert_ok!(submit_test_data(
             privileged_submitter,
             test_submission.clone()
         ));
-        let final_data = Indexing::final_data(&test_submission.batch_id).unwrap();
+        let final_data = Indexing::final_data(&internal_batch_id).unwrap();
 
         assert_eq!(final_data.data_hash, test_data_hash);
         assert_eq!(final_data.table, test_submission.table);
         assert_eq!(final_data.quorum_scope, QuorumScope::Privileged);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
+        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
         assert!(submitters.scope_is_empty(&QuorumScope::Public));
         assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
 
@@ -1029,7 +1046,7 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_privileged_quorum_rea
         let public_permission =
             PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum);
         let privileged_permission = PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_id),
+            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_id.clone()),
         );
 
         let both_submitter = RuntimeOrigin::signed(sp_runtime::AccountId32::new([3; 32]));
@@ -1042,7 +1059,10 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_privileged_quorum_rea
         // both submission
         assert_ok!(submit_test_data(both_submitter, test_submission.clone()));
 
-        let final_data = Indexing::final_data(&test_submission.batch_id).unwrap();
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
+
+        let final_data = Indexing::final_data(&internal_batch_id).unwrap();
 
         assert_eq!(final_data.data_hash, test_data_hash);
         assert_eq!(final_data.table, test_submission.table);
@@ -1439,7 +1459,10 @@ fn we_can_reach_quorum_before_and_after_changing_quorum_size() {
         // Send the final required submission
         assert_ok!(submit_test_data(origin, test_submission.clone()));
 
-        let maybe_final_data = Indexing::final_data(test_submission.batch_id.clone());
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
+
+        let maybe_final_data = Indexing::final_data(&internal_batch_id);
         assert!(maybe_final_data.is_some());
 
         let fd = maybe_final_data.unwrap();
@@ -1447,8 +1470,11 @@ fn we_can_reach_quorum_before_and_after_changing_quorum_size() {
         assert_eq!(fd.table, test_submission.table);
         assert_eq!(fd.quorum_scope, QuorumScope::Privileged);
 
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
+
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
+        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
         assert!(submitters.scope_is_empty(&QuorumScope::Public));
         assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
 
@@ -1494,17 +1520,20 @@ fn we_can_reach_quorum_before_and_after_changing_quorum_size() {
         // Send the data
         assert_ok!(submit_test_data(origin, test_submission_2.clone()));
 
-        let maybe_final_data = Indexing::final_data(test_submission.batch_id.clone());
+        let internal_batch_id_2 =
+            build_inner_batch_id::<Test, Api>(&test_submission_2.batch_id, &table_id);
+
+        let maybe_final_data = Indexing::final_data(&internal_batch_id_2);
 
         assert!(maybe_final_data.is_some());
 
         let fd = maybe_final_data.unwrap();
         assert_eq!(fd.data_hash, test_data_hash);
         assert_eq!(fd.table, test_submission.table);
-        assert_eq!(fd.quorum_scope, QuorumScope::Privileged);
+        assert_eq!(fd.quorum_scope, QuorumScope::Public);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
+        let submitters = Indexing::submissions(&internal_batch_id_2, test_data_hash);
         assert!(submitters.scope_is_empty(&QuorumScope::Public));
         assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
     });
