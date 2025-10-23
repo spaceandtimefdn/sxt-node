@@ -1159,4 +1159,53 @@ fn updating_quorum_for_schema_updates_only_intended_tables_and_emits_events() {
         // Also make sure that the other table in the other namespace was unaffected
         assert_eq!(TableInsertQuorums::<Test>::get(table3), old_quorum);
     });
+
+    #[test]
+    fn creating_a_table_should_automatically_permission_table_owner() {
+        use proof_of_sql::base::commitment::TableCommitment;
+        use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
+        use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
+        use sxt_core::tables::SnapshotUrl;
+
+        new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (who, signer) = user(1);
+        let test_identifier =
+            TableIdentifier::from_str_unchecked("VOTES", "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+        let ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+            let zero_hashes = TableCommitmentBytesPerCommitmentScheme {
+                hyper_kzg: None,
+                dynamic_dory: Some(
+                    (&TableCommitment::<DynamicDoryCommitment>::default())
+                        .try_into()
+                        .unwrap(),
+                ),
+            };
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::PublicPermissionless,
+            commitment: CommitmentCreationCmd::FromSnapshot(SnapshotUrl::try_from("SOME_URL".as_bytes().to_vec()).unwrap(), zero_hashes),
+            source: Source::Ethereum,
+        }])
+        .expect("Table list should fit in BoundedVec");
+
+        let edit_permission = PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema);
+
+        // Permission the table creator
+        assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
+            RuntimeOrigin::root(),
+            who.clone(),
+            edit_permission.clone(),
+        ));
+
+        assert_err!(Tables::create_tables(signer, tables.clone()), DispatchError::Other("Snapshot commitments are deprecated in this extrinsic"));
+
+
+    });
+    }
 }

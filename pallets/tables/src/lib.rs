@@ -953,11 +953,7 @@ pub mod pallet {
                             )?
                         }
                         CommitmentCreationCmd::FromSnapshot(ref snapshot_url, ref per_commitment_scheme) => {
-                            Snapshots::<T>::insert(table.ident.clone(), snapshot_url.clone());
-                            pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
-                                create_table,
-                                per_commitment_scheme.clone(),
-                            )?
+                            Err(DispatchError::Other("Snapshot commitments are deprecated in this extrinsic"))?
                         }
                     };
 
