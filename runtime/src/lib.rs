@@ -824,6 +824,7 @@ impl pallet_zkpay::Config for Runtime {
 
 impl pallet_system_contracts::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_system_contracts::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_smartcontracts::Config<native_api::Api> for Runtime {
@@ -1001,6 +1002,7 @@ mod benches {
         [pallet_indexing, Indexing]
         [pallet_attestation, Attestations]
         [pallet_keystore, Keystore]
+        [pallet_system_contracts, SystemContracts]
     );
 }
 
