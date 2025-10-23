@@ -939,6 +939,21 @@ pub mod pallet {
                         create_statement_to_sqlparser_remove_with(updated_create_statement)
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
+                    // Ensure the parsed table identifier matches the provided one
+                    match (
+                        create_table.name.0.as_slice(),
+                        from_utf8(&table.ident.namespace),
+                        from_utf8(&table.ident.name),
+                    ) {
+                        ([parsed_namespace, parsed_name], Ok(param_namespace), Ok(param_name))
+                            if parsed_namespace.value == param_namespace
+                                && parsed_name.value == param_name =>
+                        {
+                            Ok(())
+                        }
+                        _ => Err(Error::<T>::TableIdentifierParsingError),
+                    }?;
+
                     // Inject submitter column if this is a permissionless table
                     if is_public {
                         if sxt_core::tables::has_submitter_column(&create_table) {
