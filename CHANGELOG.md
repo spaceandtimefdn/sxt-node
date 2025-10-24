@@ -1,3 +1,12 @@
+# [1.37.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.36.0...v1.37.0) (2025-10-24)
+
+
+### Features
+
+* Throw unsupported error if create_tables supplies commitments ([#97](https://github.com/spaceandtimefdn/sxt-node/issues/97)) ([efaef41](https://github.com/spaceandtimefdn/sxt-node/commit/efaef41b92861e1b14fc6157e3acfc4d4775eb2b))
+
+
+
 # [1.36.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.35.0...v1.36.0) (2025-10-22)
 
 
@@ -26,19 +35,6 @@
 ### Features
 
 * Add more functionality to Canary Service ([#92](https://github.com/spaceandtimefdn/sxt-node/issues/92)) ([c5d43a1](https://github.com/spaceandtimefdn/sxt-node/commit/c5d43a1a37c87d7495c9bbdd32be134990cc5022))
-
-
-
-## [1.33.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.33.0...v1.33.1) (2025-09-29)
-
-
-### Performance Improvements
-
-* cpu-perf-enabled pallet-indexing weights to calculate fees ([0a6b184](https://github.com/spaceandtimefdn/sxt-node/commit/0a6b184c20f3766c6fb63449abc75d03256babcb))
-* enable cpu-perf for all non-aarch64 targets ([66ad54d](https://github.com/spaceandtimefdn/sxt-node/commit/66ad54d86da9eb5be31dd763d78102e8064706e4))
-* increment node version to 1.2.2 ([c7cccf7](https://github.com/spaceandtimefdn/sxt-node/commit/c7cccf7ca3fac3e610f9b21be40e9321fd7e9b08))
-* increment runtime spec version to 240 ([4fd0378](https://github.com/spaceandtimefdn/sxt-node/commit/4fd0378147ef104231674f8aa5f22a998c2792ed))
-* recalculate weights after re-enabling cpu-perf ([75acab0](https://github.com/spaceandtimefdn/sxt-node/commit/75acab0d540362567041a7ac321fc5cd7960707f))
 
 
 
