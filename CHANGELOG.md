@@ -1,3 +1,12 @@
+## [1.37.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.37.0...v1.37.1) (2025-10-27)
+
+
+### Bug Fixes
+
+* ensure the parsed table identifier matches the provided one ([#99](https://github.com/spaceandtimefdn/sxt-node/issues/99)) ([37ab224](https://github.com/spaceandtimefdn/sxt-node/commit/37ab224653bc632824459b5125c672b4a41be1ad))
+
+
+
 # [1.37.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.36.0...v1.37.0) (2025-10-24)
 
 
@@ -26,15 +35,6 @@
 
 
 ## [1.34.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.34.0...v1.34.1) (2025-10-07)
-
-
-
-# [1.34.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.33.1...v1.34.0) (2025-10-02)
-
-
-### Features
-
-* Add more functionality to Canary Service ([#92](https://github.com/spaceandtimefdn/sxt-node/issues/92)) ([c5d43a1](https://github.com/spaceandtimefdn/sxt-node/commit/c5d43a1a37c87d7495c9bbdd32be134990cc5022))
 
 
 
