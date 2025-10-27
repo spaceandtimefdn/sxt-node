@@ -763,10 +763,10 @@ pub mod pallet {
             let create_table = create_statement_to_sqlparser(statement)
                 .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
-            let CreateTableAndCommitmentMetadata { table_with_meta_columns, .. } = pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(
-                create_table,
-                commit,
-            )?;
+            let CreateTableAndCommitmentMetadata {
+                table_with_meta_columns,
+                ..
+            } = pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(create_table, commit)?;
 
             let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
                 .map_err(|_| Error::<T>::CreateStatementParseError)?;
@@ -788,9 +788,7 @@ pub mod pallet {
             let CreateTableAndCommitmentMetadata {
                 table_with_meta_columns,
                 ..
-            } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_dynamic_dory(
-                create_table,
-            )?;
+            } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_dynamic_dory(create_table)?;
 
             let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
                 .map_err(|_| Error::<T>::CreateStatementParseError)?;
@@ -901,23 +899,32 @@ pub mod pallet {
             };
 
             let tables_with_meta_columns = tables
-        .into_iter()
-        .map(|mut table| {
-            let is_public = table.table_type == TableType::PublicPermissionless;
+                .into_iter()
+                .map(|mut table| {
+                    let is_public = table.table_type == TableType::PublicPermissionless;
 
-            if is_public && owner.is_some() {
-                ensure_safe_name::<T>(owner.clone().expect("owner.is_some"), table.ident.clone())?;
-            }
+                    if is_public && owner.is_some() {
+                        ensure_safe_name::<T>(
+                            owner.clone().expect("owner.is_some"),
+                            table.ident.clone(),
+                        )?;
+                    }
 
-            // Generate or extract UUIDs
-            let (table_uuid, column_uuids) = pallet::Pallet::<T>::get_or_generate_uuids_for_table(
-                table.create_statement.clone(),
-                table.ident.clone(),
-            )
-            .map_err(|_| Error::<T>::UUIDGenerationError)?;
+                    // Generate or extract UUIDs
+                    let (table_uuid, column_uuids) =
+                        pallet::Pallet::<T>::get_or_generate_uuids_for_table(
+                            table.create_statement.clone(),
+                            table.ident.clone(),
+                        )
+                        .map_err(|_| Error::<T>::UUIDGenerationError)?;
 
                     // Update the create statement to add the UUIDs to the WITH clause
-                    let updated_create_statement = update_uuid_in_create_table_statement(table_uuid.clone(), column_uuids.clone(), table.create_statement.clone()).map_err(map_uuid_error::<T>)?;
+                    let updated_create_statement = update_uuid_in_create_table_statement(
+                        table_uuid.clone(),
+                        column_uuids.clone(),
+                        table.create_statement.clone(),
+                    )
+                    .map_err(map_uuid_error::<T>)?;
 
                     Self::insert_table_uuid(table.ident.clone(), table_uuid, column_uuids)?;
                     Self::insert_schema(
@@ -928,10 +935,9 @@ pub mod pallet {
                     )?;
 
                     // Parse and remove WITH clause
-                    let (mut create_table, with_options) = create_statement_to_sqlparser_remove_with(
-                        updated_create_statement,
-                    )
-                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                    let (mut create_table, with_options) =
+                        create_statement_to_sqlparser_remove_with(updated_create_statement)
+                            .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
                     // Inject submitter column if this is a permissionless table
                     if is_public {
@@ -952,14 +958,18 @@ pub mod pallet {
                                 scheme,
                             )?
                         }
-                        CommitmentCreationCmd::FromSnapshot(ref snapshot_url, ref per_commitment_scheme) => {
-                            Err(DispatchError::Other("Snapshot commitments are deprecated in this extrinsic"))?
-                        }
+                        CommitmentCreationCmd::FromSnapshot(
+                            ref snapshot_url,
+                            ref per_commitment_scheme,
+                        ) => Err(DispatchError::Other(
+                            "Snapshot commitments are deprecated in this extrinsic",
+                        ))?,
                     };
 
                     // Reconstruct final DDL statement
-                    let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
-                        .map_err(|_| Error::<T>::CreateStatementParseError)?;
+                    let statement_with_metadata =
+                        sqlparser_to_create_statement(table_with_meta_columns)
+                            .map_err(|_| Error::<T>::CreateStatementParseError)?;
 
                     let statement_with_metadata = from_utf8(&statement_with_metadata)
                         .map_err(|_| Error::<T>::UtfConversionError)?;
@@ -968,7 +978,9 @@ pub mod pallet {
                         Some(opts) => {
                             let mut base = statement_with_metadata.trim_end_matches(';').to_owned();
                             base.push(' ');
-                            base.push_str(from_utf8(&opts).map_err(|_| Error::<T>::UtfConversionError)?);
+                            base.push_str(
+                                from_utf8(&opts).map_err(|_| Error::<T>::UtfConversionError)?,
+                            );
                             base.push(';');
                             base
                         }
@@ -979,34 +991,39 @@ pub mod pallet {
                         }
                     };
 
-                    table.create_statement = CreateStatement::try_from(reconstructed.as_bytes().to_vec())
-                        .map_err(|_| Error::<T>::BoundedVecError)?;
+                    table.create_statement =
+                        CreateStatement::try_from(reconstructed.as_bytes().to_vec())
+                            .map_err(|_| Error::<T>::BoundedVecError)?;
 
-            // Grant permission to the table creator to submit data and grant others permission to
-            // submit data
-            if let Some(owner) = owner.clone() {
-                let table_permission = PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table.ident.clone()));
+                    // Grant permission to the table creator to submit data and grant others permission to
+                    // submit data
+                    if let Some(owner) = owner.clone() {
+                        let table_permission = PermissionLevel::IndexingPallet(
+                            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(
+                                table.ident.clone(),
+                            ),
+                        );
 
-                let _ = pallet_permissions::Pallet::<T>::add_proxy_permission(
-                    RawOrigin::Root.into(),
-                    owner.clone(),
-                    table_permission.clone(),
-                );
+                        let _ = pallet_permissions::Pallet::<T>::add_proxy_permission(
+                            RawOrigin::Root.into(),
+                            owner.clone(),
+                            table_permission.clone(),
+                        );
 
-                let _ = pallet_permissions::Pallet::<T>::add_proxy_permission(
-                    RawOrigin::Root.into(),
-                    owner.clone(),
-                    PermissionLevel::EditSpecificPermission(Box::new(table_permission)),
-                );
-            }
+                        let _ = pallet_permissions::Pallet::<T>::add_proxy_permission(
+                            RawOrigin::Root.into(),
+                            owner.clone(),
+                            PermissionLevel::EditSpecificPermission(Box::new(table_permission)),
+                        );
+                    }
 
-            TableOwners::<T>::insert(&table.ident, owner.clone());
+                    TableOwners::<T>::insert(&table.ident, owner.clone());
 
-            Ok(table)
-        })
-        .collect::<Result<Vec<_>, DispatchError>>()?
-        .try_into()
-        .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
+                    Ok(table)
+                })
+                .collect::<Result<Vec<_>, DispatchError>>()?
+                .try_into()
+                .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
 
             Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
             Ok(())
