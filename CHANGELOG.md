@@ -1,3 +1,12 @@
+# [1.38.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.37.1...v1.38.0) (2025-10-27)
+
+
+### Features
+
+* Hash batch id with table Identifier during submission ([#98](https://github.com/spaceandtimefdn/sxt-node/issues/98)) ([54541b9](https://github.com/spaceandtimefdn/sxt-node/commit/54541b937b07afc8b0843cc1439b6a54f79e73f3))
+
+
+
 ## [1.37.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.37.0...v1.37.1) (2025-10-27)
 
 
@@ -31,10 +40,6 @@
 ### Features
 
 * clamp unstaking claim amounts to be at least 1 ([18de587](https://github.com/spaceandtimefdn/sxt-node/commit/18de587562f1dfbf04f05cd40b9d724929e40d43))
-
-
-
-## [1.34.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.34.0...v1.34.1) (2025-10-07)
 
 
 
