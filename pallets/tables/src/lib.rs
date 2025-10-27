@@ -16,6 +16,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub mod benchmarking;
+
 pub mod runtime_api;
 
 pub mod weights;
@@ -374,7 +376,7 @@ pub mod pallet {
         T::AccountId: Ss58Codec,
     {
         #[pallet::call_index(0)]
-        #[pallet::weight(<T as Config>::WeightInfo::update_tables())]
+        #[pallet::weight(create_tables_weight::<T>(tables.len()))]
         /// Create table from a provided list with identifiers and DDLs
         pub fn create_tables(origin: OriginFor<T>, tables: UpdateTableList) -> DispatchResult {
             Self::create_tables_inner(origin, tables)
@@ -382,7 +384,7 @@ pub mod pallet {
 
         /// Create tables with a known commit and snapshot url from which data can be loaded
         #[pallet::call_index(1)]
-        #[pallet::weight(<T as Config>::WeightInfo::create_tables_with_snapshot_and_commitment())]
+        #[pallet::weight(create_tables_weight::<T>(tables.len()))]
         pub fn create_tables_with_snapshot_and_commitment(
             origin: OriginFor<T>,
             source_and_mode: SourceAndMode,
@@ -566,7 +568,7 @@ pub mod pallet {
 
         /// TODO remove this function
         #[pallet::call_index(6)]
-        #[pallet::weight(<T as Config>::WeightInfo::drop_table())]
+        #[pallet::weight(<T as Config>::WeightInfo::drop_invalid_commits())]
         pub fn drop_invalid_commits(
             origin: OriginFor<T>,
             ident: TableIdentifier,
@@ -667,7 +669,7 @@ pub mod pallet {
 
         /// Transaction for updating the quorum of all tables in the provided Schema
         #[pallet::call_index(10)]
-        #[pallet::weight(<T as Config>::WeightInfo::update_table_quorum() * 10)]
+        #[pallet::weight(<T as Config>::WeightInfo::update_schema_quorum())]
         pub fn update_schema_quorum(
             origin: OriginFor<T>,
             schema_name: sxt_core::tables::TableNamespace,
@@ -1163,6 +1165,14 @@ pub mod pallet {
         }
 
         Err(Error::<T>::InvalidNamespace.into())
+    }
+
+    fn create_tables_weight<T: Config>(num_tables: usize) -> Weight {
+        let zero_table_weight = <T as Config>::WeightInfo::create_zero_tables();
+        let one_table_weight = <T as Config>::WeightInfo::create_one_table();
+        let table_weight = one_table_weight.saturating_sub(zero_table_weight);
+
+        zero_table_weight + (table_weight * num_tables as u64)
     }
 
     // Returns true if the provided bytes coule be a valid ethereum address
