@@ -104,7 +104,7 @@ fn sample_table_definition() -> (TableIdentifier, CreateStatement) {
         name: TableName::try_from(b"TEST_TABLE".to_owned().to_vec()).unwrap(),
     };
     let create_statement = CreateStatement::try_from(
-        b"CREATE TABLE test_namespace.test_table (int_column INT NOT NULL)"
+        b"CREATE TABLE TEST_NAMESPACE.TEST_TABLE (int_column INT NOT NULL)"
             .to_owned()
             .to_vec(),
     )
@@ -147,7 +147,7 @@ fn sample_table_definition_with_block_number() -> (TableIdentifier, CreateStatem
 
     // Matches the schema used in `row_data_w_block_number`
     let create_statement = CreateStatement::try_from(
-        b"CREATE TABLE test_namespace.test_table (
+        b"CREATE TABLE TEST_NAMESPACE.TEST_TABLE (
             int_column INT NOT NULL,
             block_number BIGINT NOT NULL
         )"
@@ -556,6 +556,13 @@ fn inserting_data_fails_when_table_name_is_empty() {
             ..table_id
         };
 
+        let create_statement = CreateStatement::try_from(
+            b"CREATE TABLE TEST_NAMESPACE.\"\" (int_column INT NOT NULL)"
+                .to_owned()
+                .to_vec(),
+        )
+        .unwrap();
+
         Tables::create_tables(
             RuntimeOrigin::root(),
             vec![UpdateTable {
@@ -601,6 +608,14 @@ fn inserting_data_fails_when_table_namespace_is_empty() {
             namespace: TableNamespace::try_from(b"".to_vec()).unwrap(),
             ..table_id
         };
+
+        let create_statement = CreateStatement::try_from(
+            b"CREATE TABLE \"\".TEST_TABLE (int_column INT NOT NULL)"
+                .to_owned()
+                .to_vec(),
+        )
+        .unwrap();
+
         Tables::create_tables(
             RuntimeOrigin::root(),
             vec![UpdateTable {

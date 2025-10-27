@@ -182,11 +182,22 @@ impl TableIdentifier {
 
     /// Optimistically create a Table Identifier from a given name and namespace. If the
     /// provided str is too long for the destination, this will panic
+    /// NOTE: This will uppercase both the name and namespace
     pub fn from_str_unchecked(name: &str, namespace: &str) -> Self {
         TableIdentifier {
             name: TableName::try_from(name.to_uppercase().as_bytes().to_vec()).unwrap(),
             namespace: TableNamespace::try_from(namespace.to_uppercase().as_bytes().to_vec())
                 .unwrap(),
+        }
+    }
+
+    /// Optimistically create a Table Identifier from a given name and namespace. If the
+    /// provided str is too long for the destination, this will panic
+    /// NOTE: This will preserve the casing of both the name and namespace
+    pub fn from_str_unchecked_with_preserved_casing(name: &str, namespace: &str) -> Self {
+        TableIdentifier {
+            name: TableName::try_from(name.as_bytes().to_vec()).unwrap(),
+            namespace: TableNamespace::try_from(namespace.as_bytes().to_vec()).unwrap(),
         }
     }
 }
