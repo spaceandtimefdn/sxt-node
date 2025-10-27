@@ -9,7 +9,7 @@ use crate::Pallet as PermissionPallet;
 
 #[benchmarks]
 mod benchmarks {
-    use sxt_core::permissions::{PermissionLevel, PermissionList};
+    use sxt_core::permissions::{PermissionLevel, PermissionList, TablesPalletPermission};
 
     use super::*;
 
@@ -18,7 +18,7 @@ mod benchmarks {
         let caller: T::AccountId = whitelisted_caller();
 
         let permission_level = PermissionLevel::UpdatePermissions;
-        let permission_list = PermissionList::try_from(vec![permission_level]).unwrap();
+        let permission_list = PermissionList::try_from(vec![permission_level; 32]).unwrap();
 
         #[extrinsic_call]
         set_permissions(RawOrigin::Root, caller.clone(), permission_list.clone());
@@ -31,7 +31,7 @@ mod benchmarks {
         let caller: T::AccountId = whitelisted_caller();
 
         let permission_level = PermissionLevel::UpdatePermissions;
-        let permission_list = PermissionList::try_from(vec![permission_level]).unwrap();
+        let permission_list = PermissionList::try_from(vec![permission_level; 32]).unwrap();
 
         Permissions::<T>::insert(caller.clone(), permission_list);
 
@@ -39,6 +39,32 @@ mod benchmarks {
         clear_permissions(RawOrigin::Root, caller.clone());
 
         assert_eq!(Permissions::<T>::get(caller), None);
+    }
+
+    #[benchmark]
+    fn add_proxy_permission() {
+        let caller: T::AccountId = whitelisted_caller();
+
+        let permission_level = PermissionLevel::UpdatePermissions;
+        let mut permission_list =
+            PermissionList::try_from(vec![permission_level.clone(); 31]).unwrap();
+
+        Permissions::<T>::insert(caller.clone(), permission_list.clone());
+
+        #[extrinsic_call]
+        add_proxy_permission(
+            RawOrigin::Root,
+            caller.clone(),
+            PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+        );
+
+        permission_list
+            .try_push(PermissionLevel::TablesPallet(
+                TablesPalletPermission::EditSchema,
+            ))
+            .unwrap();
+
+        assert_eq!(Permissions::<T>::get(caller), Some(permission_list));
     }
 
     impl_benchmark_test_suite!(
