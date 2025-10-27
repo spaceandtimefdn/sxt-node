@@ -102,11 +102,12 @@ mod benchmarks {
         #[extrinsic_call]
         submit_data(
             RawOrigin::Signed(caller),
-            update_table.ident,
+            update_table.ident.clone(),
             batch_id.clone(),
             row_data,
         );
-        assert!(Indexing::<T, I>::final_data(batch_id).is_none());
+        let internal_batch_id = build_inner_batch_id::<T, I>(&batch_id, &update_table.ident);
+        assert!(Indexing::<T, I>::final_data(internal_batch_id).is_none());
     }
 
     #[benchmark]
@@ -153,18 +154,19 @@ mod benchmarks {
         )
         .unwrap();
 
-        assert!(Indexing::<T, I>::final_data(batch_id.clone()).is_none());
+        let internal_batch_id = build_inner_batch_id::<T, I>(&batch_id, &update_table.ident);
+        assert!(Indexing::<T, I>::final_data(internal_batch_id.clone()).is_none());
 
         let caller: T::AccountId = account("dave", 0, 0);
         pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
         #[extrinsic_call]
         submit_data(
             RawOrigin::Signed(caller),
-            update_table.ident,
+            update_table.ident.clone(),
             batch_id.clone(),
             row_data,
         );
-        assert!(Indexing::<T, I>::final_data(batch_id).is_some());
+        assert!(Indexing::<T, I>::final_data(internal_batch_id).is_some());
     }
 
     impl_benchmark_test_suite!(
