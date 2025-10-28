@@ -1,3 +1,12 @@
+# [1.41.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.40.1...v1.41.0) (2025-10-28)
+
+
+### Features
+
+* Increase the limit of tables per type to 2^20 ([301b213](https://github.com/spaceandtimefdn/sxt-node/commit/301b213709d94d471b9032fed8c19e6c554d56d7))
+
+
+
 ## [1.40.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.40.0...v1.40.1) (2025-10-28)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * Hash batch id with table Identifier during submission ([#98](https://github.com/spaceandtimefdn/sxt-node/issues/98)) ([54541b9](https://github.com/spaceandtimefdn/sxt-node/commit/54541b937b07afc8b0843cc1439b6a54f79e73f3))
-
-
-
-## [1.37.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.37.0...v1.37.1) (2025-10-27)
-
-
-### Bug Fixes
-
-* ensure the parsed table identifier matches the provided one ([#99](https://github.com/spaceandtimefdn/sxt-node/issues/99)) ([37ab224](https://github.com/spaceandtimefdn/sxt-node/commit/37ab224653bc632824459b5125c672b4a41be1ad))
 
 
 
