@@ -74,7 +74,8 @@ fn add_smartcontract_works() {
                 contract_name: None,
                 event_details: None,
                 ddl_statement: Some(
-                    BoundedVec::try_from("test".as_bytes().to_vec()).expect("should always work"),
+                    BoundedVec::try_from("CREATE SCHEMA IF NOT EXISTS test".as_bytes().to_vec())
+                        .expect("should always work"),
                 ),
             },
         });
@@ -129,7 +130,8 @@ fn add_proxy_smartcontract_works() {
                 contract_name: None,
                 event_details: None,
                 ddl_statement: Some(
-                    BoundedVec::try_from("test".as_bytes().to_vec()).expect("should always work"),
+                    BoundedVec::try_from("CREATE SCHEMA IF NOT EXISTS test".as_bytes().to_vec())
+                        .expect("should always work"),
                 ),
             },
             implementation: ImplementationContract {
@@ -195,7 +197,8 @@ fn add_existing_smartcontract_fails() {
                 contract_name: None,
                 event_details: None,
                 ddl_statement: Some(
-                    BoundedVec::try_from("test".as_bytes().to_vec()).expect("should always work"),
+                    BoundedVec::try_from("CREATE SCHEMA IF NOT EXISTS test".as_bytes().to_vec())
+                        .expect("should always work"),
                 ),
             },
         });
@@ -243,7 +246,8 @@ fn remove_smartcontract_works() {
                 contract_name: None,
                 event_details: None,
                 ddl_statement: Some(
-                    BoundedVec::try_from("test".as_bytes().to_vec()).expect("should always work"),
+                    BoundedVec::try_from("CREATE SCHEMA IF NOT EXISTS test".as_bytes().to_vec())
+                        .expect("should always work"),
                 ),
             },
         });

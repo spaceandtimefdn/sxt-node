@@ -85,6 +85,19 @@ mod benchmarks {
     fn submit_data_quorum_not_reached() {
         let (update_table, batch_id, row_data) = benchmark_integers_table_and_data();
 
+        pallet_tables::Pallet::<T>::create_namespace(
+            RawOrigin::<T::AccountId>::Root.into(),
+            update_table.ident.namespace.clone(),
+            0,
+            b"CREATE SCHEMA IF NOT EXISTS BENCHMARK"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+            TableType::CoreBlockchain,
+            sxt_core::tables::Source::Ethereum,
+        )
+        .expect("creating namespace in benchmark setup should work");
+
         let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
             IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
@@ -113,6 +126,19 @@ mod benchmarks {
     #[benchmark]
     fn submit_data_quorum_reached() {
         let (update_table, batch_id, row_data) = benchmark_integers_table_and_data();
+
+        pallet_tables::Pallet::<T>::create_namespace(
+            RawOrigin::<T::AccountId>::Root.into(),
+            update_table.ident.namespace.clone(),
+            0,
+            b"CREATE SCHEMA IF NOT EXISTS BENCHMARK"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+            TableType::CoreBlockchain,
+            sxt_core::tables::Source::Ethereum,
+        )
+        .expect("creating namespace in benchmark setup should work");
 
         pallet_tables::Pallet::<T>::create_tables(
             RawOrigin::<T::AccountId>::Root.into(),

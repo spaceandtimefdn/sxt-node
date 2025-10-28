@@ -173,13 +173,6 @@ impl TableIdentifier {
         self.namespace == system_staking
     }
 
-    /// Takes a given Table Identifier and coerces it to uppercase
-    pub fn normalized(ident: TableIdentifier) -> Self {
-        let name = from_utf8(&ident.name).unwrap();
-        let namespace = from_utf8(&ident.namespace).unwrap();
-        Self::from_str_unchecked(name, namespace)
-    }
-
     /// Optimistically create a Table Identifier from a given name and namespace. If the
     /// provided str is too long for the destination, this will panic
     /// NOTE: This will uppercase both the name and namespace
@@ -199,6 +192,47 @@ impl TableIdentifier {
             name: TableName::try_from(name.as_bytes().to_vec()).unwrap(),
             namespace: TableNamespace::try_from(namespace.as_bytes().to_vec()).unwrap(),
         }
+    }
+}
+
+/// Trait for types that can be normalized/capitalized
+pub trait TryNormalize {
+    /// The error type returned if normalization fails
+    type Error;
+    /// Attempt to normalize the value
+    fn try_normalize(self) -> Result<Self, Self::Error>
+    where
+        Self: core::marker::Sized;
+}
+impl<S> TryNormalize for BoundedVec<u8, S>
+where
+    Self: TryFrom<Vec<u8>>,
+{
+    type Error = ();
+
+    fn try_normalize(self) -> Result<Self, Self::Error>
+    where
+        Self: core::marker::Sized,
+    {
+        from_utf8(&self)
+            .map_err(|_| ())?
+            .to_uppercase()
+            .as_bytes()
+            .to_vec()
+            .try_into()
+            .map_err(|_| ())
+    }
+}
+impl TryNormalize for TableIdentifier {
+    type Error = ();
+    fn try_normalize(self) -> Result<Self, Self::Error>
+    where
+        Self: core::marker::Sized,
+    {
+        Ok(TableIdentifier {
+            name: self.name.try_normalize()?,
+            namespace: self.namespace.try_normalize()?,
+        })
     }
 }
 
@@ -584,9 +618,35 @@ pub fn create_statement_to_sqlparser(
     let raw_sql = from_utf8(&create_statement)?;
 
     Ok(Parser::new(&PostgreSqlDialect {})
+        .with_recursion_limit(2)
         .try_with_sql(raw_sql)?
         .parse_statement()?
         .try_into()?)
+}
+/// Extracts the schema name from a `CREATE SCHEMA` statement.
+pub fn extract_create_schema_namespace(raw_sql: &str) -> Option<String> {
+    let (stripped_sql, _with_options) = strip_with_clause(raw_sql);
+
+    let statement = Parser::new(&PostgreSqlDialect {})
+        .with_recursion_limit(2)
+        .try_with_sql(stripped_sql)
+        .ok()?
+        .parse_statement()
+        .ok()?;
+
+    match statement {
+        sqlparser::ast::Statement::CreateSchema {
+            schema_name: sqlparser::ast::SchemaName::Simple(ObjectName(idents)),
+            if_not_exists: true,
+        } => match &idents[..] {
+            [Ident {
+                value,
+                quote_style: None,
+            }] => Some(value.to_uppercase()),
+            _ => None,
+        },
+        _ => None,
+    }
 }
 
 /// todo
@@ -601,6 +661,7 @@ pub fn create_statement_to_sqlparser_remove_with(
 
     // Parse the cleaned SQL
     let builder: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+        .with_recursion_limit(2)
         .try_with_sql(stripped_sql)?
         .parse_statement()?
         .try_into()?;
