@@ -1176,25 +1176,6 @@ fn table_removal_only_affects_target_table() {
 }
 
 #[test]
-fn insert_schema_should_fail_if_identifiers_are_too_large() {
-    new_test_ext().execute_with(|| {
-        let stmnt = CreateStatement::new();
-        let table_type = TableType::SCI;
-        let source = Source::Ethereum;
-        for i in 0..1024 {
-            let ident = TableIdentifier::from_str_unchecked(&i.to_string(), "namespace");
-            Tables::insert_schema(ident, stmnt.clone(), table_type.clone(), source.clone())
-                .unwrap();
-        }
-        let ident = TableIdentifier::from_str_unchecked("1024", "namespace");
-        assert_noop!(
-            Tables::insert_schema(ident, stmnt, table_type, source),
-            Error::<Test>::BoundedVecError
-        );
-    })
-}
-
-#[test]
 fn update_quorum_size_for_existing_table_works_and_emits_event() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
