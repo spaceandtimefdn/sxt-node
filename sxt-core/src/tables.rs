@@ -443,7 +443,7 @@ pub struct UpdateTableRequest {
 /// The maximum number of identifiers allowed per source and mode.
 /// This constant defines an upper limit for the number of `TableIdentifier` elements
 /// that can be associated with a single source and mode.
-pub const MAX_IDENTIFIERS_PER_SOURCE_AND_MODE: u32 = 1024;
+pub const MAX_IDENTIFIERS_PER_SOURCE_AND_MODE: u32 = 2 << 20;
 
 /// A type alias for the constant representing the maximum number of identifiers per source and mode.
 /// Used to constrain the size of collections in storage or logic that rely on this limit.
