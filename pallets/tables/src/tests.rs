@@ -569,6 +569,50 @@ fn create_table_with_submitter_column_errors() {
 }
 
 #[test]
+fn creating_community_table_succeeds_with_no_special_permissions() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (who, signer) = user(1);
+        let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
+            "MY_COMMUNITY_TABLE",
+            "FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+        );
+        let ddl = "CREATE TABLE IF NOT EXISTS FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.MY_COMMUNITY_TABLE (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::Community,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+            source: Source::Ethereum,
+        }])
+        .expect("Table list should fit in BoundedVec");        
+
+        System::reset_events();
+        assert_ok!(Tables::create_tables(signer, tables.clone()));
+
+        let ddl_with_uuid = "CREATE TABLE IF NOT EXISTS FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.MY_COMMUNITY_TABLE (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER, META_ROW_NUMBER)) WITH (BLOCK_NUMBER = BLOCK_NUMBER, TABLE_UUID = E8D784CD2CE430B8E30E53D54F657C33, TIME_STAMP = TIME_STAMP);";
+        let events = System::events();
+        match events.last().map(|e| &e.event) {
+            Some(RuntimeEvent::Tables(crate::Event::SchemaUpdated(_, list))) => {
+                if let Some(first_table) = list.first() {
+                    assert_eq!(
+                        from_utf8(&first_table.create_statement).unwrap(),
+                        ddl_with_uuid
+                    )
+                } else {
+                    panic!("Schema update event had no statements");
+                }
+            }
+            _ => panic!("Expected SchemaUpdated event not found"),
+        }
+
+    });
+}
+
+#[test]
 fn creating_public_permissionless_table_automatically_adds_submitter_column() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
@@ -794,9 +838,9 @@ fn ensure_safe_name_works_for_substrate_address() {
         "SCHEMA_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
     );
 
-    assert_ok!(crate::ensure_safe_name::<Test>(
-        test_account,
-        test_identifier
+    assert_ok!(crate::ensure_safe_namespace::<Test>(
+        &test_account,
+        &test_identifier.namespace
     ));
 }
 
@@ -816,9 +860,9 @@ fn ensure_safe_name_works_for_ethereum_address() {
         "SCHEMA_44bCf7001D9C3fe8b7aA2BBaaf1B94410db31f5c",
     );
 
-    assert_ok!(crate::ensure_safe_name::<Test>(
-        test_account,
-        test_identifier
+    assert_ok!(crate::ensure_safe_namespace::<Test>(
+        &test_account,
+        &test_identifier.namespace
     ));
 }
 
@@ -1201,53 +1245,186 @@ fn updating_quorum_for_schema_updates_only_intended_tables_and_emits_events() {
         // Also make sure that the other table in the other namespace was unaffected
         assert_eq!(TableInsertQuorums::<Test>::get(table3), old_quorum);
     });
+}
 
-    #[test]
-    fn creating_a_table_should_automatically_permission_table_owner() {
-        use proof_of_sql::base::commitment::TableCommitment;
-        use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
-        use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentScheme;
-        use sxt_core::tables::SnapshotUrl;
-
-        new_test_ext().execute_with(|| {
+#[test]
+fn creating_community_table_fails_if_wrong_namespace_given() {
+    new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        let (who, signer) = user(1);
-        let test_identifier =
-            TableIdentifier::from_str_unchecked("VOTES", "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
-        let ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let (_, signer) = user(1);
+        let test_identifier = TableIdentifier::from_str_unchecked(
+            "MY_COMMUNITY_TABLE",
+            "FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG",
+        );
+        let ddl = "CREATE TABLE IF NOT EXISTS FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG.MY_COMMUNITY_TABLE (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
         let create_statement: CreateStatement =
             BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
-
-            let zero_hashes = TableCommitmentBytesPerCommitmentScheme {
-                hyper_kzg: None,
-                dynamic_dory: Some(
-                    (&TableCommitment::<DynamicDoryCommitment>::default())
-                        .try_into()
-                        .unwrap(),
-                ),
-            };
 
         let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
             ident: test_identifier.clone(),
             create_statement: create_statement.clone(),
-            table_type: TableType::PublicPermissionless,
-            commitment: CommitmentCreationCmd::FromSnapshot(SnapshotUrl::try_from("SOME_URL".as_bytes().to_vec()).unwrap(), zero_hashes),
+            table_type: TableType::Community,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
             source: Source::Ethereum,
         }])
-        .expect("Table list should fit in BoundedVec");
+        .expect("Table list should fit in BoundedVec");        
 
-        let edit_permission = PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema);
-
-        // Permission the table creator
-        assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
-            RuntimeOrigin::root(),
-            who.clone(),
-            edit_permission.clone(),
-        ));
-
-        assert_err!(Tables::create_tables(signer, tables.clone()), DispatchError::Other("Snapshot commitments are deprecated in this extrinsic"));
-
-
+        System::reset_events();
+        assert_err!(Tables::create_tables(signer, tables.clone()), Error::<Test>::InvalidNamespace);
     });
-    }
+}
+
+#[test]
+fn creating_community_namespace_fails_if_wrong_namespace_given() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (_, signer) = user(1);
+        let test_identifier = TableIdentifier::from_str_unchecked(
+            "MY_COMMUNITY_TABLE",
+            "FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG",
+        );
+        let ddl = "CREATE SCHMEA IF NOT EXISTS FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG;";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        System::reset_events();
+        assert_err!(
+            Tables::create_namespace(
+                signer,
+                test_identifier.namespace,
+                1,
+                create_statement,
+                TableType::Community,
+                Source::UserCreated("ASDF".as_bytes().to_vec().try_into().unwrap()),
+            ),
+            Error::<Test>::InvalidNamespace
+        );
+    });
+}
+
+#[test]
+fn creating_public_permissionless_namespace_fails_if_wrong_namespace_given() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (_, signer) = user(1);
+        let test_identifier = TableIdentifier::from_str_unchecked(
+            "MY_COMMUNITY_TABLE",
+            "FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG",
+        );
+        let ddl = "CREATE SCHMEA IF NOT EXISTS FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG;";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        System::reset_events();
+        assert_err!(
+            Tables::create_namespace(
+                signer,
+                test_identifier.namespace,
+                1,
+                create_statement,
+                TableType::PublicPermissionless,
+                Source::UserCreated("ASDF".as_bytes().to_vec().try_into().unwrap()),
+            ),
+            Error::<Test>::InvalidNamespace
+        );
+    });
+}
+
+#[test]
+fn creating_community_namespace_works_with_valid_namespace() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (_, signer) = user(1);
+        let test_identifier = TableIdentifier::from_str_unchecked(
+            "VOTES",
+            "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+        );
+        let ddl =
+            "CREATE SCHMEA IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT;";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+        let test_source = Source::UserCreated("ASDF".as_bytes().to_vec().try_into().unwrap());
+
+        System::reset_events();
+        assert_ok!(Tables::create_namespace(
+            signer,
+            test_identifier.namespace,
+            1,
+            create_statement.clone(),
+            TableType::Community,
+            test_source.clone(),
+        ),);
+
+        // Make sure the event was emitted as expected
+        System::assert_has_event(RuntimeEvent::Tables(Event::NamespaceCreated {
+            create_schema: create_statement,
+            version: 1,
+            namespace_uuid: "E14F48497ECCA646C05217FF10D72A43"
+                .as_bytes()
+                .to_vec()
+                .try_into()
+                .unwrap(),
+            table_type: TableType::Community,
+            source: test_source,
+        }));
+    });
+}
+
+#[test]
+fn creating_non_public_namespace_fails_if_not_sudo() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (_, signer) = user(1);
+        let test_schema: ByteString = "SXT_SYSTEM_STAKING".as_bytes().to_vec().try_into().unwrap();
+        let ddl = "CREATE SCHMEA IF NOT EXISTS SXT_SYSTEM_STAKING;";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+        let test_source = Source::Ethereum;
+
+        System::reset_events();
+        assert_err!(
+            Tables::create_namespace(
+                signer.clone(),
+                test_schema.clone(),
+                1,
+                create_statement.clone(),
+                TableType::SCI,
+                test_source.clone(),
+            ),
+            pallet_permissions::Error::<Test>::InsufficientPermissions
+        );
+
+        assert_err!(
+            Tables::create_namespace(
+                signer.clone(),
+                test_schema.clone(),
+                1,
+                create_statement.clone(),
+                TableType::CoreBlockchain,
+                test_source.clone(),
+            ),
+            pallet_permissions::Error::<Test>::InsufficientPermissions
+        );
+
+        assert_err!(
+            Tables::create_namespace(
+                signer.clone(),
+                test_schema.clone(),
+                1,
+                create_statement.clone(),
+                TableType::Testing(InsertQuorumSize {
+                    public: Some(0),
+                    privileged: Some(0)
+                }),
+                test_source.clone(),
+            ),
+            pallet_permissions::Error::<Test>::InsufficientPermissions
+        );
+
+        for e in System::events() {
+            if let RuntimeEvent::Tables(Event::NamespaceCreated { .. }) = e.event {
+                panic!("Namespace created event was emitted!")
+            }
+        }
+    });
 }
