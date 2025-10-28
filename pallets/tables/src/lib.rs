@@ -46,6 +46,7 @@ pub mod pallet {
     use sxt_core::tables::{
         create_statement_to_sqlparser,
         create_statement_to_sqlparser_remove_with,
+        extract_create_schema_namespace,
         extract_schema_uuid,
         generate_column_uuid_list,
         generate_namespace_uuid,
@@ -71,6 +72,7 @@ pub mod pallet {
         TableType,
         TableUuid,
         TableVersion,
+        TryNormalize,
         UpdateUuidError,
     };
     use sxt_core::ByteString;
@@ -503,14 +505,23 @@ pub mod pallet {
                 }
             }
 
+            let normalized_schema_name = schema_name
+                .try_normalize()
+                .map_err(|_| Error::<T>::SchemaNameParseError)?;
             let raw_sql =
                 from_utf8(&create_statement).map_err(|_| Error::<T>::CreateStatementParseError)?;
 
             let block_number = <frame_system::Pallet<T>>::block_number();
 
             let schema_name_s =
-                from_utf8(&schema_name).map_err(|_| Error::<T>::SchemaNameParseError)?;
+                from_utf8(&normalized_schema_name).map_err(|_| Error::<T>::SchemaNameParseError)?;
 
+            ensure!(
+                schema_name_s
+                    == extract_create_schema_namespace(raw_sql)
+                        .ok_or(Error::<T>::CreateStatementParseError)?,
+                Error::<T>::InvalidNamespace
+            );
             let namespace_uuid = match extract_schema_uuid(raw_sql) {
                 Some(uuid) => TableUuid::try_from(uuid.as_bytes().to_vec())
                     .map_err(|_| Error::<T>::TableUUIDError)?,
@@ -518,7 +529,7 @@ pub mod pallet {
                     .ok_or(Error::<T>::UUIDGenerationError)?,
             };
 
-            Self::insert_namespace_uuid(schema_name, version, namespace_uuid.clone())?;
+            Self::insert_namespace_uuid(normalized_schema_name, version, namespace_uuid.clone())?;
 
             Self::deposit_event(Event::<T>::NamespaceCreated {
                 create_schema: create_statement,
@@ -940,9 +951,21 @@ pub mod pallet {
             };
 
             let tables_with_meta_columns = tables
-        .into_iter()
-        .map(|mut table| {
-            let is_permissionless = table.table_type == TableType::PublicPermissionless;
+                .into_iter()
+                .map(|mut table| {
+                    let is_permissionless = table.table_type == TableType::PublicPermissionless;
+
+                    table.ident = table
+                        .ident
+                        .try_normalize()
+                        .map_err(|_| Error::<T>::InvalidNamespace)?;
+
+                    ensure!(
+                        NamespaceVersions::<T>::iter_key_prefix(&table.ident.namespace)
+                            .next()
+                            .is_some(),
+                        DispatchError::Other("Namespace does not exist.")
+                    );
 
                     // Generate or extract UUIDs
                     let (table_uuid, column_uuids) =
@@ -972,6 +995,10 @@ pub mod pallet {
                     let (mut create_table, with_options) =
                         create_statement_to_sqlparser_remove_with(updated_create_statement)
                             .map_err(|_| Error::<T>::CreateStatementParseError)?;
+
+                    for identifier in create_table.name.0.iter_mut() {
+                        identifier.value = identifier.value.to_uppercase();
+                    }
 
                     // Ensure the parsed table identifier matches the provided one
                     match (

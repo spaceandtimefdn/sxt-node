@@ -110,6 +110,18 @@ fn sample_table_definition() -> (TableIdentifier, CreateStatement) {
     )
     .unwrap();
 
+    assert_ok!(Tables::create_namespace(
+        RuntimeOrigin::root(),
+        table_id.namespace.clone(),
+        0,
+        b"CREATE SCHEMA IF NOT EXISTS TEST_NAMESPACE"
+            .to_vec()
+            .try_into()
+            .unwrap(),
+        TableType::CoreBlockchain,
+        sxt_core::tables::Source::Ethereum,
+    ));
+
     (table_id, create_statement)
 }
 
@@ -154,6 +166,18 @@ fn sample_table_definition_with_block_number() -> (TableIdentifier, CreateStatem
         .to_vec(),
     )
     .unwrap();
+
+    assert_ok!(Tables::create_namespace(
+        RuntimeOrigin::root(),
+        table_id.namespace.clone(),
+        0,
+        b"CREATE SCHEMA IF NOT EXISTS TEST_NAMESPACE"
+            .to_vec()
+            .try_into()
+            .unwrap(),
+        TableType::CoreBlockchain,
+        sxt_core::tables::Source::Ethereum,
+    ));
 
     (table_id, create_statement)
 }
@@ -597,56 +621,22 @@ fn inserting_data_fails_when_table_name_is_empty() {
 }
 
 #[test]
-fn inserting_data_fails_when_table_namespace_is_empty() {
+fn create_namespace_when_table_namespace_is_empty() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
-        let who = ensure_signed(signer.clone()).unwrap();
-        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitDataForPublicQuorum,
-        )])
-        .unwrap();
-        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
 
-        let (table_id, create_statement) = sample_table_definition();
-        let test_identifier = TableIdentifier {
-            // Create an empty namespace
-            namespace: TableNamespace::try_from(b"".to_vec()).unwrap(),
-            ..table_id
-        };
-
-        let create_statement = CreateStatement::try_from(
-            b"CREATE TABLE \"\".TEST_TABLE (int_column INT NOT NULL)"
-                .to_owned()
-                .to_vec(),
-        )
-        .unwrap();
-
-        Tables::create_tables(
+        assert!(Tables::create_namespace(
             RuntimeOrigin::root(),
-            vec![UpdateTable {
-                ident: test_identifier.clone(),
-                create_statement,
-                table_type: TableType::CoreBlockchain,
-                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
-                    hyper_kzg: false,
-                    dynamic_dory: true,
-                }),
-                source: sxt_core::tables::Source::Ethereum,
-            }]
-            .try_into()
-            .unwrap(),
+            b"".to_vec().try_into().unwrap(),
+            0,
+            b"CREATE SCHEMA IF NOT EXISTS \"\""
+                .to_vec()
+                .try_into()
+                .unwrap(),
+            TableType::CoreBlockchain,
+            sxt_core::tables::Source::Ethereum,
         )
-        .unwrap();
-
-        let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
-
-        let test_data = RowData::try_from(b"some arbitrary row data".to_vec()).unwrap();
-
-        assert_err!(
-            Indexing::submit_data(signer, test_identifier, test_batch, test_data,),
-            crate::Error::<Test, Api>::InvalidTable
-        );
+        .is_err());
     })
 }
 

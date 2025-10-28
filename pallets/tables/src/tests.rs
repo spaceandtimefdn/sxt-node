@@ -25,6 +25,7 @@ use sxt_core::tables::{
     TableNamespace,
     TableType,
     TableUuid,
+    TryNormalize,
 };
 use sxt_core::ByteString;
 
@@ -108,6 +109,21 @@ fn user(i: u8) -> (sp_runtime::AccountId32, RuntimeOrigin) {
     (who.clone(), RuntimeOrigin::signed(who.clone()))
 }
 
+fn create_namespace_for_testing(namespace: &str) {
+    assert_ok!(Tables::create_namespace(
+        RuntimeOrigin::root(),
+        namespace.as_bytes().to_vec().try_into().unwrap(),
+        0,
+        format!("CREATE SCHEMA IF NOT EXISTS {}", namespace)
+            .as_bytes()
+            .to_vec()
+            .try_into()
+            .unwrap(),
+        TableType::CoreBlockchain,
+        sxt_core::tables::Source::Ethereum,
+    ));
+}
+
 #[test]
 fn test_pallet() {
     new_test_ext().execute_with(|| {
@@ -119,6 +135,7 @@ fn test_pallet() {
 fn update_tables_should_work_when_permissioned() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
 
         let (who, signer) = user(1);
 
@@ -132,11 +149,21 @@ fn update_tables_should_work_when_permissioned() {
 fn update_tables_should_work_when_sudo() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
 
         assert_ok!(
             Tables::create_tables(RuntimeOrigin::root(), test_tables()),
             ()
         );
+    })
+}
+
+#[test]
+fn update_tables_cannot_work_when_namespace_does_not_exist() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        assert!(Tables::create_tables(RuntimeOrigin::root(), test_tables()).is_err());
     })
 }
 
@@ -204,9 +231,61 @@ fn create_namespace_should_work() {
 }
 
 #[test]
+fn create_namespace_should_fail_when_schema_name_does_not_match_ddl() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let schema_name = BoundedVec::try_from("TEST_A".as_bytes().to_vec()).unwrap();
+        let version = 1;
+        let create_statement =
+            BoundedVec::try_from("CREATE SCHEMA IF NOT EXISTS TEST_B;".as_bytes().to_vec())
+                .unwrap();
+        let table_type = TableType::CoreBlockchain;
+        let source = Source::Ethereum;
+
+        assert_err!(
+            Tables::create_namespace(
+                RuntimeOrigin::root(),
+                schema_name,
+                version,
+                create_statement,
+                table_type,
+                source
+            ),
+            Error::<Test>::InvalidNamespace
+        );
+    })
+}
+
+#[test]
+fn create_namespace_should_work_when_casing_doesnt_match() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let schema_name = BoundedVec::try_from("test_a".as_bytes().to_vec()).unwrap();
+        let version = 1;
+        let create_statement =
+            BoundedVec::try_from("CREATE SCHEMA IF NOT EXISTS TEST_A;".as_bytes().to_vec())
+                .unwrap();
+        let table_type = TableType::CoreBlockchain;
+        let source = Source::Ethereum;
+
+        assert_ok!(Tables::create_namespace(
+            RuntimeOrigin::root(),
+            schema_name,
+            version,
+            create_statement,
+            table_type,
+            source
+        ));
+    })
+}
+
+#[test]
 fn create_table_invalidates_mismatched_table_identifier() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("RIGHT");
         let tables = vec![UpdateTable {
             ident: TableIdentifier::from_str_unchecked_with_preserved_casing("NAME", "RIGHT"),
             create_statement: CreateStatement::try_from(
@@ -226,9 +305,10 @@ fn create_table_invalidates_mismatched_table_identifier() {
 }
 
 #[test]
-fn create_table_invalidates_miscased_table_identifier() {
+fn create_table_accepts_different_cased_table_identifier() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("Right");
         let tables = vec![UpdateTable {
             ident: TableIdentifier::from_str_unchecked_with_preserved_casing("NAME", "RIGHT"),
             create_statement: CreateStatement::try_from(
@@ -240,10 +320,10 @@ fn create_table_invalidates_miscased_table_identifier() {
             source: Source::UserCreated(ByteString::default()),
         }];
 
-        assert_err!(
-            Tables::create_tables(RuntimeOrigin::root(), tables.try_into().unwrap()),
-            crate::Error::<Test>::TableIdentifierParsingError
-        );
+        assert_ok!(Tables::create_tables(
+            RuntimeOrigin::root(),
+            tables.try_into().unwrap()
+        ));
     });
 }
 
@@ -251,6 +331,7 @@ fn create_table_invalidates_miscased_table_identifier() {
 fn create_table_should_handle_withs_properly() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
 
         let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
             "BLOCKS", 
@@ -319,6 +400,7 @@ fn create_table_should_handle_withs_properly() {
 fn create_table_should_generate_uuid_and_add_meta_column_including_with_clause() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
 
         let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
             "BLOCKS", 
@@ -536,6 +618,7 @@ fn test_get_or_generate_uuids_for_table_generates_uuids_if_missing() {
 fn create_table_with_submitter_column_errors() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
         let (who, signer) = user(1);
         let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
             "VOTES",
@@ -572,6 +655,7 @@ fn create_table_with_submitter_column_errors() {
 fn creating_community_table_succeeds_with_no_special_permissions() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
         let (who, signer) = user(1);
         let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
             "MY_COMMUNITY_TABLE",
@@ -593,7 +677,7 @@ fn creating_community_table_succeeds_with_no_special_permissions() {
         System::reset_events();
         assert_ok!(Tables::create_tables(signer, tables.clone()));
 
-        let ddl_with_uuid = "CREATE TABLE IF NOT EXISTS FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.MY_COMMUNITY_TABLE (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER, META_ROW_NUMBER)) WITH (BLOCK_NUMBER = BLOCK_NUMBER, TABLE_UUID = E8D784CD2CE430B8E30E53D54F657C33, TIME_STAMP = TIME_STAMP);";
+        let ddl_with_uuid = "CREATE TABLE IF NOT EXISTS FUNNAME_5C62CK4URFPIBTOCMESRGF7X9YV9MN38446DHCPSI2MLHIFT.MY_COMMUNITY_TABLE (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER, META_ROW_NUMBER)) WITH (BLOCK_NUMBER = BLOCK_NUMBER, TABLE_UUID = D24EBCF10F7CB9EBDC65F9E6823AB72D, TIME_STAMP = TIME_STAMP);";
         let events = System::events();
         match events.last().map(|e| &e.event) {
             Some(RuntimeEvent::Tables(crate::Event::SchemaUpdated(_, list))) => {
@@ -616,6 +700,7 @@ fn creating_community_table_succeeds_with_no_special_permissions() {
 fn creating_public_permissionless_table_automatically_adds_submitter_column() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
         let (who, signer) = user(1);
         let test_identifier =
             TableIdentifier::from_str_unchecked_with_preserved_casing("VOTES", "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
@@ -641,7 +726,7 @@ fn creating_public_permissionless_table_automatically_adds_submitter_column() {
 
         assert_ok!(Tables::create_tables(signer, tables.clone()));
 
-        let expected_ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, SXT_META_SUBMITTER BINARY NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER, META_ROW_NUMBER)) WITH (BLOCK_NUMBER = BLOCK_NUMBER, TABLE_UUID = CB948E6B4E2822CC3782437052E94CFC, TIME_STAMP = TIME_STAMP);";
+        let expected_ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62CK4URFPIBTOCMESRGF7X9YV9MN38446DHCPSI2MLHIFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, SXT_META_SUBMITTER BINARY NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER, META_ROW_NUMBER)) WITH (BLOCK_NUMBER = BLOCK_NUMBER, TABLE_UUID = CCA1F51C06FE00EB3E489D1A083162B5, TIME_STAMP = TIME_STAMP);";
 
         let events = System::events();
         match events.last().map(|e| &e.event) {
@@ -664,6 +749,7 @@ fn creating_public_permissionless_table_automatically_adds_submitter_column() {
 fn create_table_sets_table_owner() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
         let (who, _) = user(1);
         let test_identifier =
             TableIdentifier::from_str_unchecked_with_preserved_casing("VOTES", "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
@@ -692,9 +778,10 @@ fn create_table_sets_table_owner() {
             tables.clone()
         ));
 
-        assert!(TableVersions::<Test>::contains_key(&test_identifier, 0));
+        let normalized_test_identifier = test_identifier.try_normalize().unwrap();
+        assert!(TableVersions::<Test>::contains_key(&normalized_test_identifier, 0));
 
-        assert_eq!(TableOwners::<Test>::get(&test_identifier), Some(who));
+        assert_eq!(TableOwners::<Test>::get(&normalized_test_identifier), Some(who));
     });
 }
 
@@ -702,6 +789,7 @@ fn create_table_sets_table_owner() {
 fn creating_a_table_should_automatically_permission_table_owner() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
         let (who, signer) = user(1);
         let test_identifier =
             TableIdentifier::from_str_unchecked_with_preserved_casing("VOTES", "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
@@ -734,20 +822,21 @@ fn creating_a_table_should_automatically_permission_table_owner() {
 
         assert_ok!(Tables::create_tables(signer, tables.clone()));
 
-        assert!(TableVersions::<Test>::contains_key(&test_identifier, 0));
+        let normalized_test_identifier = test_identifier.try_normalize().unwrap();
+        assert!(TableVersions::<Test>::contains_key(&normalized_test_identifier, 0));
 
         assert_eq!(
-            TableOwners::<Test>::get(&test_identifier),
+            TableOwners::<Test>::get(&normalized_test_identifier),
             Some(who.clone())
         );
 
         let submit_permission = PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(test_identifier.clone()),
+            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(normalized_test_identifier.clone()),
         );
 
         let meta_permission =
             PermissionLevel::EditSpecificPermission(Box::new(PermissionLevel::IndexingPallet(
-                IndexingPalletPermission::SubmitDataForPrivilegedQuorum(test_identifier.clone()),
+                IndexingPalletPermission::SubmitDataForPrivilegedQuorum(normalized_test_identifier.clone()),
             )));
 
         assert!(pallet_permissions::Pallet::<Test>::has_permissions(
@@ -764,6 +853,7 @@ fn creating_a_table_should_automatically_permission_table_owner() {
 #[test]
 fn we_can_get_table_schemas() {
     new_test_ext().execute_with(|| {
+        create_namespace_for_testing("ETHEREUM");
         let test_identifier = TableIdentifier {
             name: b"BLOCKS".to_vec().try_into().unwrap(),
             namespace: b"ETHEREUM".to_vec().try_into().unwrap(),
@@ -870,6 +960,7 @@ fn ensure_safe_name_works_for_ethereum_address() {
 fn table_removal_cleans_up_all_collections() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
 
         let test_identifier = TableIdentifier {
             name: b"BLOCKS".to_vec().try_into().unwrap(),
@@ -1008,6 +1099,7 @@ fn table_removal_cleans_up_multiple_versions() {
 fn table_removal_only_affects_target_table() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("TEST_NAMESPACE");
 
         let table1 = TableIdentifier {
             name: TableName::try_from("TABLE_ONE".as_bytes().to_vec()).unwrap(),
@@ -1106,6 +1198,7 @@ fn insert_schema_should_fail_if_identifiers_are_too_large() {
 fn update_quorum_size_for_existing_table_works_and_emits_event() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
         let test_identifier = TableIdentifier {
             name: b"BLOCKS".to_vec().try_into().unwrap(),
             namespace: b"ETHEREUM".to_vec().try_into().unwrap(),
@@ -1168,6 +1261,8 @@ fn update_quorum_size_for_existing_table_works_and_emits_event() {
 fn updating_quorum_for_schema_updates_only_intended_tables_and_emits_events() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        create_namespace_for_testing("TARGET_NAMESPACE");
+        create_namespace_for_testing("OTHER_NAMESPACE");
         // Start by creating the storage state for our test setup
         let target_namespace = TableNamespace::try_from("TARGET_NAMESPACE".as_bytes().to_vec()).unwrap();
         let target_table_one = "TABLE_ONE";
@@ -1283,7 +1378,7 @@ fn creating_community_namespace_fails_if_wrong_namespace_given() {
             "MY_COMMUNITY_TABLE",
             "FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG",
         );
-        let ddl = "CREATE SCHMEA IF NOT EXISTS FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG;";
+        let ddl = "CREATE SCHEMA IF NOT EXISTS FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG;";
         let create_statement: CreateStatement =
             BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
 
@@ -1311,7 +1406,7 @@ fn creating_public_permissionless_namespace_fails_if_wrong_namespace_given() {
             "MY_COMMUNITY_TABLE",
             "FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG",
         );
-        let ddl = "CREATE SCHMEA IF NOT EXISTS FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG;";
+        let ddl = "CREATE SCHEMA IF NOT EXISTS FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG;";
         let create_statement: CreateStatement =
             BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
 
@@ -1340,7 +1435,7 @@ fn creating_community_namespace_works_with_valid_namespace() {
             "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
         );
         let ddl =
-            "CREATE SCHMEA IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT;";
+            "CREATE SCHEMA IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT;";
         let create_statement: CreateStatement =
             BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
         let test_source = Source::UserCreated("ASDF".as_bytes().to_vec().try_into().unwrap());
@@ -1376,7 +1471,7 @@ fn creating_non_public_namespace_fails_if_not_sudo() {
         System::set_block_number(1);
         let (_, signer) = user(1);
         let test_schema: ByteString = "SXT_SYSTEM_STAKING".as_bytes().to_vec().try_into().unwrap();
-        let ddl = "CREATE SCHMEA IF NOT EXISTS SXT_SYSTEM_STAKING;";
+        let ddl = "CREATE SCHEMA IF NOT EXISTS SXT_SYSTEM_STAKING;";
         let create_statement: CreateStatement =
             BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
         let test_source = Source::Ethereum;
