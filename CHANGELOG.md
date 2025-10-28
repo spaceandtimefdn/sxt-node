@@ -1,3 +1,12 @@
+# [1.40.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.39.0...v1.40.0) (2025-10-28)
+
+
+### Features
+
+* Allow permissionless inserts to publicPermissionless tables ([#101](https://github.com/spaceandtimefdn/sxt-node/issues/101)) ([138a9fd](https://github.com/spaceandtimefdn/sxt-node/commit/138a9fd4beeb555e587dc21f6aa6b642f1bd1ee0))
+
+
+
 # [1.39.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.38.0...v1.39.0) (2025-10-28)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * Throw unsupported error if create_tables supplies commitments ([#97](https://github.com/spaceandtimefdn/sxt-node/issues/97)) ([efaef41](https://github.com/spaceandtimefdn/sxt-node/commit/efaef41b92861e1b14fc6157e3acfc4d4775eb2b))
-
-
-
-# [1.36.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.35.0...v1.36.0) (2025-10-22)
-
-
-### Features
-
-* Introduce transactions to update quorums for individual tables and a group of tables by namespace ([#94](https://github.com/spaceandtimefdn/sxt-node/issues/94)) ([4eddfcb](https://github.com/spaceandtimefdn/sxt-node/commit/4eddfcb17a769f3c2c74e194fcc4efbcd3583a3f))
 
 
 
