@@ -1,3 +1,12 @@
+# [1.39.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.38.0...v1.39.0) (2025-10-28)
+
+
+### Features
+
+* Allow community table and namespace creation without special permissions ([#96](https://github.com/spaceandtimefdn/sxt-node/issues/96)) ([6e81128](https://github.com/spaceandtimefdn/sxt-node/commit/6e81128acec9f4b216ab6c60fbddfd526d5b3133))
+
+
+
 # [1.38.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.37.1...v1.38.0) (2025-10-27)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * Introduce transactions to update quorums for individual tables and a group of tables by namespace ([#94](https://github.com/spaceandtimefdn/sxt-node/issues/94)) ([4eddfcb](https://github.com/spaceandtimefdn/sxt-node/commit/4eddfcb17a769f3c2c74e194fcc4efbcd3583a3f))
-
-
-
-# [1.35.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.34.1...v1.35.0) (2025-10-14)
-
-
-### Features
-
-* clamp unstaking claim amounts to be at least 1 ([18de587](https://github.com/spaceandtimefdn/sxt-node/commit/18de587562f1dfbf04f05cd40b9d724929e40d43))
 
 
 
