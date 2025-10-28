@@ -271,8 +271,14 @@ pub mod pallet {
             .is_ok()
                 && table_insert_quorum.privileged.is_some();
 
+        let is_permissionless_insert =
+            pallet_tables::Identifiers::<T>::get(sxt_core::tables::TableType::PublicPermissionless)
+                .contains(&table);
+
         ensure!(
-            can_submit_for_public_quorum || can_submit_for_privileged_quorum,
+            can_submit_for_public_quorum
+                || can_submit_for_privileged_quorum
+                || is_permissionless_insert,
             Error::<T, I>::UnauthorizedSubmitter
         );
 
@@ -299,7 +305,7 @@ pub mod pallet {
                 &table_insert_quorum,
                 &QuorumScope::Privileged,
             )?
-        } else if can_submit_for_public_quorum {
+        } else if can_submit_for_public_quorum || is_permissionless_insert {
             submit_data_and_find_quorum::<T, I>(
                 who.clone(),
                 batch_id.clone(),

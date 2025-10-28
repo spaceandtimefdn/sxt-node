@@ -1538,3 +1538,45 @@ fn we_can_reach_quorum_before_and_after_changing_quorum_size() {
         assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
     });
 }
+
+#[test]
+fn we_can_submit_to_permissionless_table_with_no_permissions() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_statement) = sample_table_definition();
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::PublicPermissionless,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let test_submission = TestSubmission {
+            table: table_id.clone(),
+            batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
+            data: row_data(),
+        };
+        let test_data_hash =
+            <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_submission.data);
+
+        let public_submitter = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(public_submitter.clone()).unwrap();
+
+        // permissionless submission
+        assert_ok!(submit_test_data(public_submitter, test_submission.clone()));
+
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
+        assert!(Indexing::final_data(&internal_batch_id).is_some());
+    })
+}
