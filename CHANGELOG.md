@@ -1,3 +1,12 @@
+## [1.40.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.40.0...v1.40.1) (2025-10-28)
+
+
+### Bug Fixes
+
+* validate namespace and table names ([f8fcec4](https://github.com/spaceandtimefdn/sxt-node/commit/f8fcec47e67503e692c2d7dd2e8f024a16199ed8))
+
+
+
 # [1.40.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.39.0...v1.40.0) (2025-10-28)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * ensure the parsed table identifier matches the provided one ([#99](https://github.com/spaceandtimefdn/sxt-node/issues/99)) ([37ab224](https://github.com/spaceandtimefdn/sxt-node/commit/37ab224653bc632824459b5125c672b4a41be1ad))
-
-
-
-# [1.37.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.36.0...v1.37.0) (2025-10-24)
-
-
-### Features
-
-* Throw unsupported error if create_tables supplies commitments ([#97](https://github.com/spaceandtimefdn/sxt-node/issues/97)) ([efaef41](https://github.com/spaceandtimefdn/sxt-node/commit/efaef41b92861e1b14fc6157e3acfc4d4775eb2b))
 
 
 
