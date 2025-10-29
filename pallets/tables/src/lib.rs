@@ -28,7 +28,7 @@ pub mod pallet {
     use core::str::from_utf8;
 
     use codec::alloc::borrow::ToOwned;
-    use commitment_sql::CreateTableAndCommitmentMetadata;
+    use commitment_sql::{validate_table_avoids_prefix, CreateTableAndCommitmentMetadata};
     use frame_support::dispatch::DispatchResult;
     use frame_support::pallet_prelude::{StorageDoubleMap, ValueQuery, *};
     use frame_support::Blake2_128Concat;
@@ -999,6 +999,8 @@ pub mod pallet {
                     for identifier in create_table.name.0.iter_mut() {
                         identifier.value = identifier.value.to_uppercase();
                     }
+                    validate_table_avoids_prefix(&create_table)
+                        .map_err(|_| Error::<T>::ReservedColumnName)?;
 
                     // Ensure the parsed table identifier matches the provided one
                     match (

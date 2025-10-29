@@ -64,22 +64,6 @@ pub fn we_cannot_process_invalid_create_table<TestParams: CreateTableApiTestPara
             Error::<Test>::CreateTableWithDuplicateIdentifiers,
         );
 
-        // reserved prefix
-        let mut test_params = TestParams::new_valid();
-        test_params.set_sql_statement(
-            "CREATE TABLE animal.population (
-            animal VARCHAR NOT NULL,
-            meta_population BIGINT NOT NULL,
-            PRIMARY KEY (animal))
-            "
-            .to_string(),
-        );
-
-        assert_noop!(
-            test_params.execute(),
-            Error::<Test>::CreateTableWithReservedMetadataPrefix,
-        );
-
         // nullable column
         let mut test_params = TestParams::new_valid();
         test_params.set_sql_statement(

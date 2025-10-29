@@ -70,8 +70,6 @@ pub struct ValidatedCreateTable<'a> {
 impl<'a> ValidatedCreateTable<'a> {
     /// Construct a [`ValidatedCreateTable`] by validating a table definition.
     pub fn validate(table: &'a CreateTableBuilder) -> Result<Self, InvalidCreateTable> {
-        validate_table_avoids_prefix(table)?;
-
         table
             .columns
             .iter()
@@ -261,26 +259,6 @@ mod tests {
         assert!(matches!(
             ValidatedCreateTable::validate(&create_table),
             Err(InvalidCreateTable::DuplicateIdentifiers { .. })
-        ));
-    }
-
-    #[test]
-    fn we_cannot_validate_table_definition_with_reserved_metadata_prefix() {
-        let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
-            .try_with_sql(
-                "CREATE TABLE animal.population (
-            metanimal VARCHAR NOT NULL,
-            population BIGINT NOT NULL,
-            PRIMARY KEY (animal))",
-            )
-            .unwrap()
-            .parse_statement()
-            .unwrap()
-            .try_into()
-            .unwrap();
-        assert!(matches!(
-            ValidatedCreateTable::validate(&create_table),
-            Err(InvalidCreateTable::ReservedMetadataPrefix { .. })
         ));
     }
 
