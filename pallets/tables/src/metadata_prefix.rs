@@ -3,7 +3,7 @@ use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::ast::Ident;
 
 /// Prefix reserved for columns/tables that are for internal sxt-node usage.
-pub const METADATA_PREFIX: &str = "META";
+pub const METADATA_PREFIX: &str = "META_";
 
 /// Metadata prefix is reserved for internal sxt-node usage.
 #[derive(Debug, Snafu)]
@@ -100,7 +100,7 @@ mod tests {
         let create_table_with_reserved_namespace_prefix: CreateTableBuilder =
             Parser::new(&PostgreSqlDialect {})
                 .try_with_sql(
-                    "CREATE TABLE mEtanimal.population (
+                    "CREATE TABLE mEta_nimal.population (
             animal VARCHAR NOT NULL,
             population BIGINT NOT NULL,
             PRIMARY KEY (animal))",
