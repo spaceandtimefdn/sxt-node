@@ -652,6 +652,43 @@ fn create_table_with_submitter_column_errors() {
 }
 
 #[test]
+fn create_table_with_meta_column_errors() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+        let (who, signer) = user(1);
+        let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
+            "VOTES",
+            "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+        );
+        let ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, metaphor BINARY NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::PublicPermissionless,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+            source: Source::Ethereum,
+        }])
+        .expect("Table list should fit in BoundedVec");
+
+        // Permission the table creator
+        assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
+            RuntimeOrigin::root(),
+            who.clone(),
+            PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema)
+        ));
+
+        assert_err!(
+            Tables::create_tables(signer, tables.clone()),
+            crate::Error::<Test>::ReservedColumnName
+        );
+    });
+}
+
+#[test]
 fn creating_community_table_succeeds_with_no_special_permissions() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
