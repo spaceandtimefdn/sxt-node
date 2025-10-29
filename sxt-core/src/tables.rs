@@ -1016,7 +1016,7 @@ impl From<CreateStatementParseError> for GetTableSchemaError {
 }
 
 fn submitter_col_ident() -> Ident {
-    sqlparser::ast::Ident::new("SXT_META_SUBMITTER")
+    sqlparser::ast::Ident::new("META_SUBMITTER")
 }
 
 /// A helper function to inject the submitter address bytes into all rows in the OnChainTable provided
@@ -1090,7 +1090,7 @@ mod tests {
 
         assert!(!has_submitter_column(&false_table));
 
-        let true_statement = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, SXT_META_SUBMITTER BINARY NOT NULL, PRIMARY KEY (ID, NAME) );";
+        let true_statement = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, META_SUBMITTER BINARY NOT NULL, PRIMARY KEY (ID, NAME) );";
         let true_table = create_statement_to_sqlparser(
             CreateStatement::try_from(true_statement.as_bytes().to_vec()).unwrap(),
         )
@@ -1121,7 +1121,7 @@ mod tests {
             ),
             (Ident::new("THIRD"), OnChainColumn::BigInt(vec![1])),
             (
-                Ident::new("SXT_META_SUBMITTER"),
+                Ident::new("META_SUBMITTER"),
                 OnChainColumn::VarBinary(vec![test_submitter.clone()]),
             ),
         ])
@@ -1138,7 +1138,7 @@ mod tests {
         let test_val = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, PRIMARY KEY (ID, NAME) );";
         let sample_statement = CreateStatement::try_from(test_val.as_bytes().to_vec()).unwrap();
 
-        let expected_val = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, SXT_META_SUBMITTER BINARY NOT NULL, PRIMARY KEY (ID, NAME) );";
+        let expected_val = "CREATE TABLE SOUTH.BOOK( ID INT NOT NULL, NAME VARCHAR NOT NULL, META_SUBMITTER BINARY NOT NULL, PRIMARY KEY (ID, NAME) );";
         let expected_statement =
             CreateStatement::try_from(expected_val.as_bytes().to_vec()).unwrap();
         let expected_output = create_statement_to_sqlparser(expected_statement).unwrap();
