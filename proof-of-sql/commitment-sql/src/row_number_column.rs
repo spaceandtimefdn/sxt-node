@@ -3,16 +3,12 @@ use alloc::vec::Vec;
 
 use const_format::formatcp;
 use on_chain_table::{OnChainColumn, OnChainTable};
+use snafu::Snafu;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::ast::{ColumnDef, ColumnOption, ColumnOptionDef, DataType, Ident, TableConstraint};
 
-use crate::metadata_prefix::METADATA_PREFIX;
-
-/// Suffix used for the row number column name.
-const ROW_NUMBER_COLUMN_NAME_SUFFIX: &str = "ROW_NUMBER";
-
 /// Row number column name.
-const ROW_NUMBER_COLUMN_NAME: &str = formatcp!("{METADATA_PREFIX}_{ROW_NUMBER_COLUMN_NAME_SUFFIX}");
+const ROW_NUMBER_COLUMN_NAME: &str = "META_ROW_NUMBER";
 
 /// Returns a sqlparser `ColumnDef` for the row number column.
 pub fn row_number_column_def() -> ColumnDef {
@@ -101,6 +97,33 @@ pub fn on_chain_table_with_row_number_column(
     .expect(
         "OnChainTable type and row_number_column construction guarantee matching column lengths",
     )
+}
+
+/// Metadata prefix is reserved for internal sxt-node usage.
+#[derive(Debug, Snafu)]
+#[snafu(display("{ROW_NUMBER_COLUMN_NAME} prefix is reserved for internal sxt-node usage"))]
+pub struct ReservedMetaRowNumberColumnName;
+
+/// Returns `Ok(())` if none of the identifiers use the reserved metadata prefix.
+fn validate_idents_avoid_row_number_column_name<'a>(
+    columns: impl IntoIterator<Item = &'a Ident>,
+) -> Result<(), ReservedMetaRowNumberColumnName> {
+    columns
+        .into_iter()
+        .all(|ident| ident.value.to_ascii_uppercase() != ROW_NUMBER_COLUMN_NAME)
+        .then_some(())
+        .ok_or(ReservedMetaRowNumberColumnName)
+}
+
+/// Returns `Ok(())` if neither the table nor column identifiers use the reserved metadata prefix.
+pub fn validate_table_avoids_row_number_column_name(
+    table: &CreateTableBuilder,
+) -> Result<(), ReservedMetaRowNumberColumnName> {
+    validate_idents_avoid_row_number_column_name(&table.name.0).and_then(|_| {
+        validate_idents_avoid_row_number_column_name(
+            table.columns.iter().map(|column| &column.name),
+        )
+    })
 }
 
 #[cfg(test)]
@@ -259,5 +282,80 @@ mod tests {
             on_chain_table_with_row_number_column(on_chain_table, 0),
             expected
         );
+    }
+
+    #[test]
+    fn we_can_validate_tables_that_avoid_row_number_column_name() {
+        let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
+            .try_with_sql(
+                "CREATE TABLE animal.population (
+            animal VARCHAR NOT NULL,
+            population BIGINT NOT NULL,
+            PRIMARY KEY (animal))",
+            )
+            .unwrap()
+            .parse_statement()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        assert!(validate_table_avoids_row_number_column_name(&create_table).is_ok());
+    }
+
+    #[test]
+    fn we_cannot_validate_tables_that_use_row_number_column_name() {
+        let create_table_with_reserved_column_name: CreateTableBuilder =
+            Parser::new(&PostgreSqlDialect {})
+                .try_with_sql(
+                    "CREATE TABLE animal.population (
+            animal VARCHAR NOT NULL,
+            meta_row_number BIGINT NOT NULL,
+            PRIMARY KEY (animal))",
+                )
+                .unwrap()
+                .parse_statement()
+                .unwrap()
+                .try_into()
+                .unwrap();
+        assert!(matches!(
+            validate_table_avoids_row_number_column_name(&create_table_with_reserved_column_name),
+            Err(ReservedMetaRowNumberColumnName)
+        ));
+
+        let create_table_with_reserved_table_name: CreateTableBuilder =
+            Parser::new(&PostgreSqlDialect {})
+                .try_with_sql(
+                    "CREATE TABLE animal.meta_row_number (
+            animal VARCHAR NOT NULL,
+            population BIGINT NOT NULL,
+            PRIMARY KEY (animal))",
+                )
+                .unwrap()
+                .parse_statement()
+                .unwrap()
+                .try_into()
+                .unwrap();
+        assert!(matches!(
+            validate_table_avoids_row_number_column_name(&create_table_with_reserved_table_name),
+            Err(ReservedMetaRowNumberColumnName)
+        ));
+
+        let create_table_with_reserved_namespace: CreateTableBuilder =
+            Parser::new(&PostgreSqlDialect {})
+                .try_with_sql(
+                    "CREATE TABLE mEta_row_number.population (
+            animal VARCHAR NOT NULL,
+            population BIGINT NOT NULL,
+            PRIMARY KEY (animal))",
+                )
+                .unwrap()
+                .parse_statement()
+                .unwrap()
+                .try_into()
+                .unwrap();
+        assert!(matches!(
+            validate_table_avoids_row_number_column_name(&create_table_with_reserved_namespace),
+            Err(ReservedMetaRowNumberColumnName)
+        ));
     }
 }

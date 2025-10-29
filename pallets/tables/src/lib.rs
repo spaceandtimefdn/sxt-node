@@ -21,6 +21,8 @@ pub mod runtime_api;
 pub mod weights;
 pub use weights::*;
 
+mod metadata_prefix;
+
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
@@ -28,7 +30,7 @@ pub mod pallet {
     use core::str::from_utf8;
 
     use codec::alloc::borrow::ToOwned;
-    use commitment_sql::{validate_table_avoids_prefix, CreateTableAndCommitmentMetadata};
+    use commitment_sql::CreateTableAndCommitmentMetadata;
     use frame_support::dispatch::DispatchResult;
     use frame_support::pallet_prelude::{StorageDoubleMap, ValueQuery, *};
     use frame_support::Blake2_128Concat;
@@ -78,6 +80,7 @@ pub mod pallet {
     use sxt_core::ByteString;
 
     use super::*;
+    use crate::metadata_prefix::validate_table_avoids_prefix;
     use crate::Event::{NamespaceUuidUpdated, TableUuidUpdated};
 
     /// A wrapper type that contains all the information needed to create a table

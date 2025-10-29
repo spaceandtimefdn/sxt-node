@@ -16,9 +16,6 @@ pub use column_type_conversion::{
     UnsupportedColumnType,
 };
 
-mod metadata_prefix;
-pub use metadata_prefix::validate_table_avoids_prefix;
-
 mod row_number_column;
 pub use row_number_column::row_number_column_def;
 
