@@ -64,12 +64,12 @@ pub fn we_cannot_process_invalid_create_table<TestParams: CreateTableApiTestPara
             Error::<Test>::CreateTableWithDuplicateIdentifiers,
         );
 
-        // reserved prefix
+        // reserved column name
         let mut test_params = TestParams::new_valid();
         test_params.set_sql_statement(
             "CREATE TABLE animal.population (
             animal VARCHAR NOT NULL,
-            meta_population BIGINT NOT NULL,
+            meta_row_number BIGINT NOT NULL,
             PRIMARY KEY (animal))
             "
             .to_string(),

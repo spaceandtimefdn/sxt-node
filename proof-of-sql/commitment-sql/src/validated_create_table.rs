@@ -10,7 +10,10 @@ use crate::column_type_conversion::{
     UnsupportedColumnType,
 };
 use crate::map::IndexMap;
-use crate::metadata_prefix::{validate_table_avoids_prefix, ReservedMetadataPrefix};
+use crate::row_number_column::{
+    validate_table_avoids_row_number_column_name,
+    ReservedMetaRowNumberColumnName,
+};
 
 /// Error type for invalid table definitions.
 #[derive(Debug, Snafu)]
@@ -37,7 +40,7 @@ pub enum InvalidCreateTable {
     #[snafu(transparent)]
     ReservedMetadataPrefix {
         /// Source reserved metadata prefix error.
-        source: ReservedMetadataPrefix,
+        source: ReservedMetaRowNumberColumnName,
     },
     /// Table has invalid column options.
     #[snafu(display("table has invalid column options: {source}"), context(false))]
@@ -70,7 +73,7 @@ pub struct ValidatedCreateTable<'a> {
 impl<'a> ValidatedCreateTable<'a> {
     /// Construct a [`ValidatedCreateTable`] by validating a table definition.
     pub fn validate(table: &'a CreateTableBuilder) -> Result<Self, InvalidCreateTable> {
-        validate_table_avoids_prefix(table)?;
+        validate_table_avoids_row_number_column_name(table)?;
 
         table
             .columns
@@ -265,11 +268,11 @@ mod tests {
     }
 
     #[test]
-    fn we_cannot_validate_table_definition_with_reserved_metadata_prefix() {
+    fn we_cannot_validate_table_definition_with_reserved_row_number_column_name() {
         let create_table: CreateTableBuilder = Parser::new(&PostgreSqlDialect {})
             .try_with_sql(
                 "CREATE TABLE animal.population (
-            metanimal VARCHAR NOT NULL,
+            meta_row_number VARCHAR NOT NULL,
             population BIGINT NOT NULL,
             PRIMARY KEY (animal))",
             )

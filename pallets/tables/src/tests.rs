@@ -624,7 +624,44 @@ fn create_table_with_submitter_column_errors() {
             "VOTES",
             "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
         );
-        let ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, SXT_META_SUBMITTER BINARY NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, META_SUBMITTER BINARY NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::PublicPermissionless,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+            source: Source::Ethereum,
+        }])
+        .expect("Table list should fit in BoundedVec");
+
+        // Permission the table creator
+        assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
+            RuntimeOrigin::root(),
+            who.clone(),
+            PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema)
+        ));
+
+        assert_err!(
+            Tables::create_tables(signer, tables.clone()),
+            crate::Error::<Test>::ReservedColumnName
+        );
+    });
+}
+
+#[test]
+fn create_table_with_meta_column_errors() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+        let (who, signer) = user(1);
+        let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
+            "VOTES",
+            "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+        );
+        let ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, meta_phor BINARY NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
         let create_statement: CreateStatement =
             BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
 
@@ -726,7 +763,7 @@ fn creating_public_permissionless_table_automatically_adds_submitter_column() {
 
         assert_ok!(Tables::create_tables(signer, tables.clone()));
 
-        let expected_ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62CK4URFPIBTOCMESRGF7X9YV9MN38446DHCPSI2MLHIFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, SXT_META_SUBMITTER BINARY NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER, META_ROW_NUMBER)) WITH (BLOCK_NUMBER = BLOCK_NUMBER, TABLE_UUID = CCA1F51C06FE00EB3E489D1A083162B5, TIME_STAMP = TIME_STAMP);";
+        let expected_ddl = "CREATE TABLE IF NOT EXISTS EXAMPLE_5C62CK4URFPIBTOCMESRGF7X9YV9MN38446DHCPSI2MLHIFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, META_SUBMITTER BINARY NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER, META_ROW_NUMBER)) WITH (BLOCK_NUMBER = BLOCK_NUMBER, TABLE_UUID = CCA1F51C06FE00EB3E489D1A083162B5, TIME_STAMP = TIME_STAMP);";
 
         let events = System::events();
         match events.last().map(|e| &e.event) {

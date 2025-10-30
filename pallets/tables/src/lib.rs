@@ -21,6 +21,8 @@ pub mod runtime_api;
 pub mod weights;
 pub use weights::*;
 
+mod metadata_prefix;
+
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
@@ -78,6 +80,7 @@ pub mod pallet {
     use sxt_core::ByteString;
 
     use super::*;
+    use crate::metadata_prefix::validate_table_avoids_prefix;
     use crate::Event::{NamespaceUuidUpdated, TableUuidUpdated};
 
     /// A wrapper type that contains all the information needed to create a table
@@ -999,6 +1002,8 @@ pub mod pallet {
                     for identifier in create_table.name.0.iter_mut() {
                         identifier.value = identifier.value.to_uppercase();
                     }
+                    validate_table_avoids_prefix(&create_table)
+                        .map_err(|_| Error::<T>::ReservedColumnName)?;
 
                     // Ensure the parsed table identifier matches the provided one
                     match (

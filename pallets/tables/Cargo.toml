@@ -32,6 +32,7 @@ pallet-commitments.workspace = true
 proof-of-sql-commitment-map.workspace = true
 hex.workspace = true
 sqlparser.workspace = true
+snafu.workspace = true
 
 [dev-dependencies]
 proof-of-sql.workspace = true
