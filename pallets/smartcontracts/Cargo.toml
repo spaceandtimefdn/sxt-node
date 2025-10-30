@@ -63,6 +63,7 @@ std = [
 	"pallet-zkpay/std",
 ]
 runtime-benchmarks = [
+	"pallet-tables/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",

@@ -1004,6 +1004,7 @@ mod benches {
         [pallet_keystore, Keystore]
         [pallet_system_contracts, SystemContracts]
         [pallet_tables, Tables]
+        [pallet_smartcontracts, Smartcontracts]
     );
 }
 
