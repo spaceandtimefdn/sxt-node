@@ -208,7 +208,7 @@ pub mod pallet {
         /// This extrinsic provides a transaction that indexers will use to submit
         /// data they've indexed.
         #[pallet::call_index(0)]
-        #[pallet::weight(<T as Config<I>>::WeightInfo::submit_data())]
+        #[pallet::weight(submit_data_weight::<T, I>())]
         pub fn submit_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
@@ -225,7 +225,7 @@ pub mod pallet {
         /// by this batch. The submission goes through the quorum process (public or privileged) and is
         /// finalized only if quorum is reached.
         #[pallet::call_index(1)]
-        #[pallet::weight(<T as Config<I>>::WeightInfo::submit_data())]
+        #[pallet::weight(submit_data_weight::<T, I>())]
         pub fn submit_blockchain_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
@@ -235,6 +235,21 @@ pub mod pallet {
         ) -> DispatchResult {
             submit_data_inner::<T, I>(origin, table, batch_id, data, Some(block_number))
         }
+    }
+
+    fn submit_data_weight<T, I>() -> Weight
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let submit_no_quorum = <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_not_reached();
+        let submit_w_quorum = <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached();
+
+        // Assume in 4 submissions, one will have a quorum event
+        let submit_avg_time = ((3 * submit_no_quorum.ref_time()) + submit_w_quorum.ref_time()) / 4;
+        let submit_avg_proof =
+            ((3 * submit_no_quorum.proof_size()) + submit_w_quorum.proof_size()) / 4;
+        Weight::from_parts(submit_avg_time, submit_avg_proof)
     }
 
     fn submit_data_inner<T, I>(
