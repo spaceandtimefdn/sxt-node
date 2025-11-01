@@ -1,3 +1,12 @@
+## [1.42.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.42.0...v1.42.1) (2025-11-01)
+
+
+### Bug Fixes
+
+* enforce max tables per schema ([a820477](https://github.com/spaceandtimefdn/sxt-node/commit/a820477a6549016ec2748ce75ba430f2010334e2))
+
+
+
 # [1.42.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.41.0...v1.42.0) (2025-10-30)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * Allow permissionless inserts to publicPermissionless tables ([#101](https://github.com/spaceandtimefdn/sxt-node/issues/101)) ([138a9fd](https://github.com/spaceandtimefdn/sxt-node/commit/138a9fd4beeb555e587dc21f6aa6b642f1bd1ee0))
-
-
-
-# [1.39.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.38.0...v1.39.0) (2025-10-28)
-
-
-### Features
-
-* Allow community table and namespace creation without special permissions ([#96](https://github.com/spaceandtimefdn/sxt-node/issues/96)) ([6e81128](https://github.com/spaceandtimefdn/sxt-node/commit/6e81128acec9f4b216ab6c60fbddfd526d5b3133))
 
 
 
