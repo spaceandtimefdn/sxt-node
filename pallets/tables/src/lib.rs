@@ -781,6 +781,15 @@ pub mod pallet {
             Identifiers::<T>::insert(&table_type, identifiers);
 
             let TableIdentifier { name, namespace } = ident.clone();
+
+            ensure!(
+                Schemas::<T>::iter_key_prefix(&namespace)
+                    .take(sxt_core::tables::MAX_TABLES_PER_SCHEMA as usize)
+                    .count()
+                    < sxt_core::tables::MAX_TABLES_PER_SCHEMA as usize,
+                DispatchError::Other("Max tables per schema exceeded")
+            );
+
             Schemas::<T>::insert(namespace, name, stmnt.clone());
             let quorum: InsertQuorumSize = table_type.into();
 
