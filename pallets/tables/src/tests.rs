@@ -1541,3 +1541,66 @@ fn creating_non_public_namespace_fails_if_not_sudo() {
         }
     });
 }
+
+#[test]
+fn create_tables_should_fail_when_there_are_too_many_tables_in_a_namespace() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        assert_ok!(Tables::create_namespace(
+            RuntimeOrigin::root(),
+            b"TEST_NAMESPACE".to_vec().try_into().unwrap(),
+            0,
+            b"CREATE SCHEMA IF NOT EXISTS TEST_NAMESPACE"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+            TableType::CoreBlockchain,
+            Source::Ethereum,
+        ));
+
+        assert_ok!(Tables::create_tables(
+            RuntimeOrigin::root(),
+            (0..sxt_core::tables::MAX_TABLES_PER_SCHEMA)
+                .map(|i| {
+                    let table_name = format!("TABLE_{}", i);
+                    let ident = TableIdentifier::from_str_unchecked(&table_name, "TEST_NAMESPACE");
+                    let ddl = format!(
+                        "CREATE TABLE IF NOT EXISTS TEST_NAMESPACE.{} (A BIGINT NOT NULL)",
+                        table_name
+                    );
+
+                    UpdateTable {
+                        ident,
+                        create_statement: ddl.as_bytes().to_vec().try_into().unwrap(),
+                        table_type: TableType::CoreBlockchain,
+                        commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+                        source: Source::Ethereum,
+                    }
+                })
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap(),
+        ));
+        assert_err!(
+            Tables::create_tables(
+                RuntimeOrigin::root(),
+                vec![UpdateTable {
+                    ident: TableIdentifier::from_str_unchecked("TEST_TABLE", "TEST_NAMESPACE"),
+                    create_statement:
+                        "CREATE TABLE IF NOT EXISTS TEST_NAMESPACE.TEST_TABLE (A BIGINT NOT NULL)"
+                            .as_bytes()
+                            .to_vec()
+                            .try_into()
+                            .unwrap(),
+                    table_type: TableType::CoreBlockchain,
+                    commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+                    source: Source::Ethereum,
+                }]
+                .try_into()
+                .unwrap(),
+            ),
+            DispatchError::Other("Max tables per schema exceeded")
+        );
+    })
+}
