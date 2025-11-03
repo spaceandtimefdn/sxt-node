@@ -45,7 +45,7 @@ pub mod pallet {
     use scale_info::prelude::vec;
     use sp_core::crypto::Ss58Codec;
     use sp_core::U256;
-    use sp_runtime::Vec;
+    use sp_runtime::{SaturatedConversion, Vec};
     use sxt_core::permissions::*;
     use sxt_core::tables::{
         create_statement_to_sqlparser,
@@ -84,6 +84,10 @@ pub mod pallet {
     use super::*;
     use crate::metadata_prefix::validate_table_avoids_prefix;
     use crate::Event::{NamespaceUuidUpdated, TableUuidUpdated};
+
+    /// The cost to create a table or namespace for non-privileged users
+    /// This is 20 UNITS
+    pub const CREATE_COST: u128 = 20 * 10u128.pow(18);
 
     /// A wrapper type that contains all the information needed to create a table
     /// with or without a historical commitment and associated snapshot
@@ -128,7 +132,10 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config:
-        frame_system::Config + pallet_permissions::Config + pallet_commitments::Config
+        frame_system::Config
+        + pallet_permissions::Config
+        + pallet_commitments::Config
+        + pallet_balances::Config
     {
         /// A runtime event binding to the runtime
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -493,6 +500,15 @@ pub mod pallet {
                 origin.clone(),
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
             );
+            let is_privileged_boolean = is_privileged.is_ok();
+
+            if !is_privileged_boolean {
+                pallet_balances::Pallet::<T>::burn(
+                    origin.clone(),
+                    super::CREATE_COST.saturated_into(),
+                    false,
+                )?;
+            }
 
             let maybe_owner = ensure_signed(origin.clone());
             match (is_public, is_privileged, maybe_owner) {
@@ -941,6 +957,8 @@ pub mod pallet {
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
             );
 
+            let is_privileged_boolean = is_privileged.is_ok();
+
             let owner = match (all_public, is_privileged, ensure_signed(origin.clone())) {
                 (true, Err(_), Ok(o)) => {
                     // A user without elevated permissions is trying to create public tables
@@ -967,6 +985,14 @@ pub mod pallet {
             let tables_with_meta_columns = tables
                 .into_iter()
                 .map(|mut table| {
+                    if !is_privileged_boolean {
+                        pallet_balances::Pallet::<T>::burn(
+                            origin.clone(),
+                            super::CREATE_COST.saturated_into(),
+                            false,
+                        )?;
+                    }
+
                     let is_permissionless = table.table_type == TableType::PublicPermissionless;
 
                     table.ident = table
