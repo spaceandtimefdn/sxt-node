@@ -8,6 +8,8 @@ use crate::Pallet as AttestationPallet;
 
 #[benchmarks]
 mod benchmarks {
+    use alloc::vec::Vec;
+
     use codec::Encode;
     use frame_support::{assert_ok, BoundedVec};
     use k256::ecdsa::SigningKey;
@@ -27,12 +29,11 @@ mod benchmarks {
     use super::*;
     // Deterministic key generation using `blake2_256`
     fn create_signed_message_and_keypair(
-        seed: u64,
+        message: Vec<u8>,
         block_number: Option<BlockNumber>,
     ) -> (SigningKey, [u8; 33], EthereumSignature) {
         // Convert the seed to bytes and hash it to generate a 32-byte private key
-        let seed_bytes = seed.to_le_bytes();
-        let private_key_bytes = blake2_256(&seed_bytes);
+        let private_key_bytes = blake2_256(&message);
 
         let signing_key = SigningKey::from_bytes(GenericArray::from_slice(&private_key_bytes))
             .expect("Valid private key");
@@ -41,8 +42,7 @@ mod benchmarks {
         let verifying_key_sec1: [u8; 33] = verifying_key_sec1.try_into().unwrap();
 
         // Sign the message (account ID encoded as bytes)
-        let message = seed
-            .to_le_bytes()
+        let message = message
             .into_iter()
             .chain(
                 block_number
@@ -56,16 +56,10 @@ mod benchmarks {
         (signing_key, verifying_key_sec1, signature)
     }
 
-    // Helper function to convert T::AccountId into a u64 for compatibility
-    fn account_id_to_u64<T: Config>(account_id: &T::AccountId) -> u64 {
-        let encoded = account_id.encode();
-        u64::from_le_bytes(encoded[0..8].try_into().unwrap_or([0u8; 8]))
-    }
-
     // Helper function to create a registered attestation key
     fn create_registered_attestation_key<T: Config>(account_id: T::AccountId) -> AttestationKey {
-        let account_id_u64 = account_id_to_u64::<T>(&account_id);
-        let (_, public_key, signature) = create_signed_message_and_keypair(account_id_u64, None);
+        let (_, public_key, signature) =
+            create_signed_message_and_keypair(account_id.encode(), None);
         let address20 =
             sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
         let registration = RegisterExternalAddress::EthereumAddress {
@@ -110,9 +104,8 @@ mod benchmarks {
         let attestation_key = create_registered_attestation_key::<T>(caller.clone());
 
         // Generate deterministic attestation
-        let caller_u64 = account_id_to_u64::<T>(&caller);
         let (_, public_key, signature) =
-            create_signed_message_and_keypair(caller_u64, Some(block_number));
+            create_signed_message_and_keypair(caller.encode(), Some(block_number));
 
         let address20 =
             sxt_core::attestation::uncompressed_public_key_to_address(&public_key).unwrap();
@@ -121,7 +114,7 @@ mod benchmarks {
         let attestation = Attestation::EthereumAttestation {
             signature,
             proposed_pub_key: public_key,
-            state_root: caller_u64.to_le_bytes().to_vec().try_into().unwrap(),
+            state_root: caller.encode().try_into().unwrap(),
             address20,
             block_number,
             block_hash,
@@ -137,6 +130,25 @@ mod benchmarks {
         // Assert that the attestation was recorded
         let attestations = Attestations::<T>::get(block_number);
         assert!(attestations.iter().any(|stored| stored == &attestation));
+    }
+
+    #[benchmark]
+    fn mark_block_forwarded() {
+        let caller: T::AccountId = whitelisted_caller();
+
+        pallet_permissions::Pallet::<T>::add_proxy_permission(
+            RawOrigin::Root.into(),
+            caller.clone(),
+            PermissionLevel::AttestationPallet(AttestationPalletPermission::ForwardAttestedBlock),
+        )
+        .unwrap();
+
+        assert_eq!(LastForwardedBlock::<T>::get(), None);
+
+        #[extrinsic_call]
+        mark_block_forwarded(RawOrigin::Signed(caller), 1);
+
+        assert_eq!(LastForwardedBlock::<T>::get(), Some(1));
     }
 
     impl_benchmark_test_suite!(

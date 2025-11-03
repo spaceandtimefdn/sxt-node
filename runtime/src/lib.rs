@@ -366,7 +366,7 @@ pub const AVERAGE_INSERT_TARGET_COST: u128 = MILLICENTS
 pub const TARGET_BYTE_FEE: u128 =
     AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_SIZE_BYTES);
 /// Approximated Average Insert Weight from actual transactions on testnet
-pub const AVERAGE_INSERT_CALL_WEIGHT: u128 = 126_039_931_000;
+pub const AVERAGE_INSERT_CALL_WEIGHT: u128 = 125_614_953_000;
 pub const WEIGHT_FEE: u128 = AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_CALL_WEIGHT);
 
 parameter_types! {
@@ -824,6 +824,7 @@ impl pallet_zkpay::Config for Runtime {
 
 impl pallet_system_contracts::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_system_contracts::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_smartcontracts::Config<native_api::Api> for Runtime {
@@ -1001,6 +1002,9 @@ mod benches {
         [pallet_indexing, Indexing]
         [pallet_attestation, Attestations]
         [pallet_keystore, Keystore]
+        [pallet_system_contracts, SystemContracts]
+        [pallet_tables, Tables]
+        [pallet_smartcontracts, Smartcontracts]
     );
 }
 

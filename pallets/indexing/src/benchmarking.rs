@@ -19,6 +19,7 @@ use crate::Pallet as Indexing;
 )]
 mod benchmarks {
     use native_api::NativeApi;
+    use pallet_tables::benchmarking::{integers_table_definition, schema_bytes_and_ddl_and_source};
     use pallet_tables::{CommitmentCreationCmd, UpdateTable};
     use proof_of_sql_commitment_map::CommitmentSchemeFlags;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
@@ -39,34 +40,12 @@ mod benchmarks {
             name: TableName::try_from(b"INTEGERS".to_vec()).unwrap(),
         };
 
-        let create_statement_columns = (0..64)
-            .map(|col_num| alloc::format!("COL_{col_num} BIGINT NOT NULL"))
-            .collect::<alloc::vec::Vec<_>>()
-            .join(", ");
-
-        let create_statement =
-            alloc::format!("CREATE TABLE BENCHMARK.INTEGERS ({create_statement_columns})")
-                .as_bytes()
-                .to_vec()
-                .try_into()
-                .unwrap();
-
         let table_type = TableType::Testing(InsertQuorumSize {
             public: Some(3),
             privileged: None,
         });
 
-        let commitment = CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all());
-
-        let source = Source::UserCreated(b"benchmark".to_vec().try_into().unwrap());
-
-        let update_table = UpdateTable {
-            ident,
-            create_statement,
-            table_type,
-            commitment,
-            source,
-        };
+        let update_table = integers_table_definition(ident, table_type);
 
         let batch_id = BatchId::try_from(b"benchmark".to_vec()).unwrap();
 
@@ -84,17 +63,15 @@ mod benchmarks {
     #[benchmark]
     fn submit_data_quorum_not_reached() {
         let (update_table, batch_id, row_data) = benchmark_integers_table_and_data();
+        let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
 
         pallet_tables::Pallet::<T>::create_namespace(
             RawOrigin::<T::AccountId>::Root.into(),
-            update_table.ident.namespace.clone(),
+            namespace,
             0,
-            b"CREATE SCHEMA IF NOT EXISTS BENCHMARK"
-                .to_vec()
-                .try_into()
-                .unwrap(),
+            namespace_ddl,
             TableType::CoreBlockchain,
-            sxt_core::tables::Source::Ethereum,
+            source,
         )
         .expect("creating namespace in benchmark setup should work");
 
@@ -126,17 +103,15 @@ mod benchmarks {
     #[benchmark]
     fn submit_data_quorum_reached() {
         let (update_table, batch_id, row_data) = benchmark_integers_table_and_data();
+        let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
 
         pallet_tables::Pallet::<T>::create_namespace(
             RawOrigin::<T::AccountId>::Root.into(),
-            update_table.ident.namespace.clone(),
+            namespace,
             0,
-            b"CREATE SCHEMA IF NOT EXISTS BENCHMARK"
-                .to_vec()
-                .try_into()
-                .unwrap(),
+            namespace_ddl,
             TableType::CoreBlockchain,
-            sxt_core::tables::Source::Ethereum,
+            source,
         )
         .expect("creating namespace in benchmark setup should work");
 

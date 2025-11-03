@@ -16,6 +16,9 @@ mod tests;
 pub mod weights;
 pub use weights::*;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 /// Native pallet functionality
 pub mod native_pallet;
 
@@ -137,7 +140,7 @@ pub mod pallet {
         ///
         /// **Emits:** `SmartContractRemoved`
         #[pallet::call_index(1)]
-        #[pallet::weight(<T as pallet::Config<I>>::WeightInfo::remove_smartcontract())]
+        #[pallet::weight(remove_smartcontract_weight::<T, I>(source, address))]
         pub fn remove_smartcontract(
             origin: OriginFor<T>,
             source: Source,
@@ -191,7 +194,7 @@ pub mod pallet {
         ///     - [`pallet_permissions::Pallet::ensure_root_or_permissioned`] if origin is unauthorized.
         ///     - [`pallet_tables::Pallet::create_tables_inner`] if any table creation fails.
         #[pallet::call_index(2)]
-        #[pallet::weight(<T as pallet::Config<I>>::WeightInfo::add_smartcontract())]
+        #[pallet::weight(add_smartcontract_weight::<T, I>(tables.len()))]
         pub fn add_smartcontract(
             origin: OriginFor<T>,
             contract: Contract,
@@ -265,5 +268,32 @@ pub mod pallet {
             pallet_tables::Pallet::<T>::create_tables_inner(origin, tables)?;
             Ok(())
         }
+    }
+
+    fn add_smartcontract_weight<T, I>(num_tables: usize) -> Weight
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let zero_table_weight = <T as Config<I>>::WeightInfo::add_smartcontract_zero_tables();
+        let one_table_weight = <T as Config<I>>::WeightInfo::add_smartcontract_one_table();
+        let table_weight = one_table_weight.saturating_sub(zero_table_weight);
+
+        zero_table_weight + (table_weight * num_tables as u64)
+    }
+
+    fn remove_smartcontract_weight<T, I>(source: &Source, address: &ContractAddress) -> Weight
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let num_tables = ContractTables::<T, I>::get(source, address)
+            .map(|tables| tables.len())
+            .unwrap_or_default();
+        let zero_table_weight = <T as Config<I>>::WeightInfo::remove_smartcontract_zero_tables();
+        let one_table_weight = <T as Config<I>>::WeightInfo::remove_smartcontract_one_table();
+        let table_weight = one_table_weight.saturating_sub(zero_table_weight);
+
+        zero_table_weight + (table_weight * num_tables as u64)
     }
 }

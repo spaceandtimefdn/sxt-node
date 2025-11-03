@@ -9,6 +9,11 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub mod weights;
+pub use weights::*;
+
+mod benchmarking;
+
 /// All pallet items, built with `frame_support`.
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
@@ -30,6 +35,9 @@ pub mod pallet {
     pub trait Config: frame_system::Config {
         /// The system contracts pallet's runtime event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
+        /// A type representing the weights required by dispatchable functions of this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     /// Storage for basic information about the staking contract.
@@ -97,7 +105,7 @@ pub mod pallet {
     {
         /// Sudo call for setting the stored staking contract information.
         #[pallet::call_index(0)]
-        #[pallet::weight(Weight::from_parts(0, 0))]
+        #[pallet::weight(<T as Config>::WeightInfo::set_staking_contract())]
         pub fn set_staking_contract(
             origin: OriginFor<T>,
             contract_info: ContractInfo,
@@ -113,7 +121,7 @@ pub mod pallet {
 
         /// Sudo call for setting the stored messaging contract information.
         #[pallet::call_index(1)]
-        #[pallet::weight(Weight::from_parts(0, 0))]
+        #[pallet::weight(<T as Config>::WeightInfo::set_messaging_contract())]
         pub fn set_messaging_contract(
             origin: OriginFor<T>,
             contract_info: ContractInfo,

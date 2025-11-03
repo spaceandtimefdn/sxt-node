@@ -193,6 +193,9 @@ runtime-benchmarks = [
 	"pallet-bags-list/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
 	"eth-ecdsa/runtime-benchmarks",
+	"pallet-system-contracts/runtime-benchmarks",
+	"pallet-tables/runtime-benchmarks",
+	"pallet-smartcontracts/runtime-benchmarks",
 ]
 
 try-runtime = [
