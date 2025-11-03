@@ -5,6 +5,10 @@
 
 mod tests;
 
+mod fees;
+
+use fees::*;
+
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
@@ -13,8 +17,9 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use frame_election_provider_support::{generate_solution_type, onchain, SequentialPhragmen};
-use frame_support::dispatch::DispatchClass;
+use frame_support::dispatch::{DispatchClass, DispatchInfo, GetDispatchInfo};
 use frame_support::genesis_builder_helper::{build_state, get_preset};
+use frame_support::pallet_prelude::TransactionValidityError;
 use frame_support::traits::VariantCountOf;
 pub use frame_support::traits::{
     ConstBool,
@@ -39,11 +44,12 @@ pub use frame_support::{construct_runtime, derive_impl, parameter_types, Storage
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
+use pallet_balances::NegativeImbalance;
 use pallet_election_provider_multi_phase::GeometricDepositBase;
 use pallet_grandpa::AuthorityId as GrandpaId;
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 pub use pallet_timestamp::Call as TimestampCall;
-use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
+use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, Multiplier, RuntimeDispatchInfo};
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
 use proof_of_sql_commitment_map::{AnyCommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
 use sp_api::impl_runtime_apis;
@@ -381,7 +387,7 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OnChargeTransaction = CustomGasFees<Balances, CurrencyAdapter<Balances, ()>>;
     type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ();
@@ -981,6 +987,7 @@ pub type Executive = frame_executive::Executive<
     Migrations,
 >;
 
+use pallet_transaction_payment::InclusionFee;
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
     frame_benchmarking::define_benchmarks!(
@@ -1205,13 +1212,31 @@ impl_runtime_apis! {
             uxt: <Block as BlockT>::Extrinsic,
             len: u32,
         ) -> pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo<Balance> {
-            TransactionPayment::query_info(uxt, len)
+            if let Some(special_fee) = special_fee_for_call(&uxt.function) {
+                let mut out = TransactionPayment::query_info(uxt, len);
+                out.partial_fee = special_fee;
+                out
+            } else {
+                TransactionPayment::query_info(uxt, len)
+            }
         }
         fn query_fee_details(
             uxt: <Block as BlockT>::Extrinsic,
             len: u32,
         ) -> pallet_transaction_payment::FeeDetails<Balance> {
-            TransactionPayment::query_fee_details(uxt, len)
+            if let Some(special_fee) = special_fee_for_call(&uxt.function) {
+                FeeDetails {
+                    inclusion_fee: Some(
+                        InclusionFee {
+                            base_fee: special_fee,
+                            len_fee: 0,
+                            adjusted_weight_fee: 0,
+                        }),
+                    tip: 0,
+                }
+            } else {
+                TransactionPayment::query_fee_details(uxt, len)
+            }
         }
         fn query_weight_to_fee(weight: Weight) -> Balance {
             TransactionPayment::weight_to_fee(weight)
@@ -1228,13 +1253,37 @@ impl_runtime_apis! {
             call: RuntimeCall,
             len: u32,
         ) -> pallet_transaction_payment::RuntimeDispatchInfo<Balance> {
-            TransactionPayment::query_call_info(call, len)
+            if let Some(special_fee) = special_fee_for_call(&call) {
+                let dispatch_info = <RuntimeCall as GetDispatchInfo>::get_dispatch_info(&call);
+                let DispatchInfo { weight, class, .. } = dispatch_info;
+
+                RuntimeDispatchInfo {
+                    weight,
+                    class,
+                    partial_fee: special_fee,
+                }
+
+            } else {
+                TransactionPayment::query_call_info(call, len)
+            }
         }
         fn query_call_fee_details(
             call: RuntimeCall,
             len: u32,
         ) -> pallet_transaction_payment::FeeDetails<Balance> {
-            TransactionPayment::query_call_fee_details(call, len)
+            if let Some(special_fee) = special_fee_for_call(&call) {
+                FeeDetails {
+                    inclusion_fee: Some(
+                        InclusionFee {
+                            base_fee: special_fee,
+                            len_fee: 0,
+                            adjusted_weight_fee: 0,
+                        }),
+                    tip: 0,
+                }
+            } else {
+                TransactionPayment::query_call_fee_details(call, len)
+            }
         }
         fn query_weight_to_fee(weight: Weight) -> Balance {
             TransactionPayment::weight_to_fee(weight)
