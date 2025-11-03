@@ -1,10 +1,11 @@
 use core::str::from_utf8;
 
+use frame_support::traits::fungible::Mutate;
 use frame_support::{assert_err, assert_noop, assert_ok};
 use pallet_permissions::Pallet;
 use proof_of_sql::base::database::TableRef;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
-use sp_runtime::{BoundedVec, DispatchError, ModuleError};
+use sp_runtime::{BoundedVec, DispatchError, ModuleError, TokenError};
 use sqlparser::ast::{ColumnDef, DataType, ExactNumberInfo, Ident, TimezoneInfo};
 use sxt_core::permissions::{
     IndexingPalletPermission,
@@ -711,8 +712,18 @@ fn creating_community_table_succeeds_with_no_special_permissions() {
         }])
         .expect("Table list should fit in BoundedVec");        
 
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &who,
+            crate::CREATE_COST * 100,
+        ));
+
         System::reset_events();
         assert_ok!(Tables::create_tables(signer, tables.clone()));
+
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&who),
+            crate::CREATE_COST * 99
+        );
 
         let ddl_with_uuid = "CREATE TABLE IF NOT EXISTS FUNNAME_5C62CK4URFPIBTOCMESRGF7X9YV9MN38446DHCPSI2MLHIFT.MY_COMMUNITY_TABLE (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, META_ROW_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER, META_ROW_NUMBER)) WITH (BLOCK_NUMBER = BLOCK_NUMBER, TABLE_UUID = D24EBCF10F7CB9EBDC65F9E6823AB72D, TIME_STAMP = TIME_STAMP);";
         let events = System::events();
@@ -730,6 +741,37 @@ fn creating_community_table_succeeds_with_no_special_permissions() {
             _ => panic!("Expected SchemaUpdated event not found"),
         }
 
+    });
+}
+#[test]
+fn creating_community_table_fails_with_insufficient_funds() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+        let (who, signer) = user(1);
+        let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
+            "MY_COMMUNITY_TABLE",
+            "FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+        );
+        let ddl = "CREATE TABLE IF NOT EXISTS FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.MY_COMMUNITY_TABLE (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+            ident: test_identifier.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::Community,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+            source: Source::Ethereum,
+        }])
+        .expect("Table list should fit in BoundedVec");        
+
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &who,
+            crate::CREATE_COST / 2,
+        ));
+
+        assert_err!(Tables::create_tables(signer, tables.clone()), TokenError::FundsUnavailable);
     });
 }
 
@@ -1391,7 +1433,7 @@ fn creating_community_table_fails_if_wrong_namespace_given() {
 fn creating_community_namespace_fails_if_wrong_namespace_given() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        let (_, signer) = user(1);
+        let (account, signer) = user(1);
         let test_identifier = TableIdentifier::from_str_unchecked(
             "MY_COMMUNITY_TABLE",
             "FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG",
@@ -1399,6 +1441,11 @@ fn creating_community_namespace_fails_if_wrong_namespace_given() {
         let ddl = "CREATE SCHEMA IF NOT EXISTS FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG;";
         let create_statement: CreateStatement =
             BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &account,
+            crate::CREATE_COST * 100,
+        ));
 
         System::reset_events();
         assert_err!(
@@ -1419,7 +1466,7 @@ fn creating_community_namespace_fails_if_wrong_namespace_given() {
 fn creating_public_permissionless_namespace_fails_if_wrong_namespace_given() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        let (_, signer) = user(1);
+        let (account, signer) = user(1);
         let test_identifier = TableIdentifier::from_str_unchecked(
             "MY_COMMUNITY_TABLE",
             "FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG",
@@ -1427,6 +1474,11 @@ fn creating_public_permissionless_namespace_fails_if_wrong_namespace_given() {
         let ddl = "CREATE SCHEMA IF NOT EXISTS FUNNAME_SOMEOTHERNAMESPACEATHATSWRONG;";
         let create_statement: CreateStatement =
             BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &account,
+            crate::CREATE_COST * 100,
+        ));
 
         System::reset_events();
         assert_err!(
@@ -1447,7 +1499,7 @@ fn creating_public_permissionless_namespace_fails_if_wrong_namespace_given() {
 fn creating_community_namespace_works_with_valid_namespace() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        let (_, signer) = user(1);
+        let (account, signer) = user(1);
         let test_identifier = TableIdentifier::from_str_unchecked(
             "VOTES",
             "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
@@ -1458,6 +1510,11 @@ fn creating_community_namespace_works_with_valid_namespace() {
             BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
         let test_source = Source::UserCreated("ASDF".as_bytes().to_vec().try_into().unwrap());
 
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &account,
+            crate::CREATE_COST * 100,
+        ));
+
         System::reset_events();
         assert_ok!(Tables::create_namespace(
             signer,
@@ -1467,6 +1524,11 @@ fn creating_community_namespace_works_with_valid_namespace() {
             TableType::Community,
             test_source.clone(),
         ),);
+
+        assert_eq!(
+            pallet_balances::Pallet::<Test>::free_balance(&account),
+            crate::CREATE_COST * 99
+        );
 
         // Make sure the event was emitted as expected
         System::assert_has_event(RuntimeEvent::Tables(Event::NamespaceCreated {
@@ -1482,17 +1544,55 @@ fn creating_community_namespace_works_with_valid_namespace() {
         }));
     });
 }
+#[test]
+fn creating_community_namespace_with_insufficient_funds() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (account, signer) = user(1);
+        let test_identifier = TableIdentifier::from_str_unchecked(
+            "VOTES",
+            "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+        );
+        let ddl =
+            "CREATE SCHEMA IF NOT EXISTS EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT;";
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+        let test_source = Source::UserCreated("ASDF".as_bytes().to_vec().try_into().unwrap());
+
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &account,
+            crate::CREATE_COST / 2,
+        ));
+
+        assert_err!(
+            Tables::create_namespace(
+                signer,
+                test_identifier.namespace,
+                1,
+                create_statement.clone(),
+                TableType::Community,
+                test_source.clone(),
+            ),
+            TokenError::FundsUnavailable
+        );
+    });
+}
 
 #[test]
 fn creating_non_public_namespace_fails_if_not_sudo() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        let (_, signer) = user(1);
+        let (account, signer) = user(1);
         let test_schema: ByteString = "SXT_SYSTEM_STAKING".as_bytes().to_vec().try_into().unwrap();
         let ddl = "CREATE SCHEMA IF NOT EXISTS SXT_SYSTEM_STAKING;";
         let create_statement: CreateStatement =
             BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
         let test_source = Source::Ethereum;
+
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &account,
+            crate::CREATE_COST * 100,
+        ));
 
         System::reset_events();
         assert_err!(

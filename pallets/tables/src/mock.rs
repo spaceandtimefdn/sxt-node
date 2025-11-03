@@ -1,4 +1,5 @@
 use frame_support::derive_impl;
+use frame_support::traits::ConstU128;
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
 use proof_of_sql_commitment_map::PerCommitmentScheme;
 use sp_core::crypto::AccountId32;
@@ -17,14 +18,18 @@ frame_support::construct_runtime!(
         Permissions: pallet_permissions,
         Tables: pallet_tables,
         Commitments: pallet_commitments,
+        Balances: pallet_balances,
     }
 );
+
+type Balance = u128;
 
 #[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
 impl frame_system::Config for Test {
     type Block = Block;
     type AccountId = AccountId32;
     type Lookup = IdentityLookup<Self::AccountId>;
+    type AccountData = pallet_balances::AccountData<Balance>;
 }
 
 impl pallet_tables::Config for Test {
@@ -42,6 +47,14 @@ impl pallet_commitments::Config for Test {
         hyper_kzg: 4,
         dynamic_dory: 4,
     };
+}
+
+#[derive_impl(pallet_balances::config_preludes::TestDefaultConfig)]
+impl pallet_balances::Config for Test {
+    type AccountStore = System;
+    type Balance = Balance;
+    type RuntimeEvent = RuntimeEvent;
+    type ExistentialDeposit = ConstU128<1>;
 }
 
 // Build genesis storage according to the mock runtime.
