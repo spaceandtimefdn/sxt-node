@@ -1,3 +1,12 @@
+# [1.44.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.43.0...v1.44.0) (2025-11-03)
+
+
+### Features
+
+* adjust create table and namespace costs ([5d04c5e](https://github.com/spaceandtimefdn/sxt-node/commit/5d04c5e9c5b82d975d1d9cd0f25d73bd1dc12c62))
+
+
+
 # [1.43.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.42.1...v1.43.0) (2025-11-03)
 
 
@@ -42,15 +51,6 @@
 ### Features
 
 * Increase the limit of tables per type to 2^20 ([301b213](https://github.com/spaceandtimefdn/sxt-node/commit/301b213709d94d471b9032fed8c19e6c554d56d7))
-
-
-
-## [1.40.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.40.0...v1.40.1) (2025-10-28)
-
-
-### Bug Fixes
-
-* validate namespace and table names ([f8fcec4](https://github.com/spaceandtimefdn/sxt-node/commit/f8fcec47e67503e692c2d7dd2e8f024a16199ed8))
 
 
 
