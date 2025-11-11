@@ -1,6 +1,7 @@
 use anyhow::Result;
 use event_forwarder::chain_listener::{Block, API};
-use sxt_core::sxt_chain_runtime;
+use sxt_core::sxt_chain_runtime::api::runtime_apis::system_tables_api::SystemTablesApi;
+use sxt_core::sxt_chain_runtime::{self};
 
 /// Reads the active era, if one is present. Retuns Some(u32) if an era is found, None if there is
 /// no era, and an error if we were not able to read it.
@@ -49,4 +50,14 @@ pub(crate) async fn read_total_staked(era: u32, block: &Block, api: &API) -> Res
     } else {
         Ok(None)
     }
+}
+
+pub(crate) async fn read_unstaked_claims_count(block: &Block, api: &API) -> Result<u64> {
+    let claims = api
+        .runtime_api()
+        .at(block.hash())
+        .call(SystemTablesApi.claimed_unstakes())
+        .await?;
+
+    Ok(claims.len() as u64)
 }

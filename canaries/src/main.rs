@@ -1,12 +1,13 @@
 //! Canary prototype
 mod metrics;
 mod parsing;
+mod rpc;
 mod storage;
 use std::net::SocketAddr;
 
 use clap::Parser;
 use env_logger::Env;
-use event_forwarder::block_processing::{fetch_all_events, filter_events};
+use event_forwarder::block_processing::fetch_all_events;
 use event_forwarder::chain_listener::{
     Block,
     BlockProcessor,
@@ -14,11 +15,9 @@ use event_forwarder::chain_listener::{
     FinalizedBlockStream,
     API,
 };
-use log::{error, info};
+use log::info;
 use snafu::{ResultExt, Snafu};
-use subxt::events::EventDetails;
 use subxt::{OnlineClient, PolkadotConfig};
-use sxt_core::sxt_chain_runtime::api::session::events::NewSession;
 use url::Url;
 
 use crate::metrics::*;
@@ -69,7 +68,9 @@ async fn main() -> Result<(), CanaryError> {
 
     // Set up the listener
     let stream = FinalizedBlockStream;
-    let processor = SimpleProcessor {};
+    let processor = SimpleProcessor {
+        rpc_url: config.rpc_url.clone(),
+    };
 
     let listener = ChainListener::new(processor, stream, api)
         .await
@@ -80,7 +81,27 @@ async fn main() -> Result<(), CanaryError> {
     Ok(())
 }
 
-struct SimpleProcessor {}
+struct SimpleProcessor {
+    pub rpc_url: Url,
+}
+
+impl SimpleProcessor {
+    fn get_http_url(&self) -> Result<Url, CanaryError> {
+        let mut out = self.rpc_url.clone();
+        match self.rpc_url.scheme() {
+            "wss" => {
+                out.set_scheme("https")
+                    .map_err(|_| CanaryError::UrlHttpConversionError)?;
+            }
+            "ws" => {
+                out.set_scheme("http")
+                    .map_err(|_| CanaryError::UrlHttpConversionError)?;
+            }
+            _ => {}
+        };
+        Ok(out)
+    }
+}
 
 #[async_trait::async_trait]
 impl BlockProcessor for SimpleProcessor {
@@ -95,6 +116,14 @@ impl BlockProcessor for SimpleProcessor {
         parse_staking_stats(&events).iter().for_each(record_staking);
 
         parse_balance_stats(&events).iter().for_each(record_balance);
+
+        if let Ok(attestations) = rpc::fetch_attestations(self.rpc_url.clone()).await {
+            record_attestations(block.number(), attestations);
+        }
+
+        if let Ok(count) = storage::read_unstaked_claims_count(&block, api).await {
+            record_claimed_unstake_count(block.number(), count);
+        }
 
         // If it's a new session, record rewards and total stake as well
         if has_new_session(&events) {
@@ -145,6 +174,8 @@ pub enum CanaryError {
         /// source
         source: event_forwarder::block_processing::Error,
     },
+    /// We were unable to parse the http url from the provided rpc url
+    UrlHttpConversionError,
 }
 
 type Result<T, E = CanaryError> = std::result::Result<T, E>;

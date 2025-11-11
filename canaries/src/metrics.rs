@@ -11,6 +11,8 @@ use prometheus::{
     IntCounterVec,
     TextEncoder,
 };
+use sxt_core::attestation::Attestation;
+use sxt_core::keystore::H256;
 use tokio::net::TcpListener;
 
 use crate::parsing::{BalanceEvent, StakingEvent};
@@ -75,6 +77,16 @@ lazy_static! {
         "Total of amounts of Balance pallet events",
         &["type"]
     ).unwrap();
+    pub static ref UNSTAKE_CLAIMED_COUNTER: IntCounterVec = register_int_counter_vec!(
+        "canary_unstake_claimed_counts",
+        "Total of unstake claims",
+        &["block_number"]
+    ).unwrap();
+    pub static ref BEST_ATTESTATION_COUNTER: IntCounterVec = register_int_counter_vec!(
+        "canary_unstake_best_attestation_count",
+        "Total of attestations for the 'bestAttestations' RPC",
+        &["block_number"]
+    ).unwrap();
 }
 
 /// Add a count for the given event name
@@ -90,12 +102,27 @@ pub(crate) fn record_staking(e: &StakingEvent) {
         .inc_by(e.amount.saturated_into());
 }
 
+pub(crate) fn record_attestations(
+    block_number: u32,
+    attestations: Vec<sxt_core::attestation::Attestation<H256>>,
+) {
+    BEST_ATTESTATION_COUNTER
+        .with_label_values(&[block_number.to_string()])
+        .inc_by(attestations.len() as u64);
+}
+
 /// Add the provided amount to the metric for the provided label
 pub(crate) fn record_balance(e: &BalanceEvent) {
     use subxt::ext::sp_runtime::SaturatedConversion;
     BALANCE_COUNTER
         .with_label_values(&[e.label])
         .inc_by(e.amount.saturated_into());
+}
+
+pub(crate) fn record_claimed_unstake_count(block_number: u32, count: u64) {
+    UNSTAKE_CLAIMED_COUNTER
+        .with_label_values(&[block_number.to_string()])
+        .inc_by(count);
 }
 
 pub(crate) fn record_era_rewards(era: u32, amount: u128) {
