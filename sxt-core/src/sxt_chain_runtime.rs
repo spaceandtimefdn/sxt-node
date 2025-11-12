@@ -1908,10 +1908,10 @@ pub mod api {
                         "query_call_info",
                         types::QueryCallInfo { call, len },
                         [
-                            115u8, 199u8, 216u8, 24u8, 216u8, 128u8, 101u8, 15u8, 32u8, 108u8,
-                            176u8, 37u8, 236u8, 10u8, 230u8, 224u8, 87u8, 148u8, 71u8, 218u8,
-                            104u8, 179u8, 30u8, 215u8, 10u8, 43u8, 89u8, 136u8, 178u8, 60u8, 24u8,
-                            175u8,
+                            180u8, 59u8, 225u8, 239u8, 196u8, 132u8, 111u8, 146u8, 232u8, 135u8,
+                            35u8, 111u8, 129u8, 253u8, 123u8, 14u8, 15u8, 116u8, 243u8, 167u8,
+                            186u8, 67u8, 74u8, 225u8, 207u8, 37u8, 142u8, 179u8, 67u8, 105u8, 12u8,
+                            108u8,
                         ],
                     )
                 }
@@ -1929,9 +1929,10 @@ pub mod api {
                         "query_call_fee_details",
                         types::QueryCallFeeDetails { call, len },
                         [
-                            89u8, 81u8, 65u8, 225u8, 225u8, 179u8, 181u8, 52u8, 89u8, 178u8, 78u8,
-                            98u8, 234u8, 96u8, 130u8, 237u8, 171u8, 38u8, 248u8, 4u8, 183u8, 21u8,
-                            18u8, 91u8, 112u8, 236u8, 148u8, 232u8, 180u8, 220u8, 142u8, 47u8,
+                            97u8, 103u8, 127u8, 234u8, 156u8, 223u8, 155u8, 184u8, 132u8, 233u8,
+                            64u8, 182u8, 121u8, 55u8, 187u8, 208u8, 183u8, 152u8, 193u8, 143u8,
+                            178u8, 207u8, 141u8, 45u8, 66u8, 173u8, 150u8, 18u8, 242u8, 227u8,
+                            74u8, 36u8,
                         ],
                     )
                 }
@@ -2738,9 +2739,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                160u8, 236u8, 242u8, 222u8, 13u8, 38u8, 225u8, 44u8, 208u8, 85u8, 43u8, 173u8,
-                76u8, 248u8, 165u8, 186u8, 15u8, 10u8, 110u8, 56u8, 166u8, 119u8, 37u8, 59u8, 83u8,
-                103u8, 21u8, 40u8, 41u8, 100u8, 195u8, 198u8,
+                78u8, 89u8, 213u8, 113u8, 97u8, 54u8, 134u8, 89u8, 105u8, 190u8, 88u8, 112u8,
+                199u8, 151u8, 19u8, 97u8, 185u8, 155u8, 180u8, 99u8, 143u8, 79u8, 236u8, 164u8,
+                156u8, 192u8, 190u8, 120u8, 126u8, 37u8, 212u8, 129u8,
             ]
     }
     pub mod system {
@@ -3897,10 +3898,10 @@ pub mod api {
                         "Events",
                         (),
                         [
-                            175u8, 32u8, 109u8, 12u8, 164u8, 60u8, 232u8, 21u8, 94u8, 54u8, 14u8,
-                            58u8, 240u8, 182u8, 145u8, 127u8, 99u8, 82u8, 191u8, 242u8, 123u8,
-                            148u8, 50u8, 245u8, 193u8, 60u8, 40u8, 234u8, 50u8, 123u8, 246u8,
-                            150u8,
+                            112u8, 30u8, 128u8, 176u8, 162u8, 232u8, 158u8, 104u8, 88u8, 132u8,
+                            119u8, 162u8, 28u8, 146u8, 225u8, 47u8, 141u8, 212u8, 26u8, 209u8,
+                            249u8, 45u8, 234u8, 203u8, 214u8, 60u8, 86u8, 41u8, 135u8, 195u8,
+                            137u8, 235u8,
                         ],
                     )
                 }
@@ -4490,9 +4491,9 @@ pub mod api {
                         "batch",
                         types::Batch { calls },
                         [
-                            47u8, 209u8, 43u8, 104u8, 170u8, 206u8, 5u8, 152u8, 72u8, 113u8, 171u8,
-                            129u8, 108u8, 21u8, 5u8, 182u8, 175u8, 125u8, 203u8, 207u8, 197u8,
-                            132u8, 233u8, 222u8, 88u8, 26u8, 161u8, 65u8, 74u8, 55u8, 137u8, 233u8,
+                            209u8, 216u8, 30u8, 84u8, 31u8, 248u8, 97u8, 178u8, 252u8, 195u8,
+                            186u8, 124u8, 40u8, 72u8, 87u8, 95u8, 222u8, 171u8, 149u8, 75u8, 144u8,
+                            47u8, 215u8, 193u8, 245u8, 49u8, 63u8, 143u8, 175u8, 17u8, 49u8, 202u8,
                         ],
                     )
                 }
@@ -4523,10 +4524,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            152u8, 239u8, 25u8, 222u8, 18u8, 120u8, 218u8, 145u8, 221u8, 1u8,
-                            143u8, 202u8, 22u8, 82u8, 139u8, 119u8, 219u8, 57u8, 153u8, 122u8,
-                            218u8, 16u8, 77u8, 67u8, 250u8, 45u8, 201u8, 148u8, 147u8, 11u8, 172u8,
-                            84u8,
+                            147u8, 151u8, 120u8, 25u8, 135u8, 102u8, 195u8, 145u8, 122u8, 20u8,
+                            180u8, 207u8, 50u8, 3u8, 44u8, 115u8, 117u8, 110u8, 35u8, 211u8, 177u8,
+                            133u8, 141u8, 85u8, 237u8, 80u8, 8u8, 70u8, 19u8, 236u8, 226u8, 51u8,
                         ],
                     )
                 }
@@ -4553,9 +4553,10 @@ pub mod api {
                         "batch_all",
                         types::BatchAll { calls },
                         [
-                            1u8, 176u8, 76u8, 116u8, 80u8, 234u8, 153u8, 190u8, 151u8, 16u8, 97u8,
-                            47u8, 1u8, 247u8, 158u8, 39u8, 107u8, 11u8, 58u8, 153u8, 239u8, 219u8,
-                            235u8, 21u8, 36u8, 89u8, 107u8, 17u8, 165u8, 8u8, 175u8, 193u8,
+                            177u8, 119u8, 157u8, 216u8, 127u8, 202u8, 24u8, 53u8, 15u8, 140u8,
+                            232u8, 155u8, 194u8, 227u8, 220u8, 196u8, 23u8, 148u8, 14u8, 198u8,
+                            82u8, 3u8, 147u8, 132u8, 172u8, 159u8, 64u8, 44u8, 59u8, 6u8, 56u8,
+                            136u8,
                         ],
                     )
                 }
@@ -4579,10 +4580,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            240u8, 172u8, 70u8, 254u8, 66u8, 66u8, 18u8, 180u8, 80u8, 157u8, 251u8,
-                            91u8, 227u8, 122u8, 191u8, 165u8, 196u8, 19u8, 104u8, 213u8, 181u8,
-                            215u8, 83u8, 140u8, 136u8, 135u8, 251u8, 233u8, 145u8, 66u8, 131u8,
-                            192u8,
+                            136u8, 205u8, 122u8, 233u8, 150u8, 37u8, 172u8, 211u8, 177u8, 57u8,
+                            22u8, 152u8, 26u8, 74u8, 135u8, 238u8, 163u8, 19u8, 59u8, 145u8, 138u8,
+                            6u8, 235u8, 236u8, 131u8, 93u8, 74u8, 104u8, 202u8, 111u8, 22u8, 36u8,
                         ],
                     )
                 }
@@ -4609,10 +4609,10 @@ pub mod api {
                         "force_batch",
                         types::ForceBatch { calls },
                         [
-                            100u8, 138u8, 162u8, 197u8, 226u8, 23u8, 192u8, 24u8, 89u8, 46u8,
-                            170u8, 92u8, 194u8, 171u8, 170u8, 186u8, 254u8, 204u8, 83u8, 24u8,
-                            230u8, 180u8, 199u8, 75u8, 206u8, 98u8, 236u8, 191u8, 169u8, 145u8,
-                            51u8, 171u8,
+                            196u8, 115u8, 168u8, 78u8, 176u8, 190u8, 87u8, 185u8, 189u8, 132u8,
+                            217u8, 138u8, 165u8, 11u8, 117u8, 145u8, 9u8, 243u8, 157u8, 147u8,
+                            40u8, 168u8, 106u8, 15u8, 105u8, 207u8, 165u8, 151u8, 30u8, 39u8,
+                            166u8, 162u8,
                         ],
                     )
                 }
@@ -4636,9 +4636,10 @@ pub mod api {
                             weight,
                         },
                         [
-                            80u8, 184u8, 7u8, 124u8, 58u8, 57u8, 40u8, 160u8, 21u8, 121u8, 61u8,
-                            206u8, 11u8, 201u8, 240u8, 153u8, 139u8, 225u8, 0u8, 212u8, 85u8,
-                            243u8, 233u8, 243u8, 122u8, 63u8, 60u8, 75u8, 63u8, 225u8, 237u8, 87u8,
+                            53u8, 121u8, 14u8, 105u8, 216u8, 221u8, 236u8, 89u8, 128u8, 207u8,
+                            42u8, 111u8, 150u8, 238u8, 60u8, 242u8, 255u8, 93u8, 137u8, 14u8,
+                            185u8, 239u8, 135u8, 7u8, 112u8, 165u8, 219u8, 58u8, 13u8, 246u8,
+                            133u8, 11u8,
                         ],
                     )
                 }
@@ -14961,9 +14962,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            133u8, 77u8, 168u8, 172u8, 220u8, 105u8, 230u8, 168u8, 139u8, 232u8,
-                            79u8, 16u8, 228u8, 233u8, 110u8, 135u8, 143u8, 1u8, 217u8, 44u8, 215u8,
-                            179u8, 73u8, 165u8, 9u8, 216u8, 10u8, 65u8, 151u8, 198u8, 187u8, 72u8,
+                            224u8, 53u8, 173u8, 45u8, 45u8, 218u8, 139u8, 246u8, 252u8, 153u8,
+                            204u8, 253u8, 178u8, 44u8, 199u8, 245u8, 49u8, 208u8, 85u8, 86u8, 59u8,
+                            16u8, 72u8, 13u8, 247u8, 180u8, 138u8, 105u8, 94u8, 86u8, 0u8, 45u8,
                         ],
                     )
                 }
@@ -14986,9 +14987,9 @@ pub mod api {
                             weight,
                         },
                         [
-                            219u8, 62u8, 153u8, 124u8, 75u8, 217u8, 48u8, 115u8, 90u8, 104u8,
-                            115u8, 186u8, 35u8, 144u8, 93u8, 146u8, 23u8, 11u8, 100u8, 92u8, 150u8,
-                            245u8, 147u8, 229u8, 32u8, 0u8, 226u8, 188u8, 69u8, 201u8, 202u8, 35u8,
+                            36u8, 18u8, 243u8, 6u8, 12u8, 199u8, 117u8, 51u8, 200u8, 170u8, 152u8,
+                            153u8, 251u8, 200u8, 242u8, 248u8, 25u8, 116u8, 109u8, 83u8, 157u8,
+                            183u8, 55u8, 61u8, 79u8, 23u8, 44u8, 137u8, 95u8, 116u8, 147u8, 207u8,
                         ],
                     )
                 }
@@ -15028,9 +15029,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            122u8, 141u8, 31u8, 17u8, 42u8, 116u8, 62u8, 208u8, 67u8, 79u8, 129u8,
-                            93u8, 44u8, 217u8, 237u8, 144u8, 5u8, 9u8, 78u8, 176u8, 6u8, 102u8,
-                            101u8, 223u8, 250u8, 184u8, 150u8, 238u8, 80u8, 123u8, 209u8, 57u8,
+                            76u8, 75u8, 145u8, 11u8, 70u8, 27u8, 0u8, 230u8, 211u8, 122u8, 68u8,
+                            105u8, 138u8, 96u8, 220u8, 10u8, 21u8, 72u8, 120u8, 145u8, 114u8,
+                            149u8, 246u8, 79u8, 49u8, 202u8, 249u8, 182u8, 113u8, 41u8, 89u8, 57u8,
                         ],
                     )
                 }
@@ -16268,10 +16269,9 @@ pub mod api {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            61u8, 144u8, 130u8, 174u8, 162u8, 228u8, 75u8, 165u8, 160u8, 48u8,
-                            141u8, 228u8, 111u8, 215u8, 40u8, 151u8, 225u8, 242u8, 191u8, 197u8,
-                            91u8, 56u8, 244u8, 227u8, 184u8, 214u8, 184u8, 163u8, 176u8, 79u8,
-                            193u8, 141u8,
+                            140u8, 141u8, 54u8, 157u8, 223u8, 76u8, 227u8, 30u8, 244u8, 24u8, 66u8,
+                            34u8, 141u8, 202u8, 37u8, 100u8, 173u8, 148u8, 56u8, 68u8, 142u8,
+                            174u8, 91u8, 252u8, 27u8, 8u8, 219u8, 9u8, 214u8, 57u8, 21u8, 75u8,
                         ],
                     )
                 }
@@ -16334,10 +16334,9 @@ pub mod api {
                             max_weight,
                         },
                         [
-                            172u8, 179u8, 215u8, 224u8, 175u8, 201u8, 190u8, 30u8, 200u8, 5u8,
-                            19u8, 187u8, 200u8, 157u8, 140u8, 214u8, 108u8, 133u8, 196u8, 66u8,
-                            125u8, 228u8, 56u8, 45u8, 79u8, 214u8, 14u8, 210u8, 94u8, 206u8, 117u8,
-                            108u8,
+                            214u8, 211u8, 126u8, 42u8, 170u8, 117u8, 25u8, 117u8, 107u8, 196u8,
+                            74u8, 118u8, 26u8, 11u8, 38u8, 158u8, 50u8, 71u8, 61u8, 251u8, 250u8,
+                            152u8, 167u8, 61u8, 191u8, 103u8, 125u8, 215u8, 69u8, 5u8, 166u8, 37u8,
                         ],
                     )
                 }
@@ -18249,7 +18248,18 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Create table from a provided list with identifiers and DDLs"]
+                #[doc = "Create tables from the given `UpdateTable` definitions."]
+                #[doc = ""]
+                #[doc = "Using `CommitmentCreationCmd::FromSnapshot` is deprecated."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::SchemaUpdated`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires either.."]
+                #[doc = "- `PalletTablesPermission::EditSchema`"]
+                #[doc = "- the table to be public and its schema to be account-associated, in which case the"]
+                #[doc = "extrinsic costs an extra 20 SxT per table."]
                 pub struct CreateTables {
                     pub tables: create_tables::Tables,
                 }
@@ -18278,7 +18288,13 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Create tables with a known commit and snapshot url from which data can be loaded"]
+                #[doc = "Create tables with a known commitment and snapshot url from which data can be loaded."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::TablesCreatedWithCommitments`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `PalletTablesPermission::EditSchema`."]
                 pub struct CreateTablesWithSnapshotAndCommitment {
                     pub source_and_mode: create_tables_with_snapshot_and_commitment::SourceAndMode,
                     pub tables: create_tables_with_snapshot_and_commitment::Tables,
@@ -18309,7 +18325,12 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Clear schemas and tables from chain state for all namespaces and identifiers"]
+                #[doc = "Deprecated."]
+                #[doc = ""]
+                #[doc = "Clear schemas and tables from chain state."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires root."]
                 pub struct ClearTables;
                 impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for ClearTables {
                     const PALLET: &'static str = "Tables";
@@ -18330,8 +18351,16 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Used to create a new namespace/schema on chain. Stores the associated UUID and emits"]
-                #[doc = "an event containing the CREATE statement"]
+                #[doc = "Create a new schema on chain."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::NamespaceCreated`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires either.."]
+                #[doc = "- `TablesPalletPermission::EditSchema`"]
+                #[doc = "- the schema to be public and its name to be account-associated, in which case the"]
+                #[doc = "extrinsic costs an extra 20 SxT"]
                 pub struct CreateNamespace {
                     pub schema_name: create_namespace::SchemaName,
                     pub version: create_namespace::Version,
@@ -18372,7 +18401,13 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Drop a single table"]
+                #[doc = "Drop a single table."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::TableDropped`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `TablesPalletPermission::EditSchema`."]
                 pub struct DropTable {
                     pub table_type: drop_table::TableType,
                     pub ident: drop_table::Ident,
@@ -18403,7 +18438,12 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "TODO remove this function"]
+                #[doc = "Deprecated."]
+                #[doc = ""]
+                #[doc = "Removes the commitments for a given table."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires root."]
                 pub struct DropInvalidCommits {
                     pub ident: drop_invalid_commits::Ident,
                 }
@@ -18430,7 +18470,13 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Update the UUID for the specificed namespace and version to the provided UUID"]
+                #[doc = "Update the UUID for the specificed schema and version to the provided UUID."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::NamespaceUuidUpdated`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Required `TablesPalletPermission::EditUuid`."]
                 pub struct UpdateNamespaceUuid {
                     pub namespace: update_namespace_uuid::Namespace,
                     pub version: update_namespace_uuid::Version,
@@ -18466,7 +18512,13 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Update the UUID for the specified table and version to the provided UUID"]
+                #[doc = "Update the UUID for the specified table and version to the provided UUID."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::TableUuidUpdated`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Required `TablesPalletPermission::EditUuid`."]
                 pub struct UpdateTableUuid {
                     pub table: update_table_uuid::Table,
                     pub version: update_table_uuid::Version,
@@ -18484,10 +18536,94 @@ pub mod api {
                     const PALLET: &'static str = "Tables";
                     const CALL: &'static str = "update_table_uuid";
                 }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Update the insert quorum size of a particular table."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::QuorumUpdated`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `TablesPalletPermission::EditSchema`."]
+                pub struct UpdateTableQuorum {
+                    pub table: update_table_quorum::Table,
+                    pub new_quorum: update_table_quorum::NewQuorum,
+                }
+                pub mod update_table_quorum {
+                    use super::runtime_types;
+                    pub type Table = runtime_types::sxt_core::tables::TableIdentifier;
+                    pub type NewQuorum = runtime_types::sxt_core::tables::InsertQuorumSize;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for UpdateTableQuorum {
+                    const PALLET: &'static str = "Tables";
+                    const CALL: &'static str = "update_table_quorum";
+                }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[codec(dumb_trait_bound)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                #[doc = "Update the insert quorum size for all tables in the given schema."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::QuorumUpdated` once per table."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `TablesPalletPermission::EditSchema`."]
+                pub struct UpdateSchemaQuorum {
+                    pub schema_name: update_schema_quorum::SchemaName,
+                    pub new_quorum: update_schema_quorum::NewQuorum,
+                }
+                pub mod update_schema_quorum {
+                    use super::runtime_types;
+                    pub type SchemaName =
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >;
+                    pub type NewQuorum = runtime_types::sxt_core::tables::InsertQuorumSize;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for UpdateSchemaQuorum {
+                    const PALLET: &'static str = "Tables";
+                    const CALL: &'static str = "update_schema_quorum";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
-                #[doc = "Create table from a provided list with identifiers and DDLs"]
+                #[doc = "Create tables from the given `UpdateTable` definitions."]
+                #[doc = ""]
+                #[doc = "Using `CommitmentCreationCmd::FromSnapshot` is deprecated."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::SchemaUpdated`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires either.."]
+                #[doc = "- `PalletTablesPermission::EditSchema`"]
+                #[doc = "- the table to be public and its schema to be account-associated, in which case the"]
+                #[doc = "extrinsic costs an extra 20 SxT per table."]
                 pub fn create_tables(
                     &self,
                     tables: types::create_tables::Tables,
@@ -18504,7 +18640,13 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "Create tables with a known commit and snapshot url from which data can be loaded"]
+                #[doc = "Create tables with a known commitment and snapshot url from which data can be loaded."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::TablesCreatedWithCommitments`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `PalletTablesPermission::EditSchema`."]
                 pub fn create_tables_with_snapshot_and_commitment(
                     &self,
                     source_and_mode : types :: create_tables_with_snapshot_and_commitment :: SourceAndMode,
@@ -18527,7 +18669,12 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "Clear schemas and tables from chain state for all namespaces and identifiers"]
+                #[doc = "Deprecated."]
+                #[doc = ""]
+                #[doc = "Clear schemas and tables from chain state."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires root."]
                 pub fn clear_tables(
                     &self,
                 ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::ClearTables>
@@ -18543,8 +18690,16 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "Used to create a new namespace/schema on chain. Stores the associated UUID and emits"]
-                #[doc = "an event containing the CREATE statement"]
+                #[doc = "Create a new schema on chain."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::NamespaceCreated`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires either.."]
+                #[doc = "- `TablesPalletPermission::EditSchema`"]
+                #[doc = "- the schema to be public and its name to be account-associated, in which case the"]
+                #[doc = "extrinsic costs an extra 20 SxT"]
                 pub fn create_namespace(
                     &self,
                     schema_name: types::create_namespace::SchemaName,
@@ -18572,7 +18727,13 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "Drop a single table"]
+                #[doc = "Drop a single table."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::TableDropped`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `TablesPalletPermission::EditSchema`."]
                 pub fn drop_table(
                     &self,
                     table_type: types::drop_table::TableType,
@@ -18595,7 +18756,12 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "TODO remove this function"]
+                #[doc = "Deprecated."]
+                #[doc = ""]
+                #[doc = "Removes the commitments for a given table."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires root."]
                 pub fn drop_invalid_commits(
                     &self,
                     ident: types::drop_invalid_commits::Ident,
@@ -18612,7 +18778,13 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "Update the UUID for the specificed namespace and version to the provided UUID"]
+                #[doc = "Update the UUID for the specificed schema and version to the provided UUID."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::NamespaceUuidUpdated`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Required `TablesPalletPermission::EditUuid`."]
                 pub fn update_namespace_uuid(
                     &self,
                     namespace: types::update_namespace_uuid::Namespace,
@@ -18635,7 +18807,13 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "Update the UUID for the specified table and version to the provided UUID"]
+                #[doc = "Update the UUID for the specified table and version to the provided UUID."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::TableUuidUpdated`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Required `TablesPalletPermission::EditUuid`."]
                 pub fn update_table_uuid(
                     &self,
                     table: types::update_table_uuid::Table,
@@ -18658,6 +18836,58 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = "Update the insert quorum size of a particular table."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::QuorumUpdated`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `TablesPalletPermission::EditSchema`."]
+                pub fn update_table_quorum(
+                    &self,
+                    table: types::update_table_quorum::Table,
+                    new_quorum: types::update_table_quorum::NewQuorum,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::UpdateTableQuorum>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Tables",
+                        "update_table_quorum",
+                        types::UpdateTableQuorum { table, new_quorum },
+                        [
+                            175u8, 124u8, 193u8, 27u8, 2u8, 61u8, 31u8, 141u8, 171u8, 213u8, 8u8,
+                            125u8, 36u8, 132u8, 77u8, 231u8, 181u8, 129u8, 139u8, 163u8, 97u8,
+                            73u8, 180u8, 80u8, 155u8, 159u8, 29u8, 151u8, 248u8, 13u8, 248u8,
+                            124u8,
+                        ],
+                    )
+                }
+                #[doc = "Update the insert quorum size for all tables in the given schema."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::QuorumUpdated` once per table."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `TablesPalletPermission::EditSchema`."]
+                pub fn update_schema_quorum(
+                    &self,
+                    schema_name: types::update_schema_quorum::SchemaName,
+                    new_quorum: types::update_schema_quorum::NewQuorum,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::UpdateSchemaQuorum>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Tables",
+                        "update_schema_quorum",
+                        types::UpdateSchemaQuorum {
+                            schema_name,
+                            new_quorum,
+                        },
+                        [
+                            167u8, 40u8, 6u8, 16u8, 127u8, 166u8, 9u8, 205u8, 245u8, 111u8, 7u8,
+                            147u8, 206u8, 28u8, 7u8, 27u8, 59u8, 72u8, 227u8, 18u8, 61u8, 152u8,
+                            128u8, 136u8, 19u8, 158u8, 148u8, 112u8, 147u8, 193u8, 155u8, 137u8,
+                        ],
+                    )
+                }
             }
         }
         #[doc = "The `Event` enum of this pallet"]
@@ -18675,7 +18905,7 @@ pub mod api {
             #[codec(dumb_trait_bound)]
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            #[doc = "The namespace for a schema has been created"]
+            #[doc = "A schema has been created."]
             pub struct NamespaceCreated {
                 pub create_schema: namespace_created::CreateSchema,
                 pub version: namespace_created::Version,
@@ -18711,7 +18941,7 @@ pub mod api {
             #[codec(dumb_trait_bound)]
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            #[doc = "The UUID for a given namespace has been updated"]
+            #[doc = "The UUID for a given schema has been updated."]
             pub struct NamespaceUuidUpdated {
                 pub old_uuid: namespace_uuid_updated::OldUuid,
                 pub new_uuid: namespace_uuid_updated::NewUuid,
@@ -18746,7 +18976,7 @@ pub mod api {
             #[codec(dumb_trait_bound)]
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            #[doc = "The UUID for a given table has been updated"]
+            #[doc = "The UUID for a given table has been updated."]
             pub struct TableUuidUpdated {
                 pub old_uuid: table_uuid_updated::OldUuid,
                 pub new_uuid: table_uuid_updated::NewUuid,
@@ -18779,7 +19009,7 @@ pub mod api {
             #[codec(dumb_trait_bound)]
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            #[doc = "The schema for a table has been updated"]
+            #[doc = "Table definitions have been updated."]
             pub struct SchemaUpdated(pub schema_updated::Field0, pub schema_updated::Field1);
             pub mod schema_updated {
                 use super::runtime_types;
@@ -18831,7 +19061,7 @@ pub mod api {
             #[codec(dumb_trait_bound)]
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            #[doc = "A table has been successfully dropped"]
+            #[doc = "A table has been successfully dropped."]
             pub struct TableDropped(
                 pub table_dropped::Field0,
                 pub table_dropped::Field1,
@@ -18849,6 +19079,34 @@ pub mod api {
             impl ::subxt::ext::subxt_core::events::StaticEvent for TableDropped {
                 const PALLET: &'static str = "Tables";
                 const EVENT: &'static str = "TableDropped";
+            }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "A table's insert quorum size has been updated."]
+            pub struct QuorumUpdated {
+                pub table: quorum_updated::Table,
+                pub old_quorum: quorum_updated::OldQuorum,
+                pub new_quorum: quorum_updated::NewQuorum,
+            }
+            pub mod quorum_updated {
+                use super::runtime_types;
+                pub type Table = runtime_types::sxt_core::tables::TableIdentifier;
+                pub type OldQuorum =
+                    ::core::option::Option<runtime_types::sxt_core::tables::InsertQuorumSize>;
+                pub type NewQuorum = runtime_types::sxt_core::tables::InsertQuorumSize;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for QuorumUpdated {
+                const PALLET: &'static str = "Tables";
+                const EVENT: &'static str = "QuorumUpdated";
             }
         }
         pub mod storage {
@@ -18931,7 +19189,7 @@ pub mod api {
             }
             pub struct StorageApi;
             impl StorageApi {
-                #[doc = " A Map of Column UUIDs by Table Identifier and Version"]
+                #[doc = " Storage map of Column UUIDs by `TableIdentifier` and Version."]
                 pub fn column_versions_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -18952,7 +19210,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " A Map of Column UUIDs by Table Identifier and Version"]
+                #[doc = " Storage map of Column UUIDs by `TableIdentifier` and Version."]
                 pub fn column_versions_iter1(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::column_versions::Param0>,
@@ -18978,7 +19236,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " A Map of Column UUIDs by Table Identifier and Version"]
+                #[doc = " Storage map of Column UUIDs by `TableIdentifier` and Version."]
                 pub fn column_versions(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::column_versions::Param0>,
@@ -19015,7 +19273,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " A Map of Namespace/Schema UUID by Namespace and Version"]
+                #[doc = " Storage map of Schema UUID by Schema and Version."]
                 pub fn namespace_versions_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -19037,7 +19295,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " A Map of Namespace/Schema UUID by Namespace and Version"]
+                #[doc = " Storage map of Schema UUID by Schema and Version."]
                 pub fn namespace_versions_iter1(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::namespace_versions::Param0>,
@@ -19064,7 +19322,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " A Map of Namespace/Schema UUID by Namespace and Version"]
+                #[doc = " Storage map of Schema UUID by Schema and Version."]
                 pub fn namespace_versions(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::namespace_versions::Param0>,
@@ -19102,7 +19360,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " A Map of Table UUID by Table Identifier and Version"]
+                #[doc = " Storage map of Table UUID by `TableIdentifier` and Version."]
                 pub fn table_versions_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -19124,7 +19382,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " A Map of Table UUID by Table Identifier and Version"]
+                #[doc = " Storage map of Table UUID by `TableIdentifier` and Version."]
                 pub fn table_versions_iter1(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::table_versions::Param0>,
@@ -19151,7 +19409,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " A Map of Table UUID by Table Identifier and Version"]
+                #[doc = " Storage map of Table UUID by `TableIdentifier` and Version."]
                 pub fn table_versions(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::table_versions::Param0>,
@@ -19189,7 +19447,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " Map of TableTypes to Identifiers"]
+                #[doc = " Storage map of `TableType`s to the `TableIdentifier`s of all tables of that type."]
                 pub fn identifiers_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -19211,7 +19469,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " Map of TableTypes to Identifiers"]
+                #[doc = " Storage map of `TableType`s to the `TableIdentifier`s of all tables of that type."]
                 pub fn identifiers(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::identifiers::Param0>,
@@ -19238,6 +19496,7 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of Schema and Table names to their DDL statement."]
                 pub fn schemas_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -19258,6 +19517,7 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of Schema and Table names to their DDL statement."]
                 pub fn schemas_iter1(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::schemas::Param0>,
@@ -19283,6 +19543,7 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of Schema and Table names to their DDL statement."]
                 pub fn schemas(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::schemas::Param0>,
@@ -19319,6 +19580,8 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of `TableIdentifier`s to their original `SnapshotUrl`, if they were created"]
+                #[doc = " from snapshot."]
                 pub fn snapshots_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -19339,6 +19602,8 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of `TableIdentifier`s to their original `SnapshotUrl`, if they were created"]
+                #[doc = " from snapshot."]
                 pub fn snapshots(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::snapshots::Param0>,
@@ -19364,6 +19629,7 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of `TableIdentifier`s to their `InsertQuorumSize`."]
                 pub fn table_insert_quorums_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -19385,6 +19651,7 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of `TableIdentifier`s to their `InsertQuorumSize`."]
                 pub fn table_insert_quorums(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::table_insert_quorums::Param0>,
@@ -19411,6 +19678,7 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of `TableIdentifier`s to their `Source`."]
                 pub fn table_sources_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -19432,6 +19700,7 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of `TableIdentifier`s to their `Source`."]
                 pub fn table_sources(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::table_sources::Param0>,
@@ -19458,7 +19727,8 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " Maps a table identifier to the account that created it."]
+                #[doc = " Storage map of `TableIdentifier`s to the `AccountId`s that created them."]
+                #[doc = ""]
                 #[doc = " Only used for community tables."]
                 pub fn table_owners_iter(
                     &self,
@@ -19480,7 +19750,8 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " Maps a table identifier to the account that created it."]
+                #[doc = " Storage map of `TableIdentifier`s to the `AccountId`s that created them."]
+                #[doc = ""]
                 #[doc = " Only used for community tables."]
                 pub fn table_owners(
                     &self,
@@ -27631,14 +27902,31 @@ pub mod api {
                 #[doc = "The implementation for the pallet extrinsics"]
                 pub enum Call {
                     #[codec(index = 0)]
-                    #[doc = "Create table from a provided list with identifiers and DDLs"]
+                    #[doc = "Create tables from the given `UpdateTable` definitions."]
+                    #[doc = ""]
+                    #[doc = "Using `CommitmentCreationCmd::FromSnapshot` is deprecated."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::SchemaUpdated`."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires either.."]
+                    #[doc = "- `PalletTablesPermission::EditSchema`"]
+                    #[doc = "- the table to be public and its schema to be account-associated, in which case the"]
+                    #[doc = "extrinsic costs an extra 20 SxT per table."]
                     create_tables {
                         tables: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             runtime_types::pallet_tables::pallet::UpdateTable,
                         >,
                     },
                     #[codec(index = 1)]
-                    #[doc = "Create tables with a known commit and snapshot url from which data can be loaded"]
+                    #[doc = "Create tables with a known commitment and snapshot url from which data can be loaded."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::TablesCreatedWithCommitments`."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires `PalletTablesPermission::EditSchema`."]
                     create_tables_with_snapshot_and_commitment {
                         source_and_mode: runtime_types::sxt_core::tables::SourceAndMode,
                         tables: runtime_types::bounded_collections::bounded_vec::BoundedVec<
@@ -27646,11 +27934,24 @@ pub mod api {
                         >,
                     },
                     #[codec(index = 3)]
-                    #[doc = "Clear schemas and tables from chain state for all namespaces and identifiers"]
+                    #[doc = "Deprecated."]
+                    #[doc = ""]
+                    #[doc = "Clear schemas and tables from chain state."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires root."]
                     clear_tables,
                     #[codec(index = 4)]
-                    #[doc = "Used to create a new namespace/schema on chain. Stores the associated UUID and emits"]
-                    #[doc = "an event containing the CREATE statement"]
+                    #[doc = "Create a new schema on chain."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::NamespaceCreated`."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires either.."]
+                    #[doc = "- `TablesPalletPermission::EditSchema`"]
+                    #[doc = "- the schema to be public and its name to be account-associated, in which case the"]
+                    #[doc = "extrinsic costs an extra 20 SxT"]
                     create_namespace {
                         schema_name: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             ::core::primitive::u8,
@@ -27664,19 +27965,36 @@ pub mod api {
                         source: runtime_types::sxt_core::tables::Source,
                     },
                     #[codec(index = 5)]
-                    #[doc = "Drop a single table"]
+                    #[doc = "Drop a single table."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::TableDropped`."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires `TablesPalletPermission::EditSchema`."]
                     drop_table {
                         table_type: runtime_types::sxt_core::tables::TableType,
                         ident: runtime_types::sxt_core::tables::TableIdentifier,
                         source: runtime_types::sxt_core::tables::Source,
                     },
                     #[codec(index = 6)]
-                    #[doc = "TODO remove this function"]
+                    #[doc = "Deprecated."]
+                    #[doc = ""]
+                    #[doc = "Removes the commitments for a given table."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires root."]
                     drop_invalid_commits {
                         ident: runtime_types::sxt_core::tables::TableIdentifier,
                     },
                     #[codec(index = 7)]
-                    #[doc = "Update the UUID for the specificed namespace and version to the provided UUID"]
+                    #[doc = "Update the UUID for the specificed schema and version to the provided UUID."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::NamespaceUuidUpdated`."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Required `TablesPalletPermission::EditUuid`."]
                     update_namespace_uuid {
                         namespace: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             ::core::primitive::u8,
@@ -27687,13 +28005,45 @@ pub mod api {
                         >,
                     },
                     #[codec(index = 8)]
-                    #[doc = "Update the UUID for the specified table and version to the provided UUID"]
+                    #[doc = "Update the UUID for the specified table and version to the provided UUID."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::TableUuidUpdated`."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Required `TablesPalletPermission::EditUuid`."]
                     update_table_uuid {
                         table: runtime_types::sxt_core::tables::TableIdentifier,
                         version: ::core::primitive::u16,
                         new_uuid: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             ::core::primitive::u8,
                         >,
+                    },
+                    #[codec(index = 9)]
+                    #[doc = "Update the insert quorum size of a particular table."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::QuorumUpdated`."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires `TablesPalletPermission::EditSchema`."]
+                    update_table_quorum {
+                        table: runtime_types::sxt_core::tables::TableIdentifier,
+                        new_quorum: runtime_types::sxt_core::tables::InsertQuorumSize,
+                    },
+                    #[codec(index = 10)]
+                    #[doc = "Update the insert quorum size for all tables in the given schema."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::QuorumUpdated` once per table."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires `TablesPalletPermission::EditSchema`."]
+                    update_schema_quorum {
+                        schema_name: runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >,
+                        new_quorum: runtime_types::sxt_core::tables::InsertQuorumSize,
                     },
                 }
                 #[derive(
@@ -27825,7 +28175,7 @@ pub mod api {
                 #[doc = "The `Event` enum of this pallet"]
                 pub enum Event {
                     #[codec(index = 0)]
-                    #[doc = "The namespace for a schema has been created"]
+                    #[doc = "A schema has been created."]
                     NamespaceCreated {
                         create_schema: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             ::core::primitive::u8,
@@ -27838,7 +28188,7 @@ pub mod api {
                         source: runtime_types::sxt_core::tables::Source,
                     },
                     #[codec(index = 1)]
-                    #[doc = "The UUID for a given namespace has been updated"]
+                    #[doc = "The UUID for a given schema has been updated."]
                     NamespaceUuidUpdated {
                         old_uuid: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             ::core::primitive::u8,
@@ -27852,7 +28202,7 @@ pub mod api {
                         >,
                     },
                     #[codec(index = 2)]
-                    #[doc = "The UUID for a given table has been updated"]
+                    #[doc = "The UUID for a given table has been updated."]
                     TableUuidUpdated {
                         old_uuid: runtime_types::bounded_collections::bounded_vec::BoundedVec<
                             ::core::primitive::u8,
@@ -27864,7 +28214,7 @@ pub mod api {
                         table: runtime_types::sxt_core::tables::TableIdentifier,
                     },
                     #[codec(index = 3)]
-                    #[doc = "The schema for a table has been updated"]
+                    #[doc = "Table definitions have been updated."]
                     SchemaUpdated(
                         ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>,
                         runtime_types::bounded_collections::bounded_vec::BoundedVec<
@@ -27880,13 +28230,22 @@ pub mod api {
                         >,
                     },
                     #[codec(index = 5)]
-                    #[doc = "A table has been successfully dropped"]
+                    #[doc = "A table has been successfully dropped."]
                     TableDropped(
                         ::core::option::Option<::subxt::ext::subxt_core::utils::AccountId32>,
                         runtime_types::sxt_core::tables::TableType,
                         runtime_types::sxt_core::tables::TableIdentifier,
                         runtime_types::sxt_core::tables::Source,
                     ),
+                    #[codec(index = 6)]
+                    #[doc = "A table's insert quorum size has been updated."]
+                    QuorumUpdated {
+                        table: runtime_types::sxt_core::tables::TableIdentifier,
+                        old_quorum: ::core::option::Option<
+                            runtime_types::sxt_core::tables::InsertQuorumSize,
+                        >,
+                        new_quorum: runtime_types::sxt_core::tables::InsertQuorumSize,
+                    },
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
