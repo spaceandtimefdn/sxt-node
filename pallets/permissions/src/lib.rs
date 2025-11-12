@@ -34,13 +34,13 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// TODO: add docs
+        /// The events that can be emitted by this pallet.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-        /// TODO: add docs
+        /// The weight info for calls in this pallet.
         type WeightInfo: WeightInfo;
     }
 
-    /// A map of which actions AccountIds have permission for
+    /// Storage map of `AccountId`s to their permissions.
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn permissions)]
@@ -49,7 +49,7 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// The permissions for this account id were updated
+        /// The permissions for an account were updated.
         PermissionsSet(T::AccountId, PermissionList),
     }
 
@@ -76,10 +76,15 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Set the permissions for an account id
+        /// Set the permissions for an account.
+        ///
+        /// # Events
+        /// Emits `Event::PermissionsSet`.
+        ///
+        /// # Permissions
+        /// Requires `PermissionLevel::UpdatePermissions`.
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::set_permissions())]
-        /// TODO: add docs
         pub fn set_permissions(
             origin: OriginFor<T>,
             who: T::AccountId,
@@ -93,9 +98,15 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Clear the permissions for an account.
+        ///
+        /// # Events
+        /// Emits `Event::PermissionsSet`.
+        ///
+        /// # Permissions
+        /// Requires `PermissionLevel::UpdatePermissions`.
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::clear_permissions())]
-        /// TODO: add docs
         pub fn clear_permissions(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             Self::ensure_root_or_permissioned(origin, &PermissionLevel::UpdatePermissions)?;
 
@@ -107,25 +118,13 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Adds a specified permission level to the permissions list of a proxy account.
+        /// Adds a permission to the given account, if it doesn't already exist.
         ///
-        /// This extrinsic allows a user with the `EditSpecificPermission(Permission)` level
-        /// to assign the specified `PermissionLevel` to a given proxy account (`proxy`).
+        /// # Events
+        /// Emits `Event::PermissionsSet`.
         ///
-        /// The permissions list is managed as a bounded vector to ensure storage limits are respected.
-        /// Duplicate permissions are not allowed, and an error is returned if the permission already exists
-        /// or if the permissions list is full.
-        ///
-        /// Emits:
-        /// - `Event::PermissionsSet` on successful addition of the permission.
-        ///
-        /// Errors:
-        /// - `Error::PermissionAlreadyExists` if the permission is already assigned to the proxy.
-        /// - `Error::PermissionListFull` if the proxy's permissions list has reached its capacity.
-        ///
-        /// Requirements:
-        /// - The caller must be authorized by being either the root origin or having the
-        ///   `EditSpecificPermission` level for the specified permission.        #[pallet::call_index(2)]
+        /// # Permissions
+        /// Requires `PermissionLevel::EditSpecificPermission(permission)`
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::add_proxy_permission())]
         pub fn add_proxy_permission(
