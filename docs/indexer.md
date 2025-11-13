@@ -124,7 +124,7 @@ docker run -it --rm \
     -e MODE=single-contract-sci \
     -e SCHEMA=SXT_SYSTEM_STAKING \
     -e SCI_JSON_ABI_FILENAME=/opt/abis/sxt_eth_messaging_v1.json \
-    -e SCI_TRACKED_CONTRACT_ADDRESS=0x70106a3247542069a3ee1AF4D6988a5f34b31cE1 \
+    -e SCI_TRACKED_CONTRACT_ADDRESS=0x621C793a9813f8bd91Ce2ab6Ae579566c1fefc40 \
     -e SXT_CHAIN_ADDR=wss://rpc.mainnet.sxt.network \
     -e SXT_CHAIN_DELAY=3 \
     -e RPC_ENDPOINT=${YOUR_RPC_ENDPOINT?} \

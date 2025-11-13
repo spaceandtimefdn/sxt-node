@@ -233,7 +233,7 @@ At the last block of Epoch 5 in each era, the election will take place and keys 
   [0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839](https://sepolia.etherscan.io/token/0xC768a8F94dcb61a200C9d9B2adbe50B41A80B839#writeContract) (SpaceAndTime)
 
 - **Testnet SessionKey Registration Contract**
-  [0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118](https://sepolia.etherscan.io/address/0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118#writeContract) (SXTChainMessaging)
+  [0xc2159191D147A8BBD937b0BAbbFF2e47889841AC](https://sepolia.etherscan.io/address/0xc2159191D147A8BBD937b0BAbbFF2e47889841AC#writeContract) (SXTChainMessaging)
 
 ---
 
@@ -297,13 +297,32 @@ You’ll receive a response like:
 ```
 
 - Copy the `result` hex string.
-- Go to SessionKey Registration Contract address in etherscan: [0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118](https://sepolia.etherscan.io/address/0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118#writeContract) (SXTChainMessaging)
+- Go to SessionKey Registration Contract address in etherscan: [0xc2159191D147A8BBD937b0BAbbFF2e47889841AC](https://sepolia.etherscan.io/address/0xc2159191D147A8BBD937b0BAbbFF2e47889841AC#writeContract) (SXTChainMessaging)
 - Paste the hex string into the `body` field of the **message transaction**.
 - This also triggers `validate()` to activate your node.
 
   ![Etherscan Register Keys Transaction](./assets/message.png)
 
+NOTE: If you registered prior to September 2025, and your session keys changed, or you need to re-register for some other reason, you may need to migrate contracts:
+
+<details>
+<summary>
+Session Key Registration Migration
+</summary>
+
+> The contract address has upgraded from `0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118` to `0xc2159191D147A8BBD937b0BAbbFF2e47889841AC`. In order to register properly, you need to sync the new contract. There are two options:
+>
+> 1. Use a new ethereum wallet for registration.
+> 2. Send several dummy messages on the new contract.
+>    - Call [`getNonce`](https://sepolia.etherscan.io/address/0x5FFDa3bd0D4aa3FC1C2CF83F34b0eF1d9D89A118#readContract#F1) on the old contract. Suppose the result is `5`.
+>    - Call [`getNonce`](https://sepolia.etherscan.io/address/0xc2159191D147A8BBD937b0BAbbFF2e47889841AC#readContract#F1) on the new contract. Suppose the result is `1`.
+>    - Take the difference between these nonces. In the example, the difference would be `4`.
+>    - Call [`message`](https://sepolia.etherscan.io/address/0xc2159191D147A8BBD937b0BAbbFF2e47889841AC#writeContract#F2) on the new contract until the nonces match. In the example, it should be called 4 times. The body of the message can be anything. For simplicity, just use `0x`.
+
+</details>
+
 ---
+
 ### Converting EVM Address to SS58 Format
 
 If you need to derive the **SS58 validator address** from your Ethereum address (e.g., for nomination or validator verification), follow the steps below.
