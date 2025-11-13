@@ -89,17 +89,6 @@ pub mod pallet {
     /// This is 20 UNITS
     pub const CREATE_COST: u128 = 20 * 10u128.pow(18);
 
-    /// A wrapper type that contains all the information needed to create a table
-    /// with or without a historical commitment and associated snapshot
-    pub type UpdateTableCmd = (
-        TableIdentifier,
-        CreateStatement,
-        TableType,
-        Option<CommitmentBytes>,
-        Option<SnapshotUrl>,
-        Option<CommitmentScheme>,
-    );
-
     /// The individual information needed to create (update) a table
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct UpdateTable {
@@ -278,15 +267,6 @@ pub mod pallet {
     #[pallet::storage]
     pub type TableOwners<T: Config> =
         StorageMap<_, Blake2_128Concat, TableIdentifier, Option<T::AccountId>, ValueQuery>;
-
-    /// A table identifier, a sql statement for table creation, and an initial commitment
-    pub type CreateTableCmd = (
-        TableIdentifier,
-        CreateStatement,
-        InsertQuorumSize,
-        TableCommitmentBytesPerCommitmentScheme,
-        SnapshotUrl,
-    );
 
     /// A struct to act as a wrapper around all the information required to create a table.
     #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode, TypeInfo)]
@@ -830,28 +810,6 @@ pub mod pallet {
                 table_with_meta_columns,
                 ..
             } = pallet_commitments::Pallet::<T>::process_create_table_from_snapshot_and_initiate_commitments(create_table, commit)?;
-
-            let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
-                .map_err(|_| Error::<T>::CreateStatementParseError)?;
-
-            Snapshots::<T>::insert(ident, snapshot);
-
-            Ok(statement_with_metadata)
-        }
-
-        /// Create a new table with an empty commitment
-        pub fn insert_table_with_empty_commit(
-            ident: TableIdentifier,
-            statement: CreateStatement,
-            snapshot: SnapshotUrl,
-        ) -> Result<CreateStatement, DispatchError> {
-            let create_table = create_statement_to_sqlparser(statement)
-                .map_err(|_| Error::<T>::CreateStatementParseError)?;
-
-            let CreateTableAndCommitmentMetadata {
-                table_with_meta_columns,
-                ..
-            } = pallet_commitments::Pallet::<T>::process_create_table_and_initiate_commitments_with_dynamic_dory(create_table)?;
 
             let statement_with_metadata = sqlparser_to_create_statement(table_with_meta_columns)
                 .map_err(|_| Error::<T>::CreateStatementParseError)?;
