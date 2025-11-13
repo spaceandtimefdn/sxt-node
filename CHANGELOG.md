@@ -1,3 +1,7 @@
+## [1.44.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.0...v1.44.1) (2025-11-13)
+
+
+
 # [1.44.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.43.0...v1.44.0) (2025-11-03)
 
 
@@ -42,15 +46,6 @@
 ### Features
 
 * make restricted prefix `META_` instead of `META` ([941a6cf](https://github.com/spaceandtimefdn/sxt-node/commit/941a6cfc1ee5e9391154746ca891a26fe36cc8b0))
-
-
-
-# [1.41.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.40.1...v1.41.0) (2025-10-28)
-
-
-### Features
-
-* Increase the limit of tables per type to 2^20 ([301b213](https://github.com/spaceandtimefdn/sxt-node/commit/301b213709d94d471b9032fed8c19e6c554d56d7))
 
 
 
