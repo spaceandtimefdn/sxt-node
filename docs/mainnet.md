@@ -269,13 +269,32 @@ You’ll receive a response like:
 ```
 
 - Copy the `result` hex string.
-- Go to SessionKey Registration Contract address in etherscan: [0x70106a3247542069a3ee1AF4D6988a5f34b31cE1](https://etherscan.io/address/0x70106a3247542069a3ee1AF4D6988a5f34b31cE1#writeContract) (SXTChainMessaging)
+- Go to SessionKey Registration Contract address in etherscan: [0x621C793a9813f8bd91Ce2ab6Ae579566c1fefc40](https://etherscan.io/address/0x621C793a9813f8bd91Ce2ab6Ae579566c1fefc40#writeContract) (SXTChainMessaging)
 - Paste the hex string into the `body` field of the **message transaction**.
 - This also triggers `validate()` to activate your node.
 
   ![Etherscan Register Keys Transaction](./assets/message.png)
 
+NOTE: If you registered prior to November 2025, and you session keys changed, or you need to re-register for some other reason, you may need to migrate contracts:
+
+<details>
+<summary>
+Session Key Registration Migration
+</summary>
+
+> The contract address has upgraded from `0x70106a3247542069a3ee1AF4D6988a5f34b31cE1` to `0x621C793a9813f8bd91Ce2ab6Ae579566c1fefc40`. In order to register properly, you need to sync the new contract. There are two options:
+>
+> 1. Use a new ethereum wallet for registration.
+> 2. Send several dummy messages on the new contract.
+>    - Call [`getNonce`](https://etherscan.io/address/0x70106a3247542069a3ee1AF4D6988a5f34b31cE1#readContract#F1) on the old contract. Suppose the result is `5`.
+>    - Call [`getNonce`](https://etherscan.io/address/0x621C793a9813f8bd91Ce2ab6Ae579566c1fefc40#readContract#F1) on the new contract. Suppose the result is `1`.
+>    - Take the difference between these nonces. In the example, the difference would be `4`.
+>    - Call [`message`](https://etherscan.io/address/0x621C793a9813f8bd91Ce2ab6Ae579566c1fefc40#writeContract#F2) on the new contract until the nonces match. In the example, it should be called 4 times. The body of the message can be anything. For simplicity, just use `0x`.
+
+</details>
+
 ---
+
 ### Converting EVM Address to SS58 Format
 
 If you need to derive the **SS58 validator address** from your Ethereum address (e.g., for nomination or validator verification), follow the steps below.
