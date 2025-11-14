@@ -1,3 +1,12 @@
+## [1.44.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.2...v1.44.3) (2025-11-14)
+
+
+### Bug Fixes
+
+* mark deprecated pallet-tables calls as deprecated ([d9ce3c8](https://github.com/spaceandtimefdn/sxt-node/commit/d9ce3c82f94ce4dd0a929fcdda1a20cae7b5dcb3))
+
+
+
 ## [1.44.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.1...v1.44.2) (2025-11-13)
 
 
@@ -32,15 +41,6 @@
 ### Features
 
 * add frame weight template ([661467c](https://github.com/spaceandtimefdn/sxt-node/commit/661467c20221bc8cec9a7a883eac07f993de80f1))
-
-
-
-## [1.42.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.42.0...v1.42.1) (2025-11-01)
-
-
-### Bug Fixes
-
-* enforce max tables per schema ([a820477](https://github.com/spaceandtimefdn/sxt-node/commit/a820477a6549016ec2748ce75ba430f2010334e2))
 
 
 
