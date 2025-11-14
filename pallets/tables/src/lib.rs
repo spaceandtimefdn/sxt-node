@@ -424,6 +424,8 @@ pub mod pallet {
 
         /// Clear schemas and tables from chain state for all namespaces and identifiers
         #[pallet::call_index(3)]
+        #[deprecated]
+        #[allow(deprecated)]
         #[pallet::weight(<T as Config>::WeightInfo::clear_tables())]
         pub fn clear_tables(origin: OriginFor<T>) -> DispatchResult {
             // Only sudo can call this
@@ -564,6 +566,8 @@ pub mod pallet {
 
         /// TODO remove this function
         #[pallet::call_index(6)]
+        #[deprecated]
+        #[allow(deprecated)]
         #[pallet::weight(<T as Config>::WeightInfo::drop_invalid_commits())]
         pub fn drop_invalid_commits(
             origin: OriginFor<T>,
