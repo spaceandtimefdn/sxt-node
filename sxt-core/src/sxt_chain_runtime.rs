@@ -19805,8 +19805,31 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "This extrinsic provides a transaction that indexers will use to submit"]
-                #[doc = "data they've indexed."]
+                #[doc = "Submit an IPC-formatted record batch for a given table."]
+                #[doc = ""]
+                #[doc = "Submissions go through a quorum-finding process before actually resulting in a table"]
+                #[doc = "insert. The quorum size required is defined by the table in the tables-pallet. For"]
+                #[doc = "public tables, this quorum size is 0 by default, in which case submissions reach quorum"]
+                #[doc = "immediately."]
+                #[doc = ""]
+                #[doc = "If the table is a system table, additional chain state transitions may be performed"]
+                #[doc = "once quorum is reached."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits.."]
+                #[doc = "- `Event::DataSubmitted`"]
+                #[doc = "- `Event::QuorumReached`"]
+                #[doc = "- `Event::QuorumEmptyBlock`"]
+                #[doc = "- `Event::SystemTableUpdate`"]
+                #[doc = "- `Event::SystemTableError`"]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires either.."]
+                #[doc = "- `PalletIndexingPermissions::SubmitDataForPublicQuorum` for tables with a public"]
+                #[doc = "quorum size."]
+                #[doc = "- `PalletIndexingPermissions::SubmitDataForPrivilegedQuorum(table)` for tables with a"]
+                #[doc = "privileged quorum size."]
+                #[doc = "- the table to be public-permissionless"]
                 pub struct SubmitData {
                     pub table: submit_data::Table,
                     pub batch_id: submit_data::BatchId,
@@ -19841,12 +19864,33 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Submit a new data batch with an associated block number."]
+                #[doc = "Submit an IPC-formatted record batch for a given table with block number metadata."]
                 #[doc = ""]
-                #[doc = "This extrinsic is used by indexers (e.g., Garfield, Gateway) to submit a chunk of indexed data"]
-                #[doc = "to a given table. It includes an explicit `block_number` to represent the highest block covered"]
-                #[doc = "by this batch. The submission goes through the quorum process (public or privileged) and is"]
-                #[doc = "finalized only if quorum is reached."]
+                #[doc = "The block number is stored to assist coordination among decentralized submitters."]
+                #[doc = ""]
+                #[doc = "Submissions go through a quorum-finding process before actually resulting in a table"]
+                #[doc = "insert. The quorum size required is defined by the table in the tables-pallet. For"]
+                #[doc = "public tables, this quorum size is 0 by default, in which case submissions reach quorum"]
+                #[doc = "immediately."]
+                #[doc = ""]
+                #[doc = "If the table is a system table, additional chain state transitions may be performed"]
+                #[doc = "once quorum is reached."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits.."]
+                #[doc = "- `Event::DataSubmitted`"]
+                #[doc = "- `Event::QuorumReached`"]
+                #[doc = "- `Event::QuorumEmptyBlock`"]
+                #[doc = "- `Event::SystemTableUpdate`"]
+                #[doc = "- `Event::SystemTableError`"]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires either.."]
+                #[doc = "- `PalletIndexingPermissions::SubmitDataForPublicQuorum` for tables with a public"]
+                #[doc = "quorum size."]
+                #[doc = "- `PalletIndexingPermissions::SubmitDataForPrivilegedQuorum(table)` for tables with a"]
+                #[doc = "privileged quorum size."]
+                #[doc = "- the table to be public-permissionless"]
                 pub struct SubmitBlockchainData {
                     pub table: submit_blockchain_data::Table,
                     pub batch_id: submit_blockchain_data::BatchId,
@@ -19871,8 +19915,31 @@ pub mod api {
             }
             pub struct TransactionApi;
             impl TransactionApi {
-                #[doc = "This extrinsic provides a transaction that indexers will use to submit"]
-                #[doc = "data they've indexed."]
+                #[doc = "Submit an IPC-formatted record batch for a given table."]
+                #[doc = ""]
+                #[doc = "Submissions go through a quorum-finding process before actually resulting in a table"]
+                #[doc = "insert. The quorum size required is defined by the table in the tables-pallet. For"]
+                #[doc = "public tables, this quorum size is 0 by default, in which case submissions reach quorum"]
+                #[doc = "immediately."]
+                #[doc = ""]
+                #[doc = "If the table is a system table, additional chain state transitions may be performed"]
+                #[doc = "once quorum is reached."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits.."]
+                #[doc = "- `Event::DataSubmitted`"]
+                #[doc = "- `Event::QuorumReached`"]
+                #[doc = "- `Event::QuorumEmptyBlock`"]
+                #[doc = "- `Event::SystemTableUpdate`"]
+                #[doc = "- `Event::SystemTableError`"]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires either.."]
+                #[doc = "- `PalletIndexingPermissions::SubmitDataForPublicQuorum` for tables with a public"]
+                #[doc = "quorum size."]
+                #[doc = "- `PalletIndexingPermissions::SubmitDataForPrivilegedQuorum(table)` for tables with a"]
+                #[doc = "privileged quorum size."]
+                #[doc = "- the table to be public-permissionless"]
                 pub fn submit_data(
                     &self,
                     table: types::submit_data::Table,
@@ -19895,12 +19962,33 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "Submit a new data batch with an associated block number."]
+                #[doc = "Submit an IPC-formatted record batch for a given table with block number metadata."]
                 #[doc = ""]
-                #[doc = "This extrinsic is used by indexers (e.g., Garfield, Gateway) to submit a chunk of indexed data"]
-                #[doc = "to a given table. It includes an explicit `block_number` to represent the highest block covered"]
-                #[doc = "by this batch. The submission goes through the quorum process (public or privileged) and is"]
-                #[doc = "finalized only if quorum is reached."]
+                #[doc = "The block number is stored to assist coordination among decentralized submitters."]
+                #[doc = ""]
+                #[doc = "Submissions go through a quorum-finding process before actually resulting in a table"]
+                #[doc = "insert. The quorum size required is defined by the table in the tables-pallet. For"]
+                #[doc = "public tables, this quorum size is 0 by default, in which case submissions reach quorum"]
+                #[doc = "immediately."]
+                #[doc = ""]
+                #[doc = "If the table is a system table, additional chain state transitions may be performed"]
+                #[doc = "once quorum is reached."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits.."]
+                #[doc = "- `Event::DataSubmitted`"]
+                #[doc = "- `Event::QuorumReached`"]
+                #[doc = "- `Event::QuorumEmptyBlock`"]
+                #[doc = "- `Event::SystemTableUpdate`"]
+                #[doc = "- `Event::SystemTableError`"]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires either.."]
+                #[doc = "- `PalletIndexingPermissions::SubmitDataForPublicQuorum` for tables with a public"]
+                #[doc = "quorum size."]
+                #[doc = "- `PalletIndexingPermissions::SubmitDataForPrivilegedQuorum(table)` for tables with a"]
+                #[doc = "privileged quorum size."]
+                #[doc = "- the table to be public-permissionless"]
                 pub fn submit_blockchain_data(
                     &self,
                     table: types::submit_blockchain_data::Table,
@@ -20001,8 +20089,8 @@ pub mod api {
             #[codec(dumb_trait_bound)]
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            #[doc = "Emitted when a system meta table should insert new rows due to some on-chain"]
-            #[doc = "action"]
+            #[doc = "Emitted when an insert for a system table has reached quorum, potentially causing"]
+            #[doc = "further on-chain actions per row."]
             pub struct SystemTableUpdate {
                 pub table: system_table_update::Table,
                 pub data: system_table_update::Data,
@@ -20029,8 +20117,7 @@ pub mod api {
             #[codec(dumb_trait_bound)]
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            #[doc = "Emitted any time there's an error while processing a system event"]
-            #[doc = "This message can then be handled offline to initiate retries or remediation"]
+            #[doc = "Emitted when the additional processing of system table inserts encounters an error."]
             pub struct SystemTableError {
                 pub table: system_table_error::Table,
                 pub error: system_table_error::Error,
@@ -20059,7 +20146,7 @@ pub mod api {
             #[codec(dumb_trait_bound)]
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            #[doc = "A quorum has been decided for any empty block"]
+            #[doc = "Quorum has been reached for an empty blockchain data insert."]
             pub struct QuorumEmptyBlock {
                 pub table: quorum_empty_block::Table,
                 pub block_number: quorum_empty_block::BlockNumber,
@@ -20116,9 +20203,7 @@ pub mod api {
             }
             pub struct StorageApi;
             impl StorageApi {
-                #[doc = " Double Map of Submissions using the batch-id as the first key and the submitter's"]
-                #[doc = " public key as the second key to hold the hash of the submitted data."]
-                #[doc = " Each submission for a given batch id will have an entry here"]
+                #[doc = " Storage map of `BatchId` and data hash to submitters that have agreed to the batch/hash."]
                 pub fn submissions_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -20139,9 +20224,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " Double Map of Submissions using the batch-id as the first key and the submitter's"]
-                #[doc = " public key as the second key to hold the hash of the submitted data."]
-                #[doc = " Each submission for a given batch id will have an entry here"]
+                #[doc = " Storage map of `BatchId` and data hash to submitters that have agreed to the batch/hash."]
                 pub fn submissions_iter1(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::submissions::Param0>,
@@ -20167,9 +20250,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " Double Map of Submissions using the batch-id as the first key and the submitter's"]
-                #[doc = " public key as the second key to hold the hash of the submitted data."]
-                #[doc = " Each submission for a given batch id will have an entry here"]
+                #[doc = " Storage map of `BatchId` and data hash to submitters that have agreed to the batch/hash."]
                 pub fn submissions(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::submissions::Param0>,
@@ -20206,6 +20287,7 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of `BatchId`s to `DataQuorum`s for batches that have reached quorum."]
                 pub fn final_data_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -20227,6 +20309,7 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storage map of `BatchId`s to `DataQuorum`s for batches that have reached quorum."]
                 pub fn final_data(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::final_data::Param0>,
@@ -20253,6 +20336,10 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storate map of `TableIdentifier`s to block numbers."]
+                #[doc = ""]
+                #[doc = " Updated during inserts if the table has a `BLOCK_NUMBER` column, or if"]
+                #[doc = " `submit_blockchain_data` is used for the insert."]
                 pub fn block_numbers_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -20274,6 +20361,10 @@ pub mod api {
                         ],
                     )
                 }
+                #[doc = " Storate map of `TableIdentifier`s to block numbers."]
+                #[doc = ""]
+                #[doc = " Updated during inserts if the table has a `BLOCK_NUMBER` column, or if"]
+                #[doc = " `submit_blockchain_data` is used for the insert."]
                 pub fn block_numbers(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::block_numbers::Param0>,
@@ -25185,8 +25276,31 @@ pub mod api {
                 #[doc = "Contains a variant per dispatchable extrinsic that this pallet has."]
                 pub enum Call {
                     #[codec(index = 0)]
-                    #[doc = "This extrinsic provides a transaction that indexers will use to submit"]
-                    #[doc = "data they've indexed."]
+                    #[doc = "Submit an IPC-formatted record batch for a given table."]
+                    #[doc = ""]
+                    #[doc = "Submissions go through a quorum-finding process before actually resulting in a table"]
+                    #[doc = "insert. The quorum size required is defined by the table in the tables-pallet. For"]
+                    #[doc = "public tables, this quorum size is 0 by default, in which case submissions reach quorum"]
+                    #[doc = "immediately."]
+                    #[doc = ""]
+                    #[doc = "If the table is a system table, additional chain state transitions may be performed"]
+                    #[doc = "once quorum is reached."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits.."]
+                    #[doc = "- `Event::DataSubmitted`"]
+                    #[doc = "- `Event::QuorumReached`"]
+                    #[doc = "- `Event::QuorumEmptyBlock`"]
+                    #[doc = "- `Event::SystemTableUpdate`"]
+                    #[doc = "- `Event::SystemTableError`"]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires either.."]
+                    #[doc = "- `PalletIndexingPermissions::SubmitDataForPublicQuorum` for tables with a public"]
+                    #[doc = "quorum size."]
+                    #[doc = "- `PalletIndexingPermissions::SubmitDataForPrivilegedQuorum(table)` for tables with a"]
+                    #[doc = "privileged quorum size."]
+                    #[doc = "- the table to be public-permissionless"]
                     submit_data {
                         table: runtime_types::sxt_core::tables::TableIdentifier,
                         batch_id: runtime_types::bounded_collections::bounded_vec::BoundedVec<
@@ -25197,12 +25311,33 @@ pub mod api {
                         >,
                     },
                     #[codec(index = 1)]
-                    #[doc = "Submit a new data batch with an associated block number."]
+                    #[doc = "Submit an IPC-formatted record batch for a given table with block number metadata."]
                     #[doc = ""]
-                    #[doc = "This extrinsic is used by indexers (e.g., Garfield, Gateway) to submit a chunk of indexed data"]
-                    #[doc = "to a given table. It includes an explicit `block_number` to represent the highest block covered"]
-                    #[doc = "by this batch. The submission goes through the quorum process (public or privileged) and is"]
-                    #[doc = "finalized only if quorum is reached."]
+                    #[doc = "The block number is stored to assist coordination among decentralized submitters."]
+                    #[doc = ""]
+                    #[doc = "Submissions go through a quorum-finding process before actually resulting in a table"]
+                    #[doc = "insert. The quorum size required is defined by the table in the tables-pallet. For"]
+                    #[doc = "public tables, this quorum size is 0 by default, in which case submissions reach quorum"]
+                    #[doc = "immediately."]
+                    #[doc = ""]
+                    #[doc = "If the table is a system table, additional chain state transitions may be performed"]
+                    #[doc = "once quorum is reached."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits.."]
+                    #[doc = "- `Event::DataSubmitted`"]
+                    #[doc = "- `Event::QuorumReached`"]
+                    #[doc = "- `Event::QuorumEmptyBlock`"]
+                    #[doc = "- `Event::SystemTableUpdate`"]
+                    #[doc = "- `Event::SystemTableError`"]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires either.."]
+                    #[doc = "- `PalletIndexingPermissions::SubmitDataForPublicQuorum` for tables with a public"]
+                    #[doc = "quorum size."]
+                    #[doc = "- `PalletIndexingPermissions::SubmitDataForPrivilegedQuorum(table)` for tables with a"]
+                    #[doc = "privileged quorum size."]
+                    #[doc = "- the table to be public-permissionless"]
                     submit_blockchain_data {
                         table: runtime_types::sxt_core::tables::TableIdentifier,
                         batch_id: runtime_types::bounded_collections::bounded_vec::BoundedVec<
@@ -25328,8 +25463,8 @@ pub mod api {
                         >,
                     },
                     #[codec(index = 2)]
-                    #[doc = "Emitted when a system meta table should insert new rows due to some on-chain"]
-                    #[doc = "action"]
+                    #[doc = "Emitted when an insert for a system table has reached quorum, potentially causing"]
+                    #[doc = "further on-chain actions per row."]
                     SystemTableUpdate {
                         table: runtime_types::sxt_core::tables::TableIdentifier,
                         data: runtime_types::bounded_collections::bounded_vec::BoundedVec<
@@ -25337,8 +25472,7 @@ pub mod api {
                         >,
                     },
                     #[codec(index = 3)]
-                    #[doc = "Emitted any time there's an error while processing a system event"]
-                    #[doc = "This message can then be handled offline to initiate retries or remediation"]
+                    #[doc = "Emitted when the additional processing of system table inserts encounters an error."]
                     SystemTableError {
                         table: runtime_types::sxt_core::tables::TableIdentifier,
                         error: runtime_types::sp_runtime::DispatchError,
@@ -25347,7 +25481,7 @@ pub mod api {
                         >,
                     },
                     #[codec(index = 4)]
-                    #[doc = "A quorum has been decided for any empty block"]
+                    #[doc = "Quorum has been reached for an empty blockchain data insert."]
                     QuorumEmptyBlock {
                         table: runtime_types::sxt_core::tables::TableIdentifier,
                         block_number: ::core::primitive::u64,
