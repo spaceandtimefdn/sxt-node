@@ -96,6 +96,28 @@ pub mod pallet {
 
     /// Storage map of `BatchId`s to `DataQuorum`s for batches that have reached quorum.
     #[pallet::storage]
+    #[pallet::getter(fn submissions_v1)]
+    pub type SubmissionsV1<T: Config<I>, I: 'static = ()> = StorageNMap<
+        _,
+        (
+            NMapKey<Blake2_128Concat, BatchId>,
+            NMapKey<Blake2_128Concat, QuorumScope>,
+            NMapKey<Blake2_128Concat, T::AccountId>,
+        ),
+        <T as frame_system::Config>::Hash,
+        ValueQuery,
+    >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn batch_queue_get)]
+    pub type BatchQueue<T: Config<I>, I: 'static = ()> =
+        CountedStorageMap<_, Blake2_128Concat, u64, BatchId>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn batch_queue_bottom)]
+    pub type BatchQueueBottom<T: Config<I>, I: 'static = ()> = StorageValue<_, u64>;
+
+    #[pallet::storage]
     #[pallet::getter(fn final_data)]
     pub type FinalData<T: Config<I>, I: 'static = ()> =
         StorageMap<_, Blake2_128Concat, BatchId, DataQuorum<T::AccountId, T::Hash>>;
