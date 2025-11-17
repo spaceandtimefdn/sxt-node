@@ -135,7 +135,7 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// The namespace for a schema has been created
+        /// A schema has been created.
         NamespaceCreated {
             /// The create statement for the namespace/schema
             create_schema: CreateStatement,
@@ -148,7 +148,7 @@ pub mod pallet {
             /// Source
             source: Source,
         },
-        /// The UUID for a given namespace has been updated
+        /// The UUID for a given schema has been updated.
         NamespaceUuidUpdated {
             /// The previous UUID of the namespace
             old_uuid: TableUuid,
@@ -159,7 +159,7 @@ pub mod pallet {
             /// The namespace that was updated
             namespace: TableNamespace,
         },
-        /// The UUID for a given table has been updated
+        /// The UUID for a given table has been updated.
         TableUuidUpdated {
             /// The previous UUID of the table
             old_uuid: TableUuid,
@@ -170,9 +170,8 @@ pub mod pallet {
             /// The table identifier that was updated
             table: TableIdentifier,
         },
-        /// The schema for a table has been updated
+        /// Table definitions have been updated.
         SchemaUpdated(Option<T::AccountId>, UpdateTableList),
-
         /// Tables have been created with known commitments
         TablesCreatedWithCommitments {
             /// The source and mode for the included tables (i.e. Ethereum Core)
@@ -181,10 +180,10 @@ pub mod pallet {
             table_list: CreateTableList,
         },
 
-        /// A table has been successfully dropped
+        /// A table has been successfully dropped.
         TableDropped(Option<T::AccountId>, TableType, TableIdentifier, Source),
 
-        /// A table had its quorum requirements updated
+        /// A table's insert quorum size has been updated.
         QuorumUpdated {
             /// The table that was updated
             table: TableIdentifier,
@@ -195,7 +194,7 @@ pub mod pallet {
         },
     }
 
-    /// A Map of Column UUIDs by Table Identifier and Version
+    /// Storage map of Column UUIDs by `TableIdentifier` and Version.
     #[pallet::storage]
     #[pallet::getter(fn column_versions)]
     pub type ColumnVersions<T: Config> = StorageDoubleMap<
@@ -208,7 +207,7 @@ pub mod pallet {
         ValueQuery,
     >;
 
-    /// A Map of Namespace/Schema UUID by Namespace and Version
+    /// Storage map of Schema UUID by Schema and Version.
     #[pallet::storage]
     #[pallet::getter(fn namespace_versions)]
     pub type NamespaceVersions<T: Config> = StorageDoubleMap<
@@ -221,7 +220,7 @@ pub mod pallet {
         ValueQuery,
     >;
 
-    /// A Map of Table UUID by Table Identifier and Version
+    /// Storage map of Table UUID by `TableIdentifier` and Version.
     #[pallet::storage]
     #[pallet::getter(fn table_versions)]
     pub type TableVersions<T: Config> = StorageDoubleMap<
@@ -234,12 +233,13 @@ pub mod pallet {
         ValueQuery,
     >;
 
-    /// Map of TableTypes to Identifiers
+    /// Storage map of `TableType`s to the `TableIdentifier`s of all tables of that type.
     #[pallet::storage]
     #[pallet::getter(fn identifiers)]
     pub type Identifiers<T: Config> =
         StorageMap<_, Blake2_128Concat, TableType, IdentifierList, ValueQuery>;
 
+    /// Storage map of Schema and Table names to their DDL statement.
     #[pallet::storage]
     #[pallet::getter(fn schemas)]
     pub type Schemas<T: Config> = StorageDoubleMap<
@@ -251,18 +251,23 @@ pub mod pallet {
         CreateStatement,
     >;
 
+    /// Storage map of `TableIdentifier`s to their original `SnapshotUrl`, if they were created
+    /// from snapshot.
     #[pallet::storage]
     pub type Snapshots<T: Config> = StorageMap<_, Blake2_128Concat, TableIdentifier, SnapshotUrl>;
 
+    /// Storage map of `TableIdentifier`s to their `InsertQuorumSize`.
     #[pallet::storage]
     pub type TableInsertQuorums<T: Config> =
         StorageMap<_, Blake2_128Concat, TableIdentifier, InsertQuorumSize, ValueQuery>;
 
+    /// Storage map of `TableIdentifier`s to their `Source`.
     #[pallet::storage]
     pub type TableSources<T: Config> =
         StorageMap<_, Blake2_128Concat, TableIdentifier, Source, ValueQuery>;
 
-    /// Maps a table identifier to the account that created it.
+    /// Storage map of `TableIdentifier`s to the `AccountId`s that created them.
+    ///
     /// Only used for community tables.
     #[pallet::storage]
     pub type TableOwners<T: Config> =
@@ -362,14 +367,31 @@ pub mod pallet {
     where
         T::AccountId: Ss58Codec,
     {
+        /// Create tables from the given `UpdateTable` definitions.
+        ///
+        /// Using `CommitmentCreationCmd::FromSnapshot` is deprecated.
+        ///
+        /// # Events
+        /// Emits `Event::SchemaUpdated`.
+        ///
+        /// # Permissions
+        /// Requires either..
+        /// - `PalletTablesPermission::EditSchema`
+        /// - the table to be public and its schema to be account-associated, in which case the
+        /// extrinsic costs an extra 20 SxT per table.
         #[pallet::call_index(0)]
         #[pallet::weight(create_tables_weight::<T>(tables.len()))]
-        /// Create table from a provided list with identifiers and DDLs
         pub fn create_tables(origin: OriginFor<T>, tables: UpdateTableList) -> DispatchResult {
             Self::create_tables_inner(origin, tables)
         }
 
-        /// Create tables with a known commit and snapshot url from which data can be loaded
+        /// Create tables with a known commitment and snapshot url from which data can be loaded.
+        ///
+        /// # Events
+        /// Emits `Event::TablesCreatedWithCommitments`.
+        ///
+        /// # Permissions
+        /// Requires `PalletTablesPermission::EditSchema`.
         #[pallet::call_index(1)]
         #[pallet::weight(create_tables_weight::<T>(tables.len()))]
         pub fn create_tables_with_snapshot_and_commitment(
@@ -422,7 +444,12 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Clear schemas and tables from chain state for all namespaces and identifiers
+        /// Deprecated.
+        ///
+        /// Clear schemas and tables from chain state.
+        ///
+        /// # Permissions
+        /// Requires root.
         #[pallet::call_index(3)]
         #[deprecated]
         #[allow(deprecated)]
@@ -461,8 +488,16 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Used to create a new namespace/schema on chain. Stores the associated UUID and emits
-        /// an event containing the CREATE statement
+        /// Create a new schema on chain.
+        ///
+        /// # Events
+        /// Emits `Event::NamespaceCreated`.
+        ///
+        /// # Permissions
+        /// Requires either..
+        /// - `TablesPalletPermission::EditSchema`
+        /// - the schema to be public and its name to be account-associated, in which case the
+        /// extrinsic costs an extra 20 SxT
         #[pallet::call_index(4)]
         #[pallet::weight(<T as Config>::WeightInfo::create_namespace())]
         pub fn create_namespace(
@@ -544,7 +579,13 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Drop a single table
+        /// Drop a single table.
+        ///
+        /// # Events
+        /// Emits `Event::TableDropped`.
+        ///
+        /// # Permissions
+        /// Requires `TablesPalletPermission::EditSchema`.
         #[pallet::call_index(5)]
         #[pallet::weight(<T as Config>::WeightInfo::drop_table())]
         pub fn drop_table(
@@ -564,7 +605,12 @@ pub mod pallet {
             Ok(())
         }
 
-        /// TODO remove this function
+        /// Deprecated.
+        ///
+        /// Removes the commitments for a given table.
+        ///
+        /// # Permissions
+        /// Requires root.
         #[pallet::call_index(6)]
         #[deprecated]
         #[allow(deprecated)]
@@ -580,7 +626,13 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Update the UUID for the specificed namespace and version to the provided UUID
+        /// Update the UUID for the specificed schema and version to the provided UUID.
+        ///
+        /// # Events
+        /// Emits `Event::NamespaceUuidUpdated`.
+        ///
+        /// # Permissions
+        /// Required `TablesPalletPermission::EditUuid`.
         #[pallet::call_index(7)]
         #[pallet::weight(<T as Config>::WeightInfo::update_namespace_uuid())]
         pub fn update_namespace_uuid(
@@ -607,7 +659,13 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Update the UUID for the specified table and version to the provided UUID
+        /// Update the UUID for the specified table and version to the provided UUID.
+        ///
+        /// # Events
+        /// Emits `Event::TableUuidUpdated`.
+        ///
+        /// # Permissions
+        /// Required `TablesPalletPermission::EditUuid`.
         #[pallet::call_index(8)]
         #[pallet::weight(<T as Config>::WeightInfo::update_table_uuid())]
         pub fn update_table_uuid(
@@ -644,7 +702,13 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Transaction for updating the quorum of a particular table
+        /// Update the insert quorum size of a particular table.
+        ///
+        /// # Events
+        /// Emits `Event::QuorumUpdated`.
+        ///
+        /// # Permissions
+        /// Requires `TablesPalletPermission::EditSchema`.
         #[pallet::call_index(9)]
         #[pallet::weight(<T as Config>::WeightInfo::update_table_quorum())]
         pub fn update_table_quorum(
@@ -667,7 +731,13 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Transaction for updating the quorum of all tables in the provided Schema
+        /// Update the insert quorum size for all tables in the given schema.
+        ///
+        /// # Events
+        /// Emits `Event::QuorumUpdated` once per table.
+        ///
+        /// # Permissions
+        /// Requires `TablesPalletPermission::EditSchema`.
         #[pallet::call_index(10)]
         #[pallet::weight(<T as Config>::WeightInfo::update_schema_quorum())]
         pub fn update_schema_quorum(
