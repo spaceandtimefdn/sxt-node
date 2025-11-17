@@ -17956,8 +17956,13 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Set the permissions for an account id"]
-                #[doc = "TODO: add docs"]
+                #[doc = "Set the permissions for an account."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::PermissionsSet`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `PermissionLevel::UpdatePermissions`."]
                 pub struct SetPermissions {
                     pub who: set_permissions::Who,
                     pub permissions: set_permissions::Permissions,
@@ -17989,7 +17994,13 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "TODO: add docs"]
+                #[doc = "Clear the permissions for an account."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::PermissionsSet`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `PermissionLevel::UpdatePermissions`."]
                 pub struct ClearPermissions {
                     pub who: clear_permissions::Who,
                 }
@@ -18016,25 +18027,13 @@ pub mod api {
                 #[encode_as_type(
                     crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
                 )]
-                #[doc = "Adds a specified permission level to the permissions list of a proxy account."]
+                #[doc = "Adds a permission to the given account, if it doesn't already exist."]
                 #[doc = ""]
-                #[doc = "This extrinsic allows a user with the `EditSpecificPermission(Permission)` level"]
-                #[doc = "to assign the specified `PermissionLevel` to a given proxy account (`proxy`)."]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::PermissionsSet`."]
                 #[doc = ""]
-                #[doc = "The permissions list is managed as a bounded vector to ensure storage limits are respected."]
-                #[doc = "Duplicate permissions are not allowed, and an error is returned if the permission already exists"]
-                #[doc = "or if the permissions list is full."]
-                #[doc = ""]
-                #[doc = "Emits:"]
-                #[doc = "- `Event::PermissionsSet` on successful addition of the permission."]
-                #[doc = ""]
-                #[doc = "Errors:"]
-                #[doc = "- `Error::PermissionAlreadyExists` if the permission is already assigned to the proxy."]
-                #[doc = "- `Error::PermissionListFull` if the proxy's permissions list has reached its capacity."]
-                #[doc = ""]
-                #[doc = "Requirements:"]
-                #[doc = "- The caller must be authorized by being either the root origin or having the"]
-                #[doc = "  `EditSpecificPermission` level for the specified permission.        #[pallet::call_index(2)]"]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `PermissionLevel::EditSpecificPermission(permission)`"]
                 pub struct AddProxyPermission {
                     pub proxy: add_proxy_permission::Proxy,
                     pub permission: add_proxy_permission::Permission,
@@ -18051,8 +18050,13 @@ pub mod api {
             }
             pub struct TransactionApi;
             impl TransactionApi {
-                #[doc = "Set the permissions for an account id"]
-                #[doc = "TODO: add docs"]
+                #[doc = "Set the permissions for an account."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::PermissionsSet`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `PermissionLevel::UpdatePermissions`."]
                 pub fn set_permissions(
                     &self,
                     who: types::set_permissions::Who,
@@ -18071,7 +18075,13 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "TODO: add docs"]
+                #[doc = "Clear the permissions for an account."]
+                #[doc = ""]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::PermissionsSet`."]
+                #[doc = ""]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `PermissionLevel::UpdatePermissions`."]
                 pub fn clear_permissions(
                     &self,
                     who: types::clear_permissions::Who,
@@ -18089,25 +18099,13 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = "Adds a specified permission level to the permissions list of a proxy account."]
+                #[doc = "Adds a permission to the given account, if it doesn't already exist."]
                 #[doc = ""]
-                #[doc = "This extrinsic allows a user with the `EditSpecificPermission(Permission)` level"]
-                #[doc = "to assign the specified `PermissionLevel` to a given proxy account (`proxy`)."]
+                #[doc = "# Events"]
+                #[doc = "Emits `Event::PermissionsSet`."]
                 #[doc = ""]
-                #[doc = "The permissions list is managed as a bounded vector to ensure storage limits are respected."]
-                #[doc = "Duplicate permissions are not allowed, and an error is returned if the permission already exists"]
-                #[doc = "or if the permissions list is full."]
-                #[doc = ""]
-                #[doc = "Emits:"]
-                #[doc = "- `Event::PermissionsSet` on successful addition of the permission."]
-                #[doc = ""]
-                #[doc = "Errors:"]
-                #[doc = "- `Error::PermissionAlreadyExists` if the permission is already assigned to the proxy."]
-                #[doc = "- `Error::PermissionListFull` if the proxy's permissions list has reached its capacity."]
-                #[doc = ""]
-                #[doc = "Requirements:"]
-                #[doc = "- The caller must be authorized by being either the root origin or having the"]
-                #[doc = "  `EditSpecificPermission` level for the specified permission.        #[pallet::call_index(2)]"]
+                #[doc = "# Permissions"]
+                #[doc = "Requires `PermissionLevel::EditSpecificPermission(permission)`"]
                 pub fn add_proxy_permission(
                     &self,
                     proxy: types::add_proxy_permission::Proxy,
@@ -18143,7 +18141,7 @@ pub mod api {
             #[codec(dumb_trait_bound)]
             #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            #[doc = "The permissions for this account id were updated"]
+            #[doc = "The permissions for an account were updated."]
             pub struct PermissionsSet(pub permissions_set::Field0, pub permissions_set::Field1);
             pub mod permissions_set {
                 use super::runtime_types;
@@ -18172,7 +18170,7 @@ pub mod api {
             }
             pub struct StorageApi;
             impl StorageApi {
-                #[doc = " A map of which actions AccountIds have permission for"]
+                #[doc = " Storage map of `AccountId`s to their permissions."]
                 pub fn permissions_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -18193,7 +18191,7 @@ pub mod api {
                         ],
                     )
                 }
-                #[doc = " A map of which actions AccountIds have permission for"]
+                #[doc = " Storage map of `AccountId`s to their permissions."]
                 pub fn permissions(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::permissions::Param0>,
@@ -26065,8 +26063,13 @@ pub mod api {
                 #[doc = "Contains a variant per dispatchable extrinsic that this pallet has."]
                 pub enum Call {
                     #[codec(index = 0)]
-                    #[doc = "Set the permissions for an account id"]
-                    #[doc = "TODO: add docs"]
+                    #[doc = "Set the permissions for an account."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::PermissionsSet`."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires `PermissionLevel::UpdatePermissions`."]
                     set_permissions {
                         who: ::subxt::ext::subxt_core::utils::AccountId32,
                         permissions: runtime_types::bounded_collections::bounded_vec::BoundedVec<
@@ -26074,30 +26077,24 @@ pub mod api {
                         >,
                     },
                     #[codec(index = 1)]
-                    #[doc = "TODO: add docs"]
+                    #[doc = "Clear the permissions for an account."]
+                    #[doc = ""]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::PermissionsSet`."]
+                    #[doc = ""]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires `PermissionLevel::UpdatePermissions`."]
                     clear_permissions {
                         who: ::subxt::ext::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 2)]
-                    #[doc = "Adds a specified permission level to the permissions list of a proxy account."]
+                    #[doc = "Adds a permission to the given account, if it doesn't already exist."]
                     #[doc = ""]
-                    #[doc = "This extrinsic allows a user with the `EditSpecificPermission(Permission)` level"]
-                    #[doc = "to assign the specified `PermissionLevel` to a given proxy account (`proxy`)."]
+                    #[doc = "# Events"]
+                    #[doc = "Emits `Event::PermissionsSet`."]
                     #[doc = ""]
-                    #[doc = "The permissions list is managed as a bounded vector to ensure storage limits are respected."]
-                    #[doc = "Duplicate permissions are not allowed, and an error is returned if the permission already exists"]
-                    #[doc = "or if the permissions list is full."]
-                    #[doc = ""]
-                    #[doc = "Emits:"]
-                    #[doc = "- `Event::PermissionsSet` on successful addition of the permission."]
-                    #[doc = ""]
-                    #[doc = "Errors:"]
-                    #[doc = "- `Error::PermissionAlreadyExists` if the permission is already assigned to the proxy."]
-                    #[doc = "- `Error::PermissionListFull` if the proxy's permissions list has reached its capacity."]
-                    #[doc = ""]
-                    #[doc = "Requirements:"]
-                    #[doc = "- The caller must be authorized by being either the root origin or having the"]
-                    #[doc = "  `EditSpecificPermission` level for the specified permission.        #[pallet::call_index(2)]"]
+                    #[doc = "# Permissions"]
+                    #[doc = "Requires `PermissionLevel::EditSpecificPermission(permission)`"]
                     add_proxy_permission {
                         proxy: ::subxt::ext::subxt_core::utils::AccountId32,
                         permission: runtime_types::sxt_core::permissions::PermissionLevel,
@@ -26157,7 +26154,7 @@ pub mod api {
                 #[doc = "The `Event` enum of this pallet"]
                 pub enum Event {
                     #[codec(index = 0)]
-                    #[doc = "The permissions for this account id were updated"]
+                    #[doc = "The permissions for an account were updated."]
                     PermissionsSet(
                         ::subxt::ext::subxt_core::utils::AccountId32,
                         runtime_types::bounded_collections::bounded_vec::BoundedVec<
