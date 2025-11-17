@@ -1,3 +1,13 @@
+## [1.44.5](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.4...v1.44.5) (2025-11-17)
+
+
+### Bug Fixes
+
+* regenerate sxt_chain_runtime pallet-permissions docs ([62c5289](https://github.com/spaceandtimefdn/sxt-node/commit/62c5289bb76ea93ebbc70268d43ccc4c886e57b1))
+* standardize documentation of pallet-permissions API ([676fefa](https://github.com/spaceandtimefdn/sxt-node/commit/676fefa0e95101687d008d8eed6342cbfde1d650))
+
+
+
 ## [1.44.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.3...v1.44.4) (2025-11-17)
 
 
@@ -23,15 +33,6 @@
 
 
 ## [1.44.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.0...v1.44.1) (2025-11-13)
-
-
-
-# [1.44.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.43.0...v1.44.0) (2025-11-03)
-
-
-### Features
-
-* adjust create table and namespace costs ([5d04c5e](https://github.com/spaceandtimefdn/sxt-node/commit/5d04c5e9c5b82d975d1d9cd0f25d73bd1dc12c62))
 
 
 
