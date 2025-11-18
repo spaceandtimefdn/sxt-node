@@ -81,9 +81,7 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
     }
 
-    /// Double Map of Submissions using the batch-id as the first key and the submitter's
-    /// public key as the second key to hold the hash of the submitted data.
-    /// Each submission for a given batch id will have an entry here
+    /// Storage map of `BatchId` and data hash to submitters that have agreed to the batch/hash.
     #[pallet::storage]
     #[pallet::getter(fn submissions)]
     pub type Submissions<T: Config<I>, I: 'static = ()> = StorageDoubleMap<
@@ -96,11 +94,16 @@ pub mod pallet {
         ValueQuery, // Allows us to receive a default instead of None
     >;
 
+    /// Storage map of `BatchId`s to `DataQuorum`s for batches that have reached quorum.
     #[pallet::storage]
     #[pallet::getter(fn final_data)]
     pub type FinalData<T: Config<I>, I: 'static = ()> =
         StorageMap<_, Blake2_128Concat, BatchId, DataQuorum<T::AccountId, T::Hash>>;
 
+    /// Storate map of `TableIdentifier`s to block numbers.
+    ///
+    /// Updated during inserts if the table has a `BLOCK_NUMBER` column, or if
+    /// `submit_blockchain_data` is used for the insert.
     #[pallet::storage]
     #[pallet::getter(fn block_numbers)]
     pub type BlockNumbers<T: Config<I>, I: 'static = ()> =
@@ -114,7 +117,7 @@ pub mod pallet {
         DataSubmitted {
             /// The account id of the submitter
             who: T::AccountId,
-            /// The submission that was sent. Only contains the hash of the original data
+            /// The submission that was sent. Only contains the hash of the original data.
             submission: DataSubmission<T::Hash>,
         },
         /// This event is emitted when a quorum is reached amongst submissions and the
@@ -125,16 +128,15 @@ pub mod pallet {
             /// The finalized raw data in postcard serialized OnChainTable bytes
             data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
         },
-        /// Emitted when a system meta table should insert new rows due to some on-chain
-        /// action
+        /// Emitted when an insert for a system table has reached quorum, potentially causing
+        /// further on-chain actions per row.
         SystemTableUpdate {
             /// The table that was updated
             table: TableIdentifier,
             /// The postcard serialized OnChainTable bytes for the system table insert
             data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
         },
-        /// Emitted any time there's an error while processing a system event
-        /// This message can then be handled offline to initiate retries or remediation
+        /// Emitted when the additional processing of system table inserts encounters an error.
         SystemTableError {
             /// The table that had an error
             table: TableIdentifier,
@@ -144,7 +146,7 @@ pub mod pallet {
             data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
         },
 
-        /// A quorum has been decided for any empty block
+        /// Quorum has been reached for an empty blockchain data insert.
         QuorumEmptyBlock {
             /// The table identifier
             table: TableIdentifier,
@@ -205,8 +207,31 @@ pub mod pallet {
         T: pallet_tables::Config,
         I: NativeApi,
     {
-        /// This extrinsic provides a transaction that indexers will use to submit
-        /// data they've indexed.
+        /// Submit an IPC-formatted record batch for a given table.
+        ///
+        /// Submissions go through a quorum-finding process before actually resulting in a table
+        /// insert. The quorum size required is defined by the table in the tables-pallet. For
+        /// public tables, this quorum size is 0 by default, in which case submissions reach quorum
+        /// immediately.
+        ///
+        /// If the table is a system table, additional chain state transitions may be performed
+        /// once quorum is reached.
+        ///
+        /// # Events
+        /// Emits..
+        /// - `Event::DataSubmitted`
+        /// - `Event::QuorumReached`
+        /// - `Event::QuorumEmptyBlock`
+        /// - `Event::SystemTableUpdate`
+        /// - `Event::SystemTableError`
+        ///
+        /// # Permissions
+        /// Requires either..
+        /// - `PalletIndexingPermissions::SubmitDataForPublicQuorum` for tables with a public
+        /// quorum size.
+        /// - `PalletIndexingPermissions::SubmitDataForPrivilegedQuorum(table)` for tables with a
+        /// privileged quorum size.
+        /// - the table to be public-permissionless
         #[pallet::call_index(0)]
         #[pallet::weight(submit_data_weight::<T, I>())]
         pub fn submit_data(
@@ -218,12 +243,33 @@ pub mod pallet {
             submit_data_inner::<T, I>(origin, table, batch_id, data, None)
         }
 
-        /// Submit a new data batch with an associated block number.
+        /// Submit an IPC-formatted record batch for a given table with block number metadata.
         ///
-        /// This extrinsic is used by indexers (e.g., Garfield, Gateway) to submit a chunk of indexed data
-        /// to a given table. It includes an explicit `block_number` to represent the highest block covered
-        /// by this batch. The submission goes through the quorum process (public or privileged) and is
-        /// finalized only if quorum is reached.
+        /// The block number is stored to assist coordination among decentralized submitters.
+        ///
+        /// Submissions go through a quorum-finding process before actually resulting in a table
+        /// insert. The quorum size required is defined by the table in the tables-pallet. For
+        /// public tables, this quorum size is 0 by default, in which case submissions reach quorum
+        /// immediately.
+        ///
+        /// If the table is a system table, additional chain state transitions may be performed
+        /// once quorum is reached.
+        ///
+        /// # Events
+        /// Emits..
+        /// - `Event::DataSubmitted`
+        /// - `Event::QuorumReached`
+        /// - `Event::QuorumEmptyBlock`
+        /// - `Event::SystemTableUpdate`
+        /// - `Event::SystemTableError`
+        ///
+        /// # Permissions
+        /// Requires either..
+        /// - `PalletIndexingPermissions::SubmitDataForPublicQuorum` for tables with a public
+        /// quorum size.
+        /// - `PalletIndexingPermissions::SubmitDataForPrivilegedQuorum(table)` for tables with a
+        /// privileged quorum size.
+        /// - the table to be public-permissionless
         #[pallet::call_index(1)]
         #[pallet::weight(submit_data_weight::<T, I>())]
         pub fn submit_blockchain_data(
