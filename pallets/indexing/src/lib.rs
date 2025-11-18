@@ -79,6 +79,15 @@ pub mod pallet {
             + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// The weight info to be used with the extrinsics provided by the pallet
         type WeightInfo: WeightInfo;
+
+        /// The maximum batches finding quorum at any given time.
+        #[pallet::constant]
+        type MaxBatchesFindingQuorum: Get<u32>;
+
+        /// The maximum batches pruned per transaction from submissions storage when it exceeds
+        /// `MaxBatchesPruned`.
+        #[pallet::constant]
+        type MaxBatchesPruned: Get<u32>;
     }
 
     /// Storage map of `BatchId` and data hash to submitters that have agreed to the batch/hash.
