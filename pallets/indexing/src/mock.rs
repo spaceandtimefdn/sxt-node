@@ -121,6 +121,8 @@ impl pallet_staking::Config for Test {
 impl pallet_indexing::pallet::Config<Api> for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Test>;
+    type MaxBatchesFindingQuorum = ConstU32<10>;
+    type MaxBatchesPruned = ConstU32<3>;
 }
 pub type BlockNumber = u64;
 
