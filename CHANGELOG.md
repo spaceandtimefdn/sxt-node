@@ -1,3 +1,13 @@
+## [1.44.6](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.5...v1.44.6) (2025-11-18)
+
+
+### Bug Fixes
+
+* regenerate sxt_chain_runtime pallet-indexing docs ([9807982](https://github.com/spaceandtimefdn/sxt-node/commit/9807982aca792c9becdf9a18755e8247dd82e6a5))
+* standardize docs of pallet-indexing ([15f6cf1](https://github.com/spaceandtimefdn/sxt-node/commit/15f6cf18f63480b8ddc611508cac4ef865591f2e))
+
+
+
 ## [1.44.5](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.4...v1.44.5) (2025-11-17)
 
 
@@ -29,10 +39,6 @@
 
 
 ## [1.44.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.1...v1.44.2) (2025-11-13)
-
-
-
-## [1.44.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.0...v1.44.1) (2025-11-13)
 
 
 
