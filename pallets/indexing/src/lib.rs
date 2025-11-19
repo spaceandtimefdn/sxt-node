@@ -120,11 +120,11 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn batch_queue_get)]
     pub type BatchQueue<T: Config<I>, I: 'static = ()> =
-        CountedStorageMap<_, Blake2_128Concat, u64, BatchId>;
+        CountedStorageMap<_, Blake2_128Concat, u32, BatchId>;
 
     #[pallet::storage]
     #[pallet::getter(fn batch_queue_bottom)]
-    pub type BatchQueueBottom<T: Config<I>, I: 'static = ()> = StorageValue<_, u64>;
+    pub type BatchQueueBottom<T: Config<I>, I: 'static = ()> = StorageValue<_, u32, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn final_data)]
