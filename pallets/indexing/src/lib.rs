@@ -37,7 +37,7 @@ pub mod pallet {
     use alloc::string::String;
     use alloc::vec::Vec;
 
-    use codec::Decode;
+    use codec::{Decode, EncodeLike};
     use commitment_sql::InsertAndCommitmentMetadata;
     use frame_support::dispatch::RawOrigin;
     use frame_support::pallet_prelude::*;
@@ -655,5 +655,53 @@ pub mod pallet {
             Error::<T, I>::InvalidTable
         );
         Ok(())
+    }
+
+    fn remove_batch_id_from_submissions<T, I>(batch_id: impl EncodeLike<BatchId>)
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let _ = SubmissionsV1::<T, I>::clear_prefix(
+            (batch_id,),
+            // this try_into should never fail because usize = u32 in wasm32, and the value will
+            // always be very small regardless. We still choose not to panic to be overly cautious
+            MAX_SUBMITTERS
+                .saturating_mul(QuorumScope::VARIANT_COUNT.try_into().unwrap_or(u32::MAX)),
+            None,
+        );
+    }
+
+    fn append_batch_queue_with_prune<T, I>(batch_id: impl EncodeLike<BatchId>)
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let batch_queue_size = BatchQueue::<T, I>::count();
+        let batch_queue_bottom = Pallet::<T, I>::batch_queue_bottom();
+        let new_batch_index = batch_queue_bottom.saturating_add(batch_queue_size);
+
+        // >= because the counts don't include the batch we're about to add
+        if batch_queue_size >= T::MaxBatchesFindingQuorum::get() {
+            let num_batches_to_prune = batch_queue_size
+                .saturating_sub(T::MaxBatchesFindingQuorum::get())
+                // + 1 because the counts don't include the batch we are about to add
+                .saturating_add(1);
+            let clamped_num_batches_to_prune = num_batches_to_prune.min(T::MaxBatchesPruned::get());
+
+            let new_batch_queue_bottom = batch_queue_bottom + clamped_num_batches_to_prune;
+
+            for batch_index in batch_queue_bottom..new_batch_queue_bottom {
+                let batch_id = BatchQueue::<T, I>::take(batch_index);
+
+                if let Some(batch_id) = batch_id {
+                    remove_batch_id_from_submissions::<T, I>(batch_id);
+                }
+            }
+
+            BatchQueueBottom::<T, I>::set(new_batch_queue_bottom);
+        }
+
+        BatchQueue::<T, I>::insert(new_batch_index, batch_id);
     }
 }
