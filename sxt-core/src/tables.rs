@@ -374,6 +374,13 @@ pub enum QuorumScope {
     Privileged,
 }
 
+impl QuorumScope {
+    /// Number of scopes.
+    ///
+    /// Replace with core::mem::variant_count when it is stable/no_std.
+    pub const VARIANT_COUNT: usize = 2;
+}
+
 /// Quorum sizes to exceed to insert to a table for all [`QuorumScope`]s.
 #[derive(
     Copy,
