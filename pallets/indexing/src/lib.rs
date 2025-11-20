@@ -50,6 +50,7 @@ pub mod pallet {
     use sp_core::{H256, U256};
     use sp_runtime::traits::{Bounded, Hash, StaticLookup, UniqueSaturatedInto};
     use sp_runtime::{BoundedVec, SaturatedConversion};
+    use sxt_core::heavy::Heavy;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::{
         InsertQuorumSize,
@@ -187,6 +188,10 @@ pub mod pallet {
             agreements: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
             /// Voters against this quorum
             dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
+        },
+
+        BatchQueuePruned {
+            num_pruned: u32,
         },
     }
 
@@ -657,51 +662,144 @@ pub mod pallet {
         Ok(())
     }
 
-    fn remove_batch_id_from_submissions<T, I>(batch_id: impl EncodeLike<BatchId>)
+    fn batch_queue_count_heavy<T, I>() -> Heavy<u32>
     where
         T: Config<I>,
         I: NativeApi,
     {
-        let _ = SubmissionsV1::<T, I>::clear_prefix(
-            (batch_id,),
-            // this try_into should never fail because usize = u32 in wasm32, and the value will
-            // always be very small regardless. We still choose not to panic to be overly cautious
-            MAX_SUBMITTERS
-                .saturating_mul(QuorumScope::VARIANT_COUNT.try_into().unwrap_or(u32::MAX)),
-            None,
-        );
+        let out = BatchQueue::<T, I>::count();
+        let weight = T::DbWeight::get().reads(1);
+        Heavy { out, weight }
     }
 
-    fn append_batch_queue_with_prune<T, I>(batch_id: impl EncodeLike<BatchId>)
+    fn batch_queue_bottom_heavy<T, I>() -> Heavy<u32>
     where
         T: Config<I>,
         I: NativeApi,
     {
-        let batch_queue_size = BatchQueue::<T, I>::count();
-        let batch_queue_bottom = Pallet::<T, I>::batch_queue_bottom();
-        let new_batch_index = batch_queue_bottom.saturating_add(batch_queue_size);
+        let out = Pallet::<T, I>::batch_queue_bottom();
+        let weight = T::DbWeight::get().reads(1);
+        Heavy { out, weight }
+    }
 
-        // >= because the counts don't include the batch we're about to add
-        if batch_queue_size >= T::MaxBatchesFindingQuorum::get() {
-            let num_batches_to_prune = batch_queue_size
-                .saturating_sub(T::MaxBatchesFindingQuorum::get())
-                // + 1 because the counts don't include the batch we are about to add
-                .saturating_add(1);
-            let clamped_num_batches_to_prune = num_batches_to_prune.min(T::MaxBatchesPruned::get());
+    fn batch_queue_bottom_set_heavy<T, I>(bottom: u32) -> Heavy<()>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        BatchQueueBottom::<T, I>::set(bottom);
+        T::DbWeight::get().writes(1).into()
+    }
 
-            let new_batch_queue_bottom = batch_queue_bottom + clamped_num_batches_to_prune;
+    fn batch_queue_take_heavy<T, I>(batch_index: u32) -> Heavy<Option<BatchId>>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let out = BatchQueue::<T, I>::take(batch_index);
 
-            for batch_index in batch_queue_bottom..new_batch_queue_bottom {
-                let batch_id = BatchQueue::<T, I>::take(batch_index);
+        let weight = if out.is_some() {
+            T::DbWeight::get().reads_writes(1, 1)
+        } else {
+            T::DbWeight::get().reads(1)
+        };
 
-                if let Some(batch_id) = batch_id {
-                    remove_batch_id_from_submissions::<T, I>(batch_id);
-                }
+        Heavy { out, weight }
+    }
+
+    fn prune_submissions_v0<T, I>(remaining_prunes: u32) -> Heavy<u32>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        // Technically, since this is a double map, this clears `remaining_prunes` (batch_id,
+        // data_hash) pairs, not `remaining_prunes` batch_ids. Typically there is a 1-to-1
+        // correspondence.
+        let removal_results = Submissions::<T, I>::clear(remaining_prunes, None);
+
+        let remaining_prunes = remaining_prunes.saturating_sub(removal_results.unique.into());
+        let weight = T::DbWeight::get()
+            .reads_writes(removal_results.loops.into(), removal_results.unique.into());
+
+        Heavy {
+            out: remaining_prunes,
+            weight,
+        }
+    }
+
+    fn remove_batch_id_from_submissions_v1<T, I>(batch_id: impl EncodeLike<BatchId>) -> Heavy<()>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        // this try_into should never fail because usize = u32 in wasm32, and the value will
+        // always be very small regardless. We still choose not to panic to be overly cautious
+        let removal_limit = MAX_SUBMITTERS
+            .saturating_mul(QuorumScope::VARIANT_COUNT.try_into().unwrap_or(u32::MAX));
+
+        let removal_results = SubmissionsV1::<T, I>::clear_prefix((batch_id,), removal_limit, None);
+
+        T::DbWeight::get()
+            .reads_writes(removal_results.loops.into(), removal_results.unique.into())
+            .into()
+    }
+
+    fn prune_batch_queue<T, I>(remaining_prunes: u32) -> Heavy<u32>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        batch_queue_count_heavy::<T, I>().and_then(|batch_queue_size| {
+            if batch_queue_size <= T::MaxBatchesFindingQuorum::get() {
+                // nothing to prune
+                return remaining_prunes.into();
             }
 
-            BatchQueueBottom::<T, I>::set(new_batch_queue_bottom);
-        }
+            batch_queue_bottom_heavy::<T, I>().and_then(|batch_queue_bottom| {
+                let num_batches_to_prune =
+                    batch_queue_size.saturating_sub(T::MaxBatchesFindingQuorum::get());
+                let clamped_num_batches_to_prune = num_batches_to_prune.min(remaining_prunes);
 
-        BatchQueue::<T, I>::insert(new_batch_index, batch_id);
+                let new_batch_queue_bottom = batch_queue_bottom + clamped_num_batches_to_prune;
+
+                (batch_queue_bottom..new_batch_queue_bottom)
+                    .map(|batch_index| {
+                        batch_queue_take_heavy::<T, I>(batch_index).and_then(|batch_id| {
+                            if let Some(batch_id) = batch_id {
+                                remove_batch_id_from_submissions_v1::<T, I>(batch_id)
+                            } else {
+                                ().into()
+                            }
+                        })
+                    })
+                    .sum::<Heavy<()>>()
+                    .and_then(|_| batch_queue_bottom_set_heavy::<T, I>(new_batch_queue_bottom))
+                    .map(|_| remaining_prunes.saturating_sub(clamped_num_batches_to_prune))
+            })
+        })
+    }
+
+    #[pallet::hooks]
+    impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I>
+    where
+        I: NativeApi,
+    {
+        fn on_initialize(_: BlockNumberFor<T>) -> Weight {
+            let max_batches_pruned = T::MaxBatchesPruned::get();
+
+            let Heavy {
+                out: remaining_prunes,
+                weight,
+            } = prune_submissions_v0::<T, I>(max_batches_pruned)
+                .and_then(prune_batch_queue::<T, I>);
+
+            let num_pruned = max_batches_pruned.saturating_sub(remaining_prunes);
+
+            if num_pruned > 0 {
+                Pallet::<T, I>::deposit_event(Event::<T, I>::BatchQueuePruned { num_pruned });
+            }
+
+            weight
+        }
     }
 }
