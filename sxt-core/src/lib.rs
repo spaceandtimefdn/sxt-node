@@ -52,5 +52,7 @@ pub mod system_tables;
 /// Utility functions for handling Runtime types
 pub mod utils;
 
+pub mod heavy;
+
 #[cfg(feature = "proptest")]
 pub mod proptest;
