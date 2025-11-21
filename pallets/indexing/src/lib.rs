@@ -116,7 +116,6 @@ pub mod pallet {
             NMapKey<Blake2_128Concat, T::AccountId>,
         ),
         <T as frame_system::Config>::Hash,
-        ValueQuery,
     >;
 
     #[pallet::storage]
