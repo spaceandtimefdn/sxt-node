@@ -191,6 +191,8 @@ impl pallet_commitments::Config for Test {
 impl pallet_indexing::pallet::Config<Api> for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Test>;
+    type MaxBatchesPruned = ConstU32<3>;
+    type MaxBatchesFindingQuorum = ConstU32<10>;
 }
 
 impl pallet_system_tables::Config for Test {
