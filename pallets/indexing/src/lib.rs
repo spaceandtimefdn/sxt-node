@@ -477,14 +477,14 @@ pub mod pallet {
             Some(quorum_size) if agreements_unbounded.len() as u8 > *quorum_size => {
                 let block_number = <frame_system::Pallet<T>>::block_number();
 
-                const ALREADY_VALIDATED_SUBMITTER_COUNT: &str =
-                    "we've already validated that the submitter count is within bounds";
-                let agreements = agreements_unbounded
+                // Technically we don't need to check this, we know at this point that both lists
+                // sizes will sum up to the size of submission_map_with_this, which we already
+                // checked is below the number of max submitters. We still avoid the panic out of
+                // an abundance of caution.
+                let (agreements, dissents) = agreements_unbounded
                     .try_into()
-                    .expect(ALREADY_VALIDATED_SUBMITTER_COUNT);
-                let dissents = dissents_unbounded
-                    .try_into()
-                    .expect(ALREADY_VALIDATED_SUBMITTER_COUNT);
+                    .and_then(|agreements| Ok((agreements, dissents_unbounded.try_into()?)))
+                    .map_err(|_| Error::MaxSubmittersReached::<T, I>)?;
 
                 // Decide on the quorum
                 let data_quorum = DataQuorum {
