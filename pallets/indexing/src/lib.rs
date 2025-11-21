@@ -95,7 +95,6 @@ pub mod pallet {
 
     /// Storage map of `BatchId` and data hash to submitters that have agreed to the batch/hash.
     #[pallet::storage]
-    #[pallet::getter(fn submissions)]
     pub type Submissions<T: Config<I>, I: 'static = ()> = StorageDoubleMap<
         _,
         Blake2_128Concat,
