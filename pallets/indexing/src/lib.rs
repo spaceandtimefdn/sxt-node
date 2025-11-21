@@ -34,6 +34,7 @@ pub mod native_pallet;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
+    use alloc::collections::{BTreeMap, BTreeSet};
     use alloc::string::String;
     use alloc::vec::Vec;
 
@@ -44,12 +45,13 @@ pub mod pallet {
     use frame_support::{Blake2_128, Blake2_128Concat};
     use frame_system::pallet_prelude::*;
     use hex::FromHex;
+    use itertools::Itertools;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
     use sp_core::crypto::Ss58Codec;
     use sp_core::{H256, U256};
     use sp_runtime::traits::{Bounded, Hash, StaticLookup, UniqueSaturatedInto};
-    use sp_runtime::{BoundedVec, SaturatedConversion};
+    use sp_runtime::{BoundedVec, Either, SaturatedConversion};
     use sxt_core::heavy::Heavy;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::{
@@ -235,6 +237,8 @@ pub mod pallet {
         TableSerializationError,
         /// Submitter Injection Failed
         SubmitterInjectionFailed,
+        /// Maximum submissions already reached for this batch id
+        MaxSubmittersReached,
     }
 
     #[pallet::call]
@@ -438,22 +442,16 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
-        // We don't need to save the full data. We just need a count associated with each submission
-        let match_submissions = Submissions::<T, I>::get(&batch_id, data_hash);
+        let submission_map_with_this =
+            SubmissionsV1::<T, I>::iter_prefix((&batch_id, quorum_scope))
+                .take(MAX_SUBMITTERS as usize)
+                .chain(core::iter::once((who.clone(), data_hash)))
+                .collect::<BTreeMap<_, _>>();
 
-        // Check if this user has already submitted this data
-        let current_num_matching_submissions = match_submissions.len_of_scope(quorum_scope);
-
-        let new_match_submissions = match_submissions
-            .with_submitter(who.clone(), quorum_scope)
-            // Just return the unchanged submissions if maximum is exceeded.
-            .unwrap_or_else(|(submitters, _)| submitters);
-
-        if new_match_submissions.len_of_scope(quorum_scope) == current_num_matching_submissions {
-            Err(Error::<T, I>::AlreadySubmitted)?
+        if submission_map_with_this.len() > MAX_SUBMITTERS as usize {
+            Err(Error::MaxSubmittersReached::<T, I>)?;
         }
-
-        Submissions::<T, I>::insert(&batch_id, data_hash, &new_match_submissions);
+        SubmissionsV1::<T, I>::insert((&batch_id, quorum_scope, &who), data_hash);
 
         let submission = DataSubmission {
             table: table.clone(),
@@ -461,29 +459,32 @@ pub mod pallet {
             data_hash,
             quorum_scope: *quorum_scope,
         };
-
         // Emit an event noting who submitted what
         Pallet::<T, I>::deposit_event(Event::DataSubmitted { who, submission });
 
-        match table_insert_quorum.of_scope(quorum_scope) {
-            Some(quorum_size)
-                if new_match_submissions.len_of_scope(quorum_scope) as u8 > *quorum_size =>
-            {
-                // Iterate over the submitters who submitted differing data and collect
-                // their account ids
-                let dissenters = Submissions::<T, I>::iter_prefix(&batch_id)
-                    .filter(|(hash, _)| hash != &data_hash)
-                    .flat_map(|(_, submitters)| submitters.into_iter_scope(quorum_scope))
-                    // de-dup collection
-                    .collect::<alloc::collections::BTreeSet<_>>()
-                    .into_iter()
-                    // resulting set should contain up to MAX_SUBMITTERS items *after* de-dup
-                    .take(MAX_SUBMITTERS as usize)
-                    .collect::<alloc::collections::BTreeSet<_>>()
-                    .try_into()
-                    .expect("source Vec is constructed to not exceed maximum submitter list size");
+        let (agreements_unbounded, dissents_unbounded): (BTreeSet<_>, BTreeSet<_>) =
+            submission_map_with_this
+                .into_iter()
+                .partition_map(|(account_id, hash)| {
+                    if hash == data_hash {
+                        Either::Left(account_id)
+                    } else {
+                        Either::Right(account_id)
+                    }
+                });
 
+        match table_insert_quorum.of_scope(quorum_scope) {
+            Some(quorum_size) if agreements_unbounded.len() as u8 > *quorum_size => {
                 let block_number = <frame_system::Pallet<T>>::block_number();
+
+                const ALREADY_VALIDATED_SUBMITTER_COUNT: &str =
+                    "we've already validated that the submitter count is within bounds";
+                let agreements = agreements_unbounded
+                    .try_into()
+                    .expect(ALREADY_VALIDATED_SUBMITTER_COUNT);
+                let dissents = dissents_unbounded
+                    .try_into()
+                    .expect(ALREADY_VALIDATED_SUBMITTER_COUNT);
 
                 // Decide on the quorum
                 let data_quorum = DataQuorum {
@@ -491,8 +492,8 @@ pub mod pallet {
                     batch_id,
                     data_hash,
                     block_number: block_number.into(),
-                    agreements: new_match_submissions.of_scope(quorum_scope).clone(),
-                    dissents: dissenters,
+                    agreements,
+                    dissents,
                     quorum_scope: *quorum_scope,
                 };
 
@@ -518,8 +519,7 @@ pub mod pallet {
         I: NativeApi,
     {
         // Clean up submissions for this batch
-        Submissions::<T, I>::iter_key_prefix(&quorum.batch_id)
-            .for_each(|key| Submissions::<T, I>::remove(&quorum.batch_id, key));
+        let _ = remove_batch_id_from_submissions_v1::<T, I>(&quorum.batch_id);
 
         // Record final decision
         FinalData::<T, I>::insert(&quorum.batch_id, &quorum);
