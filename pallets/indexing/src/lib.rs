@@ -449,6 +449,12 @@ pub mod pallet {
         if submission_map_with_this.len() > MAX_SUBMITTERS as usize {
             Err(Error::MaxSubmittersReached::<T, I>)?;
         }
+
+        if submission_map_with_this.len() == 1 {
+            let batch_index = Pallet::<T, I>::batch_queue_bottom() + BatchQueue::<T, I>::count();
+            BatchQueue::<T, I>::insert(&batch_index, &batch_id);
+        }
+
         SubmissionsV1::<T, I>::insert((&batch_id, quorum_scope, &who), data_hash);
 
         let submission = DataSubmission {
