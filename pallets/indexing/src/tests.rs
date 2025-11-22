@@ -10,13 +10,14 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::__private::RuntimeDebug;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::TypeInfo;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 use frame_system::ensure_signed;
 use native_api::Api;
 use pallet_tables::{CommitmentCreationCmd, UpdateTable};
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use sp_core::Hasher;
 use sp_runtime::BoundedVec;
+use sxt_core::indexing::MAX_SUBMITTERS;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{
     CommitmentScheme,
@@ -1537,4 +1538,137 @@ fn we_can_submit_to_permissionless_table_with_no_permissions() {
             build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
         assert!(Indexing::final_data(&internal_batch_id).is_some());
     })
+}
+
+#[test]
+fn submitters_can_overwrite_their_submission() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_statement) = sample_table_definition();
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all()),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(&who, permissions);
+
+        let batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+        let data = row_data();
+        let data_hash = hash_row_data_with_block_number::<Test>(&data, None);
+
+        Indexing::submit_data(
+            signer.clone(),
+            table_id.clone(),
+            batch_id.clone(),
+            data.clone(),
+        )
+        .unwrap();
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&batch_id, &table_id);
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::get((&internal_batch_id, QuorumScope::Public, &who))
+                .unwrap(),
+            data_hash
+        );
+
+        let different_data = diff_row_data();
+        let different_data_hash = hash_row_data_with_block_number::<Test>(&different_data, None);
+        Indexing::submit_data(signer, table_id, batch_id.clone(), different_data.clone()).unwrap();
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::get((&internal_batch_id, QuorumScope::Public, &who))
+                .unwrap(),
+            different_data_hash
+        );
+    });
+}
+
+#[test]
+fn submitters_cannot_exceed_maximum() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_statement) = sample_table_definition();
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all()),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&batch_id, &table_id);
+        // artificially fill submissions for batch
+        (1..=MAX_SUBMITTERS).for_each(|submitter_num| {
+            let signer =
+                RuntimeOrigin::signed(sp_runtime::AccountId32::new([submitter_num as u8; 32]));
+            let who = ensure_signed(signer.clone()).unwrap();
+            let artificial_data_hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(
+                &submitter_num.to_le_bytes(),
+            );
+
+            crate::SubmissionsV1::<Test, Api>::insert(
+                (internal_batch_id.clone(), QuorumScope::Public, who),
+                artificial_data_hash,
+            );
+        });
+
+        // we cannot insert one more
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new(
+            [(MAX_SUBMITTERS + 1) as u8; 32],
+        ));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+        let data = row_data();
+
+        assert_noop!(
+            Indexing::submit_data(signer.clone(), table_id.clone(), batch_id.clone(), data,),
+            crate::Error::<Test, Api>::MaxSubmittersReached
+        );
+
+        // submitters can still re-submit new hashes
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(&who, permissions);
+        let data = row_data();
+        let data_hash = hash_row_data_with_block_number::<Test>(&data, None);
+
+        Indexing::submit_data(
+            signer.clone(),
+            table_id.clone(),
+            batch_id.clone(),
+            data.clone(),
+        )
+        .unwrap();
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::get((&internal_batch_id, QuorumScope::Public, &who))
+                .unwrap(),
+            data_hash
+        );
+    });
 }
