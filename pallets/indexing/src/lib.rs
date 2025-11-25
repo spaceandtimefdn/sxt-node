@@ -666,6 +666,7 @@ pub mod pallet {
         Ok(())
     }
 
+    /// Returns the count of `BatchQueue` and the weight of the get.
     fn batch_queue_count_heavy<T, I>() -> Heavy<u32>
     where
         T: Config<I>,
@@ -676,6 +677,7 @@ pub mod pallet {
         Heavy { out, weight }
     }
 
+    /// Returns the value of `BatchQueueBottom` and the weight of the get.
     fn batch_queue_bottom_heavy<T, I>() -> Heavy<u32>
     where
         T: Config<I>,
@@ -686,6 +688,7 @@ pub mod pallet {
         Heavy { out, weight }
     }
 
+    /// Sets the value of `BatchQueueBottom` and returns the weight of the set.
     fn batch_queue_bottom_set_heavy<T, I>(bottom: u32) -> Heavy<()>
     where
         T: Config<I>,
@@ -695,6 +698,8 @@ pub mod pallet {
         T::DbWeight::get().writes(1).into()
     }
 
+    /// Removes and returns the `BatchId` at the given index in the `BatchQueue`, along with the
+    /// weight of the take.
     fn batch_queue_take_heavy<T, I>(batch_index: u32) -> Heavy<Option<BatchId>>
     where
         T: Config<I>,
@@ -711,7 +716,10 @@ pub mod pallet {
         Heavy { out, weight }
     }
 
-    fn prune_submissions_v0<T, I>(remaining_prunes: u32) -> Heavy<u32>
+    /// Removes up to `prune_limit` entries from the v0 `Submissions` storage.
+    ///
+    /// Returns what remains of the prune limit, i.e., `prune_limit - num_pruned`.
+    fn prune_submissions_v0<T, I>(prune_limit: u32) -> Heavy<u32>
     where
         T: Config<I>,
         I: NativeApi,
@@ -719,9 +727,9 @@ pub mod pallet {
         // Technically, since this is a double map, this clears `remaining_prunes` (batch_id,
         // data_hash) pairs, not `remaining_prunes` batch_ids. Typically there is a 1-to-1
         // correspondence.
-        let removal_results = Submissions::<T, I>::clear(remaining_prunes, None);
+        let removal_results = Submissions::<T, I>::clear(prune_limit, None);
 
-        let remaining_prunes = remaining_prunes.saturating_sub(removal_results.unique.into());
+        let remaining_prunes = prune_limit.saturating_sub(removal_results.unique.into());
         let weight = T::DbWeight::get()
             .reads_writes(removal_results.loops.into(), removal_results.unique.into());
 
@@ -731,6 +739,8 @@ pub mod pallet {
         }
     }
 
+    /// Removes the given `batch_id` from the `SubmissionsV1` storage and returns the weight of the
+    /// clear_prefix.
     fn remove_batch_id_from_submissions_v1<T, I>(batch_id: impl EncodeLike<BatchId>) -> Heavy<()>
     where
         T: Config<I>,
@@ -748,7 +758,10 @@ pub mod pallet {
             .into()
     }
 
-    fn prune_batch_queue<T, I>(remaining_prunes: u32) -> Heavy<u32>
+    /// Removes up to `prune_limit` batches from the `SubmissionsV1` storage.
+    ///
+    /// Returns what remains of the prune limit, i.e., `prune_limit - num_pruned`.
+    fn prune_batch_queue<T, I>(prune_limit: u32) -> Heavy<u32>
     where
         T: Config<I>,
         I: NativeApi,
@@ -756,13 +769,13 @@ pub mod pallet {
         batch_queue_count_heavy::<T, I>().and_then(|batch_queue_size| {
             if batch_queue_size <= T::MaxBatchesFindingQuorum::get() {
                 // nothing to prune
-                return remaining_prunes.into();
+                return prune_limit.into();
             }
 
             batch_queue_bottom_heavy::<T, I>().and_then(|batch_queue_bottom| {
                 let num_batches_to_prune =
                     batch_queue_size.saturating_sub(T::MaxBatchesFindingQuorum::get());
-                let clamped_num_batches_to_prune = num_batches_to_prune.min(remaining_prunes);
+                let clamped_num_batches_to_prune = num_batches_to_prune.min(prune_limit);
 
                 let new_batch_queue_bottom = batch_queue_bottom + clamped_num_batches_to_prune;
 
@@ -778,7 +791,7 @@ pub mod pallet {
                     })
                     .sum::<Heavy<()>>()
                     .and_then(|_| batch_queue_bottom_set_heavy::<T, I>(new_batch_queue_bottom))
-                    .map(|_| remaining_prunes.saturating_sub(clamped_num_batches_to_prune))
+                    .map(|_| prune_limit.saturating_sub(clamped_num_batches_to_prune))
             })
         })
     }
