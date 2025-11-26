@@ -757,14 +757,8 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
-        // this try_into should never fail because usize = u32 in wasm32, and the value will
-        // always be very small regardless. We still choose not to panic to be overly cautious
-        //
-        // The value 4 is just a small overestimate, so if VARIANT_COUNT is every changed to `-1`
-        // by mistake, the true variant count would have to double for this limit to not clear the
-        // prefix.
-        let removal_limit =
-            MAX_SUBMITTERS.saturating_mul(QuorumScope::VARIANT_COUNT.try_into().unwrap_or(4));
+        let removal_limit = MAX_SUBMITTERS
+            .saturating_mul(QuorumScope::VARIANT_COUNT.try_into().unwrap_or_default());
 
         let removal_results = SubmissionsV1::<T, I>::clear_prefix((batch_id,), removal_limit, None);
 
