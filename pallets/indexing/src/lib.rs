@@ -724,14 +724,25 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
-        // Technically, since this is a double map, this clears `remaining_prunes` (batch_id,
-        // data_hash) pairs, not `remaining_prunes` batch_ids. Typically there is a 1-to-1
-        // correspondence.
-        let removal_results = Submissions::<T, I>::clear(prune_limit, None);
+        // In testing, `StorageDoubleMap::clear` didn't obey the limits, removing all entries
+        // instead. So, this does a manual iter-keys-take-n-remove instead.
 
-        let remaining_prunes = prune_limit.saturating_sub(removal_results.unique.into());
-        let weight = T::DbWeight::get()
-            .reads_writes(removal_results.loops.into(), removal_results.unique.into());
+        // Technically, since this is a double map, this clears n (batch_id, data_hash) pairs, not
+        // n batch_ids. These won't be 1-to-1 in the case that there was a controversial batch_id.
+        // However, any partially-removed batch_id will be cleaned up in future calls.
+        let keys_to_remove = Submissions::<T, I>::iter_keys()
+            .take(prune_limit.try_into().unwrap_or_default())
+            .collect::<Vec<_>>();
+        let removal_count = keys_to_remove.len().try_into().unwrap_or_default();
+
+        keys_to_remove
+            .into_iter()
+            .for_each(|(batch_id, data_hash)| {
+                Submissions::<T, I>::remove(batch_id, data_hash);
+            });
+
+        let remaining_prunes = prune_limit.saturating_sub(removal_count);
+        let weight = T::DbWeight::get().reads_writes(removal_count.into(), removal_count.into());
 
         Heavy {
             out: remaining_prunes,
