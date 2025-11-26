@@ -157,6 +157,7 @@ pub type TableUuid = BoundedVec<u8, ConstU32<UUID_MAX_LEN>>;
     Default,
     Serialize,
     Deserialize,
+    Hash,
 )]
 pub struct TableIdentifier {
     /// The name of the table, utf8-encoded
