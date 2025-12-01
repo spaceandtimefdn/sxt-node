@@ -1,4 +1,5 @@
 use alloc::boxed::Box;
+use std::collections::{HashMap, HashSet};
 use std::convert::Into;
 use std::io::Cursor;
 use std::sync::Arc;
@@ -15,15 +16,16 @@ use frame_support::{assert_err, assert_noop, assert_ok};
 use frame_system::{ensure_signed, RawOrigin};
 use native_api::{Api, NativeApi};
 use on_chain_table::proptest::{on_chain_table, ProofOfSqlSchema};
-use on_chain_table::OnChainTable;
+use on_chain_table::{IndexSet, OnChainTable};
 use pallet_tables::{CommitmentCreationCmd, UpdateTable};
 use proof_of_sql::base::database::ColumnType;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use proptest::prelude::*;
+use proptest::sample::SizeRange;
 use sp_core::Hasher;
 use sp_runtime::BoundedVec;
 use sqlparser::ast::Ident;
-use sxt_core::indexing::{SubmittersByScope, MAX_SUBMITTERS};
+use sxt_core::indexing::{SubmittersByScope, ID_LEN, MAX_SUBMITTERS};
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{
     CommitmentScheme,
@@ -41,11 +43,21 @@ use crate::mock::*;
 use crate::{build_inner_batch_id, BatchId, Config, Event, RowData};
 
 /// Used as a convenience wrapper for data we need to submit
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Hash)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen, Hash)]
 struct TestSubmission {
     table: TableIdentifier,
     batch_id: BatchId,
     data: RowData,
+}
+
+impl core::fmt::Debug for TestSubmission {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
+        fmt.debug_struct("TestSubmission")
+            .field("table", &String::try_from(&self.table).unwrap())
+            .field("batch_id", &hex::encode(&self.batch_id))
+            .field("data", &hex::encode(&self.data))
+            .finish()
+    }
 }
 
 /// Helper function to streamline data submission
@@ -145,23 +157,76 @@ where
     })
 }
 
-fn submission_for_sample_table<NR>(num_rows: NR) -> impl Strategy<Value = TestSubmission>
+fn submission_for_sample_table<NR, BI>(
+    num_rows: NR,
+    batch_id: BI,
+) -> impl Strategy<Value = TestSubmission>
 where
     NR: Strategy<Value = usize>,
+    BI: Strategy<Value = BatchId>,
 {
-    (
-        row_data_for_sample_table(num_rows),
-        proptest::collection::vec(any::<u8>(), 1..36),
+    (row_data_for_sample_table(num_rows), batch_id).prop_map(|(data, batch_id)| {
+        let table = TableIdentifier::from_str_unchecked("TEST_TABLE", "TEST_NAMESPACE");
+        TestSubmission {
+            table,
+            batch_id,
+            data,
+        }
+    })
+}
+
+fn batch_id_strategy() -> impl Strategy<Value = BatchId> {
+    proptest::collection::vec(any::<u8>(), 1..ID_LEN as usize)
+        .prop_map(|batch_id_bytes| batch_id_bytes.try_into().unwrap())
+}
+
+fn submissions_for_sample_table<NS, NR, BI>(
+    num_submissions: NS,
+    num_rows_per_submission: NR,
+    batch_id: BI,
+) -> impl Strategy<Value = HashSet<TestSubmission>>
+where
+    NS: Into<SizeRange> + Clone,
+    NR: Strategy<Value = usize> + Clone,
+    BI: Strategy<Value = BatchId>,
+{
+    proptest::collection::hash_set(
+        submission_for_sample_table(num_rows_per_submission, batch_id),
+        num_submissions,
     )
-        .prop_map(|(data, batch_id_bytes)| {
-            let table = TableIdentifier::from_str_unchecked("TEST_TABLE", "TEST_NAMESPACE");
-            let batch_id = batch_id_bytes.try_into().unwrap();
-            TestSubmission {
-                table,
-                batch_id,
-                data,
-            }
+}
+
+fn submissions_for_sample_table_by_batch_id<NB, NS, NR, BI>(
+    num_batches: NB,
+    num_submissions_per_batch: NS,
+    num_rows_per_submission: NR,
+    batch_id: BI,
+) -> impl Strategy<Value = HashMap<BatchId, HashSet<TestSubmission>>>
+where
+    NB: Into<SizeRange>,
+    NS: Into<SizeRange> + Clone,
+    NR: Strategy<Value = usize> + Clone,
+    BI: Strategy<Value = BatchId>,
+{
+    proptest::collection::hash_set(batch_id, num_batches)
+        .prop_flat_map(move |batch_ids| {
+            let num_submissions_per_batch = num_submissions_per_batch.clone();
+            let num_rows_per_submission = num_rows_per_submission.clone();
+            batch_ids
+                .into_iter()
+                .map(move |batch_id| {
+                    (
+                        Just(batch_id.clone()),
+                        submissions_for_sample_table(
+                            num_submissions_per_batch.clone(),
+                            num_rows_per_submission.clone(),
+                            Just(batch_id),
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>()
         })
+        .prop_map(HashMap::from_iter)
 }
 
 fn empty_row_data() -> RowData {
@@ -1862,31 +1927,44 @@ fn setup_sample_table_with_submissions(
     );
 }
 
+fn count_submissions_v1_batch_ids<T, I>() -> usize
+where
+    T: Config<I>,
+    I: NativeApi,
+{
+    crate::SubmissionsV1::<T, I>::iter_keys()
+        .map(|(batch_id, ..)| batch_id)
+        .collect::<HashSet<_>>()
+        .len()
+}
+
 proptest! {
     #[test]
     fn submissions_v0_are_always_pruned(
-        submissions_v0 in proptest::collection::hash_set(
-            submission_for_sample_table(0..4usize),
-            0..<<Test as Config<Api>>::MaxBatchesFindingQuorum as Get<u32>>::get() as usize
-        ),
+        submissions_v0 in {
+            let max_batches_finding_quorum =
+            <<Test as Config<Api>>::MaxBatchesFindingQuorum as Get<u32>>::get() as usize;
+            submissions_for_sample_table(0..max_batches_finding_quorum, 0..4usize, batch_id_strategy())
+        },
         // won't trigger v1 submission pruning
-        submissions_v1 in proptest::collection::hash_set(
-            submission_for_sample_table(0..4usize),
-            0..<<Test as Config<Api>>::MaxBatchesFindingQuorum as Get<u32>>::get() as usize
-        ),
+        submissions_v1 in {
+            let max_batches_finding_quorum =
+            <<Test as Config<Api>>::MaxBatchesFindingQuorum as Get<u32>>::get() as usize;
+            submissions_for_sample_table_by_batch_id(0..max_batches_finding_quorum, 1..=32usize, 0..4usize, batch_id_strategy())
+        },
     ) {
         new_test_ext().execute_with(|| {
-            setup_sample_table_with_submissions(submissions_v0.clone(), submissions_v1.clone());
+            setup_sample_table_with_submissions(submissions_v0.clone(), submissions_v1.clone().into_values().flatten());
 
             assert_eq!(crate::Submissions::<Test, Api>::iter().count(), submissions_v0.len());
-            assert_eq!(crate::SubmissionsV1::<Test, Api>::iter().count(), submissions_v1.len());
+            assert_eq!(count_submissions_v1_batch_ids::<Test, Api>(), submissions_v1.len());
             assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), 0);
             assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32);
 
             crate::Pallet::<Test, Api>::on_initialize(1);
 
             assert_eq!(crate::Submissions::<Test, Api>::iter().count(), submissions_v0.len().saturating_sub(<<Test as Config<Api>>::MaxBatchesPruned as Get<u32>>::get() as usize));
-            assert_eq!(crate::SubmissionsV1::<Test, Api>::iter().count(), submissions_v1.len());
+            assert_eq!(count_submissions_v1_batch_ids::<Test, Api>(), submissions_v1.len());
             assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), 0);
             assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32);
 
@@ -1896,31 +1974,27 @@ proptest! {
     #[test]
     fn submissions_v1_are_pruned_after_submissions_v0(
         // Usually pruning of v0 won't satisfy the max batches pruned
-        submissions_v0 in proptest::collection::hash_set(
-            submission_for_sample_table(0..4usize),
-            0..<<Test as Config<Api>>::MaxBatchesPruned as Get<u32>>::get() as usize
-        ),
-        // Pruning of v1 will begin because max_batches_finding quorum is exceeded
-        submissions_v1 in proptest::collection::hash_set(
-            submission_for_sample_table(0..4usize),
-            {
-                let max_batches_finding_quorum =
+        submissions_v0 in {
+            let max_batches_pruned =
+            <<Test as Config<Api>>::MaxBatchesPruned as Get<u32>>::get() as usize;
+            submissions_for_sample_table(0..max_batches_pruned, 0..4usize, batch_id_strategy())
+        },
+        // Pruning of v1 will begin because max_batches_finding_quorum is exceeded
+        submissions_v1 in {
+            let max_batches_finding_quorum =
             <<Test as Config<Api>>::MaxBatchesFindingQuorum as Get<u32>>::get() as usize;
-                max_batches_finding_quorum..(max_batches_finding_quorum * 2)
-            }
-        ),
+            submissions_for_sample_table_by_batch_id(max_batches_finding_quorum..max_batches_finding_quorum*2, 1..=32usize, 0..4usize, batch_id_strategy())
+        },
     ) {
         new_test_ext().execute_with(|| {
-            setup_sample_table_with_submissions(submissions_v0.clone(), submissions_v1.clone());
+            setup_sample_table_with_submissions(submissions_v0.clone(), submissions_v1.clone().into_values().flatten());
 
             assert_eq!(crate::Submissions::<Test, Api>::iter().count(), submissions_v0.len());
-            assert_eq!(crate::SubmissionsV1::<Test, Api>::iter().count(), submissions_v1.len());
+            assert_eq!(count_submissions_v1_batch_ids::<Test, Api>(), submissions_v1.len());
             assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), 0);
             assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32);
 
             crate::Pallet::<Test, Api>::on_initialize(1);
-
-
 
             assert_eq!(crate::Submissions::<Test, Api>::iter().count(), 0);
 
@@ -1933,16 +2007,10 @@ proptest! {
 
             let expected_num_pruned = excessive_batches.min(expected_prune_limit);
 
-            assert_eq!(crate::SubmissionsV1::<Test, Api>::iter().count(), submissions_v1.len() - expected_num_pruned as usize);
+            assert_eq!(count_submissions_v1_batch_ids::<Test, Api>(), submissions_v1.len() - expected_num_pruned as usize);
             assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), expected_num_pruned);
             assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32 - expected_num_pruned);
 
         });
     }
 }
-
-#[test]
-fn submissions_v1_pruning_doesnt_over_clear() {}
-
-#[test]
-fn submissions_v1_pruning_doesnt_under_clear() {}
