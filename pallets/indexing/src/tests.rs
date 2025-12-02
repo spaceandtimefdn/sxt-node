@@ -144,6 +144,7 @@ fn sample_table_definition() -> (TableIdentifier, CreateStatement) {
     (table_id, create_statement)
 }
 
+/// Returns a `Strategy` for row data compatible with [`sample_table_definition`].
 fn row_data_for_sample_table<NR>(num_rows: NR) -> impl Strategy<Value = RowData>
 where
     NR: Strategy<Value = usize>,
@@ -157,6 +158,7 @@ where
     })
 }
 
+/// Returns a `Strategy` for test submissions compatible with [`sample_table_definition`].
 fn submission_for_sample_table<NR, BI>(
     num_rows: NR,
     batch_id: BI,
@@ -175,11 +177,13 @@ where
     })
 }
 
+/// Returns a `Strategy` for `BatchId`s.
 fn batch_id_strategy() -> impl Strategy<Value = BatchId> {
     proptest::collection::vec(any::<u8>(), 1..ID_LEN as usize)
         .prop_map(|batch_id_bytes| batch_id_bytes.try_into().unwrap())
 }
 
+/// Returns a `Strategy` for a set of test submissions for [`sample_table_definition`].
 fn submissions_for_sample_table<NS, NR, BI>(
     num_submissions: NS,
     num_rows_per_submission: NR,
@@ -196,6 +200,7 @@ where
     )
 }
 
+/// Returns a `Strategy` for a mapping of `BatchId`s to a set of test submissions for [`sample_table_definition`].
 fn submissions_for_sample_table_by_batch_id<NB, NS, NR, BI>(
     num_batches: NB,
     num_submissions_per_batch: NS,
@@ -1776,15 +1781,7 @@ fn submitters_cannot_exceed_maximum() {
     });
 }
 
-prop_compose! {
-    fn two_values_sum_to(sum_strategy: impl Strategy<Value = u32>)
-        (sum in sum_strategy)
-        (a in 0..sum, sum in Just(sum)) -> impl Strategy<Value = (u32, u32)>
-    {
-        Just((a, sum - a))
-    }
-}
-
+/// Returns an `AccountId32` seeded by a `usize`.
 fn account_from_num(index: usize) -> sp_runtime::AccountId32 {
     let bytes = index
         .to_le_bytes()
@@ -1797,6 +1794,7 @@ fn account_from_num(index: usize) -> sp_runtime::AccountId32 {
     sp_runtime::AccountId32::new(bytes)
 }
 
+/// Returns a `QuorumScope` seeded by a `usize`
 fn quorum_scope_public_if_even(index: usize) -> QuorumScope {
     if index % 2 == 0 {
         QuorumScope::Public
@@ -1805,6 +1803,10 @@ fn quorum_scope_public_if_even(index: usize) -> QuorumScope {
     }
 }
 
+/// Populates the `Submissions` (v0) storage with the given test submissions.
+///
+/// The account and quorum scope used for the storage is determined by seeding the `account_fn` and
+/// `quorum_scope_fn`.
 fn populate_submissions_v0<T, I>(
     mut account_fn: impl FnMut(usize) -> T::AccountId,
     mut quorum_scope_fn: impl FnMut(usize) -> QuorumScope,
@@ -1835,6 +1837,10 @@ fn populate_submissions_v0<T, I>(
         })
 }
 
+/// Submits the given test submissions.
+///
+/// The account and their quorum scope is determined by seeding the `account_fn` and
+/// `quorum_scope_fn`.
 fn submit_submissions_v1<T, I>(
     mut account_fn: impl FnMut(usize) -> T::AccountId,
     mut quorum_scope_fn: impl FnMut(usize) -> QuorumScope,
@@ -1893,6 +1899,10 @@ fn submit_submissions_v1<T, I>(
         })
 }
 
+/// Creates the [`sample_table_definition`] table and submits the given `TestSubmission`s for it.
+///
+/// Used primarily for pruning tests, hence both versions of the submission storage can be
+/// parameterized.
 fn setup_sample_table_with_submissions(
     submissions_v0: impl IntoIterator<Item = TestSubmission>,
     submissions_v1: impl IntoIterator<Item = TestSubmission>,
@@ -1927,6 +1937,7 @@ fn setup_sample_table_with_submissions(
     );
 }
 
+/// Returns the number of `BatchId`s in `SubmissionsV1` storage.
 fn count_submissions_v1_batch_ids<T, I>() -> usize
 where
     T: Config<I>,
