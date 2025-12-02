@@ -18425,6 +18425,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "sxt-chain-runtime"
+version = "0.1.0"
+dependencies = [
+ "subxt",
+]
+
+[[package]]
 name = "sxt-core"
 version = "0.1.0"
 dependencies = [
@@ -18460,6 +18467,7 @@ dependencies = [
  "sp-runtime-interface",
  "sqlparser",
  "subxt",
+ "sxt-chain-runtime",
  "tokio",
  "tonic",
 ]

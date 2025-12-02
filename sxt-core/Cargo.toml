@@ -32,6 +32,7 @@ tokio = { workspace = true, optional = true }
 sc-client-api = { workspace = true, default-features = false, optional = true }
 sp-blockchain = { workspace = true, default-features = false, optional = true }
 sp-api = { workspace = true, default-features = false, optional = true}
+sxt-chain-runtime = { workspace = true, optional = true }
 proof-of-sql = { workspace = true, default-features = false }
 exponential-backoff = { workspace = true, default-features = false, optional = true }
 k256 = { workspace = true, default-features = false }
@@ -68,6 +69,7 @@ std = [
 	"dep:sc-client-api",
 	"dep:sp-blockchain",
 	"dep:exponential-backoff",
+	"dep:sxt-chain-runtime",
 ]
 proptest = ["std", "dep:proptest", "on-chain-table/proptest"]
 
