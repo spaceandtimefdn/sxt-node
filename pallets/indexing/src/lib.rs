@@ -105,7 +105,10 @@ pub mod pallet {
         ValueQuery, // Allows us to receive a default instead of None
     >;
 
-    /// Storage map of `BatchId`s to `DataQuorum`s for batches that have reached quorum.
+    /// Storage map of `(BatchId, QuorumScope, AccountId)` to data hash for batches that are still
+    /// finding quorum.
+    ///
+    /// Will get pruned once `Config::MaxBatchesFindingQuorum` is reached.
     #[pallet::storage]
     #[pallet::getter(fn submissions_v1)]
     pub type SubmissionsV1<T: Config<I>, I: 'static = ()> = StorageNMap<
@@ -118,15 +121,22 @@ pub mod pallet {
         <T as frame_system::Config>::Hash,
     >;
 
+    /// Storage map of `BatchId`s by batch index, in the order of first submission.
+    ///
+    /// Will get pruned once `Config::MaxBatchesFindingQuorum` is reached.
     #[pallet::storage]
     #[pallet::getter(fn batch_queue_get)]
     pub type BatchQueue<T: Config<I>, I: 'static = ()> =
         CountedStorageMap<_, Blake2_128Concat, u32, BatchId>;
 
+    /// The lowest index currently in the `BatchQueue`.
+    ///
+    /// Will increment as the `BatchQueue` is pruned.
     #[pallet::storage]
     #[pallet::getter(fn batch_queue_bottom)]
     pub type BatchQueueBottom<T: Config<I>, I: 'static = ()> = StorageValue<_, u32, ValueQuery>;
 
+    /// Storage map of `BatchId`s to `DataQuorum`s for batches that have reached quorum.
     #[pallet::storage]
     #[pallet::getter(fn final_data)]
     pub type FinalData<T: Config<I>, I: 'static = ()> =
@@ -190,7 +200,9 @@ pub mod pallet {
             dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
         },
 
+        /// The `BatchQueue` and submissions storage have been pruned.
         BatchQueuePruned {
+            /// The number of batches removed from storage.
             num_pruned: u32,
         },
     }
