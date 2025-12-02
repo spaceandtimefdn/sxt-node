@@ -2560,6 +2560,9 @@ pub mod api {
         pub fn multi_block_migrations(&self) -> multi_block_migrations::constants::ConstantsApi {
             multi_block_migrations::constants::ConstantsApi
         }
+        pub fn indexing(&self) -> indexing::constants::ConstantsApi {
+            indexing::constants::ConstantsApi
+        }
     }
     pub struct StorageApi;
     impl StorageApi {
@@ -2739,9 +2742,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                78u8, 89u8, 213u8, 113u8, 97u8, 54u8, 134u8, 89u8, 105u8, 190u8, 88u8, 112u8,
-                199u8, 151u8, 19u8, 97u8, 185u8, 155u8, 180u8, 99u8, 143u8, 79u8, 236u8, 164u8,
-                156u8, 192u8, 190u8, 120u8, 126u8, 37u8, 212u8, 129u8,
+                213u8, 207u8, 67u8, 76u8, 14u8, 134u8, 16u8, 0u8, 26u8, 226u8, 103u8, 192u8, 80u8,
+                171u8, 62u8, 229u8, 196u8, 6u8, 120u8, 148u8, 179u8, 240u8, 194u8, 5u8, 172u8,
+                129u8, 5u8, 66u8, 54u8, 22u8, 129u8, 61u8,
             ]
     }
     pub mod system {
@@ -3898,10 +3901,10 @@ pub mod api {
                         "Events",
                         (),
                         [
-                            112u8, 30u8, 128u8, 176u8, 162u8, 232u8, 158u8, 104u8, 88u8, 132u8,
-                            119u8, 162u8, 28u8, 146u8, 225u8, 47u8, 141u8, 212u8, 26u8, 209u8,
-                            249u8, 45u8, 234u8, 203u8, 214u8, 60u8, 86u8, 41u8, 135u8, 195u8,
-                            137u8, 235u8,
+                            238u8, 151u8, 62u8, 82u8, 150u8, 100u8, 246u8, 110u8, 206u8, 176u8,
+                            195u8, 241u8, 39u8, 161u8, 140u8, 205u8, 101u8, 195u8, 93u8, 87u8,
+                            118u8, 13u8, 233u8, 167u8, 226u8, 140u8, 172u8, 192u8, 247u8, 223u8,
+                            248u8, 82u8,
                         ],
                     )
                 }
@@ -20170,6 +20173,29 @@ pub mod api {
                 const PALLET: &'static str = "Indexing";
                 const EVENT: &'static str = "QuorumEmptyBlock";
             }
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[codec(dumb_trait_bound)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            #[doc = "The `BatchQueue` and submissions storage have been pruned."]
+            pub struct BatchQueuePruned {
+                pub num_pruned: batch_queue_pruned::NumPruned,
+            }
+            pub mod batch_queue_pruned {
+                use super::runtime_types;
+                pub type NumPruned = ::core::primitive::u32;
+            }
+            impl ::subxt::ext::subxt_core::events::StaticEvent for BatchQueuePruned {
+                const PALLET: &'static str = "Indexing";
+                const EVENT: &'static str = "BatchQueuePruned";
+            }
         }
         pub mod storage {
             use super::runtime_types;
@@ -20184,6 +20210,31 @@ pub mod api {
                         ::core::primitive::u8,
                     >;
                     pub type Param1 = ::subxt::ext::subxt_core::utils::H256;
+                }
+                pub mod submissions_v1 {
+                    use super::runtime_types;
+                    pub type SubmissionsV1 = ::subxt::ext::subxt_core::utils::H256;
+                    pub type Param0 = runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                        ::core::primitive::u8,
+                    >;
+                    pub type Param1 = runtime_types::sxt_core::tables::QuorumScope;
+                    pub type Param2 = ::subxt::ext::subxt_core::utils::AccountId32;
+                }
+                pub mod batch_queue {
+                    use super::runtime_types;
+                    pub type BatchQueue =
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            ::core::primitive::u8,
+                        >;
+                    pub type Param0 = ::core::primitive::u32;
+                }
+                pub mod counter_for_batch_queue {
+                    use super::runtime_types;
+                    pub type CounterForBatchQueue = ::core::primitive::u32;
+                }
+                pub mod batch_queue_bottom {
+                    use super::runtime_types;
+                    pub type BatchQueueBottom = ::core::primitive::u32;
                 }
                 pub mod final_data {
                     use super::runtime_types;
@@ -20284,6 +20335,244 @@ pub mod api {
                             227u8, 134u8, 148u8, 17u8, 39u8, 19u8, 171u8, 158u8, 7u8, 79u8, 228u8,
                             104u8, 102u8, 22u8, 162u8, 44u8, 31u8, 253u8, 70u8, 103u8, 150u8, 80u8,
                             239u8, 202u8, 211u8, 243u8, 211u8, 155u8, 34u8, 117u8, 33u8, 117u8,
+                        ],
+                    )
+                }
+                #[doc = " Storage map of `(BatchId, QuorumScope, AccountId)` to data hash for batches that are still"]
+                #[doc = " finding quorum."]
+                #[doc = ""]
+                #[doc = " Will get pruned once `Config::MaxBatchesFindingQuorum` is reached."]
+                pub fn submissions_v1_iter(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::submissions_v1::SubmissionsV1,
+                    (),
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Indexing",
+                        "SubmissionsV1",
+                        (),
+                        [
+                            203u8, 99u8, 162u8, 223u8, 54u8, 150u8, 101u8, 19u8, 163u8, 5u8, 3u8,
+                            186u8, 65u8, 194u8, 49u8, 221u8, 105u8, 104u8, 27u8, 141u8, 109u8,
+                            42u8, 144u8, 42u8, 119u8, 72u8, 50u8, 236u8, 124u8, 6u8, 45u8, 49u8,
+                        ],
+                    )
+                }
+                #[doc = " Storage map of `(BatchId, QuorumScope, AccountId)` to data hash for batches that are still"]
+                #[doc = " finding quorum."]
+                #[doc = ""]
+                #[doc = " Will get pruned once `Config::MaxBatchesFindingQuorum` is reached."]
+                pub fn submissions_v1_iter1(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::submissions_v1::Param0>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                        types::submissions_v1::Param0,
+                    >,
+                    types::submissions_v1::SubmissionsV1,
+                    (),
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Indexing",
+                        "SubmissionsV1",
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                            _0.borrow(),
+                        ),
+                        [
+                            203u8, 99u8, 162u8, 223u8, 54u8, 150u8, 101u8, 19u8, 163u8, 5u8, 3u8,
+                            186u8, 65u8, 194u8, 49u8, 221u8, 105u8, 104u8, 27u8, 141u8, 109u8,
+                            42u8, 144u8, 42u8, 119u8, 72u8, 50u8, 236u8, 124u8, 6u8, 45u8, 49u8,
+                        ],
+                    )
+                }
+                #[doc = " Storage map of `(BatchId, QuorumScope, AccountId)` to data hash for batches that are still"]
+                #[doc = " finding quorum."]
+                #[doc = ""]
+                #[doc = " Will get pruned once `Config::MaxBatchesFindingQuorum` is reached."]
+                pub fn submissions_v1_iter2(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::submissions_v1::Param0>,
+                    _1: impl ::core::borrow::Borrow<types::submissions_v1::Param1>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                            types::submissions_v1::Param0,
+                        >,
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                            types::submissions_v1::Param1,
+                        >,
+                    ),
+                    types::submissions_v1::SubmissionsV1,
+                    (),
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Indexing",
+                        "SubmissionsV1",
+                        (
+                            ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                                _0.borrow(),
+                            ),
+                            ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                                _1.borrow(),
+                            ),
+                        ),
+                        [
+                            203u8, 99u8, 162u8, 223u8, 54u8, 150u8, 101u8, 19u8, 163u8, 5u8, 3u8,
+                            186u8, 65u8, 194u8, 49u8, 221u8, 105u8, 104u8, 27u8, 141u8, 109u8,
+                            42u8, 144u8, 42u8, 119u8, 72u8, 50u8, 236u8, 124u8, 6u8, 45u8, 49u8,
+                        ],
+                    )
+                }
+                #[doc = " Storage map of `(BatchId, QuorumScope, AccountId)` to data hash for batches that are still"]
+                #[doc = " finding quorum."]
+                #[doc = ""]
+                #[doc = " Will get pruned once `Config::MaxBatchesFindingQuorum` is reached."]
+                pub fn submissions_v1(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::submissions_v1::Param0>,
+                    _1: impl ::core::borrow::Borrow<types::submissions_v1::Param1>,
+                    _2: impl ::core::borrow::Borrow<types::submissions_v1::Param2>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                            types::submissions_v1::Param0,
+                        >,
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                            types::submissions_v1::Param1,
+                        >,
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                            types::submissions_v1::Param2,
+                        >,
+                    ),
+                    types::submissions_v1::SubmissionsV1,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Indexing",
+                        "SubmissionsV1",
+                        (
+                            ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                                _0.borrow(),
+                            ),
+                            ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                                _1.borrow(),
+                            ),
+                            ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                                _2.borrow(),
+                            ),
+                        ),
+                        [
+                            203u8, 99u8, 162u8, 223u8, 54u8, 150u8, 101u8, 19u8, 163u8, 5u8, 3u8,
+                            186u8, 65u8, 194u8, 49u8, 221u8, 105u8, 104u8, 27u8, 141u8, 109u8,
+                            42u8, 144u8, 42u8, 119u8, 72u8, 50u8, 236u8, 124u8, 6u8, 45u8, 49u8,
+                        ],
+                    )
+                }
+                #[doc = " Storage map of `BatchId`s by batch index, in the order of first submission."]
+                #[doc = ""]
+                #[doc = " Will get pruned once `Config::MaxBatchesFindingQuorum` is reached."]
+                pub fn batch_queue_iter(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::batch_queue::BatchQueue,
+                    (),
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Indexing",
+                        "BatchQueue",
+                        (),
+                        [
+                            236u8, 125u8, 175u8, 198u8, 10u8, 130u8, 27u8, 232u8, 51u8, 32u8,
+                            243u8, 213u8, 181u8, 196u8, 218u8, 197u8, 35u8, 49u8, 58u8, 92u8,
+                            150u8, 197u8, 255u8, 138u8, 235u8, 128u8, 112u8, 66u8, 11u8, 152u8,
+                            21u8, 124u8,
+                        ],
+                    )
+                }
+                #[doc = " Storage map of `BatchId`s by batch index, in the order of first submission."]
+                #[doc = ""]
+                #[doc = " Will get pruned once `Config::MaxBatchesFindingQuorum` is reached."]
+                pub fn batch_queue(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::batch_queue::Param0>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                        types::batch_queue::Param0,
+                    >,
+                    types::batch_queue::BatchQueue,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Indexing",
+                        "BatchQueue",
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                            _0.borrow(),
+                        ),
+                        [
+                            236u8, 125u8, 175u8, 198u8, 10u8, 130u8, 27u8, 232u8, 51u8, 32u8,
+                            243u8, 213u8, 181u8, 196u8, 218u8, 197u8, 35u8, 49u8, 58u8, 92u8,
+                            150u8, 197u8, 255u8, 138u8, 235u8, 128u8, 112u8, 66u8, 11u8, 152u8,
+                            21u8, 124u8,
+                        ],
+                    )
+                }
+                #[doc = "Counter for the related counted storage map"]
+                pub fn counter_for_batch_queue(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::counter_for_batch_queue::CounterForBatchQueue,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Indexing",
+                        "CounterForBatchQueue",
+                        (),
+                        [
+                            157u8, 209u8, 245u8, 148u8, 196u8, 247u8, 155u8, 87u8, 52u8, 105u8,
+                            9u8, 68u8, 7u8, 83u8, 69u8, 242u8, 149u8, 21u8, 147u8, 251u8, 16u8,
+                            198u8, 3u8, 252u8, 88u8, 89u8, 214u8, 115u8, 212u8, 66u8, 207u8, 153u8,
+                        ],
+                    )
+                }
+                #[doc = " The lowest index currently in the `BatchQueue`."]
+                #[doc = ""]
+                #[doc = " Will increment as the `BatchQueue` is pruned."]
+                pub fn batch_queue_bottom(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::batch_queue_bottom::BatchQueueBottom,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Indexing",
+                        "BatchQueueBottom",
+                        (),
+                        [
+                            125u8, 144u8, 49u8, 157u8, 239u8, 173u8, 129u8, 44u8, 110u8, 41u8,
+                            201u8, 209u8, 228u8, 241u8, 24u8, 29u8, 117u8, 209u8, 18u8, 210u8,
+                            126u8, 168u8, 136u8, 124u8, 140u8, 1u8, 96u8, 125u8, 234u8, 50u8, 90u8,
+                            148u8,
                         ],
                     )
                 }
@@ -20388,6 +20677,47 @@ pub mod api {
                             83u8, 50u8, 103u8, 147u8, 67u8, 1u8, 37u8, 192u8, 219u8, 155u8, 144u8,
                             235u8, 148u8, 181u8, 194u8, 82u8, 250u8, 217u8, 214u8, 63u8, 254u8,
                             173u8,
+                        ],
+                    )
+                }
+            }
+        }
+        pub mod constants {
+            use super::runtime_types;
+            pub struct ConstantsApi;
+            impl ConstantsApi {
+                #[doc = " The maximum batches finding quorum at any given time."]
+                pub fn max_batches_finding_quorum(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::constants::address::StaticAddress<
+                    ::core::primitive::u32,
+                > {
+                    ::subxt::ext::subxt_core::constants::address::StaticAddress::new_static(
+                        "Indexing",
+                        "MaxBatchesFindingQuorum",
+                        [
+                            98u8, 252u8, 116u8, 72u8, 26u8, 180u8, 225u8, 83u8, 200u8, 157u8,
+                            125u8, 151u8, 53u8, 76u8, 168u8, 26u8, 10u8, 9u8, 98u8, 68u8, 9u8,
+                            178u8, 197u8, 113u8, 31u8, 79u8, 200u8, 90u8, 203u8, 100u8, 41u8,
+                            145u8,
+                        ],
+                    )
+                }
+                #[doc = " The maximum batches pruned per transaction from submissions storage when it exceeds"]
+                #[doc = " `MaxBatchesPruned`."]
+                pub fn max_batches_pruned(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::constants::address::StaticAddress<
+                    ::core::primitive::u32,
+                > {
+                    ::subxt::ext::subxt_core::constants::address::StaticAddress::new_static(
+                        "Indexing",
+                        "MaxBatchesPruned",
+                        [
+                            98u8, 252u8, 116u8, 72u8, 26u8, 180u8, 225u8, 83u8, 200u8, 157u8,
+                            125u8, 151u8, 53u8, 76u8, 168u8, 26u8, 10u8, 9u8, 98u8, 68u8, 9u8,
+                            178u8, 197u8, 113u8, 31u8, 79u8, 200u8, 90u8, 203u8, 100u8, 41u8,
+                            145u8,
                         ],
                     )
                 }
@@ -25423,6 +25753,9 @@ pub mod api {
                     #[codec(index = 18)]
                     #[doc = "Submitter Injection Failed"]
                     SubmitterInjectionFailed,
+                    #[codec(index = 19)]
+                    #[doc = "Maximum submissions already reached for this batch id"]
+                    MaxSubmittersReached,
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -25494,6 +25827,9 @@ pub mod api {
                                 ::subxt::ext::subxt_core::utils::AccountId32,
                             >,
                     },
+                    #[codec(index = 5)]
+                    #[doc = "The `BatchQueue` and submissions storage have been pruned."]
+                    BatchQueuePruned { num_pruned: ::core::primitive::u32 },
                 }
             }
         }
