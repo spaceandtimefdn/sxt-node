@@ -458,7 +458,7 @@ pub mod pallet {
             .is_none()
         {
             let batch_index = Pallet::<T, I>::batch_queue_bottom() + BatchQueue::<T, I>::count();
-            BatchQueue::<T, I>::insert(&batch_index, &batch_id);
+            BatchQueue::<T, I>::insert(batch_index, &batch_id);
         }
 
         let submission_map_with_this =
