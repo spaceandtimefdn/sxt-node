@@ -1954,6 +1954,7 @@ proptest! {
         },
     ) {
         new_test_ext().execute_with(|| {
+            System::set_block_number(1);
             setup_sample_table_with_submissions(submissions_v0.clone(), submissions_v1.clone().into_values().flatten());
 
             assert_eq!(crate::Submissions::<Test, Api>::iter().count(), submissions_v0.len());
@@ -1961,13 +1962,24 @@ proptest! {
             assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), 0);
             assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32);
 
-            crate::Pallet::<Test, Api>::on_initialize(1);
+            crate::Pallet::<Test, Api>::on_initialize(2);
 
-            assert_eq!(crate::Submissions::<Test, Api>::iter().count(), submissions_v0.len().saturating_sub(<<Test as Config<Api>>::MaxBatchesPruned as Get<u32>>::get() as usize));
+            let max_batches_pruned = <<Test as Config<Api>>::MaxBatchesPruned as Get<u32>>::get();
+            assert_eq!(crate::Submissions::<Test, Api>::iter().count(), submissions_v0.len().saturating_sub(max_batches_pruned as usize));
             assert_eq!(count_submissions_v1_batch_ids::<Test, Api>(), submissions_v1.len());
             assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), 0);
             assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32);
 
+            let expected_num_pruned_total = (submissions_v0.len() as u32).min(max_batches_pruned);
+            if expected_num_pruned_total > 0 {
+                let events = System::read_events_for_pallet::<Event<Test, Api>>();
+                events.iter().for_each(|event| match event { Event::BatchQueuePruned {num_pruned } => { dbg!(num_pruned); }, _ => ()
+               });
+                assert!(events.iter().any(
+                    |event| matches!(event, Event::BatchQueuePruned { num_pruned }
+                        if *num_pruned == expected_num_pruned_total)
+                ));
+            }
         });
     }
 
@@ -1987,6 +1999,7 @@ proptest! {
         },
     ) {
         new_test_ext().execute_with(|| {
+            System::set_block_number(1);
             setup_sample_table_with_submissions(submissions_v0.clone(), submissions_v1.clone().into_values().flatten());
 
             assert_eq!(crate::Submissions::<Test, Api>::iter().count(), submissions_v0.len());
@@ -1994,7 +2007,7 @@ proptest! {
             assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), 0);
             assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32);
 
-            crate::Pallet::<Test, Api>::on_initialize(1);
+            crate::Pallet::<Test, Api>::on_initialize(2);
 
             assert_eq!(crate::Submissions::<Test, Api>::iter().count(), 0);
 
@@ -2011,6 +2024,17 @@ proptest! {
             assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), expected_num_pruned);
             assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32 - expected_num_pruned);
 
+            let expected_num_pruned_total = expected_num_pruned + submissions_v0.len() as u32;
+
+            if expected_num_pruned_total > 0 {
+                let events = System::read_events_for_pallet::<Event<Test, Api>>();
+                events.iter().for_each(|event| match event { Event::BatchQueuePruned {num_pruned } => { dbg!(num_pruned); }, _ => ()
+               });
+                assert!(events.iter().any(
+                    |event| matches!(event, Event::BatchQueuePruned { num_pruned }
+                        if *num_pruned == expected_num_pruned_total)
+                ));
+            }
         });
     }
 }
