@@ -153,7 +153,7 @@ where
         ProofOfSqlSchema::try_from_iter([(Ident::new("INT_COLUMN"), ColumnType::Int)]).unwrap();
 
     on_chain_table(Just(schema), num_rows).prop_map(|on_chain_table| {
-        let record_batch = on_chain_table.try_into().unwrap();
+        let record_batch = on_chain_table.into();
         record_batch_to_row_data(record_batch)
     })
 }
@@ -1984,8 +1984,6 @@ proptest! {
             let expected_num_pruned_total = (submissions_v0.len() as u32).min(max_batches_pruned);
             if expected_num_pruned_total > 0 {
                 let events = System::read_events_for_pallet::<Event<Test, Api>>();
-                events.iter().for_each(|event| match event { Event::BatchQueuePruned {num_pruned } => { dbg!(num_pruned); }, _ => ()
-               });
                 assert!(events.iter().any(
                     |event| matches!(event, Event::BatchQueuePruned { num_pruned }
                         if *num_pruned == expected_num_pruned_total)
@@ -2039,8 +2037,6 @@ proptest! {
 
             if expected_num_pruned_total > 0 {
                 let events = System::read_events_for_pallet::<Event<Test, Api>>();
-                events.iter().for_each(|event| match event { Event::BatchQueuePruned {num_pruned } => { dbg!(num_pruned); }, _ => ()
-               });
                 assert!(events.iter().any(
                     |event| matches!(event, Event::BatchQueuePruned { num_pruned }
                         if *num_pruned == expected_num_pruned_total)
