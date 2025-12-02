@@ -156,7 +156,7 @@ mod tests {
 
             let (expected_ref_time, expected_proof_size) = weight_values.iter().fold((0, 0), |acc, values| (acc.0 + values.0, acc.1 + values.1));
             let expected_weight =
-                Weight::zero().set_ref_time(expected_ref_time).set_proof_size(expected_proof_size).into();
+                Weight::zero().set_ref_time(expected_ref_time).set_proof_size(expected_proof_size);
 
             assert_eq!(sum, Heavy { out: (), weight: expected_weight});
         }
