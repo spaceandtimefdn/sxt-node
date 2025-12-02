@@ -803,7 +803,7 @@ impl pallet_indexing::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
     type MaxBatchesFindingQuorum = ConstU32<500_000>;
-    type MaxBatchesPruned = ConstU32<10>;
+    type MaxBatchesPruned = ConstU32<100>;
 }
 
 impl pallet_attestation::Config for Runtime {
