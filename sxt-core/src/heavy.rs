@@ -1,3 +1,5 @@
+//! Contains [`Heavy`], a monad for composing functions that incur weight.
+
 use core::iter::Sum;
 
 use frame_support::weights::Weight;
@@ -147,7 +149,7 @@ mod tests {
         #[test]
         fn we_can_sum_heavys(weight_values in proptest::collection::vec((0..1000u64, 0..1000u64), 0..1000)) {
             let heavys = weight_values.iter().map(|(ref_time, proof_size)| {
-                Weight::zero().set_ref_time(*ref_time).set_proof_size(*proof_size).into()
+                Heavy::from(Weight::zero().set_ref_time(*ref_time).set_proof_size(*proof_size))
             });
 
             let sum: Heavy<()> = heavys.sum();
