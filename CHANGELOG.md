@@ -1,3 +1,12 @@
+# [1.45.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.6...v1.45.0) (2025-12-04)
+
+
+### Features
+
+* add Heavy monad for composing functions that incur weight ([71d0370](https://github.com/spaceandtimefdn/sxt-node/commit/71d03709b8cd380877492a0f07a44a60367969d0))
+
+
+
 ## [1.44.6](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.5...v1.44.6) (2025-11-18)
 
 
@@ -35,10 +44,6 @@
 ### Bug Fixes
 
 * mark deprecated pallet-tables calls as deprecated ([d9ce3c8](https://github.com/spaceandtimefdn/sxt-node/commit/d9ce3c82f94ce4dd0a929fcdda1a20cae7b5dcb3))
-
-
-
-## [1.44.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.1...v1.44.2) (2025-11-13)
 
 
 
