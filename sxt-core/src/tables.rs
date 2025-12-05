@@ -158,6 +158,7 @@ pub type TableUuid = BoundedVec<u8, ConstU32<UUID_MAX_LEN>>;
     Serialize,
     Deserialize,
 )]
+#[cfg_attr(feature = "std", derive(Hash))]
 pub struct TableIdentifier {
     /// The name of the table, utf8-encoded
     pub name: TableName,
