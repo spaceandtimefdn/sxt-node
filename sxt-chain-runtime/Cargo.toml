@@ -1,0 +1,18 @@
+[package]
+name = "sxt-chain-runtime"
+version = "0.1.0"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+subxt = { workspace = true }
+
+[lints]
+workspace = true
+
+[lib]
+doc = false
+doctest = false

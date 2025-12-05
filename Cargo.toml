@@ -19,6 +19,7 @@ members = [
     "proof-of-sql/commitment-map",
     "runtime",
     "sxt-core",
+    "sxt-chain-runtime",
     "proof-of-sql/on-chain-table",
     "proof-of-sql/commitment-sql",
     "proof-of-sql/static-setups",
@@ -72,6 +73,7 @@ pallet-system-tables = { path = "pallets/system_tables", default-features = fals
 pallet-zkpay = { path = "pallets/zkpay", default-features = false }
 pallet-smartcontracts = { path = "pallets/smartcontracts", default-features = false}
 sxt-core = { path = "sxt-core", default-features = false }
+sxt-chain-runtime = { path = "sxt-chain-runtime" }
 pallet-tables = { path = "pallets/tables", default-features = false }
 pallet-indexing = { path = "pallets/indexing", default-features = false }
 native = { path = "native", default-features = false }
