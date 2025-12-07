@@ -1,4 +1,5 @@
 use alloc::boxed::Box;
+use std::collections::{HashMap, HashSet};
 use std::convert::Into;
 use std::io::Cursor;
 use std::sync::Arc;
@@ -10,13 +11,21 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::__private::RuntimeDebug;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::TypeInfo;
-use frame_support::{assert_err, assert_ok};
-use frame_system::ensure_signed;
-use native_api::Api;
+use frame_support::traits::{Get, Hooks};
+use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_system::{ensure_signed, RawOrigin};
+use native_api::{Api, NativeApi};
+use on_chain_table::proptest::{on_chain_table, ProofOfSqlSchema};
+use on_chain_table::{IndexSet, OnChainTable};
 use pallet_tables::{CommitmentCreationCmd, UpdateTable};
+use proof_of_sql::base::database::ColumnType;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
+use proptest::prelude::*;
+use proptest::sample::SizeRange;
 use sp_core::Hasher;
 use sp_runtime::BoundedVec;
+use sqlparser::ast::Ident;
+use sxt_core::indexing::{SubmittersByScope, ID_LEN, MAX_SUBMITTERS};
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{
     CommitmentScheme,
@@ -31,14 +40,24 @@ use sxt_core::tables::{
 };
 
 use crate::mock::*;
-use crate::{build_inner_batch_id, BatchId, Event, RowData};
+use crate::{build_inner_batch_id, BatchId, Config, Event, RowData};
 
 /// Used as a convenience wrapper for data we need to submit
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen, Hash)]
 struct TestSubmission {
     table: TableIdentifier,
     batch_id: BatchId,
     data: RowData,
+}
+
+impl core::fmt::Debug for TestSubmission {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
+        fmt.debug_struct("TestSubmission")
+            .field("table", &String::try_from(&self.table).unwrap())
+            .field("batch_id", &hex::encode(&self.batch_id))
+            .field("data", &hex::encode(&self.data))
+            .finish()
+    }
 }
 
 /// Helper function to streamline data submission
@@ -62,7 +81,7 @@ fn row_data_with_count(rows: i32) -> RowData {
 
     let batch = RecordBatch::try_new(schema.clone(), vec![int_data]).unwrap();
 
-    record_batch_to_row_data(batch, schema)
+    record_batch_to_row_data(batch)
 }
 
 fn row_data() -> RowData {
@@ -80,14 +99,14 @@ fn diff_row_data() -> RowData {
 
     let batch = RecordBatch::try_new(schema.clone(), vec![int_data]).unwrap();
 
-    record_batch_to_row_data(batch, schema)
+    record_batch_to_row_data(batch)
 }
 
-fn record_batch_to_row_data(batch: RecordBatch, schema: Arc<Schema>) -> RowData {
+fn record_batch_to_row_data(batch: RecordBatch) -> RowData {
     let buffer: Vec<u8> = Vec::new();
     let mut cursor = Cursor::new(buffer);
 
-    let mut writer = StreamWriter::try_new(&mut cursor, &schema).unwrap();
+    let mut writer = StreamWriter::try_new(&mut cursor, batch.schema().as_ref()).unwrap();
 
     writer.write(&batch).unwrap();
     writer.finish().unwrap();
@@ -125,6 +144,96 @@ fn sample_table_definition() -> (TableIdentifier, CreateStatement) {
     (table_id, create_statement)
 }
 
+/// Returns a `Strategy` for row data compatible with [`sample_table_definition`].
+fn row_data_for_sample_table<NR>(num_rows: NR) -> impl Strategy<Value = RowData>
+where
+    NR: Strategy<Value = usize>,
+{
+    let schema =
+        ProofOfSqlSchema::try_from_iter([(Ident::new("INT_COLUMN"), ColumnType::Int)]).unwrap();
+
+    on_chain_table(Just(schema), num_rows).prop_map(|on_chain_table| {
+        let record_batch = on_chain_table.into();
+        record_batch_to_row_data(record_batch)
+    })
+}
+
+/// Returns a `Strategy` for test submissions compatible with [`sample_table_definition`].
+fn submission_for_sample_table<NR, BI>(
+    num_rows: NR,
+    batch_id: BI,
+) -> impl Strategy<Value = TestSubmission>
+where
+    NR: Strategy<Value = usize>,
+    BI: Strategy<Value = BatchId>,
+{
+    (row_data_for_sample_table(num_rows), batch_id).prop_map(|(data, batch_id)| {
+        let table = TableIdentifier::from_str_unchecked("TEST_TABLE", "TEST_NAMESPACE");
+        TestSubmission {
+            table,
+            batch_id,
+            data,
+        }
+    })
+}
+
+/// Returns a `Strategy` for `BatchId`s.
+fn batch_id_strategy() -> impl Strategy<Value = BatchId> {
+    proptest::collection::vec(any::<u8>(), 1..ID_LEN as usize)
+        .prop_map(|batch_id_bytes| batch_id_bytes.try_into().unwrap())
+}
+
+/// Returns a `Strategy` for a set of test submissions for [`sample_table_definition`].
+fn submissions_for_sample_table<NS, NR, BI>(
+    num_submissions: NS,
+    num_rows_per_submission: NR,
+    batch_id: BI,
+) -> impl Strategy<Value = HashSet<TestSubmission>>
+where
+    NS: Into<SizeRange> + Clone,
+    NR: Strategy<Value = usize> + Clone,
+    BI: Strategy<Value = BatchId>,
+{
+    proptest::collection::hash_set(
+        submission_for_sample_table(num_rows_per_submission, batch_id),
+        num_submissions,
+    )
+}
+
+/// Returns a `Strategy` for a mapping of `BatchId`s to a set of test submissions for [`sample_table_definition`].
+fn submissions_for_sample_table_by_batch_id<NB, NS, NR, BI>(
+    num_batches: NB,
+    num_submissions_per_batch: NS,
+    num_rows_per_submission: NR,
+    batch_id: BI,
+) -> impl Strategy<Value = HashMap<BatchId, HashSet<TestSubmission>>>
+where
+    NB: Into<SizeRange>,
+    NS: Into<SizeRange> + Clone,
+    NR: Strategy<Value = usize> + Clone,
+    BI: Strategy<Value = BatchId>,
+{
+    proptest::collection::hash_set(batch_id, num_batches)
+        .prop_flat_map(move |batch_ids| {
+            let num_submissions_per_batch = num_submissions_per_batch.clone();
+            let num_rows_per_submission = num_rows_per_submission.clone();
+            batch_ids
+                .into_iter()
+                .map(move |batch_id| {
+                    (
+                        Just(batch_id.clone()),
+                        submissions_for_sample_table(
+                            num_submissions_per_batch.clone(),
+                            num_rows_per_submission.clone(),
+                            Just(batch_id),
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>()
+        })
+        .prop_map(HashMap::from_iter)
+}
+
 fn empty_row_data() -> RowData {
     let schema = Arc::new(Schema::new(vec![Field::new(
         "int_column",
@@ -134,7 +243,7 @@ fn empty_row_data() -> RowData {
 
     let empty_batch = RecordBatch::new_empty(schema.clone());
 
-    record_batch_to_row_data(empty_batch, schema)
+    record_batch_to_row_data(empty_batch)
 }
 
 fn row_data_w_block_number() -> RowData {
@@ -148,7 +257,7 @@ fn row_data_w_block_number() -> RowData {
 
     let batch = RecordBatch::try_new(schema.clone(), vec![int_data, block_data]).unwrap();
 
-    record_batch_to_row_data(batch, schema)
+    record_batch_to_row_data(batch)
 }
 
 fn sample_table_definition_with_block_number() -> (TableIdentifier, CreateStatement) {
@@ -218,7 +327,7 @@ fn inserting_data_succeeds_when_data_is_good() {
             IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
-        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+        pallet_permissions::Permissions::<Test>::insert(&who, permissions.clone());
 
         let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
         let test_data = row_data();
@@ -236,74 +345,8 @@ fn inserting_data_succeeds_when_data_is_good() {
         // Verify that the submission was stored as expected
         // and the hash was generated from the submitted data
         assert_eq!(
-            Indexing::submissions(internal_batch_id, hash).len_of_scope(&QuorumScope::Public),
-            1
-        );
-    })
-}
-
-#[test]
-fn submission_fails_when_data_is_already_submitted() {
-    new_test_ext().execute_with(|| {
-        System::set_block_number(1);
-        let (table_id, test_create) = sample_table_definition();
-        Tables::create_tables(
-            RuntimeOrigin::root(),
-            vec![UpdateTable {
-                ident: table_id.clone(),
-                create_statement: test_create,
-                table_type: TableType::CoreBlockchain,
-                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
-                    hyper_kzg: false,
-                    dynamic_dory: true,
-                }),
-                source: sxt_core::tables::Source::Ethereum,
-            }]
-            .try_into()
-            .unwrap(),
-        )
-        .unwrap();
-        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
-        let who = ensure_signed(signer.clone()).unwrap();
-        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitDataForPublicQuorum,
-        )])
-        .unwrap();
-        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
-
-        let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
-        let test_data = row_data();
-
-        assert_ok!(Indexing::submit_data(
-            signer.clone(),
-            table_id.clone(),
-            test_batch.clone(),
-            test_data.clone(),
-        ),);
-
-        let mut hash_input = test_data.encode();
-        hash_input.extend(None::<u64>.encode());
-        let hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&hash_input);
-
-        let internal_batch_id = build_inner_batch_id::<Test, Api>(&test_batch, &table_id);
-
-        // Verify that the submission was stored as expected
-        // and the hash was generated from the submitted data
-        assert_eq!(
-            Indexing::submissions(internal_batch_id.clone(), hash)
-                .len_of_scope(&QuorumScope::Public),
-            1
-        );
-
-        // Verify that submitting the same thing again returns the expected error
-        assert_err!(
-            Indexing::submit_data(
-                signer.clone(),
-                table_id.clone(),
-                test_batch.clone(),
-                test_data.clone(),
-            ),
-            crate::Error::<Test, Api>::AlreadySubmitted
+            Indexing::submissions_v1((internal_batch_id.clone(), QuorumScope::Public, who)),
+            Some(hash)
         );
     })
 }
@@ -319,7 +362,8 @@ fn data_submission_fails_if_no_permissions() {
         let test_data = RowData::try_from(b"some arbitrary row data".to_vec()).unwrap();
 
         // Create a non permissioned signer
-        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let account = sp_runtime::AccountId32::new([1; 32]);
+        let signer = RuntimeOrigin::signed(account.clone());
         assert_err!(
             Indexing::submit_data(
                 signer.clone(),
@@ -330,13 +374,13 @@ fn data_submission_fails_if_no_permissions() {
             crate::Error::<Test, Api>::UnauthorizedSubmitter,
         );
 
-        let hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_data);
+        let _ = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_data);
 
         // Verify that the submission was not stored
-        assert_eq!(
-            Indexing::submissions(test_batch.clone(), hash).len_of_scope(&QuorumScope::Public),
-            0
-        );
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&test_batch, &test_identifier);
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id.clone(),)).count();
+        assert_eq!(submitters_count, 0);
     })
 }
 
@@ -419,9 +463,9 @@ fn data_is_decided_on_after_required_submissions() {
         assert_eq!(fd.quorum_scope, QuorumScope::Public);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id.clone(),)).count();
+        assert_eq!(submitters_count, 0);
     })
 }
 
@@ -518,10 +562,9 @@ fn correct_data_is_decided_on_after_required_submissions() {
         assert_eq!(final_data.unwrap().data_hash, data_hash);
 
         // Verify that the old data was successfully removed for this batch
-        for _i in 1..4 {
-            assert!(Indexing::submissions(&internal_batch_id, data_hash)
-                .scope_is_empty(&QuorumScope::Public))
-        }
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id.clone(),)).count();
+        assert_eq!(submitters_count, 0);
     })
 }
 
@@ -807,7 +850,7 @@ fn submit_data_with_mothership_key_work() {
             PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum);
         assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
             RuntimeOrigin::signed(admin),
-            signer_key,
+            signer_key.clone(),
             permission,
         ));
 
@@ -827,8 +870,8 @@ fn submit_data_with_mothership_key_work() {
         // Verify that the submission was stored as expected
         // and the hash was generated from the submitted data
         assert_eq!(
-            Indexing::submissions(internal_batch_id, hash).len_of_scope(&QuorumScope::Public),
-            1
+            Indexing::submissions_v1((internal_batch_id, QuorumScope::Public, signer_key)),
+            Some(hash)
         );
     })
 }
@@ -889,9 +932,11 @@ fn we_can_reach_privileged_quorum() {
         assert_eq!(fd.quorum_scope, QuorumScope::Privileged);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &test_submission.table);
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id.clone(),)).count();
+        assert_eq!(submitters_count, 0);
     })
 }
 
@@ -961,17 +1006,43 @@ fn we_can_manage_quorum_state_for_both_scopes() {
         let internal_batch_id =
             build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
 
-        let submissions = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert_eq!(submissions.len_of_scope(&QuorumScope::Public), 1);
-        assert!(submissions.scope_is_empty(&QuorumScope::Privileged));
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((
+                &internal_batch_id,
+                QuorumScope::Public
+            ))
+            .count(),
+            1
+        );
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((
+                &internal_batch_id,
+                QuorumScope::Privileged
+            ))
+            .count(),
+            0
+        );
         assert!(Indexing::final_data(&internal_batch_id).is_none());
 
         // both submission
         assert_ok!(submit_test_data(both_submitter, test_submission.clone()));
 
-        let submissions = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert_eq!(submissions.len_of_scope(&QuorumScope::Public), 1);
-        assert_eq!(submissions.len_of_scope(&QuorumScope::Privileged), 1);
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((
+                &internal_batch_id,
+                QuorumScope::Public
+            ))
+            .count(),
+            1
+        );
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((
+                &internal_batch_id,
+                QuorumScope::Privileged
+            ))
+            .count(),
+            1
+        );
         assert!(Indexing::final_data(&internal_batch_id).is_none());
 
         // privileged submission
@@ -986,9 +1057,10 @@ fn we_can_manage_quorum_state_for_both_scopes() {
         assert_eq!(final_data.quorum_scope, QuorumScope::Privileged);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((&internal_batch_id,)).count(),
+            0
+        );
 
         assert_eq!(
             System::read_events_for_pallet::<Event<Test, Api>>()
@@ -1060,9 +1132,10 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_privileged_quorum_rea
         assert_eq!(final_data.quorum_scope, QuorumScope::Privileged);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((&internal_batch_id,)).count(),
+            0
+        );
 
         assert_eq!(
             System::read_events_for_pallet::<Event<Test, Api>>()
@@ -1104,8 +1177,6 @@ fn we_cannot_submit_for_table_disabled_quorum_scope() {
             batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
             data: row_data(),
         };
-        let test_data_hash =
-            <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_submission.data);
 
         let public_permission =
             PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum);
@@ -1122,10 +1193,13 @@ fn we_cannot_submit_for_table_disabled_quorum_scope() {
             submit_test_data(public_submitter, test_submission.clone()),
             crate::Error::<Test, Api>::UnauthorizedSubmitter
         );
-        let submissions = Indexing::submissions(&test_submission.batch_id, test_data_hash);
-        assert!(submissions.scope_is_empty(&QuorumScope::Public));
-        assert!(submissions.scope_is_empty(&QuorumScope::Privileged));
-        assert!(Indexing::final_data(&test_submission.batch_id).is_none());
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &test_submission.table);
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((&internal_batch_id,)).count(),
+            0
+        );
+        assert!(Indexing::final_data(&internal_batch_id).is_none());
     })
 }
 
@@ -1178,9 +1252,12 @@ fn we_cannot_submit_with_privilege_to_different_table() {
             submit_test_data(privileged_submitter, test_submission.clone()),
             crate::Error::<Test, Api>::UnauthorizedSubmitter
         );
-        let submissions = Indexing::submissions(&test_submission.batch_id, test_data_hash);
-        assert!(submissions.scope_is_empty(&QuorumScope::Public));
-        assert!(submissions.scope_is_empty(&QuorumScope::Privileged));
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &test_submission.table);
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((&internal_batch_id,)).count(),
+            0
+        );
         assert!(Indexing::final_data(&test_submission.batch_id).is_none());
     })
 }
@@ -1464,9 +1541,9 @@ fn we_can_reach_quorum_before_and_after_changing_quorum_size() {
             build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id.clone(),)).count();
+        assert_eq!(submitters_count, 0);
 
         // Now update the quorum to make this table public
         let new_quorum = InsertQuorumSize {
@@ -1523,9 +1600,9 @@ fn we_can_reach_quorum_before_and_after_changing_quorum_size() {
         assert_eq!(fd.quorum_scope, QuorumScope::Public);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(&internal_batch_id_2, test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id_2.clone(),)).count();
+        assert_eq!(submitters_count, 0);
     });
 }
 
@@ -1569,4 +1646,402 @@ fn we_can_submit_to_permissionless_table_with_no_permissions() {
             build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
         assert!(Indexing::final_data(&internal_batch_id).is_some());
     })
+}
+
+#[test]
+fn submitters_can_overwrite_their_submission() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_statement) = sample_table_definition();
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all()),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(&who, permissions);
+
+        let batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+        let data = row_data();
+        let data_hash = hash_row_data_with_block_number::<Test>(&data, None);
+
+        Indexing::submit_data(
+            signer.clone(),
+            table_id.clone(),
+            batch_id.clone(),
+            data.clone(),
+        )
+        .unwrap();
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&batch_id, &table_id);
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::get((&internal_batch_id, QuorumScope::Public, &who))
+                .unwrap(),
+            data_hash
+        );
+
+        let different_data = diff_row_data();
+        let different_data_hash = hash_row_data_with_block_number::<Test>(&different_data, None);
+        Indexing::submit_data(signer, table_id, batch_id.clone(), different_data.clone()).unwrap();
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::get((&internal_batch_id, QuorumScope::Public, &who))
+                .unwrap(),
+            different_data_hash
+        );
+    });
+}
+
+#[test]
+fn submitters_cannot_exceed_maximum() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_statement) = sample_table_definition();
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all()),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&batch_id, &table_id);
+        // artificially fill submissions for batch
+        (1..=MAX_SUBMITTERS).for_each(|submitter_num| {
+            let signer =
+                RuntimeOrigin::signed(sp_runtime::AccountId32::new([submitter_num as u8; 32]));
+            let who = ensure_signed(signer.clone()).unwrap();
+            let artificial_data_hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(
+                &submitter_num.to_le_bytes(),
+            );
+
+            crate::SubmissionsV1::<Test, Api>::insert(
+                (internal_batch_id.clone(), QuorumScope::Public, who),
+                artificial_data_hash,
+            );
+        });
+
+        // we cannot insert one more
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new(
+            [(MAX_SUBMITTERS + 1) as u8; 32],
+        ));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+        let data = row_data();
+
+        assert_noop!(
+            Indexing::submit_data(signer.clone(), table_id.clone(), batch_id.clone(), data,),
+            crate::Error::<Test, Api>::MaxSubmittersReached
+        );
+
+        // submitters can still re-submit new hashes
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(&who, permissions);
+        let data = row_data();
+        let data_hash = hash_row_data_with_block_number::<Test>(&data, None);
+
+        Indexing::submit_data(
+            signer.clone(),
+            table_id.clone(),
+            batch_id.clone(),
+            data.clone(),
+        )
+        .unwrap();
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::get((&internal_batch_id, QuorumScope::Public, &who))
+                .unwrap(),
+            data_hash
+        );
+    });
+}
+
+/// Returns an `AccountId32` seeded by a `usize`.
+fn account_from_num(index: usize) -> sp_runtime::AccountId32 {
+    let bytes = index
+        .to_le_bytes()
+        .into_iter()
+        .chain(std::iter::repeat(0))
+        .take(32)
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap();
+    sp_runtime::AccountId32::new(bytes)
+}
+
+/// Returns a `QuorumScope` seeded by a `usize`
+fn quorum_scope_public_if_even(index: usize) -> QuorumScope {
+    if index % 2 == 0 {
+        QuorumScope::Public
+    } else {
+        QuorumScope::Privileged
+    }
+}
+
+/// Populates the `Submissions` (v0) storage with the given test submissions.
+///
+/// The account and quorum scope used for the storage is determined by seeding the `account_fn` and
+/// `quorum_scope_fn`.
+fn populate_submissions_v0<T, I>(
+    mut account_fn: impl FnMut(usize) -> T::AccountId,
+    mut quorum_scope_fn: impl FnMut(usize) -> QuorumScope,
+    submissions: impl IntoIterator<Item = TestSubmission>,
+) where
+    T: Config<I>,
+    I: NativeApi,
+{
+    submissions
+        .into_iter()
+        .enumerate()
+        .for_each(|(i, test_submission)| {
+            let account = account_fn(i);
+            let internal_batch =
+                build_inner_batch_id::<T, I>(&test_submission.batch_id, &test_submission.table);
+
+            let data_hash = hash_row_data_with_block_number::<T>(&test_submission.data, None);
+
+            let quorum_scope = quorum_scope_fn(i);
+
+            crate::Submissions::<T, I>::insert(
+                internal_batch,
+                data_hash,
+                SubmittersByScope::<T::AccountId>::default()
+                    .with_submitter(account, &quorum_scope)
+                    .unwrap(),
+            )
+        })
+}
+
+/// Submits the given test submissions.
+///
+/// The account and their quorum scope is determined by seeding the `account_fn` and
+/// `quorum_scope_fn`.
+fn submit_submissions_v1<T, I>(
+    mut account_fn: impl FnMut(usize) -> T::AccountId,
+    mut quorum_scope_fn: impl FnMut(usize) -> QuorumScope,
+    submissions: impl IntoIterator<Item = TestSubmission>,
+) where
+    T: Config<I>,
+    I: NativeApi,
+{
+    submissions
+        .into_iter()
+        .enumerate()
+        .for_each(|(i, test_submission)| {
+            let account = account_fn(i);
+            let quorum_scope = quorum_scope_fn(i);
+
+            let origin = RawOrigin::<T::AccountId>::Signed(account.clone()).into();
+
+            match quorum_scope {
+                QuorumScope::Public => {
+                    let permission = PermissionLevel::IndexingPallet(
+                        IndexingPalletPermission::SubmitDataForPublicQuorum,
+                    );
+                    if !pallet_permissions::Pallet::<T>::has_permissions(&account, &permission) {
+                        pallet_permissions::Pallet::<T>::add_proxy_permission(
+                            RawOrigin::Root.into(),
+                            account,
+                            permission,
+                        )
+                        .unwrap();
+                    }
+                }
+                QuorumScope::Privileged => {
+                    let permission = PermissionLevel::IndexingPallet(
+                        IndexingPalletPermission::SubmitDataForPrivilegedQuorum(
+                            test_submission.table.clone(),
+                        ),
+                    );
+                    if !pallet_permissions::Pallet::<T>::has_permissions(&account, &permission) {
+                        pallet_permissions::Pallet::<T>::add_proxy_permission(
+                            RawOrigin::Root.into(),
+                            account,
+                            permission,
+                        )
+                        .unwrap();
+                    }
+                }
+            }
+
+            crate::Pallet::<T, I>::submit_data(
+                origin,
+                test_submission.table,
+                test_submission.batch_id,
+                test_submission.data,
+            )
+            .unwrap();
+        })
+}
+
+/// Creates the [`sample_table_definition`] table and submits the given `TestSubmission`s for it.
+///
+/// Used primarily for pruning tests, hence both versions of the submission storage can be
+/// parameterized.
+fn setup_sample_table_with_submissions(
+    submissions_v0: impl IntoIterator<Item = TestSubmission>,
+    submissions_v1: impl IntoIterator<Item = TestSubmission>,
+) {
+    let (table_id, create_statement) = sample_table_definition();
+    Tables::create_tables(
+        RuntimeOrigin::root(),
+        vec![UpdateTable {
+            ident: table_id.clone(),
+            create_statement,
+            table_type: TableType::Testing(InsertQuorumSize {
+                public: Some(2),
+                privileged: Some(2),
+            }),
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all()),
+            source: sxt_core::tables::Source::Ethereum,
+        }]
+        .try_into()
+        .unwrap(),
+    )
+    .unwrap();
+
+    populate_submissions_v0::<Test, Api>(
+        account_from_num,
+        quorum_scope_public_if_even,
+        submissions_v0,
+    );
+    submit_submissions_v1::<Test, Api>(
+        account_from_num,
+        quorum_scope_public_if_even,
+        submissions_v1,
+    );
+}
+
+/// Returns the number of `BatchId`s in `SubmissionsV1` storage.
+fn count_submissions_v1_batch_ids<T, I>() -> usize
+where
+    T: Config<I>,
+    I: NativeApi,
+{
+    crate::SubmissionsV1::<T, I>::iter_keys()
+        .map(|(batch_id, ..)| batch_id)
+        .collect::<HashSet<_>>()
+        .len()
+}
+
+proptest! {
+    #[test]
+    fn submissions_v0_are_always_pruned(
+        submissions_v0 in {
+            let max_batches_finding_quorum =
+            <<Test as Config<Api>>::MaxBatchesFindingQuorum as Get<u32>>::get() as usize;
+            submissions_for_sample_table(0..max_batches_finding_quorum, 0..4usize, batch_id_strategy())
+        },
+        // won't trigger v1 submission pruning
+        submissions_v1 in {
+            let max_batches_finding_quorum =
+            <<Test as Config<Api>>::MaxBatchesFindingQuorum as Get<u32>>::get() as usize;
+            submissions_for_sample_table_by_batch_id(0..max_batches_finding_quorum, 1..=32usize, 0..4usize, batch_id_strategy())
+        },
+    ) {
+        new_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            setup_sample_table_with_submissions(submissions_v0.clone(), submissions_v1.clone().into_values().flatten());
+
+            assert_eq!(crate::Submissions::<Test, Api>::iter().count(), submissions_v0.len());
+            assert_eq!(count_submissions_v1_batch_ids::<Test, Api>(), submissions_v1.len());
+            assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), 0);
+            assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32);
+
+            crate::Pallet::<Test, Api>::on_initialize(2);
+
+            let max_batches_pruned = <<Test as Config<Api>>::MaxBatchesPruned as Get<u32>>::get();
+            assert_eq!(crate::Submissions::<Test, Api>::iter().count(), submissions_v0.len().saturating_sub(max_batches_pruned as usize));
+            assert_eq!(count_submissions_v1_batch_ids::<Test, Api>(), submissions_v1.len());
+            assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), 0);
+            assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32);
+
+            let expected_num_pruned_total = (submissions_v0.len() as u32).min(max_batches_pruned);
+            if expected_num_pruned_total > 0 {
+                let events = System::read_events_for_pallet::<Event<Test, Api>>();
+                assert!(events.iter().any(
+                    |event| matches!(event, Event::BatchQueuePruned { num_pruned }
+                        if *num_pruned == expected_num_pruned_total)
+                ));
+            }
+        });
+    }
+
+    #[test]
+    fn submissions_v1_are_pruned_after_submissions_v0(
+        // Usually pruning of v0 won't satisfy the max batches pruned
+        submissions_v0 in {
+            let max_batches_pruned =
+            <<Test as Config<Api>>::MaxBatchesPruned as Get<u32>>::get() as usize;
+            submissions_for_sample_table(0..max_batches_pruned, 0..4usize, batch_id_strategy())
+        },
+        // Pruning of v1 will begin because max_batches_finding_quorum is exceeded
+        submissions_v1 in {
+            let max_batches_finding_quorum =
+            <<Test as Config<Api>>::MaxBatchesFindingQuorum as Get<u32>>::get() as usize;
+            submissions_for_sample_table_by_batch_id(max_batches_finding_quorum..max_batches_finding_quorum*2, 1..=32usize, 0..4usize, batch_id_strategy())
+        },
+    ) {
+        new_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            setup_sample_table_with_submissions(submissions_v0.clone(), submissions_v1.clone().into_values().flatten());
+
+            assert_eq!(crate::Submissions::<Test, Api>::iter().count(), submissions_v0.len());
+            assert_eq!(count_submissions_v1_batch_ids::<Test, Api>(), submissions_v1.len());
+            assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), 0);
+            assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32);
+
+            crate::Pallet::<Test, Api>::on_initialize(2);
+
+            assert_eq!(crate::Submissions::<Test, Api>::iter().count(), 0);
+
+            let max_batches_finding_quorum =
+                <<Test as Config<Api>>::MaxBatchesFindingQuorum as Get<u32>>::get();
+            let max_batches_pruned = <<Test as Config<Api>>::MaxBatchesPruned as Get<u32>>::get();
+
+            let expected_prune_limit = max_batches_pruned - submissions_v0.len() as u32;
+            let excessive_batches = submissions_v1.len() as u32 - max_batches_finding_quorum;
+
+            let expected_num_pruned = excessive_batches.min(expected_prune_limit);
+
+            assert_eq!(count_submissions_v1_batch_ids::<Test, Api>(), submissions_v1.len() - expected_num_pruned as usize);
+            assert_eq!(crate::BatchQueueBottom::<Test, Api>::get(), expected_num_pruned);
+            assert_eq!(crate::BatchQueue::<Test, Api>::count(), submissions_v1.len() as u32 - expected_num_pruned);
+
+            let expected_num_pruned_total = expected_num_pruned + submissions_v0.len() as u32;
+
+            if expected_num_pruned_total > 0 {
+                let events = System::read_events_for_pallet::<Event<Test, Api>>();
+                assert!(events.iter().any(
+                    |event| matches!(event, Event::BatchQueuePruned { num_pruned }
+                        if *num_pruned == expected_num_pruned_total)
+                ));
+            }
+        });
+    }
 }

@@ -37,6 +37,7 @@ postcard.workspace = true
 proof-of-sql-static-setups = { workspace = true, features = ["io"], optional = true }
 on-chain-table = { workspace = true, default-features = false }
 proof-of-sql-commitment-map = { workspace = true, optional = true }
+itertools.workspace = true
 
 [dev-dependencies]
 sp-staking.workspace = true
@@ -53,6 +54,11 @@ native.workspace = true
 arrow.workspace = true
 proof-of-sql-commitment-map.workspace = true
 pallet-zkpay.workspace = true
+proptest.workspace = true
+proof-of-sql.workspace = true
+on-chain-table = { workspace = true, features = ["proptest"] }
+sqlparser.workspace = true
+
 
 [features]
 default = ["std"]

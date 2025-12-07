@@ -34,22 +34,25 @@ pub mod native_pallet;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
+    use alloc::collections::{BTreeMap, BTreeSet};
     use alloc::string::String;
     use alloc::vec::Vec;
 
-    use codec::Decode;
+    use codec::{Decode, EncodeLike};
     use commitment_sql::InsertAndCommitmentMetadata;
     use frame_support::dispatch::RawOrigin;
     use frame_support::pallet_prelude::*;
     use frame_support::{Blake2_128, Blake2_128Concat};
     use frame_system::pallet_prelude::*;
     use hex::FromHex;
+    use itertools::Itertools;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
     use sp_core::crypto::Ss58Codec;
     use sp_core::{H256, U256};
     use sp_runtime::traits::{Bounded, Hash, StaticLookup, UniqueSaturatedInto};
-    use sp_runtime::{BoundedVec, SaturatedConversion};
+    use sp_runtime::{BoundedVec, Either, SaturatedConversion};
+    use sxt_core::heavy::Heavy;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::{
         InsertQuorumSize,
@@ -79,11 +82,19 @@ pub mod pallet {
             + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// The weight info to be used with the extrinsics provided by the pallet
         type WeightInfo: WeightInfo;
+
+        /// The maximum batches finding quorum at any given time.
+        #[pallet::constant]
+        type MaxBatchesFindingQuorum: Get<u32>;
+
+        /// The maximum batches pruned per transaction from submissions storage when it exceeds
+        /// `MaxBatchesPruned`.
+        #[pallet::constant]
+        type MaxBatchesPruned: Get<u32>;
     }
 
     /// Storage map of `BatchId` and data hash to submitters that have agreed to the batch/hash.
     #[pallet::storage]
-    #[pallet::getter(fn submissions)]
     pub type Submissions<T: Config<I>, I: 'static = ()> = StorageDoubleMap<
         _,
         Blake2_128Concat,
@@ -93,6 +104,37 @@ pub mod pallet {
         SubmittersByScope<T::AccountId>,
         ValueQuery, // Allows us to receive a default instead of None
     >;
+
+    /// Storage map of `(BatchId, QuorumScope, AccountId)` to data hash for batches that are still
+    /// finding quorum.
+    ///
+    /// Will get pruned once `Config::MaxBatchesFindingQuorum` is reached.
+    #[pallet::storage]
+    #[pallet::getter(fn submissions_v1)]
+    pub type SubmissionsV1<T: Config<I>, I: 'static = ()> = StorageNMap<
+        _,
+        (
+            NMapKey<Blake2_128Concat, BatchId>,
+            NMapKey<Blake2_128Concat, QuorumScope>,
+            NMapKey<Blake2_128Concat, T::AccountId>,
+        ),
+        <T as frame_system::Config>::Hash,
+    >;
+
+    /// Storage map of `BatchId`s by batch index, in the order of first submission.
+    ///
+    /// Will get pruned once `Config::MaxBatchesFindingQuorum` is reached.
+    #[pallet::storage]
+    #[pallet::getter(fn batch_queue_get)]
+    pub type BatchQueue<T: Config<I>, I: 'static = ()> =
+        CountedStorageMap<_, Blake2_128Concat, u32, BatchId>;
+
+    /// The lowest index currently in the `BatchQueue`.
+    ///
+    /// Will increment as the `BatchQueue` is pruned.
+    #[pallet::storage]
+    #[pallet::getter(fn batch_queue_bottom)]
+    pub type BatchQueueBottom<T: Config<I>, I: 'static = ()> = StorageValue<_, u32, ValueQuery>;
 
     /// Storage map of `BatchId`s to `DataQuorum`s for batches that have reached quorum.
     #[pallet::storage]
@@ -157,6 +199,12 @@ pub mod pallet {
             /// Voters against this quorum
             dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
         },
+
+        /// The `BatchQueue` and submissions storage have been pruned.
+        BatchQueuePruned {
+            /// The number of batches removed from storage.
+            num_pruned: u32,
+        },
     }
 
     #[pallet::error]
@@ -199,6 +247,8 @@ pub mod pallet {
         TableSerializationError,
         /// Submitter Injection Failed
         SubmitterInjectionFailed,
+        /// Maximum submissions already reached for this batch id
+        MaxSubmittersReached,
     }
 
     #[pallet::call]
@@ -402,22 +452,26 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
-        // We don't need to save the full data. We just need a count associated with each submission
-        let match_submissions = Submissions::<T, I>::get(&batch_id, data_hash);
-
-        // Check if this user has already submitted this data
-        let current_num_matching_submissions = match_submissions.len_of_scope(quorum_scope);
-
-        let new_match_submissions = match_submissions
-            .with_submitter(who.clone(), quorum_scope)
-            // Just return the unchanged submissions if maximum is exceeded.
-            .unwrap_or_else(|(submitters, _)| submitters);
-
-        if new_match_submissions.len_of_scope(quorum_scope) == current_num_matching_submissions {
-            Err(Error::<T, I>::AlreadySubmitted)?
+        // There is no `StorageNMap::contains_key_prefix`
+        if SubmissionsV1::<T, I>::iter_prefix((&batch_id,))
+            .next()
+            .is_none()
+        {
+            let batch_index = Pallet::<T, I>::batch_queue_bottom() + BatchQueue::<T, I>::count();
+            BatchQueue::<T, I>::insert(batch_index, &batch_id);
         }
 
-        Submissions::<T, I>::insert(&batch_id, data_hash, &new_match_submissions);
+        let submission_map_with_this =
+            SubmissionsV1::<T, I>::iter_prefix((&batch_id, quorum_scope))
+                .take(MAX_SUBMITTERS as usize)
+                .chain(core::iter::once((who.clone(), data_hash)))
+                .collect::<BTreeMap<_, _>>();
+
+        if submission_map_with_this.len() > MAX_SUBMITTERS as usize {
+            Err(Error::MaxSubmittersReached::<T, I>)?;
+        }
+
+        SubmissionsV1::<T, I>::insert((&batch_id, quorum_scope, &who), data_hash);
 
         let submission = DataSubmission {
             table: table.clone(),
@@ -425,29 +479,32 @@ pub mod pallet {
             data_hash,
             quorum_scope: *quorum_scope,
         };
-
         // Emit an event noting who submitted what
         Pallet::<T, I>::deposit_event(Event::DataSubmitted { who, submission });
 
-        match table_insert_quorum.of_scope(quorum_scope) {
-            Some(quorum_size)
-                if new_match_submissions.len_of_scope(quorum_scope) as u8 > *quorum_size =>
-            {
-                // Iterate over the submitters who submitted differing data and collect
-                // their account ids
-                let dissenters = Submissions::<T, I>::iter_prefix(&batch_id)
-                    .filter(|(hash, _)| hash != &data_hash)
-                    .flat_map(|(_, submitters)| submitters.into_iter_scope(quorum_scope))
-                    // de-dup collection
-                    .collect::<alloc::collections::BTreeSet<_>>()
-                    .into_iter()
-                    // resulting set should contain up to MAX_SUBMITTERS items *after* de-dup
-                    .take(MAX_SUBMITTERS as usize)
-                    .collect::<alloc::collections::BTreeSet<_>>()
-                    .try_into()
-                    .expect("source Vec is constructed to not exceed maximum submitter list size");
+        let (agreements_unbounded, dissents_unbounded): (BTreeSet<_>, BTreeSet<_>) =
+            submission_map_with_this
+                .into_iter()
+                .partition_map(|(account_id, hash)| {
+                    if hash == data_hash {
+                        Either::Left(account_id)
+                    } else {
+                        Either::Right(account_id)
+                    }
+                });
 
+        match table_insert_quorum.of_scope(quorum_scope) {
+            Some(quorum_size) if agreements_unbounded.len() as u8 > *quorum_size => {
                 let block_number = <frame_system::Pallet<T>>::block_number();
+
+                // Technically we don't need to check this, we know at this point that both lists
+                // sizes will sum up to the size of submission_map_with_this, which we already
+                // checked is below the number of max submitters. We still avoid the panic out of
+                // an abundance of caution.
+                let (agreements, dissents) = agreements_unbounded
+                    .try_into()
+                    .and_then(|agreements| Ok((agreements, dissents_unbounded.try_into()?)))
+                    .map_err(|_| Error::MaxSubmittersReached::<T, I>)?;
 
                 // Decide on the quorum
                 let data_quorum = DataQuorum {
@@ -455,8 +512,8 @@ pub mod pallet {
                     batch_id,
                     data_hash,
                     block_number: block_number.into(),
-                    agreements: new_match_submissions.of_scope(quorum_scope).clone(),
-                    dissents: dissenters,
+                    agreements,
+                    dissents,
                     quorum_scope: *quorum_scope,
                 };
 
@@ -482,8 +539,7 @@ pub mod pallet {
         I: NativeApi,
     {
         // Clean up submissions for this batch
-        Submissions::<T, I>::iter_key_prefix(&quorum.batch_id)
-            .for_each(|key| Submissions::<T, I>::remove(&quorum.batch_id, key));
+        let _ = remove_batch_id_from_submissions_v1::<T, I>(&quorum.batch_id);
 
         // Record final decision
         FinalData::<T, I>::insert(&quorum.batch_id, &quorum);
@@ -624,5 +680,168 @@ pub mod pallet {
             Error::<T, I>::InvalidTable
         );
         Ok(())
+    }
+
+    /// Returns the count of `BatchQueue` and the weight of the get.
+    fn batch_queue_count_heavy<T, I>() -> Heavy<u32>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let out = BatchQueue::<T, I>::count();
+        let weight = T::DbWeight::get().reads(1);
+        Heavy { out, weight }
+    }
+
+    /// Returns the value of `BatchQueueBottom` and the weight of the get.
+    fn batch_queue_bottom_heavy<T, I>() -> Heavy<u32>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let out = Pallet::<T, I>::batch_queue_bottom();
+        let weight = T::DbWeight::get().reads(1);
+        Heavy { out, weight }
+    }
+
+    /// Sets the value of `BatchQueueBottom` and returns the weight of the set.
+    fn batch_queue_bottom_set_heavy<T, I>(bottom: u32) -> Heavy<()>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        BatchQueueBottom::<T, I>::set(bottom);
+        T::DbWeight::get().writes(1).into()
+    }
+
+    /// Removes and returns the `BatchId` at the given index in the `BatchQueue`, along with the
+    /// weight of the take.
+    fn batch_queue_take_heavy<T, I>(batch_index: u32) -> Heavy<Option<BatchId>>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let out = BatchQueue::<T, I>::take(batch_index);
+
+        let weight = if out.is_some() {
+            T::DbWeight::get().reads_writes(1, 1)
+        } else {
+            T::DbWeight::get().reads(1)
+        };
+
+        Heavy { out, weight }
+    }
+
+    /// Removes up to `prune_limit` entries from the v0 `Submissions` storage.
+    ///
+    /// Returns what remains of the prune limit, i.e., `prune_limit - num_pruned`.
+    fn prune_submissions_v0<T, I>(prune_limit: u32) -> Heavy<u32>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        // In testing, `StorageDoubleMap::clear` didn't obey the limits, removing all entries
+        // instead. So, this does a manual iter-keys-take-n-remove instead.
+
+        // Technically, since this is a double map, this clears n (batch_id, data_hash) pairs, not
+        // n batch_ids. These won't be 1-to-1 in the case that there was a controversial batch_id.
+        // However, any partially-removed batch_id will be cleaned up in future calls.
+        let keys_to_remove = Submissions::<T, I>::iter_keys()
+            .take(prune_limit.try_into().unwrap_or_default())
+            .collect::<Vec<_>>();
+        let removal_count = keys_to_remove.len().try_into().unwrap_or_default();
+
+        keys_to_remove
+            .into_iter()
+            .for_each(|(batch_id, data_hash)| {
+                Submissions::<T, I>::remove(batch_id, data_hash);
+            });
+
+        let remaining_prunes = prune_limit.saturating_sub(removal_count);
+        let weight = T::DbWeight::get().reads_writes(removal_count.into(), removal_count.into());
+
+        Heavy {
+            out: remaining_prunes,
+            weight,
+        }
+    }
+
+    /// Removes the given `batch_id` from the `SubmissionsV1` storage and returns the weight of the
+    /// clear_prefix.
+    fn remove_batch_id_from_submissions_v1<T, I>(batch_id: impl EncodeLike<BatchId>) -> Heavy<()>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let removal_limit = MAX_SUBMITTERS
+            .saturating_mul(QuorumScope::VARIANT_COUNT.try_into().unwrap_or_default());
+
+        let removal_results = SubmissionsV1::<T, I>::clear_prefix((batch_id,), removal_limit, None);
+
+        T::DbWeight::get()
+            .reads_writes(removal_results.loops.into(), removal_results.unique.into())
+            .into()
+    }
+
+    /// Removes up to `prune_limit` batches from the `SubmissionsV1` storage.
+    ///
+    /// Returns what remains of the prune limit, i.e., `prune_limit - num_pruned`.
+    fn prune_batch_queue<T, I>(prune_limit: u32) -> Heavy<u32>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        batch_queue_count_heavy::<T, I>().and_then(|batch_queue_size| {
+            if batch_queue_size <= T::MaxBatchesFindingQuorum::get() {
+                // nothing to prune
+                return prune_limit.into();
+            }
+
+            batch_queue_bottom_heavy::<T, I>().and_then(|batch_queue_bottom| {
+                let num_batches_to_prune =
+                    batch_queue_size.saturating_sub(T::MaxBatchesFindingQuorum::get());
+                let clamped_num_batches_to_prune = num_batches_to_prune.min(prune_limit);
+
+                let new_batch_queue_bottom = batch_queue_bottom + clamped_num_batches_to_prune;
+
+                (batch_queue_bottom..new_batch_queue_bottom)
+                    .map(|batch_index| {
+                        batch_queue_take_heavy::<T, I>(batch_index).and_then(|batch_id| {
+                            if let Some(batch_id) = batch_id {
+                                remove_batch_id_from_submissions_v1::<T, I>(batch_id)
+                            } else {
+                                ().into()
+                            }
+                        })
+                    })
+                    .sum::<Heavy<()>>()
+                    .and_then(|_| batch_queue_bottom_set_heavy::<T, I>(new_batch_queue_bottom))
+                    .map(|_| prune_limit.saturating_sub(clamped_num_batches_to_prune))
+            })
+        })
+    }
+
+    #[pallet::hooks]
+    impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I>
+    where
+        I: NativeApi,
+    {
+        fn on_initialize(_: BlockNumberFor<T>) -> Weight {
+            let max_batches_pruned = T::MaxBatchesPruned::get();
+
+            let Heavy {
+                out: remaining_prunes,
+                weight,
+            } = prune_submissions_v0::<T, I>(max_batches_pruned)
+                .and_then(prune_batch_queue::<T, I>);
+
+            let num_pruned = max_batches_pruned.saturating_sub(remaining_prunes);
+
+            if num_pruned > 0 {
+                Pallet::<T, I>::deposit_event(Event::<T, I>::BatchQueuePruned { num_pruned });
+            }
+
+            weight
+        }
     }
 }
