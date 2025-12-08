@@ -87,6 +87,12 @@ lazy_static! {
         "Total of attestations for the 'bestAttestations' RPC",
         &["block_number"]
     ).unwrap();
+
+    pub static ref ATTESTATION_COUNT_BY_ID: IntCounterVec = register_int_counter_vec!(
+        "canary_attestations_per_id",
+        "A count of attestations by Attestor public address",
+        &["block_number", "account_id"]
+    ).unwrap();
 }
 
 /// Add a count for the given event name
@@ -102,13 +108,26 @@ pub(crate) fn record_staking(e: &StakingEvent) {
         .inc_by(e.amount.saturated_into());
 }
 
-pub(crate) fn record_attestations(
-    block_number: u32,
-    attestations: Vec<sxt_core::attestation::Attestation<H256>>,
-) {
+pub(crate) fn record_attestations(block_number: u32, attestations: Vec<Attestation<H256>>) {
+    // Count the total attestations for this block
     BEST_ATTESTATION_COUNTER
         .with_label_values(&[block_number.to_string()])
         .inc_by(attestations.len() as u64);
+
+    // Count the attestations for this block by signer for better granularity
+    attestations
+        .iter()
+        .for_each(|a: &Attestation<H256>| match a {
+            Attestation::EthereumAttestation {
+                address20,
+                block_number,
+                ..
+            } => {
+                ATTESTATION_COUNT_BY_ID
+                    .with_label_values(&[block_number.to_string(), hex::encode(address20)])
+                    .inc_by(1);
+            }
+        });
 }
 
 /// Add the provided amount to the metric for the provided label

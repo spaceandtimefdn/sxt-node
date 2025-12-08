@@ -8,6 +8,7 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+hex.workspace = true
 event-forwarder.workspace = true
 clap = { workspace = true, features = ["derive", "env"] }
 tokio = { workspace = true, features = ["full"] }
