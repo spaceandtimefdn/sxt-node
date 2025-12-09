@@ -10,13 +10,14 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::__private::RuntimeDebug;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::TypeInfo;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 use frame_system::ensure_signed;
 use native_api::Api;
 use pallet_tables::{CommitmentCreationCmd, UpdateTable};
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use sp_core::Hasher;
 use sp_runtime::BoundedVec;
+use sxt_core::indexing::MAX_SUBMITTERS;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{
     CommitmentScheme,
@@ -218,7 +219,7 @@ fn inserting_data_succeeds_when_data_is_good() {
             IndexingPalletPermission::SubmitDataForPublicQuorum,
         )])
         .unwrap();
-        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+        pallet_permissions::Permissions::<Test>::insert(&who, permissions.clone());
 
         let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
         let test_data = row_data();
@@ -236,74 +237,8 @@ fn inserting_data_succeeds_when_data_is_good() {
         // Verify that the submission was stored as expected
         // and the hash was generated from the submitted data
         assert_eq!(
-            Indexing::submissions(internal_batch_id, hash).len_of_scope(&QuorumScope::Public),
-            1
-        );
-    })
-}
-
-#[test]
-fn submission_fails_when_data_is_already_submitted() {
-    new_test_ext().execute_with(|| {
-        System::set_block_number(1);
-        let (table_id, test_create) = sample_table_definition();
-        Tables::create_tables(
-            RuntimeOrigin::root(),
-            vec![UpdateTable {
-                ident: table_id.clone(),
-                create_statement: test_create,
-                table_type: TableType::CoreBlockchain,
-                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
-                    hyper_kzg: false,
-                    dynamic_dory: true,
-                }),
-                source: sxt_core::tables::Source::Ethereum,
-            }]
-            .try_into()
-            .unwrap(),
-        )
-        .unwrap();
-        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
-        let who = ensure_signed(signer.clone()).unwrap();
-        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitDataForPublicQuorum,
-        )])
-        .unwrap();
-        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
-
-        let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
-        let test_data = row_data();
-
-        assert_ok!(Indexing::submit_data(
-            signer.clone(),
-            table_id.clone(),
-            test_batch.clone(),
-            test_data.clone(),
-        ),);
-
-        let mut hash_input = test_data.encode();
-        hash_input.extend(None::<u64>.encode());
-        let hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&hash_input);
-
-        let internal_batch_id = build_inner_batch_id::<Test, Api>(&test_batch, &table_id);
-
-        // Verify that the submission was stored as expected
-        // and the hash was generated from the submitted data
-        assert_eq!(
-            Indexing::submissions(internal_batch_id.clone(), hash)
-                .len_of_scope(&QuorumScope::Public),
-            1
-        );
-
-        // Verify that submitting the same thing again returns the expected error
-        assert_err!(
-            Indexing::submit_data(
-                signer.clone(),
-                table_id.clone(),
-                test_batch.clone(),
-                test_data.clone(),
-            ),
-            crate::Error::<Test, Api>::AlreadySubmitted
+            Indexing::submissions_v1((internal_batch_id.clone(), QuorumScope::Public, who)),
+            Some(hash)
         );
     })
 }
@@ -319,7 +254,8 @@ fn data_submission_fails_if_no_permissions() {
         let test_data = RowData::try_from(b"some arbitrary row data".to_vec()).unwrap();
 
         // Create a non permissioned signer
-        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let account = sp_runtime::AccountId32::new([1; 32]);
+        let signer = RuntimeOrigin::signed(account.clone());
         assert_err!(
             Indexing::submit_data(
                 signer.clone(),
@@ -330,13 +266,13 @@ fn data_submission_fails_if_no_permissions() {
             crate::Error::<Test, Api>::UnauthorizedSubmitter,
         );
 
-        let hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_data);
+        let _ = <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_data);
 
         // Verify that the submission was not stored
-        assert_eq!(
-            Indexing::submissions(test_batch.clone(), hash).len_of_scope(&QuorumScope::Public),
-            0
-        );
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&test_batch, &test_identifier);
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id.clone(),)).count();
+        assert_eq!(submitters_count, 0);
     })
 }
 
@@ -419,9 +355,9 @@ fn data_is_decided_on_after_required_submissions() {
         assert_eq!(fd.quorum_scope, QuorumScope::Public);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id.clone(),)).count();
+        assert_eq!(submitters_count, 0);
     })
 }
 
@@ -518,10 +454,9 @@ fn correct_data_is_decided_on_after_required_submissions() {
         assert_eq!(final_data.unwrap().data_hash, data_hash);
 
         // Verify that the old data was successfully removed for this batch
-        for _i in 1..4 {
-            assert!(Indexing::submissions(&internal_batch_id, data_hash)
-                .scope_is_empty(&QuorumScope::Public))
-        }
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id.clone(),)).count();
+        assert_eq!(submitters_count, 0);
     })
 }
 
@@ -807,7 +742,7 @@ fn submit_data_with_mothership_key_work() {
             PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum);
         assert_ok!(pallet_permissions::Pallet::<Test>::add_proxy_permission(
             RuntimeOrigin::signed(admin),
-            signer_key,
+            signer_key.clone(),
             permission,
         ));
 
@@ -827,8 +762,8 @@ fn submit_data_with_mothership_key_work() {
         // Verify that the submission was stored as expected
         // and the hash was generated from the submitted data
         assert_eq!(
-            Indexing::submissions(internal_batch_id, hash).len_of_scope(&QuorumScope::Public),
-            1
+            Indexing::submissions_v1((internal_batch_id, QuorumScope::Public, signer_key)),
+            Some(hash)
         );
     })
 }
@@ -889,9 +824,11 @@ fn we_can_reach_privileged_quorum() {
         assert_eq!(fd.quorum_scope, QuorumScope::Privileged);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &test_submission.table);
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id.clone(),)).count();
+        assert_eq!(submitters_count, 0);
     })
 }
 
@@ -961,17 +898,43 @@ fn we_can_manage_quorum_state_for_both_scopes() {
         let internal_batch_id =
             build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
 
-        let submissions = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert_eq!(submissions.len_of_scope(&QuorumScope::Public), 1);
-        assert!(submissions.scope_is_empty(&QuorumScope::Privileged));
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((
+                &internal_batch_id,
+                QuorumScope::Public
+            ))
+            .count(),
+            1
+        );
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((
+                &internal_batch_id,
+                QuorumScope::Privileged
+            ))
+            .count(),
+            0
+        );
         assert!(Indexing::final_data(&internal_batch_id).is_none());
 
         // both submission
         assert_ok!(submit_test_data(both_submitter, test_submission.clone()));
 
-        let submissions = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert_eq!(submissions.len_of_scope(&QuorumScope::Public), 1);
-        assert_eq!(submissions.len_of_scope(&QuorumScope::Privileged), 1);
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((
+                &internal_batch_id,
+                QuorumScope::Public
+            ))
+            .count(),
+            1
+        );
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((
+                &internal_batch_id,
+                QuorumScope::Privileged
+            ))
+            .count(),
+            1
+        );
         assert!(Indexing::final_data(&internal_batch_id).is_none());
 
         // privileged submission
@@ -986,9 +949,10 @@ fn we_can_manage_quorum_state_for_both_scopes() {
         assert_eq!(final_data.quorum_scope, QuorumScope::Privileged);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((&internal_batch_id,)).count(),
+            0
+        );
 
         assert_eq!(
             System::read_events_for_pallet::<Event<Test, Api>>()
@@ -1060,9 +1024,10 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_privileged_quorum_rea
         assert_eq!(final_data.quorum_scope, QuorumScope::Privileged);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(test_submission.batch_id.clone(), test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((&internal_batch_id,)).count(),
+            0
+        );
 
         assert_eq!(
             System::read_events_for_pallet::<Event<Test, Api>>()
@@ -1104,8 +1069,6 @@ fn we_cannot_submit_for_table_disabled_quorum_scope() {
             batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
             data: row_data(),
         };
-        let test_data_hash =
-            <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_submission.data);
 
         let public_permission =
             PermissionLevel::IndexingPallet(IndexingPalletPermission::SubmitDataForPublicQuorum);
@@ -1122,10 +1085,13 @@ fn we_cannot_submit_for_table_disabled_quorum_scope() {
             submit_test_data(public_submitter, test_submission.clone()),
             crate::Error::<Test, Api>::UnauthorizedSubmitter
         );
-        let submissions = Indexing::submissions(&test_submission.batch_id, test_data_hash);
-        assert!(submissions.scope_is_empty(&QuorumScope::Public));
-        assert!(submissions.scope_is_empty(&QuorumScope::Privileged));
-        assert!(Indexing::final_data(&test_submission.batch_id).is_none());
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &test_submission.table);
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((&internal_batch_id,)).count(),
+            0
+        );
+        assert!(Indexing::final_data(&internal_batch_id).is_none());
     })
 }
 
@@ -1178,9 +1144,12 @@ fn we_cannot_submit_with_privilege_to_different_table() {
             submit_test_data(privileged_submitter, test_submission.clone()),
             crate::Error::<Test, Api>::UnauthorizedSubmitter
         );
-        let submissions = Indexing::submissions(&test_submission.batch_id, test_data_hash);
-        assert!(submissions.scope_is_empty(&QuorumScope::Public));
-        assert!(submissions.scope_is_empty(&QuorumScope::Privileged));
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &test_submission.table);
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((&internal_batch_id,)).count(),
+            0
+        );
         assert!(Indexing::final_data(&test_submission.batch_id).is_none());
     })
 }
@@ -1464,9 +1433,9 @@ fn we_can_reach_quorum_before_and_after_changing_quorum_size() {
             build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(&internal_batch_id, test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id.clone(),)).count();
+        assert_eq!(submitters_count, 0);
 
         // Now update the quorum to make this table public
         let new_quorum = InsertQuorumSize {
@@ -1523,9 +1492,9 @@ fn we_can_reach_quorum_before_and_after_changing_quorum_size() {
         assert_eq!(fd.quorum_scope, QuorumScope::Public);
 
         // Verify that the old data was successfully removed for this batch
-        let submitters = Indexing::submissions(&internal_batch_id_2, test_data_hash);
-        assert!(submitters.scope_is_empty(&QuorumScope::Public));
-        assert!(submitters.scope_is_empty(&QuorumScope::Privileged));
+        let submitters_count =
+            crate::SubmissionsV1::<Test, Api>::iter_prefix((internal_batch_id_2.clone(),)).count();
+        assert_eq!(submitters_count, 0);
     });
 }
 
@@ -1569,4 +1538,137 @@ fn we_can_submit_to_permissionless_table_with_no_permissions() {
             build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
         assert!(Indexing::final_data(&internal_batch_id).is_some());
     })
+}
+
+#[test]
+fn submitters_can_overwrite_their_submission() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_statement) = sample_table_definition();
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all()),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(&who, permissions);
+
+        let batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+        let data = row_data();
+        let data_hash = hash_row_data_with_block_number::<Test>(&data, None);
+
+        Indexing::submit_data(
+            signer.clone(),
+            table_id.clone(),
+            batch_id.clone(),
+            data.clone(),
+        )
+        .unwrap();
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&batch_id, &table_id);
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::get((&internal_batch_id, QuorumScope::Public, &who))
+                .unwrap(),
+            data_hash
+        );
+
+        let different_data = diff_row_data();
+        let different_data_hash = hash_row_data_with_block_number::<Test>(&different_data, None);
+        Indexing::submit_data(signer, table_id, batch_id.clone(), different_data.clone()).unwrap();
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::get((&internal_batch_id, QuorumScope::Public, &who))
+                .unwrap(),
+            different_data_hash
+        );
+    });
+}
+
+#[test]
+fn submitters_cannot_exceed_maximum() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_statement) = sample_table_definition();
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all()),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+
+        let internal_batch_id = build_inner_batch_id::<Test, Api>(&batch_id, &table_id);
+        // artificially fill submissions for batch
+        (1..=MAX_SUBMITTERS).for_each(|submitter_num| {
+            let signer =
+                RuntimeOrigin::signed(sp_runtime::AccountId32::new([submitter_num as u8; 32]));
+            let who = ensure_signed(signer.clone()).unwrap();
+            let artificial_data_hash = <<Test as frame_system::Config>::Hashing as Hasher>::hash(
+                &submitter_num.to_le_bytes(),
+            );
+
+            crate::SubmissionsV1::<Test, Api>::insert(
+                (internal_batch_id.clone(), QuorumScope::Public, who),
+                artificial_data_hash,
+            );
+        });
+
+        // we cannot insert one more
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new(
+            [(MAX_SUBMITTERS + 1) as u8; 32],
+        ));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+        let data = row_data();
+
+        assert_noop!(
+            Indexing::submit_data(signer.clone(), table_id.clone(), batch_id.clone(), data,),
+            crate::Error::<Test, Api>::MaxSubmittersReached
+        );
+
+        // submitters can still re-submit new hashes
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(&who, permissions);
+        let data = row_data();
+        let data_hash = hash_row_data_with_block_number::<Test>(&data, None);
+
+        Indexing::submit_data(
+            signer.clone(),
+            table_id.clone(),
+            batch_id.clone(),
+            data.clone(),
+        )
+        .unwrap();
+        assert_eq!(
+            crate::SubmissionsV1::<Test, Api>::get((&internal_batch_id, QuorumScope::Public, &who))
+                .unwrap(),
+            data_hash
+        );
+    });
 }
