@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 use codec::{Decode, Encode, FullCodec, MaxEncodedLen};
 use k256::ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey};
 use scale_info::TypeInfo;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sha3::digest::core_api::CoreWrapper;
 use sha3::{Digest, Keccak256, Keccak256Core};
 use snafu::{ResultExt, Snafu};
@@ -30,18 +30,41 @@ where
     Bytes(bytes.to_vec()).serialize(serializer)
 }
 
+fn deserialize_fixed_bytes<'de, D, const LEN: usize>(deserializer: D) -> Result<[u8; LEN], D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = Vec::<u8>::deserialize(deserializer)?;
+
+    let hex_bytes: [u8; LEN] = s.as_slice().try_into().map_err(serde::de::Error::custom)?;
+
+    Ok(hex_bytes)
+}
+
 /// Represents an Ethereum-style ECDSA signature, broken into its components.
 ///
 /// Wrapper around the [`k256::ecdsa::Signature`] type.
 #[derive(
-    Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Serialize,
+    Clone,
+    Copy,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Serialize,
+    Deserialize,
 )]
 pub struct EthereumSignature {
     /// The `r` component of the signature.
     #[serde(serialize_with = "serialize_bytes_hex")]
+    #[serde(deserialize_with = "deserialize_fixed_bytes")]
     pub r: [u8; 32],
     /// The `s` component of the signature.
     #[serde(serialize_with = "serialize_bytes_hex")]
+    #[serde(deserialize_with = "deserialize_fixed_bytes")]
     pub s: [u8; 32],
     /// The recovery ID, usually 27 or 28 for Ethereum.
     pub v: u8,
@@ -367,7 +390,16 @@ pub type AttestationStateRoot = BoundedVec<u8, ConstU32<64>>;
 
 /// Represents attestations stored on-chain.
 #[derive(
-    Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Serialize,
+    Clone,
+    Encode,
+    Decode,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    Serialize,
+    Deserialize,
 )]
 #[serde(untagged)]
 pub enum Attestation<BH> {
@@ -378,6 +410,7 @@ pub enum Attestation<BH> {
         signature: EthereumSignature,
         /// The public key used to sign the attestation.
         #[serde(serialize_with = "serialize_bytes_hex")]
+        #[serde(deserialize_with = "deserialize_fixed_bytes")]
         proposed_pub_key: [u8; 33],
         /// The ethereum address for this public key
         #[serde(serialize_with = "serialize_bytes_hex")]

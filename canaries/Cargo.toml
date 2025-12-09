@@ -8,10 +8,14 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+hex.workspace = true
 event-forwarder.workspace = true
 clap = { workspace = true, features = ["derive", "env"] }
 tokio = { workspace = true, features = ["full"] }
 subxt = { workspace = true, features = ["jsonrpsee", "native", "default", "substrate-compat"] }
+reqwest = { workspace = true, features = ["json", "blocking"] }
+serde = { workspace = true }
+serde_json = { workspace = true, default-features = false, features = ["alloc"] }
 sxt-core = { workspace = true, features = ["std"] }
 sxt-runtime = { workspace = true, features = ["std"] }
 log = { workspace = true }

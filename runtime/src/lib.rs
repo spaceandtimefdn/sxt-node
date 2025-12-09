@@ -1321,7 +1321,7 @@ impl_runtime_apis! {
         }
     }
 
-        impl sp_authority_discovery::AuthorityDiscoveryApi<Block> for Runtime {
+    impl sp_authority_discovery::AuthorityDiscoveryApi<Block> for Runtime {
         fn authorities() -> Vec<AuthorityDiscoveryId> {
             AuthorityDiscovery::authorities()
         }
