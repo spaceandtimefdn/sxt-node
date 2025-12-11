@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use core::marker::PhantomData;
 
 use itertools::Itertools;
-use on_chain_table::{OnChainTable, OutOfScalarBounds};
+use on_chain_table::{OnChainTable, OutOfScalarBounds, StringToScalarConversion};
 use proof_of_sql::base::commitment::{
     AppendColumnCommitmentsError,
     AppendTableCommitmentError,
@@ -147,11 +147,15 @@ impl From<AppendOnChainTableError> for NativeCommitmentError {
     }
 }
 
-struct AppendOnChainTableToTableCommitmentFn<'a, 's>(&'a OnChainTable, PhantomData<&'s ()>);
+struct AppendOnChainTableToTableCommitmentFn<'a, 's>(
+    &'a OnChainTable,
+    StringToScalarConversion,
+    PhantomData<&'s ()>,
+);
 
 impl<'a> AppendOnChainTableToTableCommitmentFn<'a, '_> {
-    fn new(table: &'a OnChainTable) -> Self {
-        AppendOnChainTableToTableCommitmentFn(table, PhantomData)
+    fn new(table: &'a OnChainTable, string_to_scalar: StringToScalarConversion) -> Self {
+        AppendOnChainTableToTableCommitmentFn(table, string_to_scalar, PhantomData)
     }
 }
 
@@ -165,7 +169,7 @@ impl<'s> GenericOverCommitmentFn for AppendOnChainTableToTableCommitmentFn<'_, '
     ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
         let committable_table = self
             .0
-            .iter_committable::<C::Scalar>()
+            .iter_committable_with_conversion::<C::Scalar>(self.1)
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut table_commitment = input.0;
@@ -241,6 +245,7 @@ pub fn process_insert(
     insert_data: OnChainTable,
     previous_commitments: PerCommitmentScheme<OptionType<TableCommitmentType>>,
     setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    string_to_scalar: StringToScalarConversion,
 ) -> Result<
     (
         InsertAndCommitmentMetadata,
@@ -307,8 +312,11 @@ pub fn process_insert(
         }
     }
     .map(|any| {
-        any.map(AppendOnChainTableToTableCommitmentFn::new(&insert_data))
-            .transpose_result()
+        any.map(AppendOnChainTableToTableCommitmentFn::new(
+            &insert_data,
+            string_to_scalar,
+        ))
+        .transpose_result()
     })
     // we need to use an intermediate collection that implements FromParallelIterator
     .collect::<Result<Vec<_>, _>>()?
