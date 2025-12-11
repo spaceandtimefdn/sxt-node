@@ -101,9 +101,15 @@ impl OnChainColumn {
     }
 
     /// Performs conversion to a proof-of-sql `CommittableColumn` in the scalar field `S`.
-    pub fn try_to_committable_column<S: Scalar>(
-        &self,
-    ) -> Result<CommittableColumn, OutOfScalarBounds> {
+    ///
+    /// For `VarChar` columns, accepts a conversion function to scalar.
+    pub fn try_to_committable_column_with_conversion<'s, S>(
+        &'s self,
+        string_to_scalar_fn: impl Fn(&'s String) -> S,
+    ) -> Result<CommittableColumn<'s>, OutOfScalarBounds>
+    where
+        S: Scalar,
+    {
         match &self {
             OnChainColumn::Boolean(bools) => Ok(CommittableColumn::Boolean(bools)),
             OnChainColumn::UnsignedTinyInt(ints) => Ok(CommittableColumn::Uint8(ints)),
@@ -115,7 +121,7 @@ impl OnChainColumn {
             OnChainColumn::VarChar(strings) => Ok(CommittableColumn::VarChar(
                 strings
                     .iter()
-                    .map(string_to_scalar_posql_0_99::<S>)
+                    .map(string_to_scalar_fn)
                     .map(Into::<[u64; 4]>::into)
                     .collect(),
             )),
@@ -143,6 +149,12 @@ impl OnChainColumn {
             )),
         }
     }
+
+    pub fn try_to_committable_column<S: Scalar>(
+        &self,
+    ) -> Result<CommittableColumn, OutOfScalarBounds> {
+        self.try_to_committable_column_with_conversion(Into::<S>::into)
+    }
 }
 
 fn bytes_to_limbs_le(b: [u8; 32]) -> [u64; 4] {
@@ -154,8 +166,8 @@ fn bytes_to_limbs_le(b: [u8; 32]) -> [u64; 4] {
 /// columns with pre-`0.100` protocols in the past, so in order to preserve backwards
 /// compatibility of existing interfaces, we need to be able to compute commitments in the same way
 /// we used to.
-fn string_to_scalar_posql_0_99<S: Scalar>(string: impl AsRef<str>) -> S {
-    let x = string.as_ref().as_bytes();
+pub fn string_to_scalar_posql_0_99<S: Scalar>(string: &String) -> S {
+    let x = string.as_str().as_bytes();
 
     if x.is_empty() {
         return S::zero();

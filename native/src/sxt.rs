@@ -138,6 +138,50 @@ pub trait Interface {
 
         Ok((table_bytes, new_commitments_bytes))
     }
+
+    #[version(2, register_only)]
+    fn process_insert(
+        table_identifier: TableIdentifier,
+        insert_data_bytes: OnChainTableBytes,
+        previous_commitments_bytes: TableCommitmentBytesPerCommitmentSchemePassBy,
+    ) -> Result<
+        (
+            OnChainTableBytes,
+            TableCommitmentBytesPerCommitmentSchemePassBy,
+        ),
+        NativeCommitmentError,
+    > {
+        let insert_data = on_chain_table::OnChainTable::try_from(insert_data_bytes)
+            .map_err(|_| NativeCommitmentError::TableDeserialization)?;
+
+        let previous_commitments = PerCommitmentScheme::try_from(previous_commitments_bytes.data)
+            .map_err(|_| NativeCommitmentError::CommitmentDeserialization)?;
+
+        let setups = PUBLIC_SETUPS
+            .get()
+            .expect("PUBLIC_SETUPS should be initialized before runtime interface calls");
+
+        let (
+            InsertAndCommitmentMetadata {
+                insert_with_meta_columns,
+                ..
+            },
+            new_commitments,
+        ) = commitment_sql::process_insert(
+            &table_identifier,
+            insert_data,
+            previous_commitments,
+            *setups,
+        )?;
+
+        let table_bytes = insert_with_meta_columns.try_into()?;
+
+        let data = TableCommitmentBytesPerCommitmentScheme::try_from(new_commitments)?;
+
+        let new_commitments_bytes = TableCommitmentBytesPerCommitmentSchemePassBy { data };
+
+        Ok((table_bytes, new_commitments_bytes))
+    }
 }
 
 #[cfg(all(test, feature = "std"))]

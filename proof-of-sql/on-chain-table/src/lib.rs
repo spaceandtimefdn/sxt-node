@@ -14,7 +14,7 @@ mod map;
 pub use map::{IndexMap, IndexSet};
 
 mod column;
-pub use column::OnChainColumn;
+pub use column::{string_to_scalar_posql_0_99, OnChainColumn};
 
 #[cfg(feature = "arrow")]
 mod arrow_column_conversion;
