@@ -2,7 +2,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use on_chain_table::{OnChainTable, OutOfScalarBounds};
+use on_chain_table::{OnChainTable, OutOfScalarBounds, StringToScalarConversion};
 use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql_commitment_map::generic_over_commitment::{
     AssociatedPublicSetupType,
@@ -25,12 +25,21 @@ use crate::validated_create_table::{InvalidCreateTable, ValidatedCreateTable};
 
 /// Generically accepts a commitment setup and returns the table commitment to the captured
 /// `OnChainTable` and offset.
-pub struct OnChainTableToTableCommitmentFn<'a, 's>(&'a OnChainTable, usize, PhantomData<&'s ()>);
+pub struct OnChainTableToTableCommitmentFn<'a, 's>(
+    &'a OnChainTable,
+    usize,
+    StringToScalarConversion,
+    PhantomData<&'s ()>,
+);
 
 impl<'a> OnChainTableToTableCommitmentFn<'a, '_> {
     /// Construct a new [`OnChainTableToTableCommitmentFn`].
-    pub fn new(table: &'a OnChainTable, offset: usize) -> Self {
-        OnChainTableToTableCommitmentFn(table, offset, PhantomData)
+    pub fn new(
+        table: &'a OnChainTable,
+        offset: usize,
+        string_to_scalar: StringToScalarConversion,
+    ) -> Self {
+        OnChainTableToTableCommitmentFn(table, offset, string_to_scalar, PhantomData)
     }
 }
 
@@ -44,7 +53,7 @@ impl<'s> GenericOverCommitmentFn for OnChainTableToTableCommitmentFn<'_, 's> {
     ) -> <Self::Out as GenericOverCommitment>::WithCommitment<C> {
         let committable_table = self
             .0
-            .iter_committable::<C::Scalar>()
+            .iter_committable_with_conversion::<C::Scalar>(self.2)
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(
@@ -87,7 +96,12 @@ pub fn process_create_table(
 
     let empty_table = validated_create_table.into_empty_table();
 
-    let empty_table_to_table_commitment = OnChainTableToTableCommitmentFn::new(&empty_table, 0);
+    let empty_table_to_table_commitment = OnChainTableToTableCommitmentFn::new(
+        &empty_table,
+        0,
+        // This conversion function actually doesn't matter since we know the table is empty
+        StringToScalarConversion::Core,
+    );
 
     let empty_commitments = setups
         .select(commitment_schemes)
