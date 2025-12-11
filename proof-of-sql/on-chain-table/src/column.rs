@@ -103,10 +103,10 @@ impl OnChainColumn {
     /// Performs conversion to a proof-of-sql `CommittableColumn` in the scalar field `S`.
     ///
     /// For `VarChar` columns, accepts a conversion function to scalar.
-    pub fn try_to_committable_column_with_conversion<'s, S>(
-        &'s self,
-        string_to_scalar_fn: impl Fn(&'s String) -> S,
-    ) -> Result<CommittableColumn<'s>, OutOfScalarBounds>
+    pub fn try_to_committable_column_with_conversion<S>(
+        &self,
+        string_to_scalar: StringToScalarConversion,
+    ) -> Result<CommittableColumn, OutOfScalarBounds>
     where
         S: Scalar,
     {
@@ -121,7 +121,7 @@ impl OnChainColumn {
             OnChainColumn::VarChar(strings) => Ok(CommittableColumn::VarChar(
                 strings
                     .iter()
-                    .map(string_to_scalar_fn)
+                    .map(string_to_scalar.conversion::<S>())
                     .map(Into::<[u64; 4]>::into)
                     .collect(),
             )),
@@ -153,12 +153,31 @@ impl OnChainColumn {
     pub fn try_to_committable_column<S: Scalar>(
         &self,
     ) -> Result<CommittableColumn, OutOfScalarBounds> {
-        self.try_to_committable_column_with_conversion(Into::<S>::into)
+        self.try_to_committable_column_with_conversion::<S>(StringToScalarConversion::Core)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum StringToScalarConversion {
+    Posql99,
+    Core,
+}
+
+impl StringToScalarConversion {
+    fn conversion<S: Scalar>(self) -> impl Fn(&String) -> S {
+        match self {
+            StringToScalarConversion::Posql99 => string_to_scalar_posql_0_99::<S>,
+            StringToScalarConversion::Core => string_to_scalar_core::<S>,
+        }
     }
 }
 
 fn bytes_to_limbs_le(b: [u8; 32]) -> [u64; 4] {
     core::array::from_fn(|i| u64::from_le_bytes(core::array::from_fn(|j| b[i * 8 + j])))
+}
+
+fn string_to_scalar_core<S: Scalar>(string: &String) -> S {
+    string.into()
 }
 
 /// Before proof-of-sql `0.100`, strings were committed to via blake2 hash. After `0.100`, they use

@@ -1,4 +1,3 @@
-use alloc::string::String;
 use alloc::vec::Vec;
 
 use indexmap::map::{IntoIter, Iter};
@@ -11,7 +10,7 @@ use sqlparser::ast::Ident;
 
 use crate::column::OnChainColumn;
 use crate::map::IndexMap;
-use crate::OutOfScalarBounds;
+use crate::{OutOfScalarBounds, StringToScalarConversion};
 
 /// Table data type for all data types supported by sxt-node.
 ///
@@ -102,13 +101,13 @@ impl OnChainTable {
         self.into_iter()
     }
 
-    pub fn iter_committable_with_conversion<'s, S: Scalar>(
-        &'s self,
-        string_to_scalar_fn: impl Fn(&'s String) -> S,
-    ) -> impl Iterator<Item = Result<(&'s Ident, CommittableColumn<'s>), OutOfScalarBounds>> {
+    pub fn iter_committable_with_conversion<S: Scalar>(
+        &self,
+        string_to_scalar: StringToScalarConversion,
+    ) -> impl Iterator<Item = Result<(&Ident, CommittableColumn), OutOfScalarBounds>> {
         self.iter().map(move |(id, column)| {
             column
-                .try_to_committable_column_with_conversion::<S>(&string_to_scalar_fn)
+                .try_to_committable_column_with_conversion::<S>(string_to_scalar)
                 .map(|column| (id, column))
         })
     }
@@ -119,7 +118,7 @@ impl OnChainTable {
     pub fn iter_committable<S: Scalar>(
         &self,
     ) -> impl Iterator<Item = Result<(&Ident, CommittableColumn), OutOfScalarBounds>> {
-        self.iter_committable_with_conversion(Into::<S>::into)
+        self.iter_committable_with_conversion::<S>(StringToScalarConversion::Core)
     }
 
     /// Returns this [`OnChainTable`], with columns in the order provided, case-sensitive.
@@ -234,7 +233,6 @@ mod tests {
     use proof_of_sql::proof_primitive::hyperkzg::BNScalar;
 
     use super::*;
-    use crate::string_to_scalar_posql_0_99;
 
     #[test]
     fn we_can_convert_table_to_and_from_iter() {
