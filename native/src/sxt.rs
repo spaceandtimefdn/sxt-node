@@ -116,8 +116,7 @@ pub trait Interface {
         )
     }
 
-    #[version(2, register_only)]
-    fn process_insert(
+    fn process_insert_version_2(
         table_identifier: TableIdentifier,
         insert_data_bytes: OnChainTableBytes,
         previous_commitments_bytes: TableCommitmentBytesPerCommitmentSchemePassBy,
@@ -284,9 +283,13 @@ mod tests {
         let empty_commitments = setups
             .into_iter()
             .map(|any| {
-                any.map(OnChainTableToTableCommitmentFn::new(&empty_table, 0))
-                    .transpose_result()
-                    .unwrap()
+                any.map(OnChainTableToTableCommitmentFn::new(
+                    &empty_table,
+                    0,
+                    StringToScalarConversion::Core,
+                ))
+                .transpose_result()
+                .unwrap()
             })
             .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
@@ -294,9 +297,13 @@ mod tests {
             data: empty_commitments.clone().try_into().unwrap(),
         };
 
-        let (insert_with_meta_columns, new_commitments) =
-            interface::process_insert(table_id.clone(), insert_data_bytes, empty_commitments_bytes)
-                .unwrap();
+        // V1
+        let (insert_with_meta_columns, new_commitments) = interface::process_insert(
+            table_id.clone(),
+            insert_data_bytes.clone(),
+            empty_commitments_bytes.clone(),
+        )
+        .unwrap();
 
         let (
             InsertAndCommitmentMetadata {
@@ -304,8 +311,46 @@ mod tests {
                 ..
             },
             expected_commitments,
-        ) = commitment_sql::process_insert(&table_id, insert_data, empty_commitments, *setups)
-            .unwrap();
+        ) = commitment_sql::process_insert(
+            &table_id,
+            insert_data.clone(),
+            empty_commitments.clone(),
+            *setups,
+            StringToScalarConversion::Posql99,
+        )
+        .unwrap();
+
+        assert_eq!(
+            insert_with_meta_columns,
+            expected_insert_with_meta_columns.try_into().unwrap()
+        );
+        assert_eq!(
+            new_commitments.data,
+            expected_commitments.try_into().unwrap()
+        );
+
+        // V2
+        let (insert_with_meta_columns, new_commitments) = interface::process_insert_version_2(
+            table_id.clone(),
+            insert_data_bytes,
+            empty_commitments_bytes,
+        )
+        .unwrap();
+
+        let (
+            InsertAndCommitmentMetadata {
+                insert_with_meta_columns: expected_insert_with_meta_columns,
+                ..
+            },
+            expected_commitments,
+        ) = commitment_sql::process_insert(
+            &table_id,
+            insert_data,
+            empty_commitments,
+            *setups,
+            StringToScalarConversion::Core,
+        )
+        .unwrap();
 
         assert_eq!(
             insert_with_meta_columns,
