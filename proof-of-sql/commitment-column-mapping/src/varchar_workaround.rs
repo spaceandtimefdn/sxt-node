@@ -127,7 +127,7 @@ mod tests {
     use alloc::vec;
 
     use commitment_sql::OnChainTableToTableCommitmentFn;
-    use on_chain_table::OnChainColumn;
+    use on_chain_table::{OnChainColumn, StringToScalarConversion};
     use proof_of_sql::base::database::ColumnType;
     use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
 
@@ -158,9 +158,13 @@ mod tests {
         let commitments = setups
             .into_iter()
             .map(|any| {
-                any.map(OnChainTableToTableCommitmentFn::new(&table, 0))
-                    .transpose_result()
-                    .unwrap()
+                any.map(OnChainTableToTableCommitmentFn::new(
+                    &table,
+                    0,
+                    StringToScalarConversion::Core,
+                ))
+                .transpose_result()
+                .unwrap()
             })
             .collect::<PerCommitmentScheme<_>>();
 
