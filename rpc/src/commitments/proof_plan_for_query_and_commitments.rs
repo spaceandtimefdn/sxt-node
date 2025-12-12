@@ -80,7 +80,7 @@ mod tests {
     use commitment_sql::OnChainTableToTableCommitmentFn;
     use indexmap::IndexMap;
     use itertools::Itertools;
-    use on_chain_table::{OnChainColumn, OnChainTable};
+    use on_chain_table::{OnChainColumn, OnChainTable, StringToScalarConversion};
     use proof_of_sql::base::database::{ColumnType, TableRef, TestSchemaAccessor};
     use proof_of_sql_commitment_map::generic_over_commitment::{
         GenericOverCommitment,
@@ -158,7 +158,11 @@ mod tests {
         ])
         .unwrap();
         let table_1_commitments = setups
-            .map(OnChainTableToTableCommitmentFn::new(&table_1_data, 0))
+            .map(OnChainTableToTableCommitmentFn::new(
+                &table_1_data,
+                0,
+                StringToScalarConversion::Core,
+            ))
             .map(UnwrapResultFn(PhantomData));
         let table_1_commitment_bytes = table_1_commitments.map(TableCommitmentToBytesFn);
 
@@ -173,7 +177,11 @@ mod tests {
         ])
         .unwrap();
         let table_2_commitments = setups
-            .map(OnChainTableToTableCommitmentFn::new(&table_2_data, 0))
+            .map(OnChainTableToTableCommitmentFn::new(
+                &table_2_data,
+                0,
+                StringToScalarConversion::Core,
+            ))
             .map(UnwrapResultFn(PhantomData));
         let table_2_commitment_bytes = table_2_commitments.map(TableCommitmentToBytesFn);
 
