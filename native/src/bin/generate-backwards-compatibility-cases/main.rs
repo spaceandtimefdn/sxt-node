@@ -2,7 +2,6 @@
 use clap::{Parser, ValueEnum};
 
 mod write_cases;
-use on_chain_table::StringToScalarConversion;
 pub use write_cases::write_cases;
 
 mod process_insert;
@@ -37,18 +36,10 @@ fn main() {
 
     match function {
         Function::ProcessInsert => {
-            process_insert::write_process_insert_cases(
-                cases_dir,
-                native::interface::process_insert,
-                StringToScalarConversion::Posql99,
-            );
+            process_insert::write_process_insert_cases_version_1(cases_dir);
         }
         Function::ProcessInsertVersion2 => {
-            process_insert::write_process_insert_cases(
-                cases_dir,
-                native::interface::process_insert_version_2,
-                StringToScalarConversion::Core,
-            );
+            process_insert::write_process_insert_cases_version_2(cases_dir);
         }
     }
 }

@@ -360,7 +360,7 @@ fn apply_triple_fn<A, B, C, O>(f: impl Fn(A, B, C) -> O) -> impl Fn((A, B, C)) -
 
 /// Generates and writes cases for `process_insert_fn`.
 pub fn write_process_insert_cases(
-    cases_dir: impl AsRef<Path>,
+    process_insert_dir: impl AsRef<Path>,
     process_insert_fn: impl Fn(
         TableIdentifier,
         OnChainTableBytes,
@@ -374,10 +374,8 @@ pub fn write_process_insert_cases(
     >,
     string_to_scalar: StringToScalarConversion,
 ) {
-    let process_insert_fn = apply_triple_fn(process_insert_fn);
-    let process_insert_dir = cases_dir.as_ref().join("process_insert");
-
     let setups = get_or_init_from_files_with_four_points_unchecked();
+    let process_insert_fn = apply_triple_fn(process_insert_fn);
 
     // happy path
     write_cases(
@@ -434,5 +432,25 @@ pub fn write_process_insert_cases(
         &process_insert_fn,
         |_, o| o == &Err(NativeCommitmentError::NoCommitments),
         &process_insert_dir,
+    );
+}
+
+pub fn write_process_insert_cases_version_1(cases_dir: impl AsRef<Path>) {
+    let process_insert_dir = cases_dir.as_ref().join("process_insert");
+
+    write_process_insert_cases(
+        process_insert_dir,
+        native::interface::process_insert,
+        StringToScalarConversion::Posql99,
+    );
+}
+
+pub fn write_process_insert_cases_version_2(cases_dir: impl AsRef<Path>) {
+    let process_insert_dir = cases_dir.as_ref().join("process_insert_version_2");
+
+    write_process_insert_cases(
+        process_insert_dir,
+        native::interface::process_insert_version_2,
+        StringToScalarConversion::Core,
     );
 }
