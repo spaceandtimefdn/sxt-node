@@ -9,7 +9,7 @@ use commitment_sql::{
 };
 use frame_support::assert_noop;
 use native_api::Api;
-use on_chain_table::{OnChainColumn, OnChainTable};
+use on_chain_table::{OnChainColumn, OnChainTable, StringToScalarConversion};
 use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
 use proof_of_sql_commitment_map::{
@@ -88,9 +88,13 @@ fn we_can_process_insert() {
             .unwrap()
             .into_iter()
             .map(|any| {
-                any.map(OnChainTableToTableCommitmentFn::new(&empty_table, 0))
-                    .transpose_result()
-                    .unwrap()
+                any.map(OnChainTableToTableCommitmentFn::new(
+                    &empty_table,
+                    0,
+                    StringToScalarConversion::Core,
+                ))
+                .transpose_result()
+                .unwrap()
             })
             .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
@@ -106,6 +110,7 @@ fn we_can_process_insert() {
                 insert_data_converted,
                 empty_commitments_converted,
                 *PUBLIC_SETUPS.get().unwrap(),
+                StringToScalarConversion::Core,
             )
             .unwrap();
 
