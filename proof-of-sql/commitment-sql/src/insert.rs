@@ -381,9 +381,13 @@ mod tests {
         let empty_commitments = setups
             .into_iter()
             .map(|any| {
-                any.map(OnChainTableToTableCommitmentFn::new(&empty_table, 0))
-                    .transpose_result()
-                    .unwrap()
+                any.map(OnChainTableToTableCommitmentFn::new(
+                    &empty_table,
+                    0,
+                    StringToScalarConversion::Core,
+                ))
+                .transpose_result()
+                .unwrap()
             })
             .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
@@ -417,14 +421,25 @@ mod tests {
         let expected_first_commitments = setups
             .into_iter()
             .map(|any| {
-                any.map(OnChainTableToTableCommitmentFn::new(&first_insert, 0))
-                    .transpose_result()
-                    .unwrap()
+                any.map(OnChainTableToTableCommitmentFn::new(
+                    &first_insert,
+                    0,
+                    StringToScalarConversion::Core,
+                ))
+                .transpose_result()
+                .unwrap()
             })
             .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
         assert_eq!(
-            process_insert(&table_id, first_insert, empty_commitments, *setups).unwrap(),
+            process_insert(
+                &table_id,
+                first_insert,
+                empty_commitments,
+                *setups,
+                StringToScalarConversion::Core
+            )
+            .unwrap(),
             (
                 InsertAndCommitmentMetadata {
                     insert_with_meta_columns: expected_first_insert_with_meta_columns,
@@ -477,9 +492,13 @@ mod tests {
         let expected_second_commitments = setups
             .into_iter()
             .map(|any| {
-                any.map(OnChainTableToTableCommitmentFn::new(&full_table, 0))
-                    .transpose_result()
-                    .unwrap()
+                any.map(OnChainTableToTableCommitmentFn::new(
+                    &full_table,
+                    0,
+                    StringToScalarConversion::Core,
+                ))
+                .transpose_result()
+                .unwrap()
             })
             .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
@@ -488,7 +507,8 @@ mod tests {
                 &table_id,
                 second_insert_with_different_column_order,
                 expected_first_commitments,
-                *setups
+                *setups,
+                StringToScalarConversion::Core
             )
             .unwrap(),
             (
@@ -534,7 +554,13 @@ mod tests {
         };
 
         assert!(matches!(
-            process_insert(&table_id, insert_data, previous_commitments, *setups),
+            process_insert(
+                &table_id,
+                insert_data,
+                previous_commitments,
+                *setups,
+                StringToScalarConversion::Core
+            ),
             Err(ProcessInsertError::TableCommitmentRangeMismatch)
         ));
     }
@@ -568,9 +594,13 @@ mod tests {
         let previous_commitments = setups
             .into_iter()
             .map(|any| {
-                any.map(OnChainTableToTableCommitmentFn::new(&empty_table, 0))
-                    .transpose_result()
-                    .unwrap()
+                any.map(OnChainTableToTableCommitmentFn::new(
+                    &empty_table,
+                    0,
+                    StringToScalarConversion::Core,
+                ))
+                .transpose_result()
+                .unwrap()
             })
             .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
@@ -585,7 +615,8 @@ mod tests {
                 &table_id,
                 insert_missing_column,
                 previous_commitments,
-                *setups
+                *setups,
+                StringToScalarConversion::Core
             ),
             Err(ProcessInsertError::AppendOnChainTable {
                 source: AppendOnChainTableError::ColumnCommitmentsMismatch { .. }
@@ -623,7 +654,13 @@ mod tests {
         let none_previous_commitments = PerCommitmentScheme::default();
 
         assert!(matches!(
-            process_insert(&table_id, insert_data, none_previous_commitments, *setups),
+            process_insert(
+                &table_id,
+                insert_data,
+                none_previous_commitments,
+                *setups,
+                StringToScalarConversion::Core
+            ),
             Err(ProcessInsertError::NoCommitments)
         ));
     }
@@ -661,7 +698,13 @@ mod tests {
         };
 
         assert!(matches!(
-            process_insert(&table_id, insert_data, previous_commitments, *setups),
+            process_insert(
+                &table_id,
+                insert_data,
+                previous_commitments,
+                *setups,
+                StringToScalarConversion::Core
+            ),
             Err(ProcessInsertError::AppendOnChainTable {
                 source: AppendOnChainTableError::OutOfScalarBounds { .. }
             })
