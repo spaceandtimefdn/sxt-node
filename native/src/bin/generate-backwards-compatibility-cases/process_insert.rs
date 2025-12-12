@@ -11,7 +11,7 @@ use on_chain_table::proptest::{
     proof_of_sql_schema,
     ProofOfSqlSchema,
 };
-use on_chain_table::OnChainTable;
+use on_chain_table::{OnChainTable, StringToScalarConversion};
 use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
 use proof_of_sql_commitment_map::proptest::commitment_scheme_flags;
@@ -57,6 +57,7 @@ fn process_insert_logical_to_passby_input(
 /// Strategy for generating happy-path input for `process_insert`.
 fn process_insert_input(
     setups: PerCommitmentScheme<AssociatedPublicSetupType<'_>>,
+    string_to_scalar: StringToScalarConversion,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -73,6 +74,7 @@ fn process_insert_input(
                     setups,
                     on_chain_table(Just(schema), Just(commitment_row_count)),
                     commitment_scheme_flags(),
+                    string_to_scalar,
                 ),
             )
         })
@@ -82,6 +84,7 @@ fn process_insert_input(
 /// Strategy for generating `process_insert` input with malformed commitments.
 fn process_insert_input_bad_commitments(
     setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    string_to_scalar: StringToScalarConversion,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -89,7 +92,7 @@ fn process_insert_input_bad_commitments(
         TableCommitmentBytesPerCommitmentSchemePassBy,
     ),
 > + use<'_> {
-    process_insert_input(setups).prop_perturb(
+    process_insert_input(setups, string_to_scalar).prop_perturb(
         |(table_identifier, on_chain_table, table_commitment_per_commitment_scheme), mut rng| {
             let data = table_commitment_per_commitment_scheme
                 .data
@@ -117,6 +120,7 @@ fn process_insert_input_bad_commitments(
 /// Strategy for generating `process_insert` input with malformed insert data.
 fn process_insert_input_bad_table(
     setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    string_to_scalar: StringToScalarConversion,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -124,7 +128,7 @@ fn process_insert_input_bad_table(
         TableCommitmentBytesPerCommitmentSchemePassBy,
     ),
 > + use<'_> {
-    process_insert_input(setups).prop_perturb(
+    process_insert_input(setups, string_to_scalar).prop_perturb(
         |(table_identifier, on_chain_table, table_commitment_per_commitment_scheme), mut rng| {
             let mut on_chain_table_data = on_chain_table.data().clone();
 
@@ -149,6 +153,7 @@ fn process_insert_input_bad_table(
 /// Strategy for generating `process_insert` input with out-of-bounds decimal insert data.
 fn process_insert_input_out_of_scalar_bounds(
     setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    string_to_scalar: StringToScalarConversion,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -180,6 +185,7 @@ fn process_insert_input_out_of_scalar_bounds(
                         0..4usize,
                     ),
                     commitment_scheme_flags(),
+                    string_to_scalar,
                 ),
             )
         })
@@ -190,6 +196,7 @@ fn process_insert_input_out_of_scalar_bounds(
 /// table schema.
 fn process_insert_input_mismatched_schemas(
     setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    string_to_scalar: StringToScalarConversion,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -213,6 +220,7 @@ fn process_insert_input_mismatched_schemas(
                     setups,
                     on_chain_table(Just(schema_b), Just(commitment_row_count)),
                     commitment_scheme_flags(),
+                    string_to_scalar,
                 ),
             )
         })
@@ -222,6 +230,7 @@ fn process_insert_input_mismatched_schemas(
 /// Strategy for generating `process_insert` input with commitments that disagree on table size.
 fn process_insert_input_mismatched_lengths(
     setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    string_to_scalar: StringToScalarConversion,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -243,11 +252,13 @@ fn process_insert_input_mismatched_lengths(
                         setups,
                         on_chain_table(Just(schema.clone()), Just(hyperkzg_length)),
                         Just(CommitmentSchemeFlags::all()),
+                        string_to_scalar,
                     ),
                     table_commitment_per_commitment_scheme(
                         setups,
                         on_chain_table(Just(schema), Just(dynamic_dory_length)),
                         Just(CommitmentSchemeFlags::all()),
+                        string_to_scalar,
                     ),
                 )
                     .prop_map(
@@ -264,6 +275,7 @@ fn process_insert_input_mismatched_lengths(
 /// Strategy for generating `process_insert` input with commitments that disagree on column order.
 fn process_insert_input_mismatched_column_order(
     setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    string_to_scalar: StringToScalarConversion,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -295,11 +307,13 @@ fn process_insert_input_mismatched_column_order(
                         setups,
                         on_chain_table(Just(schema_a), Just(commitment_row_count)),
                         Just(CommitmentSchemeFlags::all()),
+                        string_to_scalar,
                     ),
                     table_commitment_per_commitment_scheme(
                         setups,
                         on_chain_table(Just(schema_b), Just(commitment_row_count)),
                         Just(CommitmentSchemeFlags::all()),
+                        string_to_scalar,
                     ),
                 )
                     .prop_map(
@@ -340,82 +354,84 @@ fn process_insert_input_no_commitments<'a>() -> impl Strategy<
         })
 }
 
-/// Takes `process_insert` input as a tuple and runs `process_insert`.
-fn process_insert_tuple(
-    (table_identifier, insert, commitments): (
+fn apply_triple_fn<A, B, C, O>(f: impl Fn(A, B, C) -> O) -> impl Fn((A, B, C)) -> O {
+    move |(a, b, c)| f(a, b, c)
+}
+
+/// Generates and writes cases for `process_insert_fn`.
+pub fn write_process_insert_cases(
+    cases_dir: impl AsRef<Path>,
+    process_insert_fn: impl Fn(
         TableIdentifier,
         OnChainTableBytes,
         TableCommitmentBytesPerCommitmentSchemePassBy,
-    ),
-) -> Result<
-    (
-        OnChainTableBytes,
-        TableCommitmentBytesPerCommitmentSchemePassBy,
-    ),
-    NativeCommitmentError,
-> {
-    native::interface::process_insert(table_identifier, insert, commitments)
-}
-
-/// Generates and writes cases for `process_insert`.
-pub fn write_process_insert_cases(cases_dir: impl AsRef<Path>) {
+    ) -> Result<
+        (
+            OnChainTableBytes,
+            TableCommitmentBytesPerCommitmentSchemePassBy,
+        ),
+        NativeCommitmentError,
+    >,
+    string_to_scalar: StringToScalarConversion,
+) {
+    let process_insert_fn = apply_triple_fn(process_insert_fn);
     let process_insert_dir = cases_dir.as_ref().join("process_insert");
 
     let setups = get_or_init_from_files_with_four_points_unchecked();
 
     // happy path
     write_cases(
-        process_insert_input(*setups),
-        process_insert_tuple,
+        process_insert_input(*setups, string_to_scalar),
+        &process_insert_fn,
         |_, o| o.is_ok(),
         &process_insert_dir,
     );
 
     write_cases(
-        process_insert_input_bad_commitments(*setups),
-        process_insert_tuple,
+        process_insert_input_bad_commitments(*setups, string_to_scalar),
+        &process_insert_fn,
         |_, o| o == &Err(NativeCommitmentError::CommitmentDeserialization),
         &process_insert_dir,
     );
 
     write_cases(
-        process_insert_input_bad_table(*setups),
-        process_insert_tuple,
+        process_insert_input_bad_table(*setups, string_to_scalar),
+        &process_insert_fn,
         |_, o| o == &Err(NativeCommitmentError::TableDeserialization),
         &process_insert_dir,
     );
 
     write_cases(
-        process_insert_input_out_of_scalar_bounds(*setups),
-        process_insert_tuple,
+        process_insert_input_out_of_scalar_bounds(*setups, string_to_scalar),
+        &process_insert_fn,
         |_, o| o == &Err(NativeCommitmentError::OutOfScalarBounds),
         &process_insert_dir,
     );
 
     write_cases(
-        process_insert_input_mismatched_lengths(*setups),
-        process_insert_tuple,
+        process_insert_input_mismatched_lengths(*setups, string_to_scalar),
+        &process_insert_fn,
         |_, o| o == &Err(NativeCommitmentError::TableCommitmentRangeMismatch),
         &process_insert_dir,
     );
 
     write_cases(
-        process_insert_input_mismatched_column_order(*setups),
-        process_insert_tuple,
+        process_insert_input_mismatched_column_order(*setups, string_to_scalar),
+        &process_insert_fn,
         |_, o| o == &Err(NativeCommitmentError::TableCommitmentColumnOrderMismatch),
         &process_insert_dir,
     );
 
     write_cases(
-        process_insert_input_mismatched_schemas(*setups),
-        process_insert_tuple,
+        process_insert_input_mismatched_schemas(*setups, string_to_scalar),
+        &process_insert_fn,
         |_, o| o == &Err(NativeCommitmentError::ColumnCommitmentsMismatch),
         &process_insert_dir,
     );
 
     write_cases(
         process_insert_input_no_commitments(),
-        process_insert_tuple,
+        &process_insert_fn,
         |_, o| o == &Err(NativeCommitmentError::NoCommitments),
         &process_insert_dir,
     );
