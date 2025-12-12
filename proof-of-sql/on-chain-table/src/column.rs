@@ -414,9 +414,14 @@ mod tests {
         let data = ["lorem", "ipsum", "dolor"].map(String::from).to_vec();
         let on_chain_varchar_column = OnChainColumn::VarChar(data.clone());
         let owned_varchar_column = OwnedColumn::<S>::VarChar(data);
-        // For the time being, we do not commit to varchar columns the same way as proof-of-sql for
-        // backwards compatibility purposes
+        // Varchar columns will be different depending on the scalar conversion value
         assert_ne!(
+            on_chain_varchar_column
+                .try_to_committable_column_with_conversion::<S>(StringToScalarConversion::Posql99)
+                .unwrap(),
+            CommittableColumn::from(&owned_varchar_column)
+        );
+        assert_eq!(
             on_chain_varchar_column
                 .try_to_committable_column::<S>()
                 .unwrap(),
