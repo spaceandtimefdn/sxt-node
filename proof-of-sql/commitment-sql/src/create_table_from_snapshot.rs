@@ -87,7 +87,7 @@ mod tests {
     use alloc::string::{String, ToString};
     use alloc::vec;
 
-    use on_chain_table::{OnChainColumn, OnChainTable};
+    use on_chain_table::{OnChainColumn, OnChainTable, StringToScalarConversion};
     use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
     use sqlparser::ast::Ident;
     use sqlparser::dialect::PostgreSqlDialect;
@@ -161,6 +161,7 @@ mod tests {
                     any.map(OnChainTableToTableCommitmentFn::new(
                         &self.snapshot_data,
                         self.commitment_offset,
+                        StringToScalarConversion::Core,
                     ))
                     .transpose_result()
                     .unwrap()
@@ -204,6 +205,7 @@ mod tests {
                 any.map(OnChainTableToTableCommitmentFn::new(
                     &test_params.snapshot_data,
                     0,
+                    StringToScalarConversion::Core,
                 ))
                 .transpose_result()
                 .unwrap()
