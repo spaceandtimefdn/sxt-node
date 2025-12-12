@@ -52,7 +52,7 @@ pub mod tests {
     use core::ops::Range;
 
     use commitment_sql::OnChainTableToTableCommitmentFn;
-    use on_chain_table::{OnChainColumn, OnChainTable};
+    use on_chain_table::{OnChainColumn, OnChainTable, StringToScalarConversion};
     use proof_of_sql::base::commitment::ColumnCommitmentMetadataMap;
     use proof_of_sql_commitment_map::generic_over_commitment::{
         CommitmentType,
@@ -108,7 +108,11 @@ pub mod tests {
 
         setups.into_iter().for_each(|any| {
             let any_commitment = any
-                .map(OnChainTableToTableCommitmentFn::new(&table, 0))
+                .map(OnChainTableToTableCommitmentFn::new(
+                    &table,
+                    0,
+                    StringToScalarConversion::Core,
+                ))
                 .transpose_result()
                 .unwrap();
 
