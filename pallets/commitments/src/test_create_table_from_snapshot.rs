@@ -4,7 +4,7 @@ use commitment_sql::{
     OnChainTableToTableCommitmentFn,
 };
 use frame_support::assert_noop;
-use on_chain_table::{OnChainColumn, OnChainTable};
+use on_chain_table::{OnChainColumn, OnChainTable, StringToScalarConversion};
 use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
 use proof_of_sql_commitment_map::{
     CommitmentScheme,
@@ -74,9 +74,13 @@ impl CreateTableApiTestParams for ProcessCreateTableFromSnapshotTestParams {
             .select(&self.commitment_schemes)
             .into_flat_iter()
             .map(|any| {
-                any.map(OnChainTableToTableCommitmentFn::new(&self.snapshot_data, 0))
-                    .transpose_result()
-                    .unwrap()
+                any.map(OnChainTableToTableCommitmentFn::new(
+                    &self.snapshot_data,
+                    0,
+                    StringToScalarConversion::Core,
+                ))
+                .transpose_result()
+                .unwrap()
             })
             .collect::<PerCommitmentScheme<OptionType<TableCommitmentType>>>();
 
@@ -132,6 +136,7 @@ fn we_can_process_create_table_from_snapshot() {
                 any.map(OnChainTableToTableCommitmentFn::new(
                     &test_params.snapshot_data,
                     0,
+                    StringToScalarConversion::Core,
                 ))
                 .transpose_result()
                 .unwrap()
