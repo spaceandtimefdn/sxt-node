@@ -1,10 +1,6 @@
 //! Runtime APIs for reading from pallet-commitments.
 
-use alloc::vec::Vec;
-
 use frame_support::BoundedVec;
-use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
-use proof_of_sql_commitment_map::{AnyCommitmentScheme, TableCommitmentBytes};
 use sp_core::ConstU32;
 use sxt_core::tables::TableIdentifier;
 

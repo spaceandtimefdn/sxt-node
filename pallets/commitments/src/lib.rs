@@ -24,8 +24,10 @@ mod test_insert;
 #[cfg(test)]
 mod test_table_commitments;
 
+/// Error type conversions for commitment operations.
 mod error_conversions;
 
+/// Simulates end row insertion for commitment calculations.
 mod end_row_insert_simulation;
 
 pub mod runtime_api;
