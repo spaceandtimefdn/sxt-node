@@ -1,3 +1,12 @@
+## [1.48.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.48.1...v1.48.2) (2025-12-15)
+
+
+### Bug Fixes
+
+* fix clippy errors for Rust 1.91.1 ([ae9f0de](https://github.com/spaceandtimefdn/sxt-node/commit/ae9f0de93201de826b28a58b541667d342ecc0c5))
+
+
+
 ## [1.48.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.48.0...v1.48.1) (2025-12-15)
 
 
@@ -49,15 +58,6 @@
 ### Features
 
 * add VARIANT_COUNT constant to QuorumScope ([dfcdb36](https://github.com/spaceandtimefdn/sxt-node/commit/dfcdb365c2fa0d9a1b20b12bd235efe851c8b9d4))
-
-
-
-# [1.45.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.44.6...v1.45.0) (2025-12-04)
-
-
-### Features
-
-* add Heavy monad for composing functions that incur weight ([71d0370](https://github.com/spaceandtimefdn/sxt-node/commit/71d03709b8cd380877492a0f07a44a60367969d0))
 
 
 
