@@ -184,6 +184,7 @@ fn process_insert_with_conversion(
 #[cfg(all(test, feature = "std"))]
 mod tests {
     use std::io::Cursor;
+    use std::path::PathBuf;
     use std::sync::Arc;
 
     use arrow::array::{ArrayRef, Int32Array, RecordBatch};
@@ -419,13 +420,26 @@ mod tests {
         assert!(matches!(result, Err(NativeCommitmentError::NoCommitments)));
     }
 
-    #[test]
-    fn process_insert_output_is_backwards_compatible() {
+    fn process_insert_output_is_backwards_compatible<F>(process_insert: F, cases_dir_name: &str)
+    where
+        F: Fn(
+                TableIdentifier,
+                OnChainTableBytes,
+                TableCommitmentBytesPerCommitmentSchemePassBy,
+            ) -> Result<
+                (
+                    OnChainTableBytes,
+                    TableCommitmentBytesPerCommitmentSchemePassBy,
+                ),
+                NativeCommitmentError,
+            > + Send
+            + Sync,
+    {
         let _ = get_or_init_from_files_with_four_points_unchecked();
 
         let workspace_dir = std::env::var("CARGO_WORKSPACE_DIR").unwrap();
         std::fs::read_dir(format!(
-            "{workspace_dir}/native/backwards_compatibility_cases/process_insert"
+            "{workspace_dir}/native/backwards_compatibility_cases/{cases_dir_name}"
         ))
         .unwrap()
         .par_bridge()
@@ -448,8 +462,7 @@ mod tests {
             )>::decode(&mut case_bytes.as_slice())
             .unwrap();
 
-            let output =
-                interface::process_insert(input.0.clone(), input.1.clone(), input.2.clone());
+            let output = process_insert(input.0.clone(), input.1.clone(), input.2.clone());
 
             assert_eq!(output, expected_output);
 
@@ -457,5 +470,18 @@ mod tests {
 
             assert_eq!(case_bytes, new_case_bytes);
         })
+    }
+
+    #[test]
+    fn process_insert_version_1_output_is_backwards_compatible() {
+        process_insert_output_is_backwards_compatible(interface::process_insert, "process_insert");
+    }
+
+    #[test]
+    fn process_insert_version_2_output_is_backwards_compatible() {
+        process_insert_output_is_backwards_compatible(
+            interface::process_insert_version_2,
+            "process_insert_version_2",
+        );
     }
 }
