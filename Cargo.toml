@@ -47,6 +47,7 @@ exclude = [
 resolver = "2"
 
 [workspace.dependencies]
+polkadot-sdk = { version = "0.9.0", default-features = false }
 event-forwarder = { path = "./event-forwarder"}
 watcher = { path = "./watcher"}
 translation-layer = { path = "./translation-layer"}
