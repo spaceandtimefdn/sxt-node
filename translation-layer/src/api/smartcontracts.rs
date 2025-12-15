@@ -15,7 +15,6 @@ use crate::model::{
     GetContractResponse,
     GetContractsResponse,
     RemoveContractRequest,
-    TableRequest,
 };
 use crate::state::TranslationLayerState;
 use crate::table_builder::TableCreator;
@@ -266,7 +265,7 @@ pub async fn get_smartcontract(
         .storage()
         .at_latest()
         .await
-        .map_err(|err| internal_server_error("Failed to access storage"))?;
+        .map_err(|_err| internal_server_error("Failed to access storage"))?;
 
     let contract = storage
         .fetch(&query)
@@ -344,7 +343,7 @@ pub async fn get_smartcontracts(
         .storage()
         .at_latest()
         .await
-        .map_err(|err| internal_server_error("Failed to access storage"))?;
+        .map_err(|_err| internal_server_error("Failed to access storage"))?;
 
     let mut contract_stream = storage.iter(query).await.map_err(|err| {
         internal_server_error(&format!("Failed to get storage iterator: {}", err))
