@@ -17,7 +17,11 @@ mod benchmarks {
     use pallet_permissions::Pallet as Permissions;
     use sha3::digest::generic_array::GenericArray;
     use sxt_core::attestation::{
-        blake2_256, sign_eth_message, Attestation, AttestationKey, EthereumSignature,
+        blake2_256,
+        sign_eth_message,
+        Attestation,
+        AttestationKey,
+        EthereumSignature,
         RegisterExternalAddress,
     };
     use sxt_core::permissions::{AttestationPalletPermission, PermissionLevel, PermissionList};

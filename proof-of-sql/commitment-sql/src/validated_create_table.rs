@@ -6,11 +6,13 @@ use sqlparser::ast::{ColumnDef, ColumnOptionDef, Ident};
 
 use crate::column_options::{validate_column_options, InvalidColumnOptions};
 use crate::column_type_conversion::{
-    sqlparser_data_type_to_proof_of_sql_column_type, UnsupportedColumnType,
+    sqlparser_data_type_to_proof_of_sql_column_type,
+    UnsupportedColumnType,
 };
 use crate::map::IndexMap;
 use crate::row_number_column::{
-    validate_table_avoids_row_number_column_name, ReservedMetaRowNumberColumnName,
+    validate_table_avoids_row_number_column_name,
+    ReservedMetaRowNumberColumnName,
 };
 
 /// Error type for invalid table definitions.

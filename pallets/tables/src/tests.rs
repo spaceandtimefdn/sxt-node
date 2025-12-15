@@ -8,19 +8,45 @@ use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use sp_runtime::{BoundedVec, DispatchError, ModuleError, TokenError};
 use sqlparser::ast::{ColumnDef, DataType, ExactNumberInfo, Ident, TimezoneInfo};
 use sxt_core::permissions::{
-    IndexingPalletPermission, PermissionLevel, PermissionList, TablesPalletPermission,
+    IndexingPalletPermission,
+    PermissionLevel,
+    PermissionList,
+    TablesPalletPermission,
 };
 use sxt_core::tables::{
-    ColumnUuid, ColumnUuidList, CreateStatement, GetTableSchemaError, InsertQuorumSize, Source,
-    SourceAndMode, TableIdentifier, TableName, TableNamespace, TableType, TableUuid, TryNormalize,
+    ColumnUuid,
+    ColumnUuidList,
+    CreateStatement,
+    GetTableSchemaError,
+    InsertQuorumSize,
+    Source,
+    SourceAndMode,
+    TableIdentifier,
+    TableName,
+    TableNamespace,
+    TableType,
+    TableUuid,
+    TryNormalize,
 };
 use sxt_core::ByteString;
 
 use crate::mock::*;
 use crate::{
-    ColumnVersions, CommitmentCreationCmd, CreateTableList, Error, Event, Identifiers,
-    NamespaceVersions, Schemas, Snapshots, TableInsertQuorums, TableOwners, TableSources,
-    TableVersions, UpdateTable, UpdateTableList,
+    ColumnVersions,
+    CommitmentCreationCmd,
+    CreateTableList,
+    Error,
+    Event,
+    Identifiers,
+    NamespaceVersions,
+    Schemas,
+    Snapshots,
+    TableInsertQuorums,
+    TableOwners,
+    TableSources,
+    TableVersions,
+    UpdateTable,
+    UpdateTableList,
 };
 
 // Give $who permission $p

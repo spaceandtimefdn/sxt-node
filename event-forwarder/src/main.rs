@@ -25,7 +25,13 @@ use alloy::hex::FromHexError;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::primitives::{Address, FixedBytes, Uint};
 use alloy::providers::fillers::{
-    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+    BlobGasFiller,
+    ChainIdFiller,
+    FillProvider,
+    GasFiller,
+    JoinFill,
+    NonceFiller,
+    WalletFiller,
 };
 use alloy::providers::{Identity, ProviderBuilder, RootProvider, WsConnect};
 use alloy::signers::local::PrivateKeySigner;
@@ -44,7 +50,8 @@ use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use sxt_core::sxt_chain_runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::attestation::{
-    Attestation, EthereumSignature,
+    Attestation,
+    EthereumSignature,
 };
 use sxt_core::system_tables::ClaimedUnstake;
 use tokio::fs::File;

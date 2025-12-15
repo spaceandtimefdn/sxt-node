@@ -83,7 +83,10 @@ mod tests {
     use on_chain_table::{OnChainColumn, OnChainTable};
     use proof_of_sql::base::database::{ColumnType, TableRef, TestSchemaAccessor};
     use proof_of_sql_commitment_map::generic_over_commitment::{
-        GenericOverCommitment, PairType, ResultOkType, TableCommitmentType,
+        GenericOverCommitment,
+        PairType,
+        ResultOkType,
+        TableCommitmentType,
     };
     use proof_of_sql_commitment_map::{AnyCommitmentScheme, PerCommitmentScheme};
     use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;

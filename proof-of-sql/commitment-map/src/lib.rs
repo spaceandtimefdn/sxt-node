@@ -11,7 +11,11 @@ pub use generic_over_commitment_fn::GenericOverCommitmentFn;
 
 mod commitment_scheme;
 pub use commitment_scheme::{
-    AnyCommitmentScheme, CommitmentId, CommitmentScheme, CommitmentSchemeFlags, PerCommitmentScheme,
+    AnyCommitmentScheme,
+    CommitmentId,
+    CommitmentScheme,
+    CommitmentSchemeFlags,
+    PerCommitmentScheme,
 };
 
 mod commitment_map_implementor;
@@ -28,9 +32,13 @@ pub use memory_commitment_map::MemoryCommitmentMap;
 mod commitment_storage_map;
 #[cfg(feature = "substrate")]
 pub use commitment_storage_map::{
-    CommitmentStorageMapHandler, TableCommitmentBytes, TableCommitmentBytesPerCommitmentScheme,
-    TableCommitmentBytesPerCommitmentSchemePassBy, TableCommitmentMaxLength,
-    TableCommitmentPerCommitmentScheme, TableCommitmentToBytesError,
+    CommitmentStorageMapHandler,
+    TableCommitmentBytes,
+    TableCommitmentBytesPerCommitmentScheme,
+    TableCommitmentBytesPerCommitmentSchemePassBy,
+    TableCommitmentMaxLength,
+    TableCommitmentPerCommitmentScheme,
+    TableCommitmentToBytesError,
 };
 
 #[cfg(feature = "proptest")]

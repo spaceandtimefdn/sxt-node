@@ -52,7 +52,11 @@ pub mod pallet {
     use sp_runtime::{BoundedVec, SaturatedConversion};
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::{
-        InsertQuorumSize, QuorumScope, TableIdentifier, TableName, TableNamespace,
+        InsertQuorumSize,
+        QuorumScope,
+        TableIdentifier,
+        TableName,
+        TableNamespace,
     };
     use sxt_core::IdentLength;
 

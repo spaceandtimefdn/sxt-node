@@ -12,7 +12,12 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{ConstU64, H256};
 use sp_runtime::traits::{
-    ConvertInto, IdentityLookup, MaybeConvert, OpaqueKeys, TryConvertInto, UniqueSaturatedInto,
+    ConvertInto,
+    IdentityLookup,
+    MaybeConvert,
+    OpaqueKeys,
+    TryConvertInto,
+    UniqueSaturatedInto,
     Zero,
 };
 use sp_runtime::{generic, BuildStorage, FixedPointNumber, KeyTypeId};

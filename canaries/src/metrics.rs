@@ -4,7 +4,12 @@ use axum::routing::get;
 use axum::Router;
 use lazy_static::lazy_static;
 use prometheus::{
-    register_gauge_vec, register_int_counter_vec, Encoder, GaugeVec, IntCounterVec, TextEncoder,
+    register_gauge_vec,
+    register_int_counter_vec,
+    Encoder,
+    GaugeVec,
+    IntCounterVec,
+    TextEncoder,
 };
 use sxt_core::attestation::Attestation;
 use sxt_core::keystore::H256;

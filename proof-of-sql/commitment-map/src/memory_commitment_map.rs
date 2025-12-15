@@ -81,8 +81,12 @@ mod tests {
 
     use super::*;
     use crate::{
-        CommitmentId, CommitmentMap, CommitmentSchemeFlags, CommitmentSchemesMismatchError,
-        KeyExistsError, PerCommitmentScheme,
+        CommitmentId,
+        CommitmentMap,
+        CommitmentSchemeFlags,
+        CommitmentSchemesMismatchError,
+        KeyExistsError,
+        PerCommitmentScheme,
     };
 
     /// An example of a GenericOverCommitment value for testing.

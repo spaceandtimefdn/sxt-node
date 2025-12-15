@@ -19,8 +19,15 @@ use sp_core::Hasher;
 use sp_runtime::BoundedVec;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{
-    CommitmentScheme, CreateStatement, InsertQuorumSize, QuorumScope, SourceAndMode,
-    TableIdentifier, TableName, TableNamespace, TableType,
+    CommitmentScheme,
+    CreateStatement,
+    InsertQuorumSize,
+    QuorumScope,
+    SourceAndMode,
+    TableIdentifier,
+    TableName,
+    TableNamespace,
+    TableType,
 };
 
 use crate::mock::*;

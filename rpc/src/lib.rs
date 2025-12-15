@@ -15,7 +15,10 @@ use jsonrpsee::RpcModule;
 use sc_client_api::{AuxStore, StorageProvider};
 use sc_consensus_babe::BabeWorkerHandle;
 use sc_consensus_grandpa::{
-    FinalityProofProvider, GrandpaJustificationStream, SharedAuthoritySet, SharedVoterState,
+    FinalityProofProvider,
+    GrandpaJustificationStream,
+    SharedAuthoritySet,
+    SharedVoterState,
 };
 pub use sc_rpc::SubscriptionTaskExecutor;
 use sc_transaction_pool_api::TransactionPool;

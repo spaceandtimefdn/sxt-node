@@ -2,7 +2,11 @@ use pallet_staking::EraPayout;
 use sp_runtime::traits::Zero;
 
 use crate::{
-    Balance, EraPayout as SXTPayout, SessionsPerEra, DOLLARS, EPOCH_DURATION_IN_BLOCKS,
+    Balance,
+    EraPayout as SXTPayout,
+    SessionsPerEra,
+    DOLLARS,
+    EPOCH_DURATION_IN_BLOCKS,
     MILLISECS_PER_BLOCK,
 };
 

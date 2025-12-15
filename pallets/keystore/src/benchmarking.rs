@@ -14,7 +14,10 @@ mod benchmarks {
     use scale_info::prelude::vec::Vec;
     use sha3::digest::generic_array::GenericArray;
     use sxt_core::attestation::{
-        blake2_256, sign_eth_message, EthereumSignature, RegisterExternalAddress,
+        blake2_256,
+        sign_eth_message,
+        EthereumSignature,
+        RegisterExternalAddress,
     };
     use sxt_core::keystore::UnregisterExternalAddress;
 

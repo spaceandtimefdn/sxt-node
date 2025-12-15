@@ -4,7 +4,10 @@ use k256::ecdsa::{SigningKey, VerifyingKey};
 use sp_core::H256;
 use sp_runtime::BoundedVec;
 use sxt_core::attestation::{
-    create_attestation_message, sign_eth_message, Attestation, EthereumSignature,
+    create_attestation_message,
+    sign_eth_message,
+    Attestation,
+    EthereumSignature,
     RegisterExternalAddress,
 };
 use sxt_core::permissions::{AttestationPalletPermission, PermissionLevel, PermissionList};

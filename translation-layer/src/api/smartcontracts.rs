@@ -9,13 +9,22 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounde
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::smartcontracts::Contract;
 
 use crate::model::{
-    AddContractRequest, ApiContract, ApiResponse, GetContractResponse, GetContractsResponse,
-    RemoveContractRequest, TableRequest,
+    AddContractRequest,
+    ApiContract,
+    ApiResponse,
+    GetContractResponse,
+    GetContractsResponse,
+    RemoveContractRequest,
+    TableRequest,
 };
 use crate::state::TranslationLayerState;
 use crate::table_builder::TableCreator;
 use crate::utils::{
-    extract_param, internal_server_error, map_contract_to_api, not_found, string_to_source,
+    extract_param,
+    internal_server_error,
+    map_contract_to_api,
+    not_found,
+    string_to_source,
 };
 
 /// Submits a transaction to add a smart contract to the indexing system.

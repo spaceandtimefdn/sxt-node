@@ -11,7 +11,11 @@ use sxt_core::sxt_chain_runtime;
 use crate::model::{ApiResponse, TxExecutionStatus, TxStatusDetails, TxStatusResponse};
 use crate::state::TranslationLayerState;
 use crate::utils::{
-    bad_request, decode_system_module_error, internal_server_error, not_found, parse_h256_from_hex,
+    bad_request,
+    decode_system_module_error,
+    internal_server_error,
+    not_found,
+    parse_h256_from_hex,
 };
 
 /// Retrieves the execution status of a transaction within a specific block.

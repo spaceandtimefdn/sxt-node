@@ -5,10 +5,17 @@ use core::marker::PhantomData;
 use on_chain_table::{OnChainTable, OutOfScalarBounds};
 use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql_commitment_map::generic_over_commitment::{
-    AssociatedPublicSetupType, GenericOverCommitment, OptionType, ResultOkType, TableCommitmentType,
+    AssociatedPublicSetupType,
+    GenericOverCommitment,
+    OptionType,
+    ResultOkType,
+    TableCommitmentType,
 };
 use proof_of_sql_commitment_map::{
-    CommitmentId, CommitmentSchemeFlags, GenericOverCommitmentFn, PerCommitmentScheme,
+    CommitmentId,
+    CommitmentSchemeFlags,
+    GenericOverCommitmentFn,
+    PerCommitmentScheme,
 };
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sxt_core::tables::TableIdentifier;

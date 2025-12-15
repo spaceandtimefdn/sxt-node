@@ -4,7 +4,6 @@ use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-use crate::common;
 use anyhow::anyhow;
 use log::{error, info};
 use sqlparser::ast::Statement;
@@ -22,6 +21,8 @@ use sxt_core::sxt_chain_runtime::api::tx;
 use sxt_core::tables::convert_ignite_create_statement;
 use tokio::sync::Mutex;
 use url::Url;
+
+use crate::common;
 
 fn read_file(filename: &str) -> Result<String, std::io::Error> {
     info!("Reading file: {}", filename);

@@ -7,10 +7,15 @@ use subxt::utils::H256;
 use subxt::Metadata;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::smartcontracts::{
-    Contract, ContractDetails, EventDetails, NormalContract, ProxyContract,
+    Contract,
+    ContractDetails,
+    EventDetails,
+    NormalContract,
+    ProxyContract,
 };
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
-    IndexerMode as RuntimeMode, Source as RuntimeSource,
+    IndexerMode as RuntimeMode,
+    Source as RuntimeSource,
 };
 use sxt_core::sxt_chain_runtime::api::DispatchError;
 

@@ -3,10 +3,16 @@ use alloc::vec::Vec;
 use itertools::Itertools;
 use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql_commitment_map::generic_over_commitment::{
-    ConcreteType, OptionType, PairType, TableCommitmentType,
+    ConcreteType,
+    OptionType,
+    PairType,
+    TableCommitmentType,
 };
 use proof_of_sql_commitment_map::{
-    AnyCommitmentScheme, CommitmentId, GenericOverCommitmentFn, PerCommitmentScheme,
+    AnyCommitmentScheme,
+    CommitmentId,
+    GenericOverCommitmentFn,
+    PerCommitmentScheme,
 };
 use snafu::Snafu;
 

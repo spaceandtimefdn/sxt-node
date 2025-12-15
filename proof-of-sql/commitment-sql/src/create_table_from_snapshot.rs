@@ -1,6 +1,10 @@
 use proof_of_sql::base::commitment::TableCommitmentArithmeticError;
 use proof_of_sql_commitment_map::generic_over_commitment::{
-    AssociatedPublicSetupType, OptionType, PairType, ResultOkType, TableCommitmentType,
+    AssociatedPublicSetupType,
+    OptionType,
+    PairType,
+    ResultOkType,
+    TableCommitmentType,
 };
 use proof_of_sql_commitment_map::{CommitmentId, GenericOverCommitmentFn, PerCommitmentScheme};
 use snafu::Snafu;

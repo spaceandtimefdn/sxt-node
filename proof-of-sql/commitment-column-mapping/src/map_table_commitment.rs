@@ -55,7 +55,9 @@ pub mod tests {
     use on_chain_table::{OnChainColumn, OnChainTable};
     use proof_of_sql::base::commitment::ColumnCommitmentMetadataMap;
     use proof_of_sql_commitment_map::generic_over_commitment::{
-        CommitmentType, ConcreteType, VecType,
+        CommitmentType,
+        ConcreteType,
+        VecType,
     };
     use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
 

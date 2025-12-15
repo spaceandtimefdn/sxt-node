@@ -17,7 +17,10 @@ pub mod pallet {
     use proof_of_sql::base::commitment::TableCommitment;
     use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
     use proof_of_sql_commitment_map::{
-        CommitmentMap, CommitmentScheme, CommitmentStorageMapHandler, TableCommitmentBytes,
+        CommitmentMap,
+        CommitmentScheme,
+        CommitmentStorageMapHandler,
+        TableCommitmentBytes,
         TableCommitmentBytesPerCommitmentScheme,
     };
     use sxt_core::tables::TableIdentifier;

@@ -2,9 +2,21 @@ use alloc::string::ToString;
 use alloc::sync::Arc;
 
 use arrow::array::{
-    ArrayRef, BinaryArray, BooleanArray, Decimal128Array, Decimal256Array, Int16Array, Int32Array,
-    Int64Array, Int8Array, StringArray, TimestampMicrosecondArray, TimestampMillisecondArray,
-    TimestampNanosecondArray, TimestampSecondArray, UInt8Array,
+    ArrayRef,
+    BinaryArray,
+    BooleanArray,
+    Decimal128Array,
+    Decimal256Array,
+    Int16Array,
+    Int32Array,
+    Int64Array,
+    Int8Array,
+    StringArray,
+    TimestampMicrosecondArray,
+    TimestampMillisecondArray,
+    TimestampNanosecondArray,
+    TimestampSecondArray,
+    UInt8Array,
 };
 use arrow::datatypes::{DataType, TimeUnit};
 use proof_of_sql::base::math::decimal::Precision;

@@ -12,7 +12,8 @@ mod column_type_conversion {
     proof_of_sql_unversioned::impl_sqlparser_proof_of_sql_type_conversion!();
 }
 pub use column_type_conversion::{
-    sqlparser_data_type_to_proof_of_sql_column_type, UnsupportedColumnType,
+    sqlparser_data_type_to_proof_of_sql_column_type,
+    UnsupportedColumnType,
 };
 
 mod row_number_column;
@@ -23,17 +24,23 @@ pub use validated_create_table::{InvalidCreateTable, ValidatedCreateTable};
 
 mod create_table;
 pub use create_table::{
-    process_create_table, CreateTableAndCommitmentMetadata, OnChainTableToTableCommitmentFn,
+    process_create_table,
+    CreateTableAndCommitmentMetadata,
+    OnChainTableToTableCommitmentFn,
 };
 
 mod create_table_from_snapshot;
 pub use create_table_from_snapshot::{
-    process_create_table_from_snapshot, ProcessCreateTableFromSnapshotError,
+    process_create_table_from_snapshot,
+    ProcessCreateTableFromSnapshotError,
 };
 
 mod insert;
 pub use insert::{
-    process_insert, AppendOnChainTableError, InsertAndCommitmentMetadata, ProcessInsertError,
+    process_insert,
+    AppendOnChainTableError,
+    InsertAndCommitmentMetadata,
+    ProcessInsertError,
 };
 
 #[cfg(feature = "proptest")]

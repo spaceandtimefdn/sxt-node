@@ -3,7 +3,9 @@
 use on_chain_table::OnChainTable;
 use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
 use proof_of_sql_commitment_map::{
-    CommitmentSchemeFlags, PerCommitmentScheme, TableCommitmentPerCommitmentScheme,
+    CommitmentSchemeFlags,
+    PerCommitmentScheme,
+    TableCommitmentPerCommitmentScheme,
 };
 use proptest::prelude::*;
 

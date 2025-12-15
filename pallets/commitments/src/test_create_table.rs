@@ -1,6 +1,8 @@
 use commitment_sql::{process_create_table, CreateTableAndCommitmentMetadata};
 use proof_of_sql_commitment_map::{
-    CommitmentScheme, CommitmentSchemeFlags, TableCommitmentBytesPerCommitmentScheme,
+    CommitmentScheme,
+    CommitmentSchemeFlags,
+    TableCommitmentBytesPerCommitmentScheme,
 };
 use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
 use sqlparser::dialect::PostgreSqlDialect;

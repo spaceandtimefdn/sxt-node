@@ -1,8 +1,8 @@
+use std::io::Cursor;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-use crate::common;
 use arrow::array::RecordBatch;
 use arrow::ipc::writer::StreamWriter;
 use log::{error, info};
@@ -10,7 +10,6 @@ use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql::base::posql_time::PoSQLTimeUnit;
 use sqlparser::ast::Ident;
-use std::io::Cursor;
 use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;
 use subxt::ext::sp_core::U256;
 use subxt::{OnlineClient, PolkadotConfig};
@@ -22,6 +21,8 @@ use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::TableIden
 use sxt_core::sxt_chain_runtime::api::tx;
 use tokio::sync::Mutex;
 use url::Url;
+
+use crate::common;
 
 fn get_staking_message(eth_wallet: &str, amount: U256) -> Data {
     let expected = OnChainTable::try_from_iter([
