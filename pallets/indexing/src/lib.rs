@@ -34,31 +34,16 @@ pub mod native_pallet;
 #[allow(clippy::manual_inspect)]
 #[frame_support::pallet]
 pub mod pallet {
-    use alloc::string::String;
-    use alloc::vec::Vec;
-
-    use codec::Decode;
     use commitment_sql::InsertAndCommitmentMetadata;
-    use frame_support::dispatch::RawOrigin;
     use frame_support::pallet_prelude::*;
-    use frame_support::{Blake2_128, Blake2_128Concat};
+    use frame_support::Blake2_128Concat;
     use frame_system::pallet_prelude::*;
-    use hex::FromHex;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
-    use sp_core::crypto::Ss58Codec;
-    use sp_core::{H256, U256};
-    use sp_runtime::traits::{Bounded, Hash, StaticLookup, UniqueSaturatedInto};
-    use sp_runtime::{BoundedVec, SaturatedConversion};
+    use sp_runtime::traits::Hash;
+    use sp_runtime::BoundedVec;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
-    use sxt_core::tables::{
-        InsertQuorumSize,
-        QuorumScope,
-        TableIdentifier,
-        TableName,
-        TableNamespace,
-    };
-    use sxt_core::IdentLength;
+    use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
     use super::*;
 
