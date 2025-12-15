@@ -27,6 +27,18 @@ pub trait NativeApi: 'static {
         ),
         NativeCommitmentError,
     >;
+
+    fn process_insert_version_2(
+        table_identifier: TableIdentifier,
+        insert_data_bytes: OnChainTableBytes,
+        previous_commitments_bytes: TableCommitmentBytesPerCommitmentSchemePassBy,
+    ) -> Result<
+        (
+            OnChainTableBytes,
+            TableCommitmentBytesPerCommitmentSchemePassBy,
+        ),
+        NativeCommitmentError,
+    >;
 }
 
 /// Needed for type checks in pallets, if adding new functions to the NativeApi they will need to be implemented here.
@@ -36,6 +48,20 @@ impl NativeApi for () {
     }
 
     fn process_insert(
+        _table_identifier: TableIdentifier,
+        _insert_data_bytes: OnChainTableBytes,
+        _previous_commitments_bytes: TableCommitmentBytesPerCommitmentSchemePassBy,
+    ) -> Result<
+        (
+            OnChainTableBytes,
+            TableCommitmentBytesPerCommitmentSchemePassBy,
+        ),
+        NativeCommitmentError,
+    > {
+        unimplemented!()
+    }
+
+    fn process_insert_version_2(
         _table_identifier: TableIdentifier,
         _insert_data_bytes: OnChainTableBytes,
         _previous_commitments_bytes: TableCommitmentBytesPerCommitmentSchemePassBy,
@@ -70,6 +96,24 @@ impl NativeApi for Api {
         NativeCommitmentError,
     > {
         native::interface::process_insert(
+            table_identifier,
+            insert_data_bytes,
+            previous_commitments_bytes,
+        )
+    }
+
+    fn process_insert_version_2(
+        table_identifier: TableIdentifier,
+        insert_data_bytes: OnChainTableBytes,
+        previous_commitments_bytes: TableCommitmentBytesPerCommitmentSchemePassBy,
+    ) -> Result<
+        (
+            OnChainTableBytes,
+            TableCommitmentBytesPerCommitmentSchemePassBy,
+        ),
+        NativeCommitmentError,
+    > {
+        native::interface::process_insert_version_2(
             table_identifier,
             insert_data_bytes,
             previous_commitments_bytes,
