@@ -150,7 +150,7 @@ impl From<CommitmentsApiError> for ErrorObjectOwned {
                 CommitmentsApiError::TableIdentifierConversion { .. } => 2,
                 CommitmentsApiError::NumTablesLimit { .. } => 3,
                 CommitmentsApiError::Storage { .. } => 4,
-                CommitmentsApiError::NoSuchCommitment { .. } => 5,
+                CommitmentsApiError::NoSuchCommitment => 5,
                 CommitmentsApiError::CommitmentDecode { .. } => 6,
                 CommitmentsApiError::AttestationTree { .. } => 7,
                 CommitmentsApiError::AttestationTreeProof { .. } => 8,

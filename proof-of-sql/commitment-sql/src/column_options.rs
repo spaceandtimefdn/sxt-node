@@ -1,3 +1,5 @@
+use alloc::boxed::Box;
+
 use snafu::Snafu;
 use sqlparser::ast::ColumnOption;
 
@@ -8,13 +10,13 @@ pub enum InvalidColumnOptions {
     #[snafu(display("columns missing required option: {option}"))]
     Required {
         /// The missing required option.
-        option: ColumnOption,
+        option: Box<ColumnOption>,
     },
     /// Column option unsupported.
     #[snafu(display("column option unsupported: {option}"))]
     Unsupported {
         /// The unsupported column option.
-        option: ColumnOption,
+        option: Box<ColumnOption>,
     },
 }
 
@@ -43,7 +45,7 @@ pub fn validate_column_options<'a>(
         .find(|required_option| !options_contain_required_option(required_option, options.clone()))
     {
         return Err(InvalidColumnOptions::Required {
-            option: missing_required_option.clone(),
+            option: Box::new(missing_required_option.clone()),
         });
     }
 
@@ -52,7 +54,7 @@ pub fn validate_column_options<'a>(
         .find(|&option| !column_option_is_supported(option))
     {
         return Err(InvalidColumnOptions::Unsupported {
-            option: unsupported_option.clone(),
+            option: Box::new(unsupported_option.clone()),
         });
     }
 

@@ -64,7 +64,7 @@ impl<T> From<InvalidCreateTable> for Error<T> {
             InvalidCreateTable::ReservedMetadataPrefix { .. } => {
                 Error::CreateTableWithReservedMetadataPrefix
             }
-            InvalidCreateTable::ColumnOptions { source } => source.into(),
+            InvalidCreateTable::ColumnOptions { source } => (*source).into(),
         }
     }
 }
@@ -72,7 +72,7 @@ impl<T> From<InvalidCreateTable> for Error<T> {
 impl<T> From<ProcessCreateTableFromSnapshotError> for Error<T> {
     fn from(error: ProcessCreateTableFromSnapshotError) -> Self {
         match error {
-            ProcessCreateTableFromSnapshotError::InvalidCreateTable { source } => source.into(),
+            ProcessCreateTableFromSnapshotError::InvalidCreateTable { source } => (*source).into(),
             ProcessCreateTableFromSnapshotError::InappropriateSnapshotCommitments { .. } => {
                 Error::InappropriateSnapshotCommitments
             }

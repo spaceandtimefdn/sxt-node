@@ -66,9 +66,7 @@ async fn main() -> Result<(), CanaryError> {
     });
 
     // Connect to the Substrate node
-    let api = OnlineClient::<PolkadotConfig>::from_insecure_url(&config.rpc_url)
-        .await
-        .context(ApiConnectionSnafu)?;
+    let api = OnlineClient::<PolkadotConfig>::from_insecure_url(&config.rpc_url).await?;
 
     // Set up the listener
     let stream = FinalizedBlockStream;
@@ -165,7 +163,7 @@ pub enum CanaryError {
     #[snafu(display("Failed to connect to Substrate API: {source}"))]
     ApiConnection {
         /// Source error
-        source: subxt::Error,
+        source: Box<subxt::Error>,
     },
 
     /// Error setting up the chain listener
@@ -179,10 +177,26 @@ pub enum CanaryError {
     #[snafu(display("ChainListenerLibraryError: {source}"))]
     ChainListenerLibError {
         /// source
-        source: event_forwarder::block_processing::Error,
+        source: Box<event_forwarder::block_processing::Error>,
     },
     /// We were unable to parse the http url from the provided rpc url
     UrlHttpConversionError,
+}
+
+impl From<subxt::Error> for CanaryError {
+    fn from(err: subxt::Error) -> Self {
+        CanaryError::ApiConnection {
+            source: Box::new(err),
+        }
+    }
+}
+
+impl From<event_forwarder::block_processing::Error> for CanaryError {
+    fn from(err: event_forwarder::block_processing::Error) -> Self {
+        CanaryError::ChainListenerLibError {
+            source: Box::new(err),
+        }
+    }
 }
 
 type Result<T, E = CanaryError> = std::result::Result<T, E>;

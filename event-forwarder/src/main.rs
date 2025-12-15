@@ -85,8 +85,8 @@ type ProviderInstance = FillProvider<
 #[allow(clippy::missing_docs_in_private_items)]
 #[derive(Debug, Snafu)]
 enum EventForwarderError {
-    #[snafu(transparent)]
-    AlloyTransportError { source: TransportError },
+    #[snafu(display("AlloyTransportError: {source}"))]
+    AlloyTransportError { source: Box<TransportError> },
 
     #[snafu(display("Failed to read Ethereum key from file '{}': {}", path, source))]
     KeyFileRead {
@@ -103,8 +103,24 @@ enum EventForwarderError {
     #[snafu(display("Blockchain processing error: {}", source))]
     BlockchainProcessing { source: Box<dyn std::error::Error> },
 
-    #[snafu(transparent)]
-    SubxtError { source: subxt::Error },
+    #[snafu(display("SubxtError: {source}"))]
+    SubxtError { source: Box<subxt::Error> },
+}
+
+impl From<TransportError> for EventForwarderError {
+    fn from(err: TransportError) -> Self {
+        EventForwarderError::AlloyTransportError {
+            source: Box::new(err),
+        }
+    }
+}
+
+impl From<subxt::Error> for EventForwarderError {
+    fn from(err: subxt::Error) -> Self {
+        EventForwarderError::SubxtError {
+            source: Box::new(err),
+        }
+    }
 }
 
 /// CLI arguments parser using `clap` derive syntax

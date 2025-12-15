@@ -1,3 +1,5 @@
+use alloc::boxed::Box;
+
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::database::{ColumnType, TableRef};
 use snafu::Snafu;
@@ -43,10 +45,10 @@ pub enum InvalidCreateTable {
         source: ReservedMetaRowNumberColumnName,
     },
     /// Table has invalid column options.
-    #[snafu(display("table has invalid column options: {source}"), context(false))]
+    #[snafu(display("table has invalid column options: {source}"))]
     ColumnOptions {
         /// Source invalid column options error.
-        source: InvalidColumnOptions,
+        source: Box<InvalidColumnOptions>,
     },
 }
 
@@ -80,6 +82,9 @@ impl<'a> ValidatedCreateTable<'a> {
             .iter()
             .try_for_each(|ColumnDef { options, .. }| {
                 validate_column_options(options.iter().map(|ColumnOptionDef { option, .. }| option))
+            })
+            .map_err(|source| InvalidCreateTable::ColumnOptions {
+                source: Box::new(source),
             })?;
 
         let [schema_id, table_id] = table.name.0.as_slice() else {
@@ -263,7 +268,7 @@ mod tests {
             .unwrap();
         assert!(matches!(
             ValidatedCreateTable::validate(&create_table),
-            Err(InvalidCreateTable::DuplicateIdentifiers { .. })
+            Err(InvalidCreateTable::DuplicateIdentifiers)
         ));
     }
 

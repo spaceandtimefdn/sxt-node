@@ -1,3 +1,5 @@
+use alloc::boxed::Box;
+
 use proof_of_sql::base::commitment::TableCommitmentArithmeticError;
 use proof_of_sql_commitment_map::generic_over_commitment::{
     AssociatedPublicSetupType,
@@ -32,10 +34,10 @@ impl GenericOverCommitmentFn for TryAddTableCommitmentsFn {
 #[derive(Debug, Snafu)]
 pub enum ProcessCreateTableFromSnapshotError {
     /// Invalid table definition.
-    #[snafu(display("invalid table definition: {source}"), context(false))]
+    #[snafu(display("invalid table definition: {source}"))]
     InvalidCreateTable {
         /// Source invalid create table error.
-        source: InvalidCreateTable,
+        source: Box<InvalidCreateTable>,
     },
     /// Snapshot commitments don't match table definition.
     #[snafu(
@@ -67,7 +69,11 @@ pub fn process_create_table_from_snapshot(
     let commitment_schemes = snapshot_commitments.to_flags();
 
     let (create_table_and_commitment_metadata, empty_commitments) =
-        process_create_table(table, setups, &commitment_schemes)?;
+        process_create_table(table, setups, &commitment_schemes).map_err(|source| {
+            ProcessCreateTableFromSnapshotError::InvalidCreateTable {
+                source: Box::new(source),
+            }
+        })?;
 
     let validated_snapshot_commitments = empty_commitments
         .zip(snapshot_commitments)
