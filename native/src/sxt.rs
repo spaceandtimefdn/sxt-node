@@ -137,6 +137,7 @@ pub trait Interface {
     }
 }
 
+#[cfg(feature = "std")]
 fn process_insert_with_conversion(
     table_identifier: TableIdentifier,
     insert_data_bytes: OnChainTableBytes,
