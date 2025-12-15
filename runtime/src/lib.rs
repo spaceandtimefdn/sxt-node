@@ -3,6 +3,7 @@
 // runtime construction via `frame_support::runtime` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
+#[cfg(test)]
 mod tests;
 
 #[cfg(feature = "std")]
@@ -45,12 +46,12 @@ pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
-use proof_of_sql_commitment_map::{AnyCommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
+use proof_of_sql_commitment_map::PerCommitmentScheme;
 use sp_api::impl_runtime_apis;
 use sp_arithmetic::traits::UniqueSaturatedInto;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
-use sp_core::crypto::{AccountId32, KeyTypeId};
+use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
 use sp_runtime::traits::{
     AccountIdLookup,
@@ -59,7 +60,6 @@ use sp_runtime::traits::{
     Bounded,
     IdentifyAccount,
     NumberFor,
-    One,
     OpaqueKeys,
     Verify,
     Zero,
@@ -78,7 +78,6 @@ use sp_runtime::{
     ApplyExtrinsicResult,
     FixedPointNumber,
     FixedU128,
-    MultiSignature,
     Perquintill,
 };
 pub use sp_runtime::{Perbill, Percent, Permill};
@@ -485,7 +484,7 @@ pub struct EraPayout;
 impl pallet_staking::EraPayout<Balance> for EraPayout {
     fn era_payout(
         total_staked: Balance,
-        total_issuance: Balance,
+        _total_issuance: Balance,
         era_duration_millis: u64,
     ) -> (Balance, Balance) {
         const MILLISECONDS_PER_YEAR: u64 = (1000 * 3600 * 24 * 36525) / 100;

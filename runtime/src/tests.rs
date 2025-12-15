@@ -1,14 +1,7 @@
 use pallet_staking::EraPayout;
 use sp_runtime::traits::Zero;
 
-use crate::{
-    Balance,
-    EraPayout as SXTPayout,
-    SessionsPerEra,
-    DOLLARS,
-    EPOCH_DURATION_IN_BLOCKS,
-    MILLISECS_PER_BLOCK,
-};
+use crate::{Balance, EraPayout as SXTPayout, DOLLARS};
 
 #[test]
 fn era_payout_calculation_works() {
