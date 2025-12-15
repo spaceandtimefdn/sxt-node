@@ -11,6 +11,7 @@ use arrow::{
 };
 #[cfg(feature = "std")]
 use commitment_sql::InsertAndCommitmentMetadata;
+#[cfg(feature = "std")]
 use on_chain_table::StringToScalarConversion;
 use proof_of_sql_commitment_map::{
     PerCommitmentScheme,
