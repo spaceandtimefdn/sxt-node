@@ -313,18 +313,8 @@ pub mod pallet {
             let previous_commitments = handler.get_commitments(&table);
 
             let previous_commitments_pass_by = TableCommitmentBytesPerCommitmentSchemePassBy {
-                data: previous_commitments.clone(),
+                data: previous_commitments,
             };
-
-            let previous_commitments_decoded = previous_commitments
-                .try_into()
-                .map_err(|_| Error::DeserializeCommitment)?;
-
-            let _new_end_row = table_commitment_end_row_insert_simulation_all_schemes(
-                insert_data.num_rows() as u32,
-                previous_commitments_decoded,
-                T::END_ROW_LIMITS_PER_SCHEME,
-            )?;
 
             let table_bytes = insert_data.try_into()?;
 
