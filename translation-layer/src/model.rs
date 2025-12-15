@@ -4,11 +4,7 @@ use serde::{Deserialize, Serialize};
 use snafu::Snafu;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::smartcontracts::{
-    Contract,
-    ContractDetails,
-    ImplementationContract,
-    NormalContract,
-    ProxyContract,
+    Contract, ContractDetails, ImplementationContract, NormalContract, ProxyContract,
 };
 use utoipa::ToSchema;
 

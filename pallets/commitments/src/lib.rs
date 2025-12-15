@@ -38,13 +38,10 @@ pub mod pallet {
     use alloc::{str, vec};
 
     use commitment_column_mapping::{
-        convert_selected_varbinary_columns_to_varchar,
-        convert_varchar_to_varbinary,
+        convert_selected_varbinary_columns_to_varchar, convert_varchar_to_varbinary,
     };
     use commitment_sql::{
-        process_create_table,
-        process_create_table_from_snapshot,
-        CreateTableAndCommitmentMetadata,
+        process_create_table, process_create_table_from_snapshot, CreateTableAndCommitmentMetadata,
         InsertAndCommitmentMetadata,
     };
     use frame_support::pallet_prelude::*;
@@ -52,16 +49,9 @@ pub mod pallet {
     use on_chain_table::OnChainTable;
     use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
     use proof_of_sql_commitment_map::{
-        AnyCommitmentScheme,
-        CommitmentMap,
-        CommitmentScheme,
-        CommitmentSchemeFlags,
-        CommitmentStorageMapHandler,
-        KeyExistsError,
-        PerCommitmentScheme,
-        TableCommitmentBytes,
-        TableCommitmentBytesPerCommitmentScheme,
-        TableCommitmentBytesPerCommitmentSchemePassBy,
+        AnyCommitmentScheme, CommitmentMap, CommitmentScheme, CommitmentSchemeFlags,
+        CommitmentStorageMapHandler, KeyExistsError, PerCommitmentScheme, TableCommitmentBytes,
+        TableCommitmentBytesPerCommitmentScheme, TableCommitmentBytesPerCommitmentSchemePassBy,
     };
     use proof_of_sql_static_setups::baked::PUBLIC_SETUPS;
     use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;

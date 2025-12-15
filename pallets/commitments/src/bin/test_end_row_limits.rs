@@ -14,15 +14,10 @@ use pallet_commitments::Config;
 use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
 use proof_of_sql_commitment_map::{
-    CommitmentId,
-    CommitmentSchemeFlags,
-    GenericOverCommitmentFn,
-    PerCommitmentScheme,
+    CommitmentId, CommitmentSchemeFlags, GenericOverCommitmentFn, PerCommitmentScheme,
 };
 use proof_of_sql_static_setups::io::{
-    initialize_from_config,
-    ProofOfSqlPublicSetupArgs,
-    PUBLIC_SETUPS,
+    initialize_from_config, ProofOfSqlPublicSetupArgs, PUBLIC_SETUPS,
 };
 use sp_runtime::BuildStorage;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;

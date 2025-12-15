@@ -1,7 +1,5 @@
 use alloc::vec;
-use alloc::vec::Vec;
 
-use const_format::formatcp;
 use on_chain_table::{OnChainColumn, OnChainTable};
 use snafu::Snafu;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;

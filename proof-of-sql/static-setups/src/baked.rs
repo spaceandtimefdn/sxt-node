@@ -4,8 +4,7 @@
 use ark_serialize::{CanonicalDeserialize, Compress, Validate};
 use proof_of_sql::proof_primitive::dory::{ProverSetup, PublicParameters};
 use proof_of_sql::proof_primitive::hyperkzg::{
-    deserialize_flat_compressed_hyperkzg_public_setup_from_slice,
-    HyperKZGPublicSetupOwned,
+    deserialize_flat_compressed_hyperkzg_public_setup_from_slice, HyperKZGPublicSetupOwned,
 };
 use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
 use proof_of_sql_commitment_map::PerCommitmentScheme;

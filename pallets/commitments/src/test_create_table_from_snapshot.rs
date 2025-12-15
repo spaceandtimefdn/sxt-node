@@ -1,15 +1,11 @@
 use commitment_sql::{
-    process_create_table,
-    CreateTableAndCommitmentMetadata,
-    OnChainTableToTableCommitmentFn,
+    process_create_table, CreateTableAndCommitmentMetadata, OnChainTableToTableCommitmentFn,
 };
 use frame_support::assert_noop;
 use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
 use proof_of_sql_commitment_map::{
-    CommitmentScheme,
-    CommitmentSchemeFlags,
-    PerCommitmentScheme,
+    CommitmentScheme, CommitmentSchemeFlags, PerCommitmentScheme,
     TableCommitmentBytesPerCommitmentScheme,
 };
 use proof_of_sql_static_setups::io::PUBLIC_SETUPS;

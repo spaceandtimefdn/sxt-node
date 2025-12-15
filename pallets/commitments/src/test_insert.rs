@@ -1,11 +1,8 @@
 use commitment_column_mapping::{
-    convert_selected_varbinary_columns_to_varchar,
-    convert_varchar_to_varbinary,
+    convert_selected_varbinary_columns_to_varchar, convert_varchar_to_varbinary,
 };
 use commitment_sql::{
-    process_insert,
-    InsertAndCommitmentMetadata,
-    OnChainTableToTableCommitmentFn,
+    process_insert, InsertAndCommitmentMetadata, OnChainTableToTableCommitmentFn,
 };
 use frame_support::assert_noop;
 use native_api::Api;
@@ -13,9 +10,7 @@ use on_chain_table::{OnChainColumn, OnChainTable};
 use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
 use proof_of_sql_commitment_map::{
-    CommitmentScheme,
-    PerCommitmentScheme,
-    TableCommitmentBytesPerCommitmentScheme,
+    CommitmentScheme, PerCommitmentScheme, TableCommitmentBytesPerCommitmentScheme,
 };
 use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
 use sp_core::U256;

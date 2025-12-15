@@ -7,9 +7,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::sp_runtime::Serialize;
 use frame_support::BoundedVec;
 use proof_of_sql_commitment_map::{
-    TableCommitmentBytes,
-    TableCommitmentBytesPerCommitmentScheme,
-    TableCommitmentMaxLength,
+    TableCommitmentBytes, TableCommitmentBytesPerCommitmentScheme, TableCommitmentMaxLength,
 };
 use scale_info::TypeInfo;
 use serde::Deserialize;

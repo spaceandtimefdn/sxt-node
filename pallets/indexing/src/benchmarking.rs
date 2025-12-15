@@ -24,12 +24,7 @@ mod benchmarks {
     use proof_of_sql_commitment_map::CommitmentSchemeFlags;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
     use sxt_core::tables::{
-        InsertQuorumSize,
-        Source,
-        TableIdentifier,
-        TableName,
-        TableNamespace,
-        TableType,
+        InsertQuorumSize, Source, TableIdentifier, TableName, TableNamespace, TableType,
     };
 
     use super::*;

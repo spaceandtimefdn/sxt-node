@@ -2,11 +2,8 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use attestation_tree::{
-    attestation_tree_from_prefixes,
-    prove_leaf_pair,
-    storage_key_for_prefix_key_tuple,
-    CommitmentMapPrefixFoliate,
-    PrefixFoliate,
+    attestation_tree_from_prefixes, prove_leaf_pair, storage_key_for_prefix_key_tuple,
+    CommitmentMapPrefixFoliate, PrefixFoliate,
 };
 use codec::Decode;
 use frame_support::traits::StorageInstance;
@@ -30,9 +27,7 @@ use sxt_runtime::pallet_commitments;
 use super::proof_plan_for_query_and_commitments::ProofPlanForQueryAndCommitments;
 use super::statement_and_associated_table_refs::StatementAndAssociatedTableRefs;
 use crate::commitments::api::{
-    ProofPlanResponse,
-    VerifiableCommitment,
-    VerifiableCommitmentsResponse,
+    ProofPlanResponse, VerifiableCommitment, VerifiableCommitmentsResponse,
 };
 use crate::commitments::error::CommitmentsApiError;
 use crate::commitments::limits::{NUM_TABLES_LIMIT, PROOF_PLAN_SIZE_LIMIT, QUERY_SIZE_LIMIT};

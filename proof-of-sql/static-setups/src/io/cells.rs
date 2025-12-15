@@ -4,17 +4,14 @@ use std::sync::OnceLock;
 use ark_serialize::{CanonicalDeserialize, Compress, Validate};
 use proof_of_sql::proof_primitive::dory;
 use proof_of_sql::proof_primitive::hyperkzg::{
-    deserialize_flat_compressed_hyperkzg_public_setup_from_reader,
-    HyperKZGPublicSetupOwned,
+    deserialize_flat_compressed_hyperkzg_public_setup_from_reader, HyperKZGPublicSetupOwned,
 };
 use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
 use proof_of_sql_commitment_map::PerCommitmentScheme;
 use snafu::Snafu;
 
 use super::args::{
-    load_dory_public_setup,
-    load_hyper_kzg_public_setup,
-    LoadPublicSetupError,
+    load_dory_public_setup, load_hyper_kzg_public_setup, LoadPublicSetupError,
     ProofOfSqlPublicSetupArgs,
 };
 

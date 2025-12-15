@@ -5,18 +5,11 @@ use core::marker::PhantomData;
 use itertools::Itertools;
 use on_chain_table::{OnChainTable, OutOfScalarBounds};
 use proof_of_sql::base::commitment::{
-    AppendColumnCommitmentsError,
-    AppendTableCommitmentError,
-    ColumnCommitmentsMismatch,
+    AppendColumnCommitmentsError, AppendTableCommitmentError, ColumnCommitmentsMismatch,
 };
 use proof_of_sql_commitment_map::generic_over_commitment::{
-    AssociatedPublicSetupType,
-    ConcreteType,
-    GenericOverCommitment,
-    OptionType,
-    PairType,
-    ResultOkType,
-    TableCommitmentType,
+    AssociatedPublicSetupType, ConcreteType, GenericOverCommitment, OptionType, PairType,
+    ResultOkType, TableCommitmentType,
 };
 use proof_of_sql_commitment_map::{CommitmentId, GenericOverCommitmentFn, PerCommitmentScheme};
 #[cfg(feature = "cpu-perf")]

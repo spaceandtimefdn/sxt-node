@@ -2,12 +2,8 @@ use core::fmt::Debug;
 
 use commitment_column_mapping::ConvertSelectedVarbinaryColumnsToVarcharError;
 use commitment_sql::{
-    AppendOnChainTableError,
-    InvalidColumnOptions,
-    InvalidCreateTable,
-    ProcessCreateTableFromSnapshotError,
-    ProcessInsertError,
-    UnsupportedColumnType,
+    AppendOnChainTableError, InvalidColumnOptions, InvalidCreateTable,
+    ProcessCreateTableFromSnapshotError, ProcessInsertError, UnsupportedColumnType,
 };
 use proof_of_sql::base::commitment::NegativeRange;
 use proof_of_sql_commitment_map::{KeyExistsError, TableCommitmentToBytesError};

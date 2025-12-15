@@ -5,8 +5,7 @@ use axum::Json;
 use sxt_core::sxt_chain_runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
 use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
-    SourceAndMode,
-    TableIdentifier,
+    SourceAndMode, TableIdentifier,
 };
 
 use crate::model::{ApiResponse, CreateTableRequest, DropTableRequest, TableRequest};

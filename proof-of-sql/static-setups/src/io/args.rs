@@ -13,8 +13,7 @@ use handlebars::{Handlebars, Template};
 use hex::FromHex;
 use proof_of_sql::proof_primitive::dory::PublicParameters;
 use proof_of_sql::proof_primitive::hyperkzg::{
-    deserialize_flat_compressed_hyperkzg_public_setup_from_slice,
-    HyperKZGPublicSetupOwned,
+    deserialize_flat_compressed_hyperkzg_public_setup_from_slice, HyperKZGPublicSetupOwned,
 };
 use rayon::iter::{IndexedParallelIterator, ParallelIterator};
 use rayon::slice::ParallelSlice;

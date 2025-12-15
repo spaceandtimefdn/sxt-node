@@ -3,12 +3,7 @@ use std::path::Path;
 use codec::{Decode, Encode};
 use commitment_sql::proptest::table_commitment_per_commitment_scheme;
 use on_chain_table::proptest::{
-    decimal_75_column,
-    decimal_75_column_type,
-    i256,
-    ident,
-    on_chain_table,
-    proof_of_sql_schema,
+    decimal_75_column, decimal_75_column_type, i256, ident, on_chain_table, proof_of_sql_schema,
     ProofOfSqlSchema,
 };
 use on_chain_table::OnChainTable;
@@ -16,9 +11,7 @@ use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql_commitment_map::generic_over_commitment::AssociatedPublicSetupType;
 use proof_of_sql_commitment_map::proptest::commitment_scheme_flags;
 use proof_of_sql_commitment_map::{
-    CommitmentSchemeFlags,
-    PerCommitmentScheme,
-    TableCommitmentBytesPerCommitmentSchemePassBy,
+    CommitmentSchemeFlags, PerCommitmentScheme, TableCommitmentBytesPerCommitmentSchemePassBy,
     TableCommitmentPerCommitmentScheme,
 };
 use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;

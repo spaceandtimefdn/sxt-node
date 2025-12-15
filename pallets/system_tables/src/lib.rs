@@ -40,10 +40,7 @@ pub mod pallet {
     use sp_staking::offence::{OffenceDetails, OnOffenceHandler};
     use sp_staking::{SessionIndex, StakingInterface};
     use sxt_core::parse::{
-        MessageSystemRequest,
-        StakingSystemRequest,
-        SystemFieldValue,
-        SystemRequest,
+        MessageSystemRequest, StakingSystemRequest, SystemFieldValue, SystemRequest,
         SystemRequestType,
     };
     use sxt_core::system_tables::ClaimedUnstake;

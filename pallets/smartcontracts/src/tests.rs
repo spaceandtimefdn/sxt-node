@@ -2,19 +2,11 @@ use frame_support::storage::bounded_vec::BoundedVec;
 use frame_support::{assert_noop, assert_ok};
 use native_api::Api;
 use sxt_core::permissions::{
-    PermissionLevel,
-    PermissionList,
-    SmartContractsPalletPermission,
-    TablesPalletPermission,
+    PermissionLevel, PermissionList, SmartContractsPalletPermission, TablesPalletPermission,
 };
 use sxt_core::smartcontracts::{
-    Contract,
-    ContractABI,
-    ContractAddress,
-    ContractDetails,
-    ImplementationContract,
-    NormalContract,
-    ProxyContract,
+    Contract, ContractABI, ContractAddress, ContractDetails, ImplementationContract,
+    NormalContract, ProxyContract,
 };
 use sxt_core::tables::Source;
 

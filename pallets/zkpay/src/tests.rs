@@ -4,11 +4,7 @@ use sp_core::crypto::{AccountId32, Ss58Codec};
 use sp_core::U256;
 use sp_runtime::DispatchError;
 use sxt_core::parse::{
-    SystemFieldValue,
-    SystemRequest,
-    SystemRequestType,
-    SystemTableField,
-    ZKPayRequest,
+    SystemFieldValue, SystemRequest, SystemRequestType, SystemTableField, ZKPayRequest,
 };
 use sxt_core::tables::TableIdentifier;
 use sxt_core::ByteString;

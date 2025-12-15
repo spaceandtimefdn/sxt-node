@@ -31,13 +31,8 @@ use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
 use sxt_core::attestation::{
-    claimed_unstake_attestation_leaf,
-    create_attestation_message,
-    encode_domain_and_state_root,
-    verify_eth_signature,
-    AttestationDomain,
-    EthereumSignature,
-    RegisterExternalAddress,
+    claimed_unstake_attestation_leaf, create_attestation_message, encode_domain_and_state_root,
+    verify_eth_signature, AttestationDomain, EthereumSignature, RegisterExternalAddress,
 };
 use sxt_core::sxt_chain_runtime as runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;

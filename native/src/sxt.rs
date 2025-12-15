@@ -12,8 +12,7 @@ use arrow::{
 #[cfg(feature = "std")]
 use commitment_sql::InsertAndCommitmentMetadata;
 use proof_of_sql_commitment_map::{
-    PerCommitmentScheme,
-    TableCommitmentBytesPerCommitmentScheme,
+    PerCommitmentScheme, TableCommitmentBytesPerCommitmentScheme,
     TableCommitmentBytesPerCommitmentSchemePassBy,
 };
 #[cfg(feature = "std")]
@@ -21,11 +20,7 @@ use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
 use sp_runtime::BoundedVec;
 use sp_runtime_interface::runtime_interface;
 use sxt_core::native::{
-    CreateStatementPassBy,
-    NativeCommitmentError,
-    NativeError,
-    OnChainTableBytes,
-    RowData,
+    CreateStatementPassBy, NativeCommitmentError, NativeError, OnChainTableBytes, RowData,
 };
 use sxt_core::tables::TableIdentifier;
 

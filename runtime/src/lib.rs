@@ -17,21 +17,11 @@ use frame_support::dispatch::DispatchClass;
 use frame_support::genesis_builder_helper::{build_state, get_preset};
 use frame_support::traits::VariantCountOf;
 pub use frame_support::traits::{
-    ConstBool,
-    ConstU128,
-    ConstU32,
-    ConstU64,
-    ConstU8,
-    Currency,
-    KeyOwnerProofSystem,
-    Randomness,
+    ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Currency, KeyOwnerProofSystem, Randomness,
     StorageInfo,
 };
 pub use frame_support::weights::constants::{
-    BlockExecutionWeight,
-    ExtrinsicBaseWeight,
-    RocksDbWeight,
-    WEIGHT_REF_TIME_PER_MILLIS,
+    BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_MILLIS,
 };
 use frame_support::weights::ConstantMultiplier;
 pub use frame_support::weights::{IdentityFee, Weight};
@@ -53,33 +43,17 @@ use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::crypto::{AccountId32, KeyTypeId};
 use sp_core::OpaqueMetadata;
 use sp_runtime::traits::{
-    AccountIdLookup,
-    BlakeTwo256,
-    Block as BlockT,
-    Bounded,
-    IdentifyAccount,
-    NumberFor,
-    One,
-    OpaqueKeys,
-    Verify,
-    Zero,
+    AccountIdLookup, BlakeTwo256, Block as BlockT, Bounded, IdentifyAccount, NumberFor, One,
+    OpaqueKeys, Verify, Zero,
 };
 use sp_runtime::transaction_validity::{
-    TransactionPriority,
-    TransactionSource,
-    TransactionValidity,
+    TransactionPriority, TransactionSource, TransactionValidity,
 };
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 use sp_runtime::{
-    create_runtime_str,
-    generic,
-    impl_opaque_keys,
-    ApplyExtrinsicResult,
-    FixedPointNumber,
-    FixedU128,
-    MultiSignature,
-    Perquintill,
+    create_runtime_str, generic, impl_opaque_keys, ApplyExtrinsicResult, FixedPointNumber,
+    FixedU128, MultiSignature, Perquintill,
 };
 pub use sp_runtime::{Perbill, Percent, Permill};
 use sp_staking::SessionIndex;
@@ -88,25 +62,11 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 use sxt_core::system_tables::ClaimedUnstake;
 pub use {
-    pallet_attestation,
-    pallet_authority_discovery,
-    pallet_authorship,
-    pallet_babe,
-    pallet_commitments,
-    pallet_election_provider_multi_phase,
-    pallet_grandpa,
-    pallet_im_online,
-    pallet_indexing,
-    pallet_keystore,
-    pallet_offences,
-    pallet_permissions,
-    pallet_rewards,
-    pallet_session,
-    pallet_smartcontracts,
-    pallet_staking,
-    pallet_system_contracts,
-    pallet_system_tables,
-    pallet_tables,
+    pallet_attestation, pallet_authority_discovery, pallet_authorship, pallet_babe,
+    pallet_commitments, pallet_election_provider_multi_phase, pallet_grandpa, pallet_im_online,
+    pallet_indexing, pallet_keystore, pallet_offences, pallet_permissions, pallet_rewards,
+    pallet_session, pallet_smartcontracts, pallet_staking, pallet_system_contracts,
+    pallet_system_tables, pallet_tables,
 };
 
 /// An index to a block.

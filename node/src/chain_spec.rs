@@ -12,16 +12,8 @@ use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use sxt_runtime::opaque::SessionKeys;
 use sxt_runtime::{
-    AccountId,
-    Balance,
-    Block,
-    ImOnlineId,
-    Perbill,
-    Signature,
-    BABE_GENESIS_EPOCH_CONFIG,
-    DOLLARS,
-    GRAND,
-    WASM_BINARY,
+    AccountId, Balance, Block, ImOnlineId, Perbill, Signature, BABE_GENESIS_EPOCH_CONFIG, DOLLARS,
+    GRAND, WASM_BINARY,
 };
 
 // The URL for the telemetry server.

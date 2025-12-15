@@ -7,19 +7,13 @@ use sp_runtime::traits::StaticLookup;
 use sp_runtime::{DispatchError, Perbill};
 use sp_staking::StakingInterface;
 use sxt_core::parse::{
-    MessageSystemRequest,
-    StakingSystemRequest,
-    SystemFieldValue,
-    SystemRequest,
-    SystemRequestType,
+    MessageSystemRequest, StakingSystemRequest, SystemFieldValue, SystemRequest, SystemRequestType,
     SystemTableField,
 };
 use sxt_core::system_tables::ClaimedUnstake;
 use sxt_core::tables::TableIdentifier;
 use sxt_core::utils::{
-    account_id_from_str,
-    convert_account_id,
-    eth_address_to_substrate_account_id,
+    account_id_from_str, convert_account_id, eth_address_to_substrate_account_id,
 };
 
 use crate::mock::*;

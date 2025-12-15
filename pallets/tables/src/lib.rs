@@ -39,8 +39,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use frame_system::RawOrigin;
     use proof_of_sql_commitment_map::{
-        CommitmentSchemeFlags,
-        TableCommitmentBytesPerCommitmentScheme,
+        CommitmentSchemeFlags, TableCommitmentBytesPerCommitmentScheme,
     };
     use scale_info::prelude::vec;
     use sp_core::crypto::Ss58Codec;
@@ -48,36 +47,14 @@ pub mod pallet {
     use sp_runtime::{SaturatedConversion, Vec};
     use sxt_core::permissions::*;
     use sxt_core::tables::{
-        create_statement_to_sqlparser,
-        create_statement_to_sqlparser_remove_with,
-        extract_create_schema_namespace,
-        extract_schema_uuid,
-        generate_column_uuid_list,
-        generate_namespace_uuid,
-        generate_table_uuid,
-        sqlparser_to_create_statement,
-        table_schema_from_create_statement,
-        update_uuid_in_create_table_statement,
-        uuids_from_sqlparser,
-        ColumnUuidList,
-        CommitmentBytes,
-        CommitmentScheme,
-        CreateStatement,
-        GetTableSchemaError,
-        IdentifierList,
-        InsertQuorumSize,
-        SnapshotUrl,
-        Source,
-        SourceAndMode,
-        TableIdentifier,
-        TableName,
-        TableNamespace,
-        TableSchema,
-        TableType,
-        TableUuid,
-        TableVersion,
-        TryNormalize,
-        UpdateUuidError,
+        create_statement_to_sqlparser, create_statement_to_sqlparser_remove_with,
+        extract_create_schema_namespace, extract_schema_uuid, generate_column_uuid_list,
+        generate_namespace_uuid, generate_table_uuid, sqlparser_to_create_statement,
+        table_schema_from_create_statement, update_uuid_in_create_table_statement,
+        uuids_from_sqlparser, ColumnUuidList, CommitmentBytes, CommitmentScheme, CreateStatement,
+        GetTableSchemaError, IdentifierList, InsertQuorumSize, SnapshotUrl, Source, SourceAndMode,
+        TableIdentifier, TableName, TableNamespace, TableSchema, TableType, TableUuid,
+        TableVersion, TryNormalize, UpdateUuidError,
     };
     use sxt_core::ByteString;
 

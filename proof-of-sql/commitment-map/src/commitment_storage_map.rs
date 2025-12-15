@@ -267,10 +267,7 @@ mod tests {
 
     use on_chain_table::{OnChainColumn, OnChainTable};
     use proof_of_sql::proof_primitive::dory::{
-        DoryScalar,
-        DynamicDoryCommitment,
-        ProverSetup,
-        PublicParameters,
+        DoryScalar, DynamicDoryCommitment, ProverSetup, PublicParameters,
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;

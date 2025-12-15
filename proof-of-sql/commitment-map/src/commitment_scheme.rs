@@ -8,11 +8,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 
 use crate::generic_over_commitment::{
-    ConcreteType,
-    GenericOverCommitment,
-    OptionType,
-    PairType,
-    ResultOkType,
+    ConcreteType, GenericOverCommitment, OptionType, PairType, ResultOkType,
 };
 use crate::GenericOverCommitmentFn;
 

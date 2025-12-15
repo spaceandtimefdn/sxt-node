@@ -9,11 +9,7 @@ use clap::Parser;
 use env_logger::Env;
 use event_forwarder::block_processing::fetch_all_events;
 use event_forwarder::chain_listener::{
-    Block,
-    BlockProcessor,
-    ChainListener,
-    FinalizedBlockStream,
-    API,
+    Block, BlockProcessor, ChainListener, FinalizedBlockStream, API,
 };
 use log::info;
 use snafu::{ResultExt, Snafu};
