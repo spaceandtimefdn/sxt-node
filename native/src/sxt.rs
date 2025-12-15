@@ -185,7 +185,6 @@ fn process_insert_with_conversion(
 #[cfg(all(test, feature = "std"))]
 mod tests {
     use std::io::Cursor;
-    use std::path::PathBuf;
     use std::sync::Arc;
 
     use arrow::array::{ArrayRef, Int32Array, RecordBatch};
