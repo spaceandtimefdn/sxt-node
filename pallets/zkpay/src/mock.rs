@@ -1,9 +1,8 @@
-use frame_support::pallet_prelude::ConstU32;
-use frame_support::traits::{ConstU128, KeyOwnerProofSystem, VariantCountOf};
-use frame_support::{derive_impl, parameter_types};
-use sp_core::{ConstU64, H256};
-use sp_runtime::traits::{ConvertInto, IdentityLookup, MaybeConvert, OpaqueKeys, TryConvertInto};
-use sp_runtime::{generic, BuildStorage, KeyTypeId};
+use frame_support::derive_impl;
+use frame_support::traits::ConstU128;
+use sp_core::H256;
+use sp_runtime::traits::IdentityLookup;
+use sp_runtime::BuildStorage;
 
 use crate as pallet_zkpay;
 
