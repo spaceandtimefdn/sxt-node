@@ -13,7 +13,7 @@ use proof_of_sql_commitment_map::{
 };
 use scale_info::TypeInfo;
 use serde::Deserialize;
-use snafu::{OptionExt, ResultExt, Snafu};
+use snafu::{OptionExt, Snafu};
 use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
 
 /// TODO
