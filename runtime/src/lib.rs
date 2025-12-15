@@ -13,11 +13,15 @@ extern crate alloc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use frame_election_provider_support::{generate_solution_type, onchain, SequentialPhragmen};
-use frame_support::dispatch::DispatchClass;
-use frame_support::genesis_builder_helper::{build_state, get_preset};
-use frame_support::traits::VariantCountOf;
-pub use frame_support::traits::{
+use polkadot_sdk::frame_election_provider_support::{
+    generate_solution_type,
+    onchain,
+    SequentialPhragmen,
+};
+use polkadot_sdk::frame_support::dispatch::DispatchClass;
+use polkadot_sdk::frame_support::genesis_builder_helper::{build_state, get_preset};
+use polkadot_sdk::frame_support::traits::VariantCountOf;
+pub use polkadot_sdk::frame_support::traits::{
     ConstBool,
     ConstU128,
     ConstU32,
@@ -28,32 +32,35 @@ pub use frame_support::traits::{
     Randomness,
     StorageInfo,
 };
-pub use frame_support::weights::constants::{
+pub use polkadot_sdk::frame_support::weights::constants::{
     BlockExecutionWeight,
     ExtrinsicBaseWeight,
     RocksDbWeight,
     WEIGHT_REF_TIME_PER_MILLIS,
 };
-use frame_support::weights::ConstantMultiplier;
-pub use frame_support::weights::{IdentityFee, Weight};
-pub use frame_support::{construct_runtime, derive_impl, parameter_types, StorageValue};
-pub use frame_system::Call as SystemCall;
-use frame_system::EnsureRoot;
-pub use pallet_balances::Call as BalancesCall;
-use pallet_election_provider_multi_phase::GeometricDepositBase;
-use pallet_grandpa::AuthorityId as GrandpaId;
-pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
-pub use pallet_timestamp::Call as TimestampCall;
-use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
-use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
-use proof_of_sql_commitment_map::PerCommitmentScheme;
-use sp_api::impl_runtime_apis;
-use sp_arithmetic::traits::UniqueSaturatedInto;
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use sp_consensus_babe::AuthorityId as BabeId;
-use sp_core::crypto::KeyTypeId;
-use sp_core::OpaqueMetadata;
-use sp_runtime::traits::{
+use polkadot_sdk::frame_support::weights::ConstantMultiplier;
+pub use polkadot_sdk::frame_support::weights::{IdentityFee, Weight};
+pub use polkadot_sdk::frame_support::{
+    construct_runtime,
+    derive_impl,
+    parameter_types,
+    StorageValue,
+};
+pub use polkadot_sdk::frame_system::Call as SystemCall;
+use polkadot_sdk::frame_system::EnsureRoot;
+pub use polkadot_sdk::pallet_balances::Call as BalancesCall;
+use polkadot_sdk::pallet_election_provider_multi_phase::GeometricDepositBase;
+use polkadot_sdk::pallet_grandpa::AuthorityId as GrandpaId;
+pub use polkadot_sdk::pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+pub use polkadot_sdk::pallet_timestamp::Call as TimestampCall;
+use polkadot_sdk::pallet_transaction_payment::{CurrencyAdapter, Multiplier};
+use polkadot_sdk::sp_api::impl_runtime_apis;
+use polkadot_sdk::sp_arithmetic::traits::UniqueSaturatedInto;
+use polkadot_sdk::sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
+use polkadot_sdk::sp_consensus_babe::AuthorityId as BabeId;
+use polkadot_sdk::sp_core::crypto::{AccountId32, KeyTypeId};
+use polkadot_sdk::sp_core::OpaqueMetadata;
+use polkadot_sdk::sp_runtime::traits::{
     AccountIdLookup,
     BlakeTwo256,
     Block as BlockT,
@@ -64,14 +71,14 @@ use sp_runtime::traits::{
     Verify,
     Zero,
 };
-use sp_runtime::transaction_validity::{
+use polkadot_sdk::sp_runtime::transaction_validity::{
     TransactionPriority,
     TransactionSource,
     TransactionValidity,
 };
 #[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
-use sp_runtime::{
+pub use polkadot_sdk::sp_runtime::BuildStorage;
+use polkadot_sdk::sp_runtime::{
     create_runtime_str,
     generic,
     impl_opaque_keys,
@@ -80,29 +87,62 @@ use sp_runtime::{
     FixedU128,
     Perquintill,
 };
-pub use sp_runtime::{Perbill, Percent, Permill};
-use sp_staking::SessionIndex;
+pub use polkadot_sdk::sp_runtime::{Perbill, Percent, Permill};
+use polkadot_sdk::sp_staking::SessionIndex;
 #[cfg(feature = "std")]
-use sp_version::NativeVersion;
-use sp_version::RuntimeVersion;
-use sxt_core::system_tables::ClaimedUnstake;
-pub use {
-    pallet_attestation,
+use polkadot_sdk::sp_version::NativeVersion;
+use polkadot_sdk::sp_version::RuntimeVersion;
+use polkadot_sdk::{
+    frame_support,
+    frame_system,
+    frame_system_rpc_runtime_api,
     pallet_authority_discovery,
     pallet_authorship,
     pallet_babe,
-    pallet_commitments,
+    pallet_bags_list,
+    pallet_balances,
     pallet_election_provider_multi_phase,
     pallet_grandpa,
     pallet_im_online,
+    pallet_migrations,
+    pallet_multisig,
+    pallet_offences,
+    pallet_session,
+    pallet_staking,
+    pallet_staking_runtime_api,
+    pallet_statement,
+    pallet_sudo,
+    pallet_timestamp,
+    pallet_transaction_payment,
+    pallet_transaction_payment_rpc_runtime_api,
+    pallet_utility,
+    sp_api,
+    sp_authority_discovery,
+    sp_block_builder,
+    sp_consensus_babe,
+    sp_consensus_grandpa,
+    sp_core,
+    sp_genesis_builder,
+    sp_inherents,
+    sp_offchain,
+    sp_runtime,
+    sp_session,
+    sp_staking,
+    sp_statement_store,
+    sp_transaction_pool,
+    sp_version,
+};
+use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
+use proof_of_sql_commitment_map::{AnyCommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
+use sxt_core::system_tables::ClaimedUnstake;
+pub use {
+    pallet_attestation,
+    pallet_commitments,
     pallet_indexing,
     pallet_keystore,
-    pallet_offences,
     pallet_permissions,
     pallet_rewards,
-    pallet_session,
     pallet_smartcontracts,
-    pallet_staking,
     pallet_system_contracts,
     pallet_system_tables,
     pallet_tables,
@@ -132,7 +172,7 @@ pub type Hash = sp_core::H256;
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
 /// to even the core data structures.
 pub mod opaque {
-    use sp_runtime::OpaqueExtrinsic;
+    use polkadot_sdk::sp_runtime::OpaqueExtrinsic;
 
     use super::*;
 
@@ -288,7 +328,7 @@ impl frame_system::Config for Runtime {
     /// This is used as an identifier of the chain. 42 is the generic substrate prefix.
     type SS58Prefix = SS58Prefix;
     type OnSetCode = ();
-    type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type MaxConsumers = polkadot_sdk::frame_support::traits::ConstU32<16>;
     type SingleBlockMigrations = ();
     type MultiBlockMigrator = MultiBlockMigrations;
     type PreInherents = ();
@@ -342,7 +382,8 @@ impl pallet_migrations::Config for Runtime {
     type CursorMaxLen = ConstU32<65_536>;
     type IdentifierMaxLen = ConstU32<256>;
     type MigrationStatusHandler = ();
-    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type FailedMigrationHandler =
+        polkadot_sdk::frame_support::migrations::FreezeChainOnFailedMigration;
     type MaxServiceWeight = MbmServiceWeight;
     type WeightInfo = pallet_migrations::weights::SubstrateWeight<Runtime>;
 }
@@ -511,7 +552,7 @@ parameter_types! {
     pub const MaxExposurePageSize: u32 = 512;
     pub const MaxNominators: u32 = 100_000;
     pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
-    pub const MaxNominations: u32 = <NposCompactSolution16 as frame_election_provider_support::NposSolution>::LIMIT as u32;
+    pub const MaxNominations: u32 = <NposCompactSolution16 as polkadot_sdk::frame_election_provider_support::NposSolution>::LIMIT as u32;
     pub const MaxControllersInDeprecationBatch: u32 = 5900;
     pub HistoryDepth: u32 = 84;
 }
@@ -522,9 +563,11 @@ impl pallet_staking::Config for Runtime {
     type Currency = Balances;
     type CurrencyBalance = Balance;
     type UnixTime = Timestamp;
-    type CurrencyToVote = sp_staking::currency_to_vote::U128CurrencyToVote;
+    type CurrencyToVote = polkadot_sdk::sp_staking::currency_to_vote::U128CurrencyToVote;
     type ElectionProvider =
-        frame_election_provider_support::onchain::OnChainExecution<OnChainSeqPhragmen>;
+        polkadot_sdk::frame_election_provider_support::onchain::OnChainExecution<
+            OnChainSeqPhragmen,
+        >;
     type GenesisElectionProvider = Self::ElectionProvider;
     type NominationsQuota = pallet_staking::FixedNominationsQuota<MAX_QUOTA_NOMINATIONS>;
     type HistoryDepth = HistoryDepth;
@@ -542,7 +585,7 @@ impl pallet_staking::Config for Runtime {
     type MaxExposurePageSize = MaxExposurePageSize;
     type VoterList = VoterList;
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
-    type MaxUnlockingChunks = frame_support::traits::ConstU32<32>;
+    type MaxUnlockingChunks = polkadot_sdk::frame_support::traits::ConstU32<32>;
     type MaxControllersInDeprecationBatch = ();
     type EventListeners = (); // This will be needed if we add nomination pools
     type DisablingStrategy = pallet_staking::UpToLimitDisablingStrategy;
@@ -603,8 +646,8 @@ parameter_types! {
     /// We take the top 22500 nominators as electing voters and all of the validators as electable
     /// targets. Whilst this is the case, we cannot and shall not increase the size of the
     /// validator intentions.
-    pub ElectionBounds: frame_election_provider_support::bounds::ElectionBounds =
-        frame_election_provider_support::bounds::ElectionBoundsBuilder::default().voters_count(MaxElectingVoters::get().into()).build();
+    pub ElectionBounds: polkadot_sdk::frame_election_provider_support::bounds::ElectionBounds =
+        polkadot_sdk::frame_election_provider_support::bounds::ElectionBoundsBuilder::default().voters_count(MaxElectingVoters::get().into()).build();
     /// Setup election pallet to support maximum winners upto 1200. This will mean Staking Pallet
     /// cannot have active validators higher than this count.
     pub const MaxActiveValidators: u32 = 1200;
@@ -615,18 +658,19 @@ generate_solution_type!(
     pub struct NposCompactSolution16::<
         VoterIndex = u32,
         TargetIndex = u16,
-        Accuracy = sp_runtime::PerU16,
+        Accuracy = polkadot_sdk::sp_runtime::PerU16,
         MaxVoters = MaxElectingVoters,
     >(16)
 );
 
 /// An OnChain Election Solver for Fallback operation
 pub struct OnChainSeqPhragmen;
-impl frame_election_provider_support::onchain::Config for OnChainSeqPhragmen {
+impl polkadot_sdk::frame_election_provider_support::onchain::Config for OnChainSeqPhragmen {
     type System = Runtime;
     type Solver = SequentialPhragmen<AccountId, OnChainAccuracy>;
     type DataProvider = Staking;
-    type WeightInfo = frame_election_provider_support::weights::SubstrateWeight<Runtime>;
+    type WeightInfo =
+        polkadot_sdk::frame_election_provider_support::weights::SubstrateWeight<Runtime>;
     type MaxWinners = MaxActiveValidators;
     type Bounds = ElectionBounds;
 }
@@ -663,7 +707,7 @@ impl pallet_election_provider_multi_phase::MinerConfig for Runtime {
     type MaxVotesPerVoter = <
     <Self as pallet_election_provider_multi_phase::Config>::DataProvider
     as
-    frame_election_provider_support::ElectionDataProvider
+    polkadot_sdk::frame_election_provider_support::ElectionDataProvider
     >::MaxVotesPerVoter;
     type MaxLength = OffchainSolutionLengthLimit;
     type MaxWeight = OffchainSolutionWeightLimit;
@@ -728,7 +772,7 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type SlashHandler = (); // Slashed amounts will be burned since we don't do anything special here
     type RewardHandler = (); // No additional action on rewards
     type DataProvider = Staking;
-    type Fallback = frame_election_provider_support::NoElection<(
+    type Fallback = polkadot_sdk::frame_election_provider_support::NoElection<(
         AccountId,
         BlockNumber,
         Staking,
@@ -838,7 +882,7 @@ impl pallet_rewards::Config for Runtime {
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
-#[frame_support::runtime]
+#[polkadot_sdk::frame_support::runtime]
 mod runtime {
     #[runtime::runtime]
     #[runtime::derive(
@@ -942,7 +986,7 @@ mod runtime {
 }
 
 /// The address format for describing accounts.
-pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
+pub type Address = polkadot_sdk::sp_runtime::MultiAddress<AccountId, ()>;
 /// Block header type as expected by this runtime.
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 /// Block type as expected by this runtime.
@@ -971,7 +1015,7 @@ pub type UncheckedExtrinsic =
 /// The payload being signed in transactions.
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive = frame_executive::Executive<
+pub type Executive = polkadot_sdk::frame_executive::Executive<
     Runtime,
     Block,
     frame_system::ChainContext<Runtime>,
