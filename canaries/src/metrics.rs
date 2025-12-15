@@ -108,6 +108,7 @@ pub(crate) fn record_staking(e: &StakingEvent) {
         .inc_by(e.amount.saturated_into());
 }
 
+/// Records attestation metrics for a given block.
 pub(crate) fn record_attestations(block_number: u32, attestations: Vec<Attestation<H256>>) {
     // Count the total attestations for this block
     BEST_ATTESTATION_COUNTER
@@ -138,18 +139,21 @@ pub(crate) fn record_balance(e: &BalanceEvent) {
         .inc_by(e.amount.saturated_into());
 }
 
+/// Records the count of claimed unstakes for a given block.
 pub(crate) fn record_claimed_unstake_count(block_number: u32, count: u64) {
     UNSTAKE_CLAIMED_COUNTER
         .with_label_values(&[block_number.to_string()])
         .inc_by(count);
 }
 
+/// Records the total validator rewards for a given era.
 pub(crate) fn record_era_rewards(era: u32, amount: u128) {
     VALIDATOR_REWARD
         .with_label_values(&[era.to_string()])
         .set(amount as f64);
 }
 
+/// Records the total staked amount for a given era.
 pub(crate) fn record_era_total_stake(era: u32, amount: u128) {
     TOTAL_STAKED
         .with_label_values(&[era.to_string()])
