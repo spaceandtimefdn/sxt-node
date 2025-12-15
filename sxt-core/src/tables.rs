@@ -2,7 +2,6 @@ extern crate alloc;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use alloc::{format, vec};
-use core::fmt::Display;
 use core::str::{from_utf8, Utf8Error};
 
 use codec::{Decode, Encode, MaxEncodedLen};
@@ -571,7 +570,7 @@ pub fn update_uuid_in_create_table_statement(
     let table: CreateTableBuilder = create_statement_to_sqlparser(statement)
         .map_err(|error| UpdateUuidError::ParseError { error })?;
 
-    let table_uuid_str = from_utf8(uuid.as_slice()).map_err(|e| UpdateUuidError::InvalidUuid)?;
+    let table_uuid_str = from_utf8(uuid.as_slice()).map_err(|_| UpdateUuidError::InvalidUuid)?;
 
     // Turn the UUID entries into SqlOption
     let table_entry = SqlOption {
@@ -1431,7 +1430,6 @@ mod tests {
         let create_statement: CreateStatement =
             BoundedVec::try_from(test_val.as_bytes().to_vec()).unwrap();
         let test_uuid: TableUuid = BoundedVec::try_from("TESTUUID".as_bytes().to_vec()).unwrap();
-        let expoected_val = "";
         let r = update_uuid_in_create_table_statement(
             test_uuid,
             ColumnUuidList::default(),
@@ -1450,7 +1448,6 @@ mod tests {
         let create_statement: CreateStatement =
             BoundedVec::try_from(test_val.as_bytes().to_vec()).unwrap();
         let test_uuid: TableUuid = BoundedVec::try_from("TESTUUID".as_bytes().to_vec()).unwrap();
-        let expoected_val = "";
         let r = update_uuid_in_create_table_statement(
             test_uuid,
             ColumnUuidList::default(),
@@ -1469,7 +1466,6 @@ mod tests {
         let create_statement: CreateStatement =
             BoundedVec::try_from(test_val.as_bytes().to_vec()).unwrap();
         let test_uuid: TableUuid = BoundedVec::try_from("TESTUUID".as_bytes().to_vec()).unwrap();
-        let expoected_val = "";
         let r = update_uuid_in_create_table_statement(
             test_uuid,
             ColumnUuidList::default(),
