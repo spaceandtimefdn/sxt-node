@@ -200,7 +200,7 @@ fn bonding_extra_with_an_account_works() {
 
         // Make sure there are no errors in the events
         let events = System::events();
-        if let Some(RuntimeEvent::SystemTables(crate::Event::MessageProcessingError { error })) =
+        if let Some(RuntimeEvent::SystemTables(crate::Event::MessageProcessingError { error: _ })) =
             events.last().map(|e| &e.event)
         {
             panic!("Expected no errors!");
@@ -272,7 +272,7 @@ fn set_nominations_works_if_stash_is_bonded() {
 
         let nominate = get_nominate_message(ETH_TEST_WALLET, &nomination_targets);
         assert_ok!(crate::process_nominating::<Test>(nominate));
-        let found = pallet_staking::Nominators::<Test>::drain().any(|(nominator, _)| true);
+        let found = pallet_staking::Nominators::<Test>::drain().any(|(_nominator, _)| true);
 
         assert!(found, "Expected nominator not found in staking nominators");
     });
