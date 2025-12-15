@@ -1,14 +1,5 @@
 #[cfg(feature = "std")]
-use std::sync::Arc;
-
-#[cfg(feature = "std")]
-use arrow::{
-    array::{ArrayRef, StringArray},
-    datatypes::{DataType, Field, Schema},
-    ipc::reader::StreamReader,
-    ipc::writer::StreamWriter,
-    record_batch::RecordBatch,
-};
+use arrow::ipc::reader::StreamReader;
 #[cfg(feature = "std")]
 use commitment_sql::InsertAndCommitmentMetadata;
 use proof_of_sql_commitment_map::{
@@ -18,7 +9,6 @@ use proof_of_sql_commitment_map::{
 };
 #[cfg(feature = "std")]
 use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
-use sp_runtime::BoundedVec;
 use sp_runtime_interface::runtime_interface;
 use sxt_core::native::{
     CreateStatementPassBy,
