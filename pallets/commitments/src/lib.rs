@@ -312,28 +312,28 @@ pub mod pallet {
 
             let previous_commitments = handler.get_commitments(&table);
 
-            let previous_commitments_pass_by = TableCommitmentBytesPerCommitmentSchemePassBy {
-                data: previous_commitments,
-            };
+            //let previous_commitments_pass_by = TableCommitmentBytesPerCommitmentSchemePassBy {
+            //data: previous_commitments,
+            //};
 
-            let table_bytes = insert_data.try_into()?;
+            //let table_bytes = insert_data.try_into()?;
 
-            let (insert_with_meta_columns_bytes, commitments_bytes) = I::process_insert_version_2(
-                table.clone(),
-                table_bytes,
-                previous_commitments_pass_by,
-            )?;
+            //let (insert_with_meta_columns_bytes, commitments_bytes) = I::process_insert_version_2(
+            //table.clone(),
+            //table_bytes,
+            //previous_commitments_pass_by,
+            //)?;
 
-            let insert_with_meta_columns = insert_with_meta_columns_bytes
-                .try_into()
-                .map_err(|_| Error::DeserializeInsertData)?;
+            //let insert_with_meta_columns = insert_with_meta_columns_bytes
+            //.try_into()
+            //.map_err(|_| Error::DeserializeInsertData)?;
 
             handler
-                 .update_commitments(table, commitments_bytes.data)
+                 .update_commitments(table, previous_commitments)
                  .expect("process_insert guarantees to update the same commitment schemes that were provided to it");
 
             Ok(InsertAndCommitmentMetadata {
-                insert_with_meta_columns: insert_with_meta_columns,
+                insert_with_meta_columns: insert_data,
                 meta_table_inserts: vec![],
             })
         }
