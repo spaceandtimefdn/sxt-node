@@ -91,7 +91,10 @@ pub mod pallet {
             permissions: PermissionList,
         ) -> DispatchResult {
             Self::ensure_root_or_permissioned(origin.clone(), &PermissionLevel::UpdatePermissions)?;
-            ensure!(permissions.len() > 0, Error::<T>::EmptyPermissionsListError);
+            ensure!(
+                !permissions.is_empty(),
+                Error::<T>::EmptyPermissionsListError
+            );
 
             Permissions::<T>::insert(who.clone(), permissions.clone());
             Self::deposit_event(Event::PermissionsSet(who, permissions));

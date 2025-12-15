@@ -19,6 +19,10 @@ mod rpc;
 /// Service instantiation
 mod service;
 
+#[expect(
+    clippy::result_large_err,
+    reason = "sc_cli::Result is from substrate and cannot be modified"
+)]
 fn main() -> sc_cli::Result<()> {
     command::run()
 }

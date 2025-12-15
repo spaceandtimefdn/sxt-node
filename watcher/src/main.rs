@@ -92,7 +92,7 @@ pub enum AttestationError {
     ///
     /// Used to handle issues such as connection errors, RPC failures, or storage fetch errors.
     #[error("Subxt error: {0}")]
-    SubxtError(#[from] subxt::Error),
+    SubxtError(Box<subxt::Error>),
 
     /// Error during the creation of an attestation.
     ///
@@ -156,11 +156,29 @@ pub enum AttestationError {
 
     /// Error fetching commitments and accounts from the chain.
     #[error("FetchError: {0}")]
-    FetchError(#[from] attestation::fetch::FetchError),
+    FetchError(Box<attestation::fetch::FetchError>),
 
     /// TxSubmitterError
     #[error("TxSubmitterError")]
-    TxSubmitterError(#[from] translation_layer::error::Error),
+    TxSubmitterError(Box<translation_layer::error::Error>),
+}
+
+impl From<subxt::Error> for AttestationError {
+    fn from(err: subxt::Error) -> Self {
+        AttestationError::SubxtError(Box::new(err))
+    }
+}
+
+impl From<attestation::fetch::FetchError> for AttestationError {
+    fn from(err: attestation::fetch::FetchError) -> Self {
+        AttestationError::FetchError(Box::new(err))
+    }
+}
+
+impl From<translation_layer::error::Error> for AttestationError {
+    fn from(err: translation_layer::error::Error) -> Self {
+        AttestationError::TxSubmitterError(Box::new(err))
+    }
 }
 
 /// Command-line arguments for the CLI
@@ -746,12 +764,7 @@ async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationErr
         .fetch(&attestations_addr)
         .await?;
 
-    if attestations.is_none() {
-        progress.push(format!("No attestations found for block {}", block_number));
-        update_ui(&mut terminal, &progress)?;
-    } else {
-        let attestations = attestations.unwrap();
-
+    if let Some(attestations) = attestations {
         if attestations.0.is_empty() {
             progress.push(format!("No attestations found for block {}", block_number));
             update_ui(&mut terminal, &progress)?;
@@ -776,6 +789,9 @@ async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationErr
                 ));
             }
         }
+    } else {
+        progress.push(format!("No attestations found for block {}", block_number));
+        update_ui(&mut terminal, &progress)?;
     }
 
     progress.push("Press q to quit".into());

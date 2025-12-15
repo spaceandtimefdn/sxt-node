@@ -64,8 +64,7 @@ mod tests {
         let address = signer.address();
 
         let expected_account_id = AccountId32::new(
-            core::iter::repeat(0)
-                .take(12)
+            core::iter::repeat_n(0, 12)
                 .chain(address.into_array())
                 .collect::<Vec<_>>()
                 .try_into()
@@ -82,8 +81,7 @@ mod tests {
         let address = signer.address();
 
         let account_id = AccountId32::new(
-            core::iter::repeat(0)
-                .take(12)
+            core::iter::repeat_n(0, 12)
                 .chain(address.into_array())
                 .collect::<Vec<_>>()
                 .try_into()

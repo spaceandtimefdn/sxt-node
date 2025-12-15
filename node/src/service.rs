@@ -62,6 +62,10 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
 #[allow(clippy::type_complexity)]
+#[expect(
+    clippy::result_large_err,
+    reason = "ServiceError is from substrate and cannot be modified"
+)]
 pub fn new_partial(
     config: &Configuration,
 ) -> Result<
@@ -261,6 +265,10 @@ pub struct NewFullBase {
 }
 
 /// Creates a full service from the configuration.
+#[expect(
+    clippy::result_large_err,
+    reason = "ServiceError is from substrate and cannot be modified"
+)]
 pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
     config: Configuration,
 ) -> Result<NewFullBase, ServiceError> {
@@ -373,7 +381,7 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 
     let (block_import, grandpa_link, babe_link) = import_setup;
 
-    if let sc_service::config::Role::Authority { .. } = &role {
+    if let sc_service::config::Role::Authority = &role {
         let proposer = sc_basic_authorship::ProposerFactory::new(
             task_manager.spawn_handle(),
             client.clone(),
@@ -566,6 +574,10 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 }
 
 /// Builds a new service for a full client.
+#[expect(
+    clippy::result_large_err,
+    reason = "ServiceError is from substrate and cannot be modified"
+)]
 pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceError> {
     let database_path = config.database.path().map(Path::to_path_buf);
 

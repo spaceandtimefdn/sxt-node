@@ -840,10 +840,7 @@ pub fn generate_uuid(source: String) -> Option<TableUuid> {
     }
 
     hex.truncate(32);
-    match TableUuid::try_from(hex.as_bytes().to_vec()) {
-        Ok(uuid) => Some(uuid),
-        Err(_) => None,
-    }
+    TableUuid::try_from(hex.as_bytes().to_vec()).ok()
 }
 
 /// The type of table that we are indexing

@@ -107,9 +107,7 @@ fn attest_block_success() {
 
         // Verify that the attestation is stored correctly in the pallet's storage.
         let attestations = Pallet::<Test>::attestations(block_number);
-        assert!(attestations
-            .iter()
-            .any(|stored_attestation| *stored_attestation == attestation));
+        assert!(attestations.contains(&attestation));
     });
 }
 
@@ -178,9 +176,7 @@ fn attest_block_uses_current_block_by_default() {
 
         // Verify that the attestation is stored in the current block, not the attested block
         let attestations = Pallet::<Test>::attestations(15);
-        assert!(attestations
-            .iter()
-            .any(|stored_attestation| *stored_attestation == attestation));
+        assert!(attestations.contains(&attestation));
 
         assert!(Pallet::<Test>::attestations(10).is_empty());
     });

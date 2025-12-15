@@ -51,6 +51,10 @@ impl SubstrateCli for Cli {
 }
 
 /// Parse and run command line arguments
+#[expect(
+    clippy::result_large_err,
+    reason = "sc_cli::Result is from substrate and cannot be modified"
+)]
 pub fn run() -> sc_cli::Result<()> {
     let cli = Cli::from_args();
 

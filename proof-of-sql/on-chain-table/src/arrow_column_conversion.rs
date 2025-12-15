@@ -443,7 +443,7 @@ mod tests {
         let array: ArrayRef = Arc::new(Int16Array::from(vec![Some(1), None]));
         assert!(matches!(
             OnChainColumn::try_from(&array),
-            Err(ArrowToOnChainColumnError::UnsupportedNull { .. })
+            Err(ArrowToOnChainColumnError::UnsupportedNull)
         ));
     }
 
