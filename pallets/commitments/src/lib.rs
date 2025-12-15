@@ -328,8 +328,11 @@ pub mod pallet {
 
             let table_bytes = insert_data.try_into()?;
 
-            let (insert_with_meta_columns_bytes, commitments_bytes) =
-                I::process_insert(table.clone(), table_bytes, previous_commitments_pass_by)?;
+            let (insert_with_meta_columns_bytes, commitments_bytes) = I::process_insert_version_2(
+                table.clone(),
+                table_bytes,
+                previous_commitments_pass_by,
+            )?;
 
             let insert_with_meta_columns = insert_with_meta_columns_bytes
                 .try_into()
