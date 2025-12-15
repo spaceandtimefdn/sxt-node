@@ -5,7 +5,7 @@ use frame_support::pallet_prelude::{ConstU32, TypeInfo};
 use sp_core::U256;
 use sp_runtime::BoundedBTreeSet;
 
-use crate::tables::{QuorumScope, TableIdentifier, TableUuid};
+use crate::tables::{QuorumScope, TableIdentifier};
 
 /// Maximum length of submitted Record Batch Data
 pub const DATA_MAX_LEN: u32 = 8_000_000;

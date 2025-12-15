@@ -20,6 +20,7 @@ pub(crate) async fn read_active_era(block: &Block, api: &API) -> Result<Option<u
     }
 }
 
+/// Reads the total validator rewards for the specified era.
 pub(crate) async fn read_era_rewards(era: u32, block: &Block, api: &API) -> Result<Option<u128>> {
     let era_reward_query = sxt_chain_runtime::api::storage()
         .staking()
@@ -36,6 +37,7 @@ pub(crate) async fn read_era_rewards(era: u32, block: &Block, api: &API) -> Resu
     }
 }
 
+/// Reads the total staked amount for the specified era.
 pub(crate) async fn read_total_staked(era: u32, block: &Block, api: &API) -> Result<Option<u128>> {
     let total_staked_query = sxt_chain_runtime::api::storage()
         .staking()
@@ -52,6 +54,7 @@ pub(crate) async fn read_total_staked(era: u32, block: &Block, api: &API) -> Res
     }
 }
 
+/// Reads the count of claimed unstakes for the given block.
 pub(crate) async fn read_unstaked_claims_count(block: &Block, api: &API) -> Result<u64> {
     let claims = api
         .runtime_api()

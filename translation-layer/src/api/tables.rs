@@ -4,15 +4,11 @@ use axum::extract::State;
 use axum::Json;
 use sxt_core::sxt_chain_runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
-use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
-    SourceAndMode,
-    TableIdentifier,
-};
+use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::TableIdentifier;
 
 use crate::model::{ApiResponse, CreateTableRequest, DropTableRequest, TableRequest};
 use crate::state::TranslationLayerState;
 use crate::table_builder::TableCreator;
-use crate::utils::{string_to_mode, string_to_source};
 
 /// Submits a transaction to create a new table in the indexing system.
 ///

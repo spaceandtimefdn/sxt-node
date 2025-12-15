@@ -1,6 +1,5 @@
 use anyhow::Result;
 use reqwest::Url;
-use serde::{Deserialize, Serialize};
 use sxt_core::attestation::Attestation;
 use sxt_core::keystore::H256;
 

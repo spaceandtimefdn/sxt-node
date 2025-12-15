@@ -23,6 +23,7 @@ pub mod runtime_api;
 pub mod weights;
 pub use weights::*;
 
+/// Metadata prefix utilities for table storage keys.
 mod metadata_prefix;
 
 #[allow(clippy::manual_inspect)]
@@ -60,8 +61,6 @@ pub mod pallet {
         update_uuid_in_create_table_statement,
         uuids_from_sqlparser,
         ColumnUuidList,
-        CommitmentBytes,
-        CommitmentScheme,
         CreateStatement,
         GetTableSchemaError,
         IdentifierList,
@@ -1109,8 +1108,8 @@ pub mod pallet {
                             )?
                         }
                         CommitmentCreationCmd::FromSnapshot(
-                            ref snapshot_url,
-                            ref per_commitment_scheme,
+                            ref _snapshot_url,
+                            ref _per_commitment_scheme,
                         ) => Err(DispatchError::Other(
                             "Snapshot commitments are deprecated in this extrinsic",
                         ))?,
@@ -1192,8 +1191,10 @@ pub mod pallet {
         }
     }
 
-    // Check if a public table has a safe name. Accepts an account ID and a table Identifier and determines if the table identifier is
-    // valid for the provided table owner.
+    /// Checks if a public table has a safe namespace.
+    ///
+    /// Accepts an account ID and a table identifier and determines if the table identifier is
+    /// valid for the provided table owner.
     pub(crate) fn ensure_safe_namespace<T: Config>(
         who: &T::AccountId,
         namespace: &ByteString,
@@ -1233,7 +1234,7 @@ pub mod pallet {
         zero_table_weight + (table_weight * num_tables as u64)
     }
 
-    // Returns true if the provided bytes coule be a valid ethereum address
+    /// Returns true if the provided account could be a valid Ethereum address.
     pub(crate) fn is_ethereum_address<T: Config>(account: T::AccountId) -> bool {
         let eth_bytes = account.encode();
         // Remove the leiading 0s from the bytes before comparing

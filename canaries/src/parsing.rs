@@ -10,9 +10,12 @@ pub(crate) fn parse_event_names(events: &[EventDetails<PolkadotConfig>]) -> Vec<
         .collect::<Vec<_>>()
 }
 
+/// A staking event with its label and amount.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub(crate) struct StakingEvent<'a> {
+    /// The event variant name.
     pub label: &'a str,
+    /// The staking amount.
     pub amount: u128,
 }
 
@@ -54,9 +57,12 @@ pub(crate) fn parse_staking_stats(events: &[EventDetails<PolkadotConfig>]) -> Ve
         .collect::<Vec<_>>()
 }
 
+/// A balance event with its label and amount.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub(crate) struct BalanceEvent<'a> {
+    /// The event variant name.
     pub label: &'a str,
+    /// The balance amount.
     pub amount: u128,
 }
 

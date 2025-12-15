@@ -17,6 +17,7 @@ mod mock;
 mod tests;
 
 mod messages;
+/// Templates for system table SQL statements.
 mod templates;
 
 pub mod runtime_api;
@@ -29,16 +30,15 @@ pub mod pallet {
 
     use frame_support::dispatch::{DispatchResult, RawOrigin};
     use frame_support::pallet_prelude::*;
-    use frame_support::traits::StoredMap;
     use frame_system::pallet_prelude::{BlockNumberFor, *};
     use itertools::Itertools;
     use on_chain_table::OnChainTable;
     use pallet_session::historical::IdentificationTuple;
     use sp_core::U256;
-    use sp_runtime::traits::{StaticLookup, UniqueSaturatedInto, Zero};
-    use sp_runtime::{DispatchErrorWithPostInfo, Perbill, SaturatedConversion};
+    use sp_runtime::traits::{StaticLookup, UniqueSaturatedInto};
+    use sp_runtime::{Perbill, SaturatedConversion};
     use sp_staking::offence::{OffenceDetails, OnOffenceHandler};
-    use sp_staking::{SessionIndex, StakingInterface};
+    use sp_staking::SessionIndex;
     use sxt_core::parse::{
         MessageSystemRequest,
         StakingSystemRequest,
@@ -47,7 +47,7 @@ pub mod pallet {
         SystemRequestType,
     };
     use sxt_core::system_tables::ClaimedUnstake;
-    use sxt_core::tables::{TableIdentifier, TableName, TableNamespace};
+    use sxt_core::tables::TableIdentifier;
     use sxt_core::utils::eth_address_to_substrate_account_id;
 
     use super::*;
@@ -176,9 +176,9 @@ pub mod pallet {
         }
     }
 
-    /// The Lock Identifier used by the staking pallet to lock funds in the balances pallet
-    /// We use it to retrieve someone's staked balance
-    pub(crate) const STAKING_ID: frame_support::traits::LockIdentifier = *b"staking ";
+    /// The Lock Identifier used by the staking pallet to lock funds in the balances pallet.
+    /// We use it to retrieve someone's staked balance.
+    pub(crate) const _STAKING_ID: frame_support::traits::LockIdentifier = *b"staking ";
 
     /// Process all state changes for a given SystemRequest
     pub fn process_request<T: Config>(request: SystemRequest) -> DispatchResult {
@@ -442,7 +442,7 @@ pub mod pallet {
                         // How much will be active after the unbonding. Is it less than the
                         let remaining_active = staking_ledger.active - unstake_amount;
 
-                        if let Some(nominations) = pallet_staking::Nominators::<T>::get(&staker_id)
+                        if let Some(_nominations) = pallet_staking::Nominators::<T>::get(&staker_id)
                         {
                             if remaining_active < pallet_staking::MinNominatorBond::<T>::get() {
                                 pallet_staking::Pallet::<T>::chill(staker_signer.clone())?;
@@ -634,7 +634,7 @@ pub mod pallet {
                     validator: validator_account.clone(),
                 });
 
-                let result =
+                let _result =
                     pallet_staking::Pallet::<T>::chill(RawOrigin::Signed(validator_account).into());
                 weight += Weight::from_parts(10_000, 0)
             }

@@ -8,7 +8,6 @@
 
 extern crate alloc;
 extern crate core;
-use alloc::vec::Vec;
 
 #[cfg(test)]
 mod mock;
@@ -131,7 +130,7 @@ pub mod pallet {
         /// payouts across a number of blocks until all payouts for the previous eras have been
         /// paid.
         fn on_initialize(_: BlockNumberFor<T>) -> Weight {
-            let mut total_weight: Weight = Weight::zero();
+            let total_weight: Weight = Weight::zero();
 
             // Start by getting the last era we've paid out
             let active_era = NextPaidEra::<T>::get();
@@ -188,11 +187,11 @@ pub mod pallet {
             let reward_weight = rewards_for_era
                 .individual
                 .into_iter()
-                .filter(|(validator, points)| {
+                .filter(|(validator, _points)| {
                     pallet_staking::EraInfo::<T>::pending_rewards(active_era, validator)
                 })
                 .take(max_payouts)
-                .map(|(validator, points)| {
+                .map(|(validator, _points)| {
                     let origin = frame_system::RawOrigin::Signed(payer.clone()).into();
                     match pallet_staking::Pallet::<T>::payout_stakers(
                         origin,

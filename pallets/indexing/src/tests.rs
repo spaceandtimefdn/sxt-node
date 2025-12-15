@@ -19,11 +19,9 @@ use sp_core::Hasher;
 use sp_runtime::BoundedVec;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
 use sxt_core::tables::{
-    CommitmentScheme,
     CreateStatement,
     InsertQuorumSize,
     QuorumScope,
-    SourceAndMode,
     TableIdentifier,
     TableName,
     TableNamespace,
@@ -579,7 +577,7 @@ fn inserting_data_fails_when_table_name_is_empty() {
         .unwrap();
         pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
 
-        let (table_id, create_statement) = sample_table_definition();
+        let (table_id, _create_statement) = sample_table_definition();
         let test_identifier = TableIdentifier {
             // Create an empty table name
             name: TableName::try_from(b"".to_vec()).unwrap(),
@@ -1556,11 +1554,11 @@ fn we_can_submit_to_permissionless_table_with_no_permissions() {
             batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
             data: row_data(),
         };
-        let test_data_hash =
+        let _test_data_hash =
             <<Test as frame_system::Config>::Hashing as Hasher>::hash(&test_submission.data);
 
         let public_submitter = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
-        let who = ensure_signed(public_submitter.clone()).unwrap();
+        let _who = ensure_signed(public_submitter.clone()).unwrap();
 
         // permissionless submission
         assert_ok!(submit_test_data(public_submitter, test_submission.clone()));

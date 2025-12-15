@@ -1,7 +1,11 @@
 //! Canary prototype
+/// Prometheus metrics collection and serving.
 mod metrics;
+/// Parsing utilities for canary data.
 mod parsing;
+/// RPC communication utilities.
 mod rpc;
+/// Storage operations for canary state.
 mod storage;
 use std::net::SocketAddr;
 
@@ -81,12 +85,15 @@ async fn main() -> Result<(), CanaryError> {
     Ok(())
 }
 
+/// Simple block processor for canary monitoring.
 struct SimpleProcessor {
+    /// The RPC URL to connect to.
     pub rpc_url: Url,
 }
 
 impl SimpleProcessor {
-    fn get_http_url(&self) -> Result<Url, CanaryError> {
+    /// Converts the WebSocket URL to an HTTP URL.
+    fn _get_http_url(&self) -> Result<Url, CanaryError> {
         let mut out = self.rpc_url.clone();
         match self.rpc_url.scheme() {
             "wss" => {

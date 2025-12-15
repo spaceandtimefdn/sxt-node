@@ -34,8 +34,6 @@ use async_trait::async_trait;
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::ws_client::WsClientBuilder;
 use log::{error, info};
-use reqwest::Client;
-use serde_json::json;
 use subxt::backend::StreamOf;
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
@@ -302,7 +300,7 @@ impl BlockStreamProvider for IncrementingBlockStream {
     }
 }
 
-fn convert_ws_to_https(url: &str) -> String {
+fn _convert_ws_to_https(url: &str) -> String {
     url.replacen("ws://", "http://", 1)
         .replacen("wss://", "https://", 1)
 }
