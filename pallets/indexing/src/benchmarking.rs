@@ -162,6 +162,8 @@ mod benchmarks {
 
         let caller: T::AccountId = account("dave", 0, 0);
         pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
+
+        (caller, update_table.ident, batch_id, row_data)
     }
 
     #[benchmark]
