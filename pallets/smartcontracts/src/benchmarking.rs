@@ -50,6 +50,7 @@ fn benchmark_contract_definition() -> Contract {
 mod benchmarks {
     use native_api::NativeApi;
     use pallet_tables::benchmarking::grant_edit_schema;
+    use proof_of_sql_commitment_map::CommitmentSchemeFlags;
     use sp_core::crypto::Ss58Codec;
     use sxt_core::tables::{TableIdentifier, TableType};
 
@@ -100,6 +101,7 @@ mod benchmarks {
         let table_definition = pallet_tables::benchmarking::integers_table_definition(
             table_identifier.clone(),
             TableType::SCI,
+            CommitmentSchemeFlags::all(),
         );
 
         #[extrinsic_call]
@@ -182,6 +184,7 @@ mod benchmarks {
         let table_definition = pallet_tables::benchmarking::integers_table_definition(
             table_identifier.clone(),
             TableType::SCI,
+            CommitmentSchemeFlags::all(),
         );
 
         SmartContracts::<T, I>::add_smartcontract(
