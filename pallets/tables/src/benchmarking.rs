@@ -72,7 +72,10 @@ pub fn integers_table_definition(ident: TableIdentifier, table_type: TableType) 
     .try_into()
     .unwrap();
 
-    let commitment = CommitmentCreationCmd::Empty(CommitmentSchemeFlags::all());
+    let commitment = CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+        hyper_kzg: true,
+        ..Default::default()
+    });
 
     let source = Source::UserCreated(b"benchmark".to_vec().try_into().unwrap());
 
