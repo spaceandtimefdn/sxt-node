@@ -52,7 +52,11 @@ pub fn schema_bytes_and_ddl_and_source(
 /// Returns an `UpdateTable` for creating a table with the given ident/type.
 ///
 /// The table will have 64 integer columns.
-pub fn integers_table_definition(ident: TableIdentifier, table_type: TableType) -> UpdateTable {
+pub fn integers_table_definition(
+    ident: TableIdentifier,
+    table_type: TableType,
+    commitment_schemes: CommitmentSchemeFlags,
+) -> UpdateTable {
     let create_statement_columns = (0..64)
         .map(|col_num| alloc::format!("COL_{col_num} BIGINT NOT NULL"))
         .collect::<alloc::vec::Vec<_>>()
@@ -72,10 +76,7 @@ pub fn integers_table_definition(ident: TableIdentifier, table_type: TableType) 
     .try_into()
     .unwrap();
 
-    let commitment = CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
-        hyper_kzg: true,
-        ..Default::default()
-    });
+    let commitment = CommitmentCreationCmd::Empty(commitment_schemes);
 
     let source = Source::UserCreated(b"benchmark".to_vec().try_into().unwrap());
 
@@ -129,7 +130,11 @@ mod benchmarks {
             .map(|i| {
                 let table_identifier =
                     TableIdentifier::from_str_unchecked(&format!("EXISTING{}", i), "SCHEMA");
-                integers_table_definition(table_identifier.clone(), TableType::Community)
+                integers_table_definition(
+                    table_identifier.clone(),
+                    TableType::Community,
+                    CommitmentSchemeFlags::all(),
+                )
             })
             .collect::<Vec<_>>()
             .try_into()
@@ -143,6 +148,7 @@ mod benchmarks {
         let update_tables = vec![integers_table_definition(
             table_identifier.clone(),
             TableType::Community,
+            CommitmentSchemeFlags::all(),
         )]
         .try_into()
         .unwrap();
@@ -178,7 +184,11 @@ mod benchmarks {
                     &format!("TABLE{}", i % MAX_TABLES_PER_SCHEMA),
                     &format!("SCHEMA{}", i / MAX_TABLES_PER_SCHEMA),
                 );
-                integers_table_definition(table_identifier.clone(), TableType::Community)
+                integers_table_definition(
+                    table_identifier.clone(),
+                    TableType::Community,
+                    CommitmentSchemeFlags::all(),
+                )
             })
             .collect::<Vec<_>>();
 
@@ -246,8 +256,11 @@ mod benchmarks {
         let table_identifier = TableIdentifier::from_str_unchecked("DROP", "SCHEMA");
         let table_type = TableType::Community;
 
-        let table_definition =
-            integers_table_definition(table_identifier.clone(), table_type.clone());
+        let table_definition = integers_table_definition(
+            table_identifier.clone(),
+            table_type.clone(),
+            CommitmentSchemeFlags::all(),
+        );
 
         Tables::<T>::create_tables(
             RawOrigin::Signed(creator.clone()).into(),
@@ -294,8 +307,11 @@ mod benchmarks {
         let table_identifier = TableIdentifier::from_str_unchecked("DROP", "SCHEMA");
         let table_type = TableType::Community;
 
-        let table_definition =
-            integers_table_definition(table_identifier.clone(), table_type.clone());
+        let table_definition = integers_table_definition(
+            table_identifier.clone(),
+            table_type.clone(),
+            CommitmentSchemeFlags::all(),
+        );
 
         Tables::<T>::create_tables(
             RawOrigin::Signed(creator.clone()).into(),
@@ -388,8 +404,11 @@ mod benchmarks {
         let table_identifier = TableIdentifier::from_str_unchecked("UUID", "SCHEMA");
         let table_type = TableType::Community;
 
-        let table_definition =
-            integers_table_definition(table_identifier.clone(), table_type.clone());
+        let table_definition = integers_table_definition(
+            table_identifier.clone(),
+            table_type.clone(),
+            CommitmentSchemeFlags::all(),
+        );
 
         Tables::<T>::create_tables(
             RawOrigin::Signed(creator.clone()).into(),
@@ -439,8 +458,11 @@ mod benchmarks {
         let table_identifier = TableIdentifier::from_str_unchecked("QUORUM", "MY_SCHEMA");
         let table_type = TableType::Community;
 
-        let table_definition =
-            integers_table_definition(table_identifier.clone(), table_type.clone());
+        let table_definition = integers_table_definition(
+            table_identifier.clone(),
+            table_type.clone(),
+            CommitmentSchemeFlags::all(),
+        );
 
         Tables::<T>::create_tables(
             RawOrigin::Signed(creator.clone()).into(),
@@ -500,8 +522,11 @@ mod benchmarks {
                 TableIdentifier::from_str_unchecked(&format!("QUORUM{}", i), "MY_SCHEMA");
             let table_type = TableType::Community;
 
-            let table_definition =
-                integers_table_definition(table_identifier.clone(), table_type.clone());
+            let table_definition = integers_table_definition(
+                table_identifier.clone(),
+                table_type.clone(),
+                CommitmentSchemeFlags::all(),
+            );
 
             Tables::<T>::create_tables(
                 RawOrigin::Signed(creator.clone()).into(),

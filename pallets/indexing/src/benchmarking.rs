@@ -34,7 +34,9 @@ mod benchmarks {
 
     use super::*;
 
-    fn benchmark_integers_table_and_data() -> (UpdateTable, BatchId, RowData) {
+    fn benchmark_integers_table_and_data(
+        commitment_schemes: CommitmentSchemeFlags,
+    ) -> (UpdateTable, BatchId, RowData) {
         let ident = TableIdentifier {
             namespace: TableNamespace::try_from(b"BENCHMARK".to_vec()).unwrap(),
             name: TableName::try_from(b"INTEGERS".to_vec()).unwrap(),
@@ -45,7 +47,7 @@ mod benchmarks {
             privileged: None,
         });
 
-        let update_table = integers_table_definition(ident, table_type);
+        let update_table = integers_table_definition(ident, table_type, commitment_schemes);
 
         let batch_id = BatchId::try_from(b"benchmark".to_vec()).unwrap();
 
@@ -62,7 +64,8 @@ mod benchmarks {
 
     #[benchmark]
     fn submit_data_quorum_not_reached() {
-        let (update_table, batch_id, row_data) = benchmark_integers_table_and_data();
+        let (update_table, batch_id, row_data) =
+            benchmark_integers_table_and_data(CommitmentSchemeFlags::all());
         let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
 
         pallet_tables::Pallet::<T>::create_namespace(
@@ -100,9 +103,11 @@ mod benchmarks {
         assert!(Indexing::<T, I>::final_data(internal_batch_id).is_none());
     }
 
-    #[benchmark]
-    fn submit_data_quorum_reached() {
-        let (update_table, batch_id, row_data) = benchmark_integers_table_and_data();
+    fn setup_quorum_reached_benchmark<T: Config<I>, I: NativeApi>(
+        commitment_schemes: CommitmentSchemeFlags,
+    ) -> (T::AccountId, TableIdentifier, BatchId, RowData) {
+        let (update_table, batch_id, row_data) =
+            benchmark_integers_table_and_data(commitment_schemes);
         let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
 
         pallet_tables::Pallet::<T>::create_namespace(
@@ -155,18 +160,51 @@ mod benchmarks {
         )
         .unwrap();
 
-        let internal_batch_id = build_inner_batch_id::<T, I>(&batch_id, &update_table.ident);
-        assert!(Indexing::<T, I>::final_data(internal_batch_id.clone()).is_none());
-
         let caller: T::AccountId = account("dave", 0, 0);
         pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
+    }
+
+    #[benchmark]
+    fn submit_data_quorum_reached_dory() {
+        let (caller, table_identifier, batch_id, row_data) =
+            setup_quorum_reached_benchmark::<T, I>(CommitmentSchemeFlags {
+                dynamic_dory: true,
+                ..Default::default()
+            });
+
+        let internal_batch_id = build_inner_batch_id::<T, I>(&batch_id, &table_identifier);
+        assert!(Indexing::<T, I>::final_data(internal_batch_id.clone()).is_none());
+
         #[extrinsic_call]
         submit_data(
             RawOrigin::Signed(caller),
-            update_table.ident.clone(),
+            table_identifier.clone(),
             batch_id.clone(),
             row_data,
         );
+
+        assert!(Indexing::<T, I>::final_data(internal_batch_id).is_some());
+    }
+
+    #[benchmark]
+    fn submit_data_quorum_reached_hyper_kzg() {
+        let (caller, table_identifier, batch_id, row_data) =
+            setup_quorum_reached_benchmark::<T, I>(CommitmentSchemeFlags {
+                hyper_kzg: true,
+                ..Default::default()
+            });
+
+        let internal_batch_id = build_inner_batch_id::<T, I>(&batch_id, &table_identifier);
+        assert!(Indexing::<T, I>::final_data(internal_batch_id.clone()).is_none());
+
+        #[extrinsic_call]
+        submit_data(
+            RawOrigin::Signed(caller),
+            table_identifier.clone(),
+            batch_id.clone(),
+            row_data,
+        );
+
         assert!(Indexing::<T, I>::final_data(internal_batch_id).is_some());
     }
 
