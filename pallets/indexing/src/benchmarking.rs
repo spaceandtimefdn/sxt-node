@@ -103,9 +103,14 @@ mod benchmarks {
         assert!(Indexing::<T, I>::final_data(internal_batch_id).is_none());
     }
 
-    fn setup_quorum_reached_benchmark<T: Config<I>, I: NativeApi>(
+    fn setup_quorum_reached_benchmark<T, I>(
         commitment_schemes: CommitmentSchemeFlags,
-    ) -> (T::AccountId, TableIdentifier, BatchId, RowData) {
+    ) -> (T::AccountId, TableIdentifier, BatchId, RowData)
+    where
+        T: Config<I>,
+        <T as frame_system::Config>::AccountId: Ss58Codec,
+        I: NativeApi,
+    {
         let (update_table, batch_id, row_data) =
             benchmark_integers_table_and_data(commitment_schemes);
         let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
