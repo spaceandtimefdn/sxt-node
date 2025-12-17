@@ -219,7 +219,7 @@ pub mod pallet {
         /// privileged quorum size.
         /// - the table to be public-permissionless
         #[pallet::call_index(0)]
-        #[pallet::weight(submit_data_weight::<T, I>(&table))]
+        #[pallet::weight(submit_data_weight::<T, I>(table))]
         pub fn submit_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
@@ -257,7 +257,7 @@ pub mod pallet {
         /// privileged quorum size.
         /// - the table to be public-permissionless
         #[pallet::call_index(1)]
-        #[pallet::weight(submit_data_weight::<T, I>(&table))]
+        #[pallet::weight(submit_data_weight::<T, I>(table))]
         pub fn submit_blockchain_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
