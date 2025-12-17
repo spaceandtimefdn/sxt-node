@@ -172,7 +172,7 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_reached_dory() {
+    fn submit_data_quorum_reached_dynamic_dory() {
         let (caller, table_identifier, batch_id, row_data) =
             setup_quorum_reached_benchmark::<T, I>(CommitmentSchemeFlags {
                 dynamic_dory: true,
