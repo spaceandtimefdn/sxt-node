@@ -40,6 +40,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
+    use proof_of_sql_commitment_map::CommitmentScheme;
     use sp_runtime::traits::Hash;
     use sp_runtime::BoundedVec;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
@@ -218,7 +219,7 @@ pub mod pallet {
         /// privileged quorum size.
         /// - the table to be public-permissionless
         #[pallet::call_index(0)]
-        #[pallet::weight(submit_data_weight::<T, I>())]
+        #[pallet::weight(submit_data_weight::<T, I>(&table))]
         pub fn submit_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
@@ -256,7 +257,7 @@ pub mod pallet {
         /// privileged quorum size.
         /// - the table to be public-permissionless
         #[pallet::call_index(1)]
-        #[pallet::weight(submit_data_weight::<T, I>())]
+        #[pallet::weight(submit_data_weight::<T, I>(&table))]
         pub fn submit_blockchain_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
@@ -268,13 +269,33 @@ pub mod pallet {
         }
     }
 
-    fn submit_data_weight<T, I>() -> Weight
+    fn submit_data_weight<T, I>(table: &TableIdentifier) -> Weight
     where
         T: Config<I>,
         I: NativeApi,
     {
         let submit_no_quorum = <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_not_reached();
-        let submit_w_quorum = <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached();
+
+        let submit_w_quorum_dory = if pallet_commitments::CommitmentStorageMap::<T>::contains_key(
+            table,
+            CommitmentScheme::DynamicDory,
+        ) {
+            <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached_dory()
+        } else {
+            Weight::zero()
+        };
+
+        let submit_w_quorum_hyper_kzg =
+            if pallet_commitments::CommitmentStorageMap::<T>::contains_key(
+                table,
+                CommitmentScheme::HyperKzg,
+            ) {
+                <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached_hyper_kzg()
+            } else {
+                Weight::zero()
+            };
+
+        let submit_w_quorum = submit_w_quorum_dory.saturating_add(submit_w_quorum_hyper_kzg);
 
         // Assume in 4 submissions, one will have a quorum event
         let submit_avg_time = ((3 * submit_no_quorum.ref_time()) + submit_w_quorum.ref_time()) / 4;
