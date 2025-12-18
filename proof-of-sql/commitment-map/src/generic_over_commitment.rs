@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use core::marker::PhantomData;
 
 #[cfg(feature = "substrate")]
-use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
+use polkadot_sdk::frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
 use proof_of_sql::base::commitment::{ColumnCommitments, QueryCommitments, TableCommitment};
 #[cfg(feature = "substrate")]
 use scale_info::TypeInfo;
