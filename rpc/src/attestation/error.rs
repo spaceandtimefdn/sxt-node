@@ -1,4 +1,5 @@
 use jsonrpsee::types::ErrorObjectOwned;
+use polkadot_sdk::sp_blockchain;
 use snafu::Snafu;
 
 /// The base error code used by the attestation RPCs.

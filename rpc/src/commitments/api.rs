@@ -2,7 +2,7 @@ use indexmap::IndexMap;
 use jsonrpsee::proc_macros::rpc;
 use proof_of_sql_commitment_map::CommitmentScheme;
 use serde::Serialize;
-use sp_core::Bytes;
+use polkadot_sdk::sp_core::Bytes;
 
 use crate::commitments::error::CommitmentsApiError;
 

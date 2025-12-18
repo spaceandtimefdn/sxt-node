@@ -1,5 +1,6 @@
 use attestation_tree::{AttestationTreeError, AttestationTreeProofError};
 use jsonrpsee::types::ErrorObjectOwned;
+use polkadot_sdk::{sp_api, sp_blockchain};
 use proof_of_sql_planner::PlannerError;
 use snafu::Snafu;
 use sxt_core::tables::TableIdentifierConversionError;
