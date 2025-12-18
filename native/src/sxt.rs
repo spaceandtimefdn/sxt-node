@@ -2,6 +2,7 @@
 use arrow::ipc::reader::StreamReader;
 #[cfg(feature = "std")]
 use commitment_sql::InsertAndCommitmentMetadata;
+pub use polkadot_sdk::sp_runtime_interface::runtime_interface;
 use proof_of_sql_commitment_map::{
     PerCommitmentScheme,
     TableCommitmentBytesPerCommitmentScheme,
@@ -9,7 +10,6 @@ use proof_of_sql_commitment_map::{
 };
 #[cfg(feature = "std")]
 use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
-use sp_runtime_interface::runtime_interface;
 use sxt_core::native::{
     CreateStatementPassBy,
     NativeCommitmentError,
@@ -141,12 +141,12 @@ mod tests {
     use codec::{Decode, Encode};
     use commitment_sql::OnChainTableToTableCommitmentFn;
     use on_chain_table::{OnChainColumn, OnChainTable};
+    use polkadot_sdk::sp_runtime::BoundedVec;
     use proof_of_sql::base::database::ColumnType;
     use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
     use proof_of_sql_commitment_map::TableCommitmentBytes;
     use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
     use rayon::prelude::*;
-    use sp_runtime::BoundedVec;
     use sqlparser::ast::Ident;
 
     use super::*;

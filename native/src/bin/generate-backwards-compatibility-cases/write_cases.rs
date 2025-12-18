@@ -1,9 +1,9 @@
 use std::path::Path;
 
 use codec::Encode;
+use polkadot_sdk::sp_core::keccak_256;
 use proptest::prelude::*;
 use proptest::test_runner::{FileFailurePersistence, TestRng, TestRunner};
-use sp_core::keccak_256;
 
 /// Generates and writes cases to files.
 ///
