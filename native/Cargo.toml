@@ -11,14 +11,17 @@ homepage.workspace = true
 codec = { workspace = true }
 commitment-sql = { workspace = true, optional = true, features = ["cpu-perf"] }
 log = "0.4.11"
-sp-runtime-interface = { workspace = true, default-features = false }
-sp-runtime = { workspace = true, default-features = false}
-frame-support = { workspace = true, default-features = false}
+
+polkadot-sdk = { workspace = true, features = [
+	"sp-runtime-interface", "sp-runtime", "frame-support", 
+	"frame-benchmarking", "frame-system", "sp-core",
+]}
+
+# Required for the Native runtime_interface macro to work
+sp-runtime-interface = { workspace = true }
+
 on-chain-table = { workspace = true, default-features = false, features = ["arrow"], optional=true}
 scale-info = { workspace = true, default-features = false, features = ["derive"] }
-frame-benchmarking = { workspace = true, default-features = false, optional = true }
-frame-system = { workspace = true, default-features = false }
-sp-core = { workspace = true, default-features = false}
 tonic = { workspace = true, optional = true }
 arrow = { workspace = true, optional = true, features = ["ipc"]}
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
@@ -44,8 +47,9 @@ required-features = ["generate_backwards_compatibility_cases"]
 [features]
 default = ["std"]
 std = [
-    "codec/std",
+    "polkadot-sdk/std",
     "sp-runtime-interface/std",
+    "codec/std",
     "dep:arrow", # <------- put std dependencies here
     "dep:commitment-sql",
     "dep:on-chain-table",
@@ -53,10 +57,6 @@ std = [
     "dep:tonic",
     "dep:futures",
     "dep:proof-of-sql",
-    "sp-runtime/std",
-    "frame-support/std",
-    "frame-system/std",
-    "sp-core/std",
     "sxt-core/std",
 ]
 generate_backwards_compatibility_cases = ["std", "dep:proptest", "dep:hex", "sxt-core/proptest", "proof-of-sql-commitment-map/proptest", "commitment-sql/proptest", "dep:proof-of-sql", "dep:clap"]
