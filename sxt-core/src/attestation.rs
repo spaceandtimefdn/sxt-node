@@ -7,15 +7,15 @@ use alloc::vec::Vec;
 
 use codec::{Decode, Encode, FullCodec, MaxEncodedLen};
 use k256::ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey};
+pub use polkadot_sdk::sp_core::hashing::{blake2_128, blake2_256};
+use polkadot_sdk::sp_core::{Bytes, ConstU32};
+pub use polkadot_sdk::sp_core::{RuntimeDebug, H256};
+use polkadot_sdk::sp_runtime::{format, AccountId32, BoundedVec};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sha3::digest::core_api::CoreWrapper;
 use sha3::{Digest, Keccak256, Keccak256Core};
 use snafu::{ResultExt, Snafu};
-pub use sp_core::hashing::{blake2_128, blake2_256};
-use sp_core::{Bytes, ConstU32};
-pub use sp_core::{RuntimeDebug, H256};
-use sp_runtime::{format, AccountId32, BoundedVec};
 
 use crate::system_contracts::ContractInfo;
 use crate::system_tables::ClaimedUnstake;
@@ -430,9 +430,9 @@ pub type Address20 = BoundedVec<u8, ConstU32<20>>;
 
 #[cfg(test)]
 mod tests {
-    use frame_support::assert_ok;
     use k256::elliptic_curve::rand_core::OsRng;
-    use sp_core::{H160, U256};
+    use polkadot_sdk::frame_support::assert_ok;
+    use polkadot_sdk::sp_core::{H160, U256};
 
     use super::*;
 

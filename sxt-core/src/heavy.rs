@@ -2,7 +2,7 @@
 
 use core::iter::Sum;
 
-use frame_support::weights::Weight;
+use polkadot_sdk::frame_support::weights::Weight;
 
 /// A simple monad for composing functions that incur polkadot weight.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
