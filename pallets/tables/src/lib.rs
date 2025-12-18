@@ -27,26 +27,27 @@ pub use weights::*;
 mod metadata_prefix;
 
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
     use alloc::boxed::Box;
     use core::str::from_utf8;
 
     use codec::alloc::borrow::ToOwned;
     use commitment_sql::CreateTableAndCommitmentMetadata;
-    use frame_support::dispatch::DispatchResult;
-    use frame_support::pallet_prelude::{StorageDoubleMap, ValueQuery, *};
-    use frame_support::Blake2_128Concat;
-    use frame_system::pallet_prelude::*;
-    use frame_system::RawOrigin;
+    use polkadot_sdk::frame_support::dispatch::DispatchResult;
+    use polkadot_sdk::frame_support::pallet_prelude::{StorageDoubleMap, ValueQuery, *};
+    use polkadot_sdk::frame_support::Blake2_128Concat;
+    use polkadot_sdk::frame_system::pallet_prelude::*;
+    use polkadot_sdk::frame_system::RawOrigin;
+    use polkadot_sdk::sp_core::crypto::Ss58Codec;
+    use polkadot_sdk::sp_core::U256;
+    use polkadot_sdk::sp_runtime::{SaturatedConversion, Vec};
+    use polkadot_sdk::{frame_system, pallet_balances};
     use proof_of_sql_commitment_map::{
         CommitmentSchemeFlags,
         TableCommitmentBytesPerCommitmentScheme,
     };
     use scale_info::prelude::vec;
-    use sp_core::crypto::Ss58Codec;
-    use sp_core::U256;
-    use sp_runtime::{SaturatedConversion, Vec};
     use sxt_core::permissions::*;
     use sxt_core::tables::{
         create_statement_to_sqlparser,
@@ -120,13 +121,14 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config:
-        frame_system::Config
+        polkadot_sdk::frame_system::Config
         + pallet_permissions::Config
         + pallet_commitments::Config
         + pallet_balances::Config
     {
         /// A runtime event binding to the runtime
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>>
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         /// The weight info to be used for calls
         type WeightInfo: WeightInfo;
     }

@@ -16,12 +16,12 @@ mod benchmarking;
 
 /// All pallet items, built with `frame_support`.
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
     use core::marker::PhantomData;
 
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
+    use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_system::pallet_prelude::*;
     use sxt_core::system_contracts::ContractInfo;
 
     use super::*;
@@ -32,9 +32,10 @@ pub mod pallet {
 
     /// The system contracts pallet's configuration trait.
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: polkadot_sdk::frame_system::Config {
         /// The system contracts pallet's runtime event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>>
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
 
         /// A type representing the weights required by dispatchable functions of this pallet.
         type WeightInfo: WeightInfo;
@@ -101,7 +102,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T>
     where
-        T::AccountId: sp_core::crypto::Ss58Codec,
+        T::AccountId: polkadot_sdk::sp_core::crypto::Ss58Codec,
     {
         /// Sudo call for setting the stored staking contract information.
         #[pallet::call_index(0)]

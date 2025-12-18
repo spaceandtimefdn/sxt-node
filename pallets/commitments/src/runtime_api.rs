@@ -1,7 +1,8 @@
 //! Runtime APIs for reading from pallet-commitments.
 
-use frame_support::BoundedVec;
-use sp_core::ConstU32;
+use polkadot_sdk::frame_support::BoundedVec;
+use polkadot_sdk::sp_api;
+use polkadot_sdk::sp_core::ConstU32;
 use sxt_core::tables::TableIdentifier;
 
 use super::AnyTableCommitments;

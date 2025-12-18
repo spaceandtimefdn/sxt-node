@@ -1,10 +1,9 @@
 //! Benchmarking setup for pallet-template
 #![cfg(feature = "runtime-benchmarks")]
-use frame_benchmarking::v2::*;
-use frame_system::RawOrigin;
+use polkadot_sdk::frame_benchmarking::v2::*;
+use polkadot_sdk::frame_system::RawOrigin;
 
 use super::*;
-
 #[allow(unused)]
 use crate::Pallet as Template;
 

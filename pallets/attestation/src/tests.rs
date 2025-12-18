@@ -1,8 +1,8 @@
 use codec::Encode;
-use frame_support::{assert_err, assert_ok};
 use k256::ecdsa::{SigningKey, VerifyingKey};
-use sp_core::H256;
-use sp_runtime::BoundedVec;
+use polkadot_sdk::frame_support::{assert_err, assert_ok};
+use polkadot_sdk::sp_core::H256;
+use polkadot_sdk::sp_runtime::BoundedVec;
 use sxt_core::attestation::{
     create_attestation_message,
     sign_eth_message,

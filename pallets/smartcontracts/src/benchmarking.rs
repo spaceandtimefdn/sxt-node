@@ -1,6 +1,7 @@
 //! Benchmarking setup for pallet-smartcontracts
-use frame_benchmarking::v2::*;
-use frame_system::RawOrigin;
+use polkadot_sdk::frame_benchmarking::v2::*;
+use polkadot_sdk::frame_system::RawOrigin;
+use polkadot_sdk::{frame_support, frame_system, sp_core};
 use scale_info::prelude::vec;
 use sxt_core::permissions::{PermissionLevel, SmartContractsPalletPermission};
 use sxt_core::smartcontracts::{Contract, ContractAddress, ContractDetails, NormalContract};

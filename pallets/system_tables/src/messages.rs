@@ -5,9 +5,10 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use codec::Decode;
-use frame_support::dispatch::RawOrigin;
-use pallet_staking::ValidatorPrefs;
-use sp_runtime::{DispatchError, DispatchResult, Perbill};
+use polkadot_sdk::frame_support::dispatch::RawOrigin;
+use polkadot_sdk::pallet_staking::ValidatorPrefs;
+use polkadot_sdk::sp_runtime::{DispatchError, DispatchResult, Perbill};
+use polkadot_sdk::{pallet_session, pallet_staking};
 
 use crate::{Config, Error};
 

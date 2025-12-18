@@ -20,18 +20,16 @@ commitment-sql.workspace = true
 scale-info = { features = [
 	"derive",
 ], workspace = true }
-frame-benchmarking = { optional = true, workspace = true }
-frame-support.workspace = true
-frame-system.workspace = true
+
+polkadot-sdk = { workspace = true, features = ["frame-benchmarking", "frame-support", "frame-system", "pallet-session", "sp-runtime", "sp-core"]}
+
 pallet-commitments.workspace = true
 pallet-permissions.workspace = true
 pallet-tables.workspace = true
 pallet-system-tables.workspace = true
-pallet-session.workspace = true
 hex.workspace = true
 sxt-core.workspace = true
-sp-runtime = { workspace = true, default-features = false }
-sp-core = { workspace = true, default-features = false }
+
 native-api = { workspace = true, default-features = false}
 postcard.workspace = true
 proof-of-sql-static-setups = { workspace = true, features = ["io"], optional = true }
@@ -39,16 +37,9 @@ on-chain-table = { workspace = true, default-features = false }
 proof-of-sql-commitment-map.workspace = true
 
 [dev-dependencies]
-sp-staking.workspace = true
-frame-election-provider-support.workspace = true
-pallet-staking-reward-curve.workspace = true
-pallet-timestamp.workspace = true
-pallet-balances.workspace = true
-pallet-staking.workspace = true
+polkadot-sdk = { workspace = true, features = ["sp-staking", "frame-election-provider-support", "pallet-staking-reward-curve", "pallet-timestamp", "pallet-balances", "pallet-staking", "sp-core", "sp-io", "sp-runtime"]}
+
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
-sp-core.workspace = true
-sp-io.workspace = true
-sp-runtime.workspace = true
 native.workspace = true
 arrow.workspace = true
 proof-of-sql-commitment-map.workspace = true
@@ -57,32 +48,23 @@ pallet-zkpay.workspace = true
 [features]
 default = ["std"]
 std = [
+	"polkadot-sdk/std",
 	"codec/std",
-	"frame-benchmarking?/std",
-	"frame-support/std",
-	"frame-system/std",
 	"scale-info/std",
 	"native/std",
 	"native-api/std",
 	"on-chain-table/std",
 	"pallet-commitments/std",
 	"pallet-tables/std",
-	"pallet-session/std",
-	"pallet-balances/std",
-	"pallet-staking/std",
 	"pallet-system-tables/std",
 	"pallet-zkpay/std",
 ]
 runtime-benchmarks = [
-	"frame-benchmarking/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"frame-system/runtime-benchmarks",
-	"pallet-staking/runtime-benchmarks",
+	"polkadot-sdk/runtime-benchmarks",
 	"pallet-system-tables/runtime-benchmarks",
 	"pallet-tables/runtime-benchmarks",
-	"sp-staking/runtime-benchmarks",
+	"dep:proof-of-sql-commitment-map",
 ]
 try-runtime = [
-	"frame-support/try-runtime",
-	"frame-system/try-runtime",
+	"polkadot-sdk/try-runtime",
 ]

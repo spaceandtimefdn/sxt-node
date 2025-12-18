@@ -1,6 +1,6 @@
 //! Benchmarking setup for pallet-keystore
-use frame_benchmarking::v2::*;
-use frame_system::RawOrigin;
+use polkadot_sdk::frame_benchmarking::v2::*;
+use polkadot_sdk::frame_system::RawOrigin;
 
 use super::*;
 #[allow(unused)]
@@ -9,8 +9,8 @@ use crate::Pallet as KeystorePallet;
 #[benchmarks]
 mod benchmarks {
     use codec::Encode;
-    use frame_support::assert_ok;
     use k256::ecdsa::SigningKey;
+    use polkadot_sdk::frame_support::assert_ok;
     use scale_info::prelude::vec::Vec;
     use sha3::digest::generic_array::GenericArray;
     use sxt_core::attestation::{

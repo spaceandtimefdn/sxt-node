@@ -19,69 +19,35 @@ codec = { features = [
 scale-info = { features = [
 	"derive",
 ], workspace = true }
-frame-benchmarking = { optional = true, workspace = true }
-frame-support.workspace = true
-frame-system.workspace = true
-pallet-balances.workspace = true
+
+polkadot-sdk = { workspace = true, features = ["frame-benchmarking", "frame-support", "frame-system", "pallet-balances", "pallet-staking", "pallet-session", "sp-staking", "sp-runtime", "sp-core"] }
+
 pallet-commitments.workspace = true
-pallet-staking.workspace = true
-pallet-session.workspace = true
-sp-staking.workspace = true
-sp-runtime = { workspace = true, default-features = false }
-sp-core = { workspace = true, default-features = false }
 
 [dev-dependencies]
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
-pallet-balances.workspace = true
-pallet-staking.workspace = true
+
+polkadot-sdk = { workspace = true, features = ["pallet-balances", "pallet-staking", "sp-authority-discovery", "sp-consensus-babe", "sp-runtime", "sp-staking", "frame-election-provider-support", "pallet-staking-reward-curve", "pallet-authorship", "pallet-timestamp", "pallet-grandpa", "pallet-babe", "pallet-authority-discovery", "sp-core", "sp-io"]}
 env_logger.workspace = true
-sp-authority-discovery.workspace = true
-sp-consensus-babe.workspace = true
-sp-runtime.workspace = true
 native.workspace = true
 arrow.workspace = true
 proof-of-sql-commitment-map.workspace = true
-sp-staking.workspace = true
-frame-election-provider-support.workspace = true
-pallet-staking-reward-curve.workspace = true
-pallet-authorship.workspace = true
-pallet-timestamp.workspace = true
-pallet-grandpa.workspace = true
-pallet-babe.workspace = true
-pallet-authority-discovery.workspace = true
 pallet-permissions.workspace = true
 pallet-tables.workspace = true
-sp-core.workspace = true
-sp-io.workspace = true
 
 [features]
 default = ["std"]
 std = [
+	"polkadot-sdk/std",
 	"codec/std",
-	"frame-benchmarking?/std",
-	"frame-support/std",
-	"frame-system/std",
 	"scale-info/std",
-	"pallet-balances/std",
 	"pallet-commitments/std",
-	"pallet-staking/std",
-	"sp-core/std",
-	"sp-io/std",
-	"sp-runtime/std",
-	"sp-staking/std",
 ]
 runtime-benchmarks = [
-	"frame-benchmarking/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"frame-system/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"sp-staking/runtime-benchmarks",
-	"pallet-staking/runtime-benchmarks",
+	"polkadot-sdk/runtime-benchmarks",
 ]
 try-runtime = [
-	"frame-support/try-runtime",
-	"frame-system/try-runtime",
-	"sp-runtime/try-runtime",
+	"polkadot-sdk/try-runtime",
 ]
 
 [lints]

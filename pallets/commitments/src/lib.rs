@@ -34,7 +34,7 @@ pub mod runtime_api;
 pub use pallet::*;
 
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
     use alloc::vec::Vec;
     use alloc::{str, vec};
@@ -49,9 +49,9 @@ pub mod pallet {
         CreateTableAndCommitmentMetadata,
         InsertAndCommitmentMetadata,
     };
-    use frame_support::pallet_prelude::*;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
+    use polkadot_sdk::frame_support::pallet_prelude::*;
     use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
     use proof_of_sql_commitment_map::{
         AnyCommitmentScheme,
@@ -78,7 +78,7 @@ pub mod pallet {
 
     /// The commitment pallet's configuration trait.
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: polkadot_sdk::frame_system::Config {
         /// The highest end row value commitments can have, per commitment scheme.
         ///
         /// In other words, the maximum table size per commitment scheme.

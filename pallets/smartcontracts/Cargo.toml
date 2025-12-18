@@ -19,42 +19,35 @@ codec = { features = [
 scale-info = { features = [
 	"derive",
 ], workspace = true }
-frame-benchmarking = { optional = true, workspace = true }
-frame-support.workspace = true
-frame-system.workspace = true
+
+polkadot-sdk = { workspace = true, features = ["frame-benchmarking", "frame-support", "frame-system", "sp-core"] }
+
 sxt-core.workspace = true
 pallet-permissions.workspace = true 
 pallet-tables.workspace = true 
 pallet-indexing.workspace = true
 native-api = { workspace = true, default-features = false}
-sp-core.workspace = true
 proof-of-sql-commitment-map = { workspace = true, optional = true }
 
 [dev-dependencies]
+polkadot-sdk = { workspace = true, features = [
+	"sp-io", "sp-runtime", "sp-staking", "frame-election-provider-support", "pallet-staking-reward-curve",
+	"pallet-timestamp", "pallet-balances", "pallet-staking", "pallet-session",
+	]}
+
 pallet-commitments.workspace = true
-sp-io = { default-features = true, workspace = true }
-sp-runtime = { default-features = true, workspace = true }
 pallet-system-tables.workspace = true
-sp-staking.workspace = true
-frame-election-provider-support.workspace = true
-pallet-staking-reward-curve.workspace = true
-pallet-timestamp.workspace = true
-pallet-balances.workspace = true
-pallet-staking.workspace = true
 pallet-zkpay.workspace = true
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
 native.workspace = true
 arrow.workspace = true
 proof-of-sql-commitment-map.workspace = true
-pallet-session.workspace = true
 
 [features]
 default = ["std"]
 std = [
+	"polkadot-sdk/std",
 	"codec/std",
-	"frame-benchmarking?/std",
-	"frame-support/std",
-	"frame-system/std",
 	"scale-info/std",
 	"sxt-core/std",
 	"pallet-permissions/std",
@@ -64,15 +57,11 @@ std = [
 	"pallet-zkpay/std",
 ]
 runtime-benchmarks = [
+	"polkadot-sdk/runtime-benchmarks",
 	"pallet-tables/runtime-benchmarks",
-	"frame-benchmarking/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"frame-system/runtime-benchmarks",
-	"dep:proof-of-sql-commitment-map",
 ]
 try-runtime = [
-	"frame-support/try-runtime",
-	"frame-system/try-runtime",
+	"polkadot-sdk/try-runtime",
 ]
 
 [lints]

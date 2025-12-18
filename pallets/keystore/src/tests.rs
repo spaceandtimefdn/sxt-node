@@ -1,6 +1,6 @@
 use codec::Encode;
-use frame_support::{assert_err, assert_ok};
 use k256::ecdsa::{SigningKey, VerifyingKey};
+use polkadot_sdk::frame_support::{assert_err, assert_ok};
 use sxt_core::attestation::{sign_eth_message, EthereumSignature, RegisterExternalAddress};
 use sxt_core::keystore::{EthereumKey, UnregisterExternalAddress, UserKeystore};
 

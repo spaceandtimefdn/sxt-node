@@ -20,13 +20,14 @@ pub use pallet::*;
 
 /// A Pallet that enables the automated payout of validator rewards each era.
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
     // Import various useful types required by all FRAME pallets.
-    use frame_support::pallet_prelude::*;
-    use frame_support::weights::Weight;
-    use frame_system::pallet_prelude::{BlockNumberFor, OriginFor};
-    use pallet_staking::WeightInfo;
+    use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_support::weights::Weight;
+    use polkadot_sdk::frame_system::pallet_prelude::{BlockNumberFor, OriginFor};
+    use polkadot_sdk::pallet_staking::WeightInfo;
+    use polkadot_sdk::{frame_system, pallet_staking, sp_staking};
 
     use super::*;
 
@@ -36,10 +37,11 @@ pub mod pallet {
 
     /// Configuration trait for the rewards pallet
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: polkadot_sdk::frame_system::Config {
         /// Binding for the runtime event, typically provided by an implementation
         /// in runtime/lib.rs
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>>
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         /// How many payout calls may be made per block (prevents overweight).
         type MaxPayoutsPerBlock: Get<u32>;
     }
