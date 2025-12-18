@@ -1,6 +1,6 @@
 use codec::{Decode, Encode, FullCodec};
-use frame_support::{ReversibleStorageHasher, StorageHasher};
 use impl_trait_for_tuples::impl_for_tuples;
+use polkadot_sdk::frame_support::{ReversibleStorageHasher, StorageHasher};
 
 /// Trait for a pair of individual hash and key types that are associated in storage map definitions.
 pub trait HashAndKey {

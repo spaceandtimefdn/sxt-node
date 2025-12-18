@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use codec::Encode;
-use frame_support::Blake2_128Concat;
+use polkadot_sdk::frame_support::Blake2_128Concat;
 use proof_of_sql_commitment_map::{CommitmentScheme, TableCommitmentBytes};
 use sxt_core::tables::TableIdentifier;
 

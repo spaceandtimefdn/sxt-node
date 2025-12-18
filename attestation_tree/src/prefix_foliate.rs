@@ -1,5 +1,5 @@
 use codec::{Decode, Encode, FullCodec};
-use frame_support::traits::StorageInstance;
+use polkadot_sdk::frame_support::traits::StorageInstance;
 use snafu::Snafu;
 
 use crate::HashAndKeyTuple;
