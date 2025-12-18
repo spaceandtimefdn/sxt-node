@@ -22,12 +22,12 @@ pub use weights::*;
 /// Supported keys:
 ///     - Ethereum ECDSA
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
-    use frame_support::dispatch::DispatchResult;
-    use frame_support::pallet_prelude::*;
-    use frame_support::Blake2_128Concat;
-    use frame_system::pallet_prelude::*;
+    use polkadot_sdk::frame_support::dispatch::DispatchResult;
+    use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_support::Blake2_128Concat;
+    use polkadot_sdk::frame_system::pallet_prelude::*;
     use sxt_core::attestation::{verify_eth_signature, EthereumSignature, RegisterExternalAddress};
     use sxt_core::keystore::{EthereumKey, UnregisterExternalAddress, UserKeystore};
 
@@ -37,9 +37,10 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: polkadot_sdk::frame_system::Config {
         /// Associated event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>>
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         /// Weight information for extrinsics.
         type WeightInfo: WeightInfo;
     }

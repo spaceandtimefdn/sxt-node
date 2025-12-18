@@ -1,6 +1,7 @@
 //! Benchmarking setup for pallet-attestation
-use frame_benchmarking::v2::*;
-use frame_system::RawOrigin;
+use polkadot_sdk::frame_benchmarking::v2::*;
+use polkadot_sdk::frame_system;
+use polkadot_sdk::frame_system::RawOrigin;
 
 use super::*;
 #[allow(unused)]
@@ -11,10 +12,10 @@ mod benchmarks {
     use alloc::vec::Vec;
 
     use codec::Encode;
-    use frame_support::{assert_ok, BoundedVec};
     use k256::ecdsa::SigningKey;
     use pallet_keystore::Pallet as Keystore;
     use pallet_permissions::Pallet as Permissions;
+    use polkadot_sdk::frame_support::{assert_ok, BoundedVec};
     use sha3::digest::generic_array::GenericArray;
     use sxt_core::attestation::{
         blake2_256,

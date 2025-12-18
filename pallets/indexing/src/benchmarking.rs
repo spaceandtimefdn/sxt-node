@@ -1,9 +1,10 @@
 //! Benchmarking setup for pallet-indexing
 use alloc::vec;
 
-use frame_benchmarking::v2::*;
-use frame_system::RawOrigin;
-use sp_core::crypto::Ss58Codec;
+use polkadot_sdk::frame_benchmarking::v2::*;
+use polkadot_sdk::frame_system;
+use polkadot_sdk::frame_system::RawOrigin;
+use polkadot_sdk::sp_core::crypto::Ss58Codec;
 
 use super::*;
 #[cfg(test)]

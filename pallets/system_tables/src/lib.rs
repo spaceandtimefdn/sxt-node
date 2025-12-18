@@ -23,22 +23,30 @@ mod templates;
 pub mod runtime_api;
 
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
     use alloc::vec::Vec;
     use core::cmp::Ordering;
 
-    use frame_support::dispatch::{DispatchResult, RawOrigin};
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::{BlockNumberFor, *};
     use itertools::Itertools;
     use on_chain_table::OnChainTable;
-    use pallet_session::historical::IdentificationTuple;
-    use sp_core::U256;
-    use sp_runtime::traits::{StaticLookup, UniqueSaturatedInto};
-    use sp_runtime::{Perbill, SaturatedConversion};
-    use sp_staking::offence::{OffenceDetails, OnOffenceHandler};
-    use sp_staking::SessionIndex;
+    use polkadot_sdk::frame_support::dispatch::{DispatchResult, RawOrigin};
+    use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_system::pallet_prelude::{BlockNumberFor, *};
+    use polkadot_sdk::pallet_session::historical::IdentificationTuple;
+    use polkadot_sdk::sp_core::U256;
+    use polkadot_sdk::sp_runtime::traits::{StaticLookup, UniqueSaturatedInto};
+    use polkadot_sdk::sp_runtime::{Perbill, SaturatedConversion};
+    use polkadot_sdk::sp_staking::offence::{OffenceDetails, OnOffenceHandler};
+    use polkadot_sdk::sp_staking::SessionIndex;
+    use polkadot_sdk::{
+        frame_support,
+        frame_system,
+        pallet_balances,
+        pallet_session,
+        pallet_staking,
+        sp_staking,
+    };
     use sxt_core::parse::{
         MessageSystemRequest,
         StakingSystemRequest,
@@ -57,7 +65,7 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config:
-        frame_system::Config
+        polkadot_sdk::frame_system::Config
         + pallet_tables::Config
         + pallet_session::Config
         + pallet_staking::Config<CurrencyBalance = u128>
@@ -65,7 +73,8 @@ pub mod pallet {
         + pallet_zkpay::Config
     {
         /// The overarching runtime event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>>
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
     }
 
     #[pallet::event]

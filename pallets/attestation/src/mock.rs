@@ -1,5 +1,6 @@
-use frame_support::derive_impl;
-use sp_runtime::BuildStorage;
+use polkadot_sdk::frame_support::derive_impl;
+use polkadot_sdk::sp_runtime::BuildStorage;
+use polkadot_sdk::{frame_support, frame_system};
 
 use crate as pallet_template;
 
@@ -17,7 +18,7 @@ frame_support::construct_runtime!(
 );
 
 #[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
-impl frame_system::Config for Test {
+impl polkadot_sdk::frame_system::Config for Test {
     type Block = Block;
 }
 
@@ -37,7 +38,7 @@ impl pallet_permissions::Config for Test {
 }
 
 // Build genesis storage according to the mock runtime.
-pub fn new_test_ext() -> sp_io::TestExternalities {
+pub fn new_test_ext() -> polkadot_sdk::sp_io::TestExternalities {
     frame_system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap()

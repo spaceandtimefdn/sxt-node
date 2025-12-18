@@ -21,32 +21,31 @@ commitment-column-mapping.workspace = true
 scale-info = { features = [
 	"derive",
 ], workspace = true }
-frame-benchmarking = { optional = true, workspace = true }
-frame-support.workspace = true
-frame-system.workspace = true
+
+polkadot-sdk = { workspace = true, feature = [
+	"frame-benchmarking", "frame-support", "frame-system",
+	"sp-core", "sp-api", "sp-io", "sp-runtime",
+]}
+
 native-api.workspace = true
 on-chain-table.workspace = true
 proof-of-sql.workspace = true
 proof-of-sql-commitment-map = { workspace = true, features = ["substrate"] }
 proof-of-sql-static-setups = { workspace = true, features = ["baked"] }
-sp-core.workspace = true
-sp-api.workspace = true
 sqlparser.workspace = true
 sxt-core.workspace = true
 snafu.workspace = true
 itertools.workspace = true
 
-sp-io = { default-features = true, workspace = true, optional = true }
-sp-runtime = { default-features = true, workspace = true, optional = true }
 clap = { workspace = true, optional = true, features = ["env", "derive"] }
 tokio = { workspace = true, optional = true, features = ["rt-multi-thread"] }
 env_logger = { workspace = true, optional = true }
 log = { workspace = true, optional = true }
 
 [dev-dependencies]
-sp-core = { default-features = true, workspace = true }
-sp-io = { default-features = true, workspace = true }
-sp-runtime = { default-features = true, workspace = true }
+polkadot-sdk = { workspace = true, default-features = true, features = [
+	"sp-core", "sp-io", "sp-runtime",
+]}
 
 [[bin]]
 name = "test_end_row_limits"
@@ -56,24 +55,17 @@ required-features = ["test-end-row-limits"]
 default = ["std"]
 std = [
 	"codec/std",
-	"frame-benchmarking?/std",
-	"frame-support/std",
-	"frame-system/std",
 	"scale-info/std",
-	"sp-api/std",
 	"native-api/std",
-	"sp-core/std",
+	"polkadot-sdk/std",
 ]
 runtime-benchmarks = [
-	"frame-benchmarking/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"frame-system/runtime-benchmarks",
+	"polkadot-sdk/runtime-benchmarks",
 ]
 try-runtime = [
-	"frame-support/try-runtime",
-	"frame-system/try-runtime",
+	"polkadot-sdk/try-runtime",
 ]
-test-end-row-limits = ["dep:sp-io", "dep:sp-runtime", "dep:clap", "proof-of-sql-static-setups/io", "dep:tokio", "dep:env_logger", "dep:log"]
+test-end-row-limits = ["dep:clap", "proof-of-sql-static-setups/io", "dep:tokio", "dep:env_logger", "dep:log"]
 
 [lints]
 workspace = true

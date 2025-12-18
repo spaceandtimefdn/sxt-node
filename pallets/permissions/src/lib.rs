@@ -18,13 +18,14 @@ pub mod weights;
 pub use weights::*;
 
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
     use alloc::boxed::Box;
 
-    use frame_support::dispatch::DispatchResult;
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
+    use polkadot_sdk::frame_support::dispatch::DispatchResult;
+    use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_system;
+    use polkadot_sdk::frame_system::pallet_prelude::*;
     use sxt_core::permissions::{PermissionLevel, PermissionList};
 
     use super::*;
@@ -33,9 +34,10 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: polkadot_sdk::frame_system::Config {
         /// The events that can be emitted by this pallet.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>>
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         /// The weight info for calls in this pallet.
         type WeightInfo: WeightInfo;
     }

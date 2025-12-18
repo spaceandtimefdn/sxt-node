@@ -3,8 +3,9 @@
 use alloc::vec::Vec;
 use alloc::{format, vec};
 
-use frame_benchmarking::v2::*;
-use frame_system::RawOrigin;
+use polkadot_sdk::frame_benchmarking::v2::*;
+use polkadot_sdk::frame_system::RawOrigin;
+use polkadot_sdk::{frame_support, frame_system};
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use sxt_core::permissions::{PermissionLevel, TablesPalletPermission};
 use sxt_core::tables::{CreateStatement, Source, TableIdentifier, TableNamespace, TableType};
@@ -91,10 +92,10 @@ pub fn integers_table_definition(
 
 #[benchmarks(
     where
-        <T as frame_system::Config>::AccountId: Ss58Codec,
+        <T as polkadot_sdk::frame_system::Config>::AccountId: Ss58Codec,
 )]
 mod benchmarks {
-    use sp_core::crypto::Ss58Codec;
+    use polkadot_sdk::sp_core::crypto::Ss58Codec;
     use sxt_core::tables::{InsertQuorumSize, TableUuid, MAX_TABLES_PER_SCHEMA};
 
     use super::*;

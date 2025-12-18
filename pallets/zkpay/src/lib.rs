@@ -20,17 +20,18 @@ pub mod templates;
 
 // All pallet logic is defined in its own module and must be annotated by the `pallet` attribute.
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
     use alloc::vec;
 
-    // Import various useful types required by all FRAME pallets.
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
-    use frame_system::RawOrigin;
     use hex::encode;
-    use sp_runtime::traits::{StaticLookup, UniqueSaturatedInto};
-    use sp_runtime::SaturatedConversion;
+    // Import various useful types required by all FRAME pallets.
+    use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_system::pallet_prelude::*;
+    use polkadot_sdk::frame_system::RawOrigin;
+    use polkadot_sdk::sp_runtime::traits::{StaticLookup, UniqueSaturatedInto};
+    use polkadot_sdk::sp_runtime::SaturatedConversion;
+    use polkadot_sdk::{frame_system, pallet_balances};
     use sxt_core::parse::SystemRequestType::ZkPay;
     use sxt_core::parse::{SystemFieldValue, SystemRequest, SystemRequestType, ZKPayRequest};
     use sxt_core::ByteString;
@@ -47,9 +48,10 @@ pub mod pallet {
     ///
     /// All our types and constants a pallet depends on must be declared here.
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_balances::Config {
+    pub trait Config: polkadot_sdk::frame_system::Config + pallet_balances::Config {
         /// The overarching runtime event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>>
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
     }
 
     /// Events that functions in this pallet can emit.

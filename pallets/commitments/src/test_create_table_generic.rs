@@ -1,5 +1,5 @@
 use commitment_sql::CreateTableAndCommitmentMetadata;
-use frame_support::assert_noop;
+use polkadot_sdk::frame_support::assert_noop;
 
 use crate::mock::{new_test_ext, Test};
 use crate::Error;

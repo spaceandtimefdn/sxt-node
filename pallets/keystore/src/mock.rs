@@ -1,5 +1,6 @@
-use frame_support::derive_impl;
-use sp_runtime::BuildStorage;
+use polkadot_sdk::frame_support::derive_impl;
+use polkadot_sdk::sp_runtime::BuildStorage;
+use polkadot_sdk::{frame_support, frame_system, sp_io};
 
 use crate as pallet_keystore;
 

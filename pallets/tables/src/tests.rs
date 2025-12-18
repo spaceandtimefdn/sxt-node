@@ -1,11 +1,12 @@
 use core::str::from_utf8;
 
-use frame_support::traits::fungible::Mutate;
-use frame_support::{assert_err, assert_noop, assert_ok};
 use pallet_permissions::Pallet;
+use polkadot_sdk::frame_support::traits::fungible::Mutate;
+use polkadot_sdk::frame_support::{assert_err, assert_noop, assert_ok};
+use polkadot_sdk::sp_runtime::{BoundedVec, DispatchError, ModuleError, TokenError};
+use polkadot_sdk::{pallet_balances, sp_runtime};
 use proof_of_sql::base::database::TableRef;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
-use sp_runtime::{BoundedVec, DispatchError, ModuleError, TokenError};
 use sqlparser::ast::{ColumnDef, DataType, ExactNumberInfo, Ident, TimezoneInfo};
 use sxt_core::permissions::{
     IndexingPalletPermission,
@@ -996,7 +997,7 @@ fn we_can_get_table_schemas() {
     });
 }
 
-use sp_core::crypto::Ss58Codec;
+use polkadot_sdk::sp_core::crypto::Ss58Codec;
 #[test]
 fn ensure_safe_name_works_for_substrate_address() {
     let (test_account, _) = user(1);

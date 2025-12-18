@@ -23,13 +23,14 @@ mod benchmarking;
 pub mod native_pallet;
 
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
-    use frame_support::pallet_prelude::{OptionQuery, StorageDoubleMap, *};
-    use frame_support::Blake2_128Concat;
-    use frame_system::pallet_prelude::*;
     use native_api::NativeApi;
     use pallet_tables::UpdateTableList;
+    use polkadot_sdk::frame_support::pallet_prelude::{OptionQuery, StorageDoubleMap, *};
+    use polkadot_sdk::frame_support::Blake2_128Concat;
+    use polkadot_sdk::frame_system::pallet_prelude::*;
+    use polkadot_sdk::sp_core;
     use scale_info::prelude::vec::Vec;
     use sxt_core::permissions::{PermissionLevel, SmartContractsPalletPermission};
     use sxt_core::smartcontracts::{Contract, ContractAddress};
@@ -44,14 +45,14 @@ pub mod pallet {
     /// Pallet Configuration Trait
     #[pallet::config]
     pub trait Config<I: 'static = ()>:
-        frame_system::Config
+        polkadot_sdk::frame_system::Config
         + pallet_permissions::Config
         + pallet_tables::Config
         + pallet_indexing::Config<I>
     {
         /// The overarching runtime event type.
         type RuntimeEvent: From<Event<Self, I>>
-            + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
 
         /// A type representing the weights required by dispatchable functions of this pallet.
         type WeightInfo: WeightInfo;

@@ -1,9 +1,9 @@
 //! Benchmarking setup for pallet-template
 #![cfg(feature = "runtime-benchmarks")]
-use frame_benchmarking::v2::*;
-use frame_system::RawOrigin;
-use sp_core::crypto::Ss58Codec;
-use sp_core::{H160, U256};
+use polkadot_sdk::frame_benchmarking::v2::*;
+use polkadot_sdk::frame_system::RawOrigin;
+use polkadot_sdk::sp_core::crypto::Ss58Codec;
+use polkadot_sdk::sp_core::{H160, U256};
 use sxt_core::system_contracts::ContractInfo;
 
 use super::*;
@@ -17,7 +17,7 @@ fn sample_contract_info() -> ContractInfo {
     }
 }
 
-#[benchmarks(where <T as frame_system::Config>::AccountId: Ss58Codec)]
+#[benchmarks(where <T as polkadot_sdk::frame_system::Config>::AccountId: Ss58Codec)]
 mod benchmarks {
 
     use super::*;
