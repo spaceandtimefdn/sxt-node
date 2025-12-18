@@ -1,7 +1,7 @@
 use attestation_tree::{CommitmentMapPrefixFoliate, PrefixFoliate};
-use frame_support::traits::StorageInstance;
 use futures::{TryFutureExt, TryStreamExt};
 use pallet_system_contracts::_GeneratedPrefixForStorageStakingContract;
+use polkadot_sdk::frame_support::traits::StorageInstance;
 use snafu::{ResultExt, Snafu};
 use subxt::backend::{BackendExt, StorageResponse};
 use subxt::utils::AccountId32;

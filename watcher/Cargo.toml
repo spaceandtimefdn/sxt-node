@@ -8,9 +8,9 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+polkadot-sdk = { workspace = true, features = [	"sp-core" , "frame-support",]}
 attestation_tree = { workspace = true }
 clap = { version = "4.0", features = ["derive", "env"] }
-frame-support = { workspace = true, features = ["std"] }
 tokio = { version = "1.0", features = ["full"] }
 pallet-system-contracts = { workspace = true, features = ["std"] }
 subxt = { version = "0.38.0" , features = ["jsonrpsee", "native", "default", "substrate-compat"]}
@@ -24,7 +24,6 @@ k256 = "0.13.4"
 sha3 = "0.10.8"
 sxt-core = { workspace = true, features = ["std"]}
 sxt-runtime = { workspace = true, features = ["std"] }
-sp-core = { workspace = true, features = ["std"]}
 prometheus = "0.12.0"
 ratatui = "=0.23.0"
 crossterm = "0.28.1"
