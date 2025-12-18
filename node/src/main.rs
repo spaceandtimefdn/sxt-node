@@ -23,6 +23,6 @@ mod service;
     clippy::result_large_err,
     reason = "sc_cli::Result is from substrate and cannot be modified"
 )]
-fn main() -> sc_cli::Result<()> {
+fn main() -> polkadot_sdk::sc_cli::Result<()> {
     command::run()
 }
