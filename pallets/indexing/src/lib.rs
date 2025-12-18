@@ -37,13 +37,13 @@ pub mod pallet {
     use commitment_sql::InsertAndCommitmentMetadata;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
-    use proof_of_sql_commitment_map::CommitmentScheme;
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_support::Blake2_128Concat;
     use polkadot_sdk::frame_system;
     use polkadot_sdk::frame_system::pallet_prelude::*;
     use polkadot_sdk::sp_runtime::traits::Hash;
     use polkadot_sdk::sp_runtime::BoundedVec;
+    use proof_of_sql_commitment_map::CommitmentScheme;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
