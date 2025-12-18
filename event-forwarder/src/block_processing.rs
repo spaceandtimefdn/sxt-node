@@ -41,8 +41,8 @@
 use alloy::primitives::FixedBytes;
 use eth_merkle_tree::utils::errors::BytesError;
 use log::{error, info, warn};
+use polkadot_sdk::sp_core::crypto::AccountId32;
 use snafu::{ResultExt, Snafu};
-use sp_core::crypto::AccountId32;
 use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;
 use subxt::PolkadotConfig;
 use subxt_signer::sr25519::Keypair;
