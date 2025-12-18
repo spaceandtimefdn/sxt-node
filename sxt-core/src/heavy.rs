@@ -2,7 +2,7 @@
 
 use core::iter::Sum;
 
-use frame_support::weights::Weight;
+use polkadot_sdk::frame_support::weights::Weight;
 
 /// A simple monad for composing functions that incur polkadot weight.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -18,7 +18,7 @@ impl<T> Heavy<T> {
     ///
     /// # Examples
     /// ```
-    /// use frame_support::weights::Weight;
+    /// use polkadot_sdk::frame_support::weights::Weight;
     /// use sxt_core::heavy::Heavy;
     ///
     /// let weight = Weight::zero().set_ref_time(1).set_proof_size(2);
@@ -46,7 +46,7 @@ impl<T> Heavy<T> {
     ///
     /// # Examples
     /// ```
-    /// use frame_support::weights::Weight;
+    /// use polkadot_sdk::frame_support::weights::Weight;
     /// use sxt_core::heavy::Heavy;
     ///
     /// let weight = Weight::zero().set_ref_time(1).set_proof_size(2);
@@ -74,7 +74,7 @@ impl<T> Heavy<Heavy<T>> {
     ///
     /// # Examples
     /// ```
-    /// use frame_support::weights::Weight;
+    /// use polkadot_sdk::frame_support::weights::Weight;
     /// use sxt_core::heavy::Heavy;
     ///
     /// let inner_weight = Weight::zero().set_ref_time(1).set_proof_size(2);

@@ -2,10 +2,10 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use on_chain_table::OnChainTable;
 #[cfg(feature = "std")]
 use on_chain_table::{ArrowToOnChainColumnError, ArrowToOnChainTableError};
+use polkadot_sdk::sp_core::RuntimeDebug;
+use polkadot_sdk::sp_runtime_interface::pass_by::PassByCodec;
 use scale_info::TypeInfo;
 use snafu::Snafu;
-use sp_core::RuntimeDebug;
-use sp_runtime_interface::pass_by::PassByCodec;
 
 use crate::indexing;
 use crate::tables::CreateStatement;

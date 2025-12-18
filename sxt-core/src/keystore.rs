@@ -1,8 +1,8 @@
 //! types for pallet keystore
 use codec::{Decode, Encode, MaxEncodedLen};
+pub use polkadot_sdk::sp_core::hashing::{blake2_128, blake2_256};
+pub use polkadot_sdk::sp_core::{RuntimeDebug, H256};
 use scale_info::TypeInfo;
-pub use sp_core::hashing::{blake2_128, blake2_256};
-pub use sp_core::{RuntimeDebug, H256};
 
 use crate::attestation::Address20;
 
