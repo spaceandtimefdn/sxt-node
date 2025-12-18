@@ -1024,9 +1024,14 @@ pub type Executive = polkadot_sdk::frame_executive::Executive<
     Migrations,
 >;
 
+#[cfg(feature = "try-runtime")]
+use polkadot_sdk::frame_try_runtime;
+#[cfg(feature = "runtime-benchmarks")]
+use polkadot_sdk::{frame_benchmarking, frame_system_benchmarking, sp_storage};
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
-    frame_benchmarking::define_benchmarks!(
+    polkadot_sdk::frame_benchmarking::define_benchmarks!(
         [frame_benchmarking, BaselineBench::<Runtime>]
         [pallet_babe, Babe]
         [pallet_bags_list, VoterList]
@@ -1293,9 +1298,9 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
-            use frame_support::traits::StorageInfoTrait;
-            use frame_system_benchmarking::Pallet as SystemBench;
+            use polkadot_sdk::frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
+            use polkadot_sdk::frame_support::traits::StorageInfoTrait;
+            use polkadot_sdk::frame_system_benchmarking::Pallet as SystemBench;
             use baseline::Pallet as BaselineBench;
 
             let mut list = Vec::<BenchmarkList>::new();
@@ -1309,9 +1314,9 @@ impl_runtime_apis! {
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{baseline, Benchmarking, BenchmarkBatch};
-            use sp_storage::TrackedStorageKey;
-            use frame_system_benchmarking::Pallet as SystemBench;
+            use polkadot_sdk::frame_benchmarking::{baseline, Benchmarking, BenchmarkBatch};
+            use polkadot_sdk::sp_storage::TrackedStorageKey;
+            use polkadot_sdk::frame_system_benchmarking::Pallet as SystemBench;
             use baseline::Pallet as BaselineBench;
 
             impl frame_system_benchmarking::Config for Runtime {}
@@ -1329,7 +1334,7 @@ impl_runtime_apis! {
     }
 
     #[cfg(feature = "try-runtime")]
-    impl frame_try_runtime::TryRuntime<Block> for Runtime {
+    impl polkadot_sdk::frame_try_runtime::TryRuntime<Block> for Runtime {
         fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
             // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
             // have a backtrace here. If any of the pre/post migration checks fail, we shall stop
