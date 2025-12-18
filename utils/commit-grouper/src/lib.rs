@@ -4,8 +4,8 @@
 use std::path::PathBuf;
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::sp_runtime::Serialize;
-use frame_support::BoundedVec;
+use polkadot_sdk::frame_support::sp_runtime::Serialize;
+use polkadot_sdk::frame_support::BoundedVec;
 use proof_of_sql_commitment_map::{
     TableCommitmentBytes,
     TableCommitmentBytesPerCommitmentScheme,
