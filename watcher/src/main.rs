@@ -575,6 +575,7 @@ impl AttestationClient {
                 .await
             {
                 log::info!("Error submitting tx: {:?}", e);
+                std::process::abort();
             };
         })
         .await;
