@@ -36,7 +36,7 @@ native-api = { workspace = true, default-features = false}
 postcard.workspace = true
 proof-of-sql-static-setups = { workspace = true, features = ["io"], optional = true }
 on-chain-table = { workspace = true, default-features = false }
-proof-of-sql-commitment-map = { workspace = true, optional = true }
+proof-of-sql-commitment-map.workspace = true
 
 [dev-dependencies]
 sp-staking.workspace = true
@@ -81,7 +81,6 @@ runtime-benchmarks = [
 	"pallet-system-tables/runtime-benchmarks",
 	"pallet-tables/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
-	"dep:proof-of-sql-commitment-map",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
