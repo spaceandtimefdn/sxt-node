@@ -1,3 +1,12 @@
+## [1.48.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.48.2...v1.48.3) (2026-01-06)
+
+
+### Bug Fixes
+
+* separate submit data weights by commitment scheme ([#126](https://github.com/spaceandtimefdn/sxt-node/issues/126)) ([2bd16dd](https://github.com/spaceandtimefdn/sxt-node/commit/2bd16dd754b930fdec877f0c6334141e86579ee6))
+
+
+
 ## [1.48.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.48.1...v1.48.2) (2025-12-15)
 
 
@@ -49,15 +58,6 @@
 ### Features
 
 * derive Hash for TableIdentifier ([599142b](https://github.com/spaceandtimefdn/sxt-node/commit/599142be334c6189fc8d5adfad782eeb777ce017))
-
-
-
-# [1.46.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.45.0...v1.46.0) (2025-12-04)
-
-
-### Features
-
-* add VARIANT_COUNT constant to QuorumScope ([dfcdb36](https://github.com/spaceandtimefdn/sxt-node/commit/dfcdb365c2fa0d9a1b20b12bd235efe851c8b9d4))
 
 
 
