@@ -22,7 +22,7 @@ scale-info = { features = [
 	"derive",
 ], workspace = true }
 
-polkadot-sdk = { workspace = true, feature = [
+polkadot-sdk = { workspace = true, features = [
 	"frame-benchmarking", "frame-support", "frame-system",
 	"sp-core", "sp-api", "sp-io", "sp-runtime",
 ]}

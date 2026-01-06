@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use polkadot_sdk::frame_support::{Blake2_128Concat, WeakBoundedVec};
 use polkadot_sdk::pallet_balances;
-use polkadot_sdkpallet_balances::BalanceLock;
+use polkadot_sdk::pallet_balances::BalanceLock;
 use sxt_core::system_contracts::ContractInfo;
 
 use crate::PrefixFoliate;

@@ -32,7 +32,7 @@ polkadot-sdk = { workspace = true, features = [
 [features]
 default = ["std"]
 std = [
-	"polkadot-sdk/std"
+	"polkadot-sdk/std",
 	"codec/std",
 	"scale-info/std",
 ]
