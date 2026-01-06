@@ -63,7 +63,6 @@ runtime-benchmarks = [
 	"polkadot-sdk/runtime-benchmarks",
 	"pallet-system-tables/runtime-benchmarks",
 	"pallet-tables/runtime-benchmarks",
-	"dep:proof-of-sql-commitment-map",
 ]
 try-runtime = [
 	"polkadot-sdk/try-runtime",
