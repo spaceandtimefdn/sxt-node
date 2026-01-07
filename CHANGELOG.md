@@ -1,3 +1,12 @@
+# [1.49.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.48.3...v1.49.0) (2026-01-07)
+
+
+### Features
+
+* Update dependencies from individual substrate crates to the polkadot-sdk ([#127](https://github.com/spaceandtimefdn/sxt-node/issues/127)) ([16630e8](https://github.com/spaceandtimefdn/sxt-node/commit/16630e831909ec1307399f53557bc204edb93f30))
+
+
+
 ## [1.48.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.48.2...v1.48.3) (2026-01-06)
 
 
@@ -49,15 +58,6 @@
 ### Features
 
 * Add attestation count and claimed unstake count to canaries ([#108](https://github.com/spaceandtimefdn/sxt-node/issues/108)) ([2335ad9](https://github.com/spaceandtimefdn/sxt-node/commit/2335ad9d4ae28542db49fe72786b2a4681cbbf0f))
-
-
-
-# [1.47.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.46.0...v1.47.0) (2025-12-05)
-
-
-### Features
-
-* derive Hash for TableIdentifier ([599142b](https://github.com/spaceandtimefdn/sxt-node/commit/599142be334c6189fc8d5adfad782eeb777ce017))
 
 
 
