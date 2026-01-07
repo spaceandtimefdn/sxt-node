@@ -2,7 +2,6 @@ use alloy_primitives::Address;
 use codec::{Decode, Encode, MaxEncodedLen};
 use k256::ecdsa::VerifyingKey;
 use polkadot_sdk::sp_core::{ecdsa, RuntimeDebug};
-use polkadot_sdk::sp_runtime;
 use polkadot_sdk::sp_runtime::traits::{IdentifyAccount, Lazy, Verify};
 use polkadot_sdk::sp_runtime::AccountId32;
 use scale_info::TypeInfo;
@@ -34,7 +33,7 @@ impl IdentifyAccount for EthEcdsaSigner {
 impl Verify for EthEcdsaSignature {
     type Signer = EthEcdsaSigner;
     fn verify<L: Lazy<[u8]>>(&self, mut msg: L, signer: &AccountId32) -> bool {
-        let Ok(alloy_sig) = alloy_primitives::PrimitiveSignature::from_raw_array(&self.0 .0) else {
+        let Ok(alloy_sig) = alloy_primitives::Signature::from_raw_array(&self.0 .0) else {
             return false;
         };
 
@@ -114,7 +113,7 @@ mod tests {
     fn we_cannot_verify_signature_with_wrong_account() {
         let (eth_ecdsa_signature, message, mut account_id) = valid_verification_input();
 
-        let account_id_array = <sp_runtime::AccountId32 as AsMut<[u8]>>::as_mut(&mut account_id);
+        let account_id_array = <AccountId32 as AsMut<[u8]>>::as_mut(&mut account_id);
         account_id_array[0] = account_id_array[0].wrapping_add(1);
         assert!(!eth_ecdsa_signature.verify(&message[..], &account_id));
     }
