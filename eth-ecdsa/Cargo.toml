@@ -17,33 +17,32 @@ scale-info = { features = [
 	"derive",
 	"serde",
 ], workspace = true }
-sp-core = { features = ["serde"], workspace = true }
-sp-io = { workspace = true }
-sp-runtime = { features = ["serde"], workspace = true }
+
+polkadot-sdk = { workspace = true, features = [
+	"sp-core", "sp-io", "sp-runtime"
+]}
+
 serde = { workspace = true, optional = true }
 snafu = { workspace = true }
 
 [dev-dependencies]
 alloy-signer = { workspace = true }
 alloy-signer-local = { workspace = true }
-sp-runtime = { features = ["serde"], workspace = true }
 
 [features]
 serde = ["dep:serde"]
 std = [
+	"polkadot-sdk/std",
 	"codec/std",
 	"scale-info/std",
-	"sp-core/std",
-	"sp-io/std",
-	"sp-runtime/std",
 ]
 
 runtime-benchmarks = [
-	"sp-runtime/runtime-benchmarks",
+	"polkadot-sdk/runtime-benchmarks",
 ]
 
 try-runtime = [
-	"sp-runtime/try-runtime",
+	"polkadot-sdk/try-runtime",
 ]
 
 [lints]

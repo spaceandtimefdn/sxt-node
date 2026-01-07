@@ -8,19 +8,20 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+polkadot-sdk = { workspace = true, features = [
+	"pallet-balances", "frame-support",
+]}
 codec.workspace = true
 hex.workspace = true
 impl-trait-for-tuples.workspace = true
-frame-support = { workspace = true, features = ["std"] }
 eth_merkle_tree.workspace = true
 snafu.workspace = true
 sxt-core = { workspace = true, features = ["std"] }
-pallet-balances = { workspace = true, features = ["std"] }
 pallet-commitments = { workspace = true, features = ["std"] }
 proof-of-sql-commitment-map = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
-sp-core = { workspace = true, features = ["std"] }
+polkadot-sdk = { workspace = true, features = ["sp-core"] }
 sxt-runtime = { workspace = true, features = ["std"] }
 
 [lints]

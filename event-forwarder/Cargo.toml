@@ -8,6 +8,7 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+polkadot-sdk = { workspace = true, features = ["sp-core"]}
 eth_merkle_tree = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 tokio = { workspace = true, features = ["full"] }
@@ -15,7 +16,6 @@ subxt = { workspace = true, features = ["jsonrpsee", "native", "default", "subst
 subxt-signer = { workspace = true }
 sxt-core = { workspace = true, features = ["std"] }
 hex = { workspace = true }
-sp-core = { workspace = true, features = ["std"] }
 codec = { workspace = true, package = "parity-scale-codec", default-features = false, features = ["derive", "std"] }
 anyhow = { workspace = true }
 k256 = { workspace = true, features = ["ecdsa"] }

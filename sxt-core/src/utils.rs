@@ -1,10 +1,11 @@
 use alloc::vec::Vec;
 
 use codec::Decode;
-use frame_system::Config as SystemConfig;
-use sp_core::crypto::AccountId32;
-use sp_runtime::traits::StaticLookup;
-use sp_runtime::DispatchError;
+use polkadot_sdk::frame_system::Config as SystemConfig;
+use polkadot_sdk::sp_core::crypto::AccountId32;
+use polkadot_sdk::sp_runtime::traits::StaticLookup;
+use polkadot_sdk::sp_runtime::DispatchError;
+use polkadot_sdk::{frame_system, sp_runtime};
 
 type AddressListParseResult<T> = Result<
     Vec<Result<<<T as SystemConfig>::Lookup as StaticLookup>::Source, DispatchError>>,

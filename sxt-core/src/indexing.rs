@@ -1,9 +1,9 @@
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::BoundedVec;
-use frame_support::__private::RuntimeDebug;
-use frame_support::pallet_prelude::{ConstU32, TypeInfo};
-use sp_core::U256;
-use sp_runtime::BoundedBTreeSet;
+use polkadot_sdk::frame_support::BoundedVec;
+use polkadot_sdk::frame_support::__private::RuntimeDebug;
+use polkadot_sdk::frame_support::pallet_prelude::{ConstU32, TypeInfo};
+use polkadot_sdk::sp_core::U256;
+use polkadot_sdk::sp_runtime::BoundedBTreeSet;
 
 use crate::tables::{QuorumScope, TableIdentifier};
 

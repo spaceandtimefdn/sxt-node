@@ -1,6 +1,6 @@
 //! Benchmarking setup for pallet-template
-use frame_benchmarking::v2::*;
-use frame_system::RawOrigin;
+use polkadot_sdk::frame_benchmarking::v2::*;
+use polkadot_sdk::frame_system::RawOrigin;
 use scale_info::prelude::vec;
 
 use super::*;

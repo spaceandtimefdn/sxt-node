@@ -1,6 +1,6 @@
 use codec::{Decode, Encode, FullCodec};
-use frame_support::{ReversibleStorageHasher, StorageHasher};
 use impl_trait_for_tuples::impl_for_tuples;
+use polkadot_sdk::frame_support::{ReversibleStorageHasher, StorageHasher};
 
 /// Trait for a pair of individual hash and key types that are associated in storage map definitions.
 pub trait HashAndKey {
@@ -71,8 +71,8 @@ impl HashAndKeyTuple for Tuple {
 
 #[cfg(test)]
 mod tests {
-    use frame_support::{Blake2_128Concat, Identity, Twox64Concat};
-    use sp_core::{blake2_128, twox_64};
+    use polkadot_sdk::frame_support::{Blake2_128Concat, Identity, Twox64Concat};
+    use polkadot_sdk::sp_core::{blake2_128, twox_64};
 
     use super::*;
 

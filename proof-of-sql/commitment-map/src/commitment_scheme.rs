@@ -1,5 +1,5 @@
 #[cfg(feature = "substrate")]
-use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
+use polkadot_sdk::frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
 use proof_of_sql::base::commitment::Commitment;
 use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
 use proof_of_sql::proof_primitive::hyperkzg::HyperKZGCommitment;

@@ -1,7 +1,7 @@
 use codec::{Decode, Encode, MaxEncodedLen};
+use polkadot_sdk::sp_core::{H160, U256};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
-use sp_core::{H160, U256};
 
 /// Basic information about a smart contract stored in the system contracts pallet.
 #[derive(

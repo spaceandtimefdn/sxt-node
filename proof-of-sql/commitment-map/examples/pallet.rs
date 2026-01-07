@@ -7,13 +7,13 @@
 pub use pallet::*;
 
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet(dev_mode)]
+#[polkadot_sdk::frame_support::pallet(dev_mode)]
 pub mod pallet {
     use core::str;
 
     use curve25519_dalek::RistrettoPoint;
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
+    use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_system::pallet_prelude::*;
     use proof_of_sql::base::commitment::TableCommitment;
     use proof_of_sql::proof_primitive::dory::DynamicDoryCommitment;
     use proof_of_sql_commitment_map::{
@@ -31,7 +31,7 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {}
+    pub trait Config: polkadot_sdk::frame_system::Config {}
 
     /// Typing for the substrate implementation of the `CommitmentMap` as a substrate
     /// `StorageDoubleMap`.

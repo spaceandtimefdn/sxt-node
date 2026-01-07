@@ -4,8 +4,8 @@
 extern crate alloc;
 extern crate core;
 
-use sp_core::ConstU32;
-use sp_runtime::BoundedVec;
+use polkadot_sdk::sp_core::ConstU32;
+use polkadot_sdk::sp_runtime::BoundedVec;
 
 /// Types and functionality related to the permissions system
 pub mod permissions;

@@ -1,5 +1,5 @@
-use pallet_staking::EraPayout;
-use sp_runtime::traits::Zero;
+use polkadot_sdk::pallet_staking::EraPayout;
+use polkadot_sdk::sp_runtime::traits::Zero;
 
 use crate::{Balance, EraPayout as SXTPayout, DOLLARS};
 

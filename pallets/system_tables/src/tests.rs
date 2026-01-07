@@ -1,11 +1,12 @@
-use frame_support::assert_ok;
-use frame_system::RawOrigin;
 use on_chain_table::OnChainTable;
-use sp_core::crypto::AccountId32;
-use sp_core::U256;
-use sp_runtime::traits::StaticLookup;
-use sp_runtime::{DispatchError, Perbill};
-use sp_staking::StakingInterface;
+use polkadot_sdk::frame_support::assert_ok;
+use polkadot_sdk::frame_system::RawOrigin;
+use polkadot_sdk::sp_core::crypto::AccountId32;
+use polkadot_sdk::sp_core::U256;
+use polkadot_sdk::sp_runtime::traits::StaticLookup;
+use polkadot_sdk::sp_runtime::{DispatchError, Perbill};
+use polkadot_sdk::sp_staking::StakingInterface;
+use polkadot_sdk::{frame_system, pallet_balances, pallet_session, pallet_staking};
 use sxt_core::parse::{
     MessageSystemRequest,
     StakingSystemRequest,

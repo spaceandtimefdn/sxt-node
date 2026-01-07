@@ -1,5 +1,5 @@
-use frame_support::{assert_err, assert_ok};
-use sp_runtime::BoundedVec;
+use polkadot_sdk::frame_support::{assert_err, assert_ok};
+use polkadot_sdk::sp_runtime::BoundedVec;
 use sxt_core::permissions::*;
 
 use crate::mock::*;

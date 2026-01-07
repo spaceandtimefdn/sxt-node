@@ -2,6 +2,8 @@ use std::error::Error;
 
 use eth_merkle_tree::tree::MerkleTree;
 use eth_merkle_tree::utils::keccak::keccak256;
+use polkadot_sdk::frame_support::traits::StorageInstance;
+use polkadot_sdk::pallet_balances;
 use snafu::Snafu;
 
 use crate::prefix_foliate::{encode_key_value_leaf, encode_prefix_leaves};
@@ -87,10 +89,10 @@ where
 mod tests {
     use codec::Encode;
     use eth_merkle_tree::utils::bytes::hash_pair;
-    use frame_support::traits::StorageInstance;
     use pallet_commitments::_GeneratedPrefixForStorageCommitmentStorageMap;
+    use polkadot_sdk::frame_support::traits::StorageInstance;
+    use polkadot_sdk::sp_core::blake2_128;
     use proof_of_sql_commitment_map::{CommitmentScheme, TableCommitmentBytes};
-    use sp_core::blake2_128;
     use sxt_core::tables::TableIdentifier;
     use sxt_runtime::Runtime;
 

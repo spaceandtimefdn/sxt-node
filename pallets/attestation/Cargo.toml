@@ -19,9 +19,10 @@ codec = { features = [
 scale-info = { features = [
 	"derive",
 ], workspace = true }
-frame-benchmarking = { optional = true, workspace = true }
-frame-support.workspace = true
-frame-system.workspace = true
+
+polkadot-sdk = { workspace = true, features = [
+	"frame-benchmarking", "frame-support", "frame-system"
+]}
 k256 = { version = "0.13.4", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
 sxt-core.workspace = true
@@ -29,9 +30,9 @@ pallet-permissions.workspace = true
 pallet-keystore.workspace = true
 
 [dev-dependencies]
-sp-io = { default-features = true, workspace = true }
-sp-runtime = { default-features = true, workspace = true }
-sp-core = { default-features = true, workspace = true }
+polkadot-sdk = { workspace = true, features = [
+	"sp-io", "sp-runtime", "sp-core",
+]}
 
 [features]
 default = ["std"]
@@ -39,20 +40,15 @@ std = [
 	"pallet-permissions/std",
 	"pallet-keystore/std",
 	"codec/std",
-	"frame-benchmarking?/std",
-	"frame-support/std",
-	"frame-system/std",
 	"scale-info/std",
 	"k256/std",
 	"sha3/std",
 	"sxt-core/std",
+	"polkadot-sdk/std",
 ]
 runtime-benchmarks = [
-	"frame-benchmarking/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"frame-system/runtime-benchmarks",
+	"polkadot-sdk/runtime-benchmarks",
 ]
 try-runtime = [
-	"frame-support/try-runtime",
-	"frame-system/try-runtime",
+	"polkadot-sdk/try-runtime",
 ]

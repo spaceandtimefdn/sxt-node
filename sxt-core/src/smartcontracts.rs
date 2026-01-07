@@ -19,10 +19,10 @@
 //! - [`ImplementationContract`]: A struct representing the implementation contract details used by a proxy contract.
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::storage::bounded_vec::BoundedVec;
-use frame_support::traits::ConstU32;
+use polkadot_sdk::frame_support::storage::bounded_vec::BoundedVec;
+use polkadot_sdk::frame_support::traits::ConstU32;
+use polkadot_sdk::sp_core::RuntimeDebug;
 use scale_info::TypeInfo;
-use sp_core::RuntimeDebug;
 
 use crate::tables::{CreateStatement, Source, TableName};
 use crate::{ByteString, IdentLength};

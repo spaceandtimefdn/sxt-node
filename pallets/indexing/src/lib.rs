@@ -32,17 +32,18 @@ mod error_conversions;
 pub mod native_pallet;
 
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
     use commitment_sql::InsertAndCommitmentMetadata;
-    use frame_support::pallet_prelude::*;
-    use frame_support::Blake2_128Concat;
-    use frame_system::pallet_prelude::*;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
+    use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_support::Blake2_128Concat;
+    use polkadot_sdk::frame_system;
+    use polkadot_sdk::frame_system::pallet_prelude::*;
+    use polkadot_sdk::sp_runtime::traits::Hash;
+    use polkadot_sdk::sp_runtime::BoundedVec;
     use proof_of_sql_commitment_map::CommitmentScheme;
-    use sp_runtime::traits::Hash;
-    use sp_runtime::BoundedVec;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
@@ -53,7 +54,7 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config<I: 'static = ()>:
-        frame_system::Config
+        polkadot_sdk::frame_system::Config
         + pallet_permissions::Config
         + pallet_commitments::Config
         + pallet_tables::Config
@@ -62,7 +63,7 @@ pub mod pallet {
         /// Binding for the runtime event, typically provided by an implementation
         /// in runtime/lib.rs
         type RuntimeEvent: From<Event<Self, I>>
-            + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         /// The weight info to be used with the extrinsics provided by the pallet
         type WeightInfo: WeightInfo;
     }

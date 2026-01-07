@@ -6,9 +6,9 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::pallet_prelude::TypeInfo;
 use on_chain_table::OnChainTable;
-use sp_core::U256;
+use polkadot_sdk::frame_support::pallet_prelude::TypeInfo;
+use polkadot_sdk::sp_core::U256;
 
 use crate::tables::TableIdentifier;
 

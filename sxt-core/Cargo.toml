@@ -13,13 +13,17 @@ codec = { package = "parity-scale-codec", workspace = true, default-features = f
     "derive",
 ] }
 scale-info = { workspace = true, default-features = false, features = ["derive"] }
-frame-benchmarking = { workspace = true, default-features = false, optional = true }
-frame-support = { workspace = true, default-features = false, features = ["experimental"] }
-frame-system = { workspace = true, default-features = false }
+
+polkadot-sdk = { workspace = true, default-features = false, features = [
+	"frame-benchmarking", "frame-support", "frame-system",
+	"sp-runtime", "sp-core", "sp-runtime-interface",
+	"sp-api",
+]}
+
+# Required for the PassByCodec derive macro to work
+sp-runtime-interface = { workspace = true, default-features = false }
+
 snafu = { workspace = true }
-sp-runtime = { workspace = true, default-features = false }
-sp-core = { workspace = true, default-features = false}
-sp-runtime-interface = { workspace = true }
 sqlparser = { workspace = true, default-features = false }
 serde = { workspace = true, default-features = false, features = ["derive"]}
 postcard = { workspace = true, features = ["alloc"] }
@@ -29,9 +33,6 @@ arrow = { workspace = true, optional = true, features = ["ipc"]}
 subxt = { workspace = true, optional = true, features = ["native", "reconnecting-rpc-client"] }
 glob.workspace = true
 tokio = { workspace = true, optional = true }
-sc-client-api = { workspace = true, default-features = false, optional = true }
-sp-blockchain = { workspace = true, default-features = false, optional = true }
-sp-api = { workspace = true, default-features = false, optional = true}
 proof-of-sql = { workspace = true, default-features = false }
 exponential-backoff = { workspace = true, default-features = false, optional = true }
 k256 = { workspace = true, default-features = false }
@@ -51,23 +52,19 @@ proptest = { workspace = true, features = ["std"] }
 [features]
 default = ["std"]
 std = [
+	"polkadot-sdk/std",
+	"sp-runtime-interface/std",
 	"dep:alloy",
 	"hex/std",
 	"k256/std",
 	"sha3/std",
 	"codec/std",
-	"frame-benchmarking?/std",
-	"frame-support/std",
-	"frame-system/std",
 	"on-chain-table/arrow",
 	"scale-info/std",
 	"dep:tokio",
 	"dep:tonic",
 	"dep:arrow",
 	"dep:subxt",
-	"dep:sp-api",
-	"dep:sc-client-api",
-	"dep:sp-blockchain",
 	"dep:exponential-backoff",
 ]
 proptest = ["std", "dep:proptest", "on-chain-table/proptest"]

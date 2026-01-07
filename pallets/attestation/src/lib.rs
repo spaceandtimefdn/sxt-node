@@ -22,15 +22,14 @@ extern crate alloc;
 
 pub mod weights;
 pub use weights::*;
-
 #[allow(clippy::manual_inspect)]
-#[frame_support::pallet]
+#[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
-    use frame_support::dispatch::DispatchResult;
-    use frame_support::pallet_prelude::{OptionQuery, *};
-    use frame_support::sp_runtime::traits::UniqueSaturatedInto;
-    use frame_support::Blake2_128Concat;
-    use frame_system::pallet_prelude::*;
+    use polkadot_sdk::frame_support::dispatch::DispatchResult;
+    use polkadot_sdk::frame_support::pallet_prelude::{OptionQuery, *};
+    use polkadot_sdk::frame_support::sp_runtime::traits::UniqueSaturatedInto;
+    use polkadot_sdk::frame_support::Blake2_128Concat;
+    use polkadot_sdk::frame_system::pallet_prelude::*;
     use sxt_core::attestation::{create_attestation_message, Attestation, AttestationKey};
     use sxt_core::keystore::EthereumKey;
     use sxt_core::permissions::{AttestationPalletPermission, PermissionLevel};
@@ -46,10 +45,11 @@ pub mod pallet {
     /// Configuration trait for the pallet.
     #[pallet::config]
     pub trait Config:
-        frame_system::Config + pallet_permissions::Config + pallet_keystore::Config
+        polkadot_sdk::frame_system::Config + pallet_permissions::Config + pallet_keystore::Config
     {
         /// Associated event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>>
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         /// Weight information for extrinsics.
         type WeightInfo: WeightInfo;
     }
@@ -157,7 +157,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let who = ensure_signed(origin.clone())?;
 
-            let current_block = frame_system::Pallet::<T>::block_number().unique_saturated_into();
+            let current_block =
+                polkadot_sdk::frame_system::Pallet::<T>::block_number().unique_saturated_into();
 
             if let Some(block_number) = block_number {
                 ensure!(

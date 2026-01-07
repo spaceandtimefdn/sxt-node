@@ -1,7 +1,8 @@
 use std::marker::PhantomData;
 
-use frame_support::{Blake2_128Concat, WeakBoundedVec};
-use pallet_balances::BalanceLock;
+use polkadot_sdk::frame_support::{Blake2_128Concat, WeakBoundedVec};
+use polkadot_sdk::pallet_balances;
+use polkadot_sdk::pallet_balances::BalanceLock;
 use sxt_core::system_contracts::ContractInfo;
 
 use crate::PrefixFoliate;
@@ -55,9 +56,9 @@ where
 mod tests {
     use std::str::FromStr;
 
-    use pallet_balances::Reasons;
-    use sp_core::crypto::AccountId32;
-    use sp_core::{H160, U256};
+    use polkadot_sdk::pallet_balances::Reasons;
+    use polkadot_sdk::sp_core::crypto::AccountId32;
+    use polkadot_sdk::sp_core::{H160, U256};
     use sxt_runtime::Runtime;
 
     use super::*;
