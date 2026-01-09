@@ -1,3 +1,12 @@
+# [1.50.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.49.0...v1.50.0) (2026-01-09)
+
+
+### Features
+
+* Update alloy after updating Substrate ([#128](https://github.com/spaceandtimefdn/sxt-node/issues/128)) ([0782352](https://github.com/spaceandtimefdn/sxt-node/commit/07823529a2e52f420758c052f1871aff3c15385f))
+
+
+
 # [1.49.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.48.3...v1.49.0) (2026-01-07)
 
 
@@ -49,15 +58,6 @@
 * **sxt-core:** remove unused imports and variables ([7dde9d5](https://github.com/spaceandtimefdn/sxt-node/commit/7dde9d516f4f132e5193e99ec024ec6b0730d3d6))
 * **sxt-runtime:** remove unused imports and prefix unused variable ([3f4acc2](https://github.com/spaceandtimefdn/sxt-node/commit/3f4acc26eef3e322938fe56edb69e3f37e9d0f42))
 * **translation-layer:** remove unused imports and prefix unused variables ([a90dbe5](https://github.com/spaceandtimefdn/sxt-node/commit/a90dbe52080912d3f8b7a62fb02c567863f73ab7))
-
-
-
-# [1.48.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.47.0...v1.48.0) (2025-12-09)
-
-
-### Features
-
-* Add attestation count and claimed unstake count to canaries ([#108](https://github.com/spaceandtimefdn/sxt-node/issues/108)) ([2335ad9](https://github.com/spaceandtimefdn/sxt-node/commit/2335ad9d4ae28542db49fe72786b2a4681cbbf0f))
 
 
 
