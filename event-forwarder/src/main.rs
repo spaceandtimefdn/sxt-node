@@ -19,21 +19,11 @@
 //! ```
 use std::collections::{BTreeMap, HashMap};
 use std::str::FromStr;
-use std::sync::Arc;
 
 use alloy::hex::FromHexError;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::primitives::{Address, FixedBytes, Uint};
-use alloy::providers::fillers::{
-    BlobGasFiller,
-    ChainIdFiller,
-    FillProvider,
-    GasFiller,
-    JoinFill,
-    NonceFiller,
-    WalletFiller,
-};
-use alloy::providers::{Identity, ProviderBuilder, RootProvider, WsConnect};
+use alloy::providers::{ProviderBuilder, WsConnect};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::TransportError;
 use clap::Parser;
@@ -69,18 +59,6 @@ mod event_forwarder_contract {
     );
 }
 use event_forwarder_contract::*;
-
-type ProviderInstance = FillProvider<
-    JoinFill<
-        JoinFill<
-            Identity,
-            JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
-        >,
-        WalletFiller<EthereumWallet>,
-    >,
-    RootProvider,
-    Ethereum,
->;
 
 #[allow(clippy::missing_docs_in_private_items)]
 #[derive(Debug, Snafu)]
@@ -165,8 +143,8 @@ enum BlockProcessingError {
     Subxt { source: subxt::Error },
 }
 
-async fn attestations_per_root(
-    config: &Config,
+async fn attestations_per_root<P>(
+    config: &Config<P>,
     block_number: u32,
 ) -> Result<HashMap<Vec<u8>, BTreeMap<String, EthereumSignature>>, subxt::Error> {
     let attestations_storage_address = sxt_chain_runtime::api::storage()
@@ -200,8 +178,8 @@ async fn attestations_per_root(
     Ok(result)
 }
 
-async fn attempt_fulfill_unstake<P: alloy::providers::Provider>(
-    contract: &EventForwarder::EventForwarderInstance<(), P>,
+async fn attempt_fulfill_unstake<P: alloy::providers::Provider<Ethereum>>(
+    contract: &EventForwarder::EventForwarderInstance<P>,
     claimed_unstake: ClaimedUnstake<AccountId32, u32, u128>,
     claim_attestations: impl IntoIterator<Item = &EthereumSignature>,
 ) {
@@ -223,9 +201,9 @@ async fn attempt_fulfill_unstake<P: alloy::providers::Provider>(
     }
 }
 
-async fn process_block<P: alloy::providers::Provider>(
-    config: &Config,
-    contract: &EventForwarder::EventForwarderInstance<(), P>,
+async fn process_block<P: alloy::providers::Provider<Ethereum>, Q>(
+    config: &Config<Q>,
+    contract: &EventForwarder::EventForwarderInstance<P>,
     block_hash: H256,
     block_number: u32,
 ) -> Result<(), BlockProcessingError> {
@@ -311,8 +289,8 @@ async fn main() -> Result<(), EventForwarderError> {
 }
 
 /// Holds shared configuration for the blockchain processor and integration test
-struct Config {
-    provider: Arc<ProviderInstance>,
+struct Config<P> {
+    provider: P,
     contract_address: Address,
     api: OnlineClient<PolkadotConfig>,
 }
@@ -323,14 +301,16 @@ async fn setup_config(
     eth_key_path: &str,
     contract_address: &str,
     substrate_rpc_url: &str,
-) -> Result<Config, EventForwarderError> {
+) -> Result<Config<impl alloy::providers::Provider<Ethereum> + Clone>, EventForwarderError> {
     let rpc_url = WsConnect::new(rpc_url);
     let ethereum_signer = load_ethereum_key(eth_key_path).await?;
     let signer = PrivateKeySigner::from_signing_key(ethereum_signer);
     let wallet = EthereumWallet::from(signer.clone());
 
-    let provider: Arc<ProviderInstance> =
-        Arc::new(ProviderBuilder::new().wallet(wallet).on_ws(rpc_url).await?);
+    let provider = ProviderBuilder::new()
+        .wallet(wallet)
+        .connect_ws(rpc_url)
+        .await?;
 
     let contract_address = Address::from_str(contract_address.trim()).context(AddressParseSnafu)?;
 
