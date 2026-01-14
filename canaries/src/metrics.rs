@@ -11,11 +11,12 @@ use prometheus::{
     IntCounterVec,
     TextEncoder,
 };
-use sxt_core::attestation::Attestation;
-use sxt_core::keystore::H256;
+use subxt::utils::AccountId32;
+use sxt_runtime::DOLLARS;
 use tokio::net::TcpListener;
 
 use crate::parsing::{BalanceEvent, StakingEvent};
+use crate::rpc::AttestationInfo;
 
 /// Serve prometheus metrics
 pub async fn serve_metrics(bind_addr: SocketAddr) -> anyhow::Result<()> {
@@ -91,7 +92,13 @@ lazy_static! {
     pub static ref ATTESTATION_COUNT_BY_ID: IntCounterVec = register_int_counter_vec!(
         "canary_attestations_per_id",
         "A count of attestations by Attestor public address",
-        &["block_number", "account_id"]
+        &["account_id"]
+    ).unwrap();
+
+    pub static ref FREE_BALANCE_BY_ID: GaugeVec = register_gauge_vec!(
+        "canary_free_balance_per_id",
+        "The free balance of a given account",
+        &["account_id"]
     ).unwrap();
 }
 
@@ -109,26 +116,18 @@ pub(crate) fn record_staking(e: &StakingEvent) {
 }
 
 /// Records attestation metrics for a given block.
-pub(crate) fn record_attestations(block_number: u32, attestations: Vec<Attestation<H256>>) {
+pub(crate) fn record_attestations(block_number: u32, attestations: Vec<AttestationInfo>) {
     // Count the total attestations for this block
     BEST_ATTESTATION_COUNTER
         .with_label_values(&[block_number.to_string()])
         .inc_by(attestations.len() as u64);
 
     // Count the attestations for this block by signer for better granularity
-    attestations
-        .iter()
-        .for_each(|a: &Attestation<H256>| match a {
-            Attestation::EthereumAttestation {
-                address20,
-                block_number,
-                ..
-            } => {
-                ATTESTATION_COUNT_BY_ID
-                    .with_label_values(&[block_number.to_string(), hex::encode(address20)])
-                    .inc_by(1);
-            }
-        });
+    for a in &attestations {
+        ATTESTATION_COUNT_BY_ID
+            .with_label_values(&[a.address20.as_str()])
+            .inc_by(1);
+    }
 }
 
 /// Add the provided amount to the metric for the provided label
@@ -144,6 +143,17 @@ pub(crate) fn record_claimed_unstake_count(block_number: u32, count: u64) {
     UNSTAKE_CLAIMED_COUNTER
         .with_label_values(&[block_number.to_string()])
         .inc_by(count);
+}
+
+pub(crate) fn record_watchlist(block_number: u32, watchlist_balances: Vec<(AccountId32, u128)>) {
+    for (acct, balance) in watchlist_balances {
+        // Prometheus only supports 64 bits for metrics, so we convert to whole tokens
+        // by dividing by 10^18 (the token decimal places)
+        let balance_in_tokens: u128 = balance.saturating_div(DOLLARS);
+        FREE_BALANCE_BY_ID
+            .with_label_values(&[acct.to_string().as_str()])
+            .set(balance_in_tokens as f64);
+    }
 }
 
 /// Records the total validator rewards for a given era.

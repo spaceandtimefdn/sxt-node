@@ -27,6 +27,7 @@ prometheus.workspace = true
 axum = { workspace = true, default-features = true }
 anyhow.workspace = true
 async-trait.workspace = true
+futures.workspace = true
 
 [lints]
 workspace = true
