@@ -9,6 +9,5 @@ runs:
         sudo apt update
         sudo apt install -y \
           protobuf-compiler
-        rustup target add wasm32-unknown-unknown
-        rustup component add rustfmt clippy rust-src
+        rustup component add rustfmt clippy
       shell: bash
