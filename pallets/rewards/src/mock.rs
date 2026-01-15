@@ -145,7 +145,7 @@ pub struct EraPayout;
 impl pallet_staking::EraPayout<Balance> for EraPayout {
     fn era_payout(
         total_staked: Balance,
-        total_issuance: Balance,
+        _total_issuance: Balance,
         era_duration_millis: u64,
     ) -> (Balance, Balance) {
         const MILLISECONDS_PER_YEAR: u64 = (1000 * 3600 * 24 * 36525) / 100;

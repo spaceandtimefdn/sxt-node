@@ -8,9 +8,6 @@ fn era_payout_calculation_works() {
     let test_staked: Balance = Balance::from(100 * DOLLARS);
     let test_issued: Balance = Balance::from(1000 * DOLLARS);
 
-    // Test one session in an era
-    const MILLISECONDS_PER_YEAR: u64 = (1000 * 3600 * 24 * 36525) / 100;
-
     // One day of Milliseconds
     let test_ms_per_era = 1000 * 3600 * 24;
 

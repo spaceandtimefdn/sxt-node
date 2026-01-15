@@ -1,43 +1,27 @@
-use std::fs;
-use std::path::PathBuf;
+use std::io::Cursor;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
 
-use on_chain_table::{OnChainTable, OnChainColumn};
-use anyhow::{anyhow, Error};
-use arrow::array::{Array, BooleanArray, Decimal128Array, Decimal256Array, Int16Array, Int32Array, Int64Array, Int8Array, LargeStringArray, RecordBatch, StringArray, TimestampMicrosecondArray};
-use log::{error, info};
-use sqlparser::ast::{Ident, Statement};
-use sqlparser::dialect::GenericDialect;
-use std::io::Cursor;
-use proof_of_sql::base::math::decimal::Precision;
-use sqlparser::parser::Parser as SqlParser;
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
-use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;
-use subxt::utils::AccountId32;
+use arrow::array::RecordBatch;
 use arrow::ipc::writer::StreamWriter;
+use log::{error, info};
+use on_chain_table::{OnChainColumn, OnChainTable};
+use proof_of_sql::base::math::decimal::Precision;
 use proof_of_sql::base::posql_time::PoSQLTimeUnit;
-use subxt::{OnlineClient, PolkadotConfig};
+use sqlparser::ast::Ident;
+use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;
 use subxt::ext::sp_core::U256;
+use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
 use subxt_signer::SecretUri;
-use sxt_core::sxt_chain_runtime;
+use sxt_core::sxt_chain_runtime::api::indexing::calls::types::submit_data::{BatchId, Data, Table};
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
-use sxt_core::sxt_chain_runtime::api::runtime_types::pallet_tables::pallet::{CommitmentCreationCmd, UpdateTable};
-use sxt_core::sxt_chain_runtime::api::runtime_types::proof_of_sql_commitment_map::commitment_scheme::CommitmentSchemeFlags;
-use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
-    IndexerMode,
-    InsertQuorumSize,
-    Source,
-    SourceAndMode,
-    TableIdentifier, TableType,
-};
+use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::TableIdentifier;
 use sxt_core::sxt_chain_runtime::api::tx;
 use tokio::sync::Mutex;
 use url::Url;
-use sxt_core::sxt_chain_runtime::api::indexing::calls::types::submit_data::{BatchId, Data, Table};
+
 use crate::common;
 
 fn get_staking_message(eth_wallet: &str, amount: U256) -> Data {

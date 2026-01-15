@@ -58,7 +58,7 @@ use polkadot_sdk::sp_api::impl_runtime_apis;
 use polkadot_sdk::sp_arithmetic::traits::UniqueSaturatedInto;
 use polkadot_sdk::sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use polkadot_sdk::sp_consensus_babe::AuthorityId as BabeId;
-use polkadot_sdk::sp_core::crypto::{AccountId32, KeyTypeId};
+use polkadot_sdk::sp_core::crypto::KeyTypeId;
 use polkadot_sdk::sp_core::OpaqueMetadata;
 use polkadot_sdk::sp_runtime::traits::{
     AccountIdLookup,
@@ -133,7 +133,7 @@ use polkadot_sdk::{
     sp_version,
 };
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
-use proof_of_sql_commitment_map::{AnyCommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
+use proof_of_sql_commitment_map::PerCommitmentScheme;
 use sxt_core::system_tables::ClaimedUnstake;
 pub use {
     pallet_attestation,

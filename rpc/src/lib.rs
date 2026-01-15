@@ -3,6 +3,8 @@
 #![warn(missing_docs)]
 #![warn(unused_crate_dependencies)]
 
+use hex as _;
+
 mod commitments;
 
 mod attestation;

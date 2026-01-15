@@ -4,11 +4,11 @@
 //! capabilities that are specific to this project's runtime configuration.
 
 #![warn(missing_docs)]
+#![allow(dead_code)]
 
 use std::sync::Arc;
 
 use jsonrpsee::RpcModule;
-pub use polkadot_sdk::sc_rpc_api::DenyUnsafe;
 use polkadot_sdk::sc_transaction_pool_api::TransactionPool;
 use polkadot_sdk::sp_api::ProvideRuntimeApi;
 use polkadot_sdk::sp_block_builder::BlockBuilder;

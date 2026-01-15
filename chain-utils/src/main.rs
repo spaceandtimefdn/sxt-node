@@ -8,30 +8,12 @@ mod print_batch;
 mod test_staking;
 mod update_uuids;
 
-use std::io::Write;
 use std::path::PathBuf;
 use std::process;
-use std::str::FromStr;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
 
-use anyhow::{anyhow, Error};
-use arrow::ipc::reader::StreamReader;
-use arrow::util::pretty::print_batches;
 use clap::{Parser, Subcommand};
-use log::{error, info};
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
-use subxt::utils::{AccountId32, H256};
-use subxt::{OnlineClient, PolkadotConfig};
-use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
-    IndexerMode,
-    InsertQuorumSize,
-    Source,
-    SourceAndMode,
-    TableIdentifier,
-};
-use sxt_core::sxt_chain_runtime::api::{self, tx};
+use log::error;
+use subxt::utils::H256;
 
 /// CLI entrypoint
 #[derive(clap::Parser)]

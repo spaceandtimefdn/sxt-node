@@ -3,53 +3,26 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
 
-use anyhow::{anyhow, Error};
+use anyhow::anyhow;
 use log::{error, info};
 use sqlparser::ast::Statement;
 use sqlparser::dialect::GenericDialect;
 use sqlparser::parser::Parser as SqlParser;
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
 use subxt::config::polkadot::PolkadotExtrinsicParamsBuilder as Params;
-use subxt::utils::AccountId32;
-use subxt::{OnlineClient, PolkadotConfig};
 use subxt::ext::subxt_core::tx::payload::StaticPayload;
+use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
 use subxt_signer::SecretUri;
-use sxt_core::sxt_chain_runtime;
 use sxt_core::sxt_chain_runtime::api::runtime_types::bounded_collections::bounded_vec::BoundedVec;
-use sxt_core::sxt_chain_runtime::api::runtime_types::pallet_tables::pallet::{CommitmentCreationCmd, UpdateTable};
-use sxt_core::sxt_chain_runtime::api::runtime_types::proof_of_sql_commitment_map::commitment_scheme::CommitmentSchemeFlags;
-use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::{
-    IndexerMode,
-    InsertQuorumSize,
-    Source,
-    SourceAndMode,
-    TableIdentifier, TableType,
-};
+use sxt_core::sxt_chain_runtime::api::runtime_types::sxt_core::tables::TableIdentifier;
+use sxt_core::sxt_chain_runtime::api::tables::calls::types::UpdateTableUuid;
 use sxt_core::sxt_chain_runtime::api::tx;
+use sxt_core::tables::convert_ignite_create_statement;
 use tokio::sync::Mutex;
 use url::Url;
-use sxt_core::sxt_chain_runtime::api::tables::calls::types::{UpdateNamespaceUuid, UpdateTableUuid};
-use sxt_core::sxt_chain_runtime::api::tables::calls::types::update_table_uuid::NewUuid;
-use sxt_core::tables::convert_ignite_create_statement;
+
 use crate::common;
-
-fn read_file(filename: &str) -> Result<String, std::io::Error> {
-    info!("Reading file: {}", filename);
-    fs::read_to_string(filename)
-}
-
-fn parse_sql(sql: &str) -> Result<Vec<sqlparser::ast::Statement>, sqlparser::parser::ParserError> {
-    info!("Parsing SQL content");
-    let dialect = GenericDialect;
-    SqlParser::parse_sql(&dialect, sql)
-}
-
-fn format_statements(statements: &[sqlparser::ast::Statement]) -> Vec<String> {
-    statements.iter().map(|stmt| stmt.to_string()).collect()
-}
 
 /// A helper function that takes in a parsed statement and evaluates it for a table UUID, returning
 /// one if found.

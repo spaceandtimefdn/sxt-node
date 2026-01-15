@@ -24,8 +24,6 @@ use ratatui::Terminal;
 use runtime::api::runtime_types::sxt_core::attestation::Attestation;
 use sha3::digest::generic_array::GenericArray;
 use subxt::blocks::Block as BlockT;
-use subxt::config::substrate::{BlakeTwo256, SubstrateHeader};
-use subxt::config::Header;
 use subxt::tx::TxStatus;
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
@@ -455,7 +453,7 @@ impl AttestationClient {
         &self,
         block_result: Result<SxtBlock, subxt::Error>,
         private_key: &SigningKey,
-        keypair: &Keypair,
+        _keypair: &Keypair,
     ) -> Result<(), ()> {
         let block = match block_result {
             Ok(block) => block,
@@ -501,7 +499,7 @@ impl AttestationClient {
             hex::decode(state_root.data.clone()).expect("could not decode for msg creation");
 
         let Ok(fixed_size_state_root) = <[u8; 32]>::try_from(hex_decoded_state_root)
-            .inspect_err(|e| log::error!("Error: computed commitments state root not 32 bytes"))
+            .inspect_err(|_e| log::error!("Error: computed commitments state root not 32 bytes"))
         else {
             return Ok(());
         };
@@ -812,7 +810,7 @@ async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationErr
 
 /// Verifies a list of attestations.
 fn verify_attestations<B: ratatui::backend::Backend>(
-    block_number: u32,
+    _block_number: u32,
     attestations: &[Attestation<H256>],
     progress: &mut Vec<String>,
     terminal: &mut Terminal<B>,
@@ -824,9 +822,9 @@ fn verify_attestations<B: ratatui::backend::Backend>(
             signature,
             proposed_pub_key,
             state_root,
-            address20,
+            address20: _,
             block_number,
-            block_hash,
+            block_hash: _,
         } = attestation;
 
         // Create message and verify signature
@@ -861,7 +859,7 @@ fn update_ui<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     progress: &[String],
 ) -> io::Result<()> {
-    terminal.draw(|f| {
+    let _ = terminal.draw(|f| {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)
@@ -883,7 +881,6 @@ fn update_ui<B: ratatui::backend::Backend>(
 
         f.render_widget(list, chunks[0]);
     });
-
     Ok(())
 }
 
@@ -905,7 +902,7 @@ fn verify_signature(
     msg: &[u8],
     signature: &runtime::api::runtime_types::sxt_core::attestation::EthereumSignature,
     proposed_pub_key: &[u8; 33],
-    block_number: u32,
+    _block_number: u32,
 ) -> Result<(), AttestationError> {
     let runtime::api::runtime_types::sxt_core::attestation::EthereumSignature { r, s, v } =
         signature;
