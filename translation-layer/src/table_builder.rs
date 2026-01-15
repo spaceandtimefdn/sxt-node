@@ -137,7 +137,7 @@ impl TableCreator {
     }
 
     /// Returns a `TableBuilder` for adding a new table configuration.
-    pub fn add_table(&mut self) -> TableBuilder {
+    pub fn add_table(&mut self) -> TableBuilder<'_> {
         TableBuilder::new(self)
     }
 

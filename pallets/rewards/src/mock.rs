@@ -95,7 +95,7 @@ impl pallet_babe::Config for Test {
 
 impl pallet_authorship::Config for Test {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
-    type EventHandler = (Staking);
+    type EventHandler = Staking;
 }
 
 impl pallet_grandpa::Config for Test {

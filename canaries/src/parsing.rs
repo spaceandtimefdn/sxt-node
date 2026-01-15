@@ -26,7 +26,9 @@ impl<'a> From<(&'a str, u128)> for StakingEvent<'a> {
 }
 
 /// Parses a given Vec of events, returning a tuple of variant name and amount for staking events
-pub(crate) fn parse_staking_stats(events: &[EventDetails<PolkadotConfig>]) -> Vec<StakingEvent> {
+pub(crate) fn parse_staking_stats(
+    events: &[EventDetails<PolkadotConfig>],
+) -> Vec<StakingEvent<'_>> {
     use sxt_core::sxt_chain_runtime::api::staking::events::{
         Bonded,
         Rewarded,
@@ -73,7 +75,9 @@ impl<'a> From<(&'a str, u128)> for BalanceEvent<'a> {
 }
 
 /// Parses a given Vec of events, returning a tuple of variant name and amount for balance events
-pub(crate) fn parse_balance_stats(events: &[EventDetails<PolkadotConfig>]) -> Vec<BalanceEvent> {
+pub(crate) fn parse_balance_stats(
+    events: &[EventDetails<PolkadotConfig>],
+) -> Vec<BalanceEvent<'_>> {
     use sxt_core::sxt_chain_runtime::api::balances::events::{
         Burned,
         Frozen,
