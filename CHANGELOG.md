@@ -1,3 +1,7 @@
+## [1.51.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.51.0...v1.51.1) (2026-01-16)
+
+
+
 # [1.51.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.50.1...v1.51.0) (2026-01-15)
 
 
@@ -26,15 +30,6 @@
 ### Features
 
 * Update dependencies from individual substrate crates to the polkadot-sdk ([#127](https://github.com/spaceandtimefdn/sxt-node/issues/127)) ([16630e8](https://github.com/spaceandtimefdn/sxt-node/commit/16630e831909ec1307399f53557bc204edb93f30))
-
-
-
-## [1.48.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.48.2...v1.48.3) (2026-01-06)
-
-
-### Bug Fixes
-
-* separate submit data weights by commitment scheme ([#126](https://github.com/spaceandtimefdn/sxt-node/issues/126)) ([2bd16dd](https://github.com/spaceandtimefdn/sxt-node/commit/2bd16dd754b930fdec877f0c6334141e86579ee6))
 
 
 
