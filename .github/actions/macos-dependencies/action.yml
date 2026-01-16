@@ -7,6 +7,4 @@ runs:
     - run: |
         curl https://sh.rustup.rs -sSf -y | sh
         brew install protobuf
-        rustup target add wasm32-unknown-unknown
-        rustup component add rust-src
       shell: sh
