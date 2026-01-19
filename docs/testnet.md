@@ -109,7 +109,38 @@ The generated key should now be in a file called `subkey.key` in the sxt-node-ke
 
 Here we assume the setup uses the following volumes: `sxt-testnet-data` is the block storage volume and the volume where the generated node key is stored is `sxt-node-key`.
 
-### 2.1. Docker Run
+### 2.1 Download Snapshot (Optional)
+
+This step is optional, but encouraged, if you are starting the node for the first time or if you want to reduce the disk usage on a previously run node.
+
+```bash
+docker run -it --rm \
+  --platform linux/amd64 \
+  -v sxt-mainnet-data:/data \
+  --entrypoint=bash \
+  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0 \
+  -c '
+    set -ex
+    # Optional step if you want to keep a backup of the old database, can be deleted later
+    if [ -d /data/chains ]; then
+      mv /data/chains $(mktemp -d -p /data backup.XXXX)
+    fi
+
+    # Download and unpack the snapshot
+    if [ ! -d /data/chains ]; then
+      cd /data
+      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-09/sxt-testnet.tar.gz"
+      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-09/sxt-testnet.sha1"
+      sha1sum --check sxt-testnet.sha1
+      mkdir -p chains
+      tar xvf sxt-testnet.tar.gz -C chains
+      rm sxt-testnet.tar.gz sxt-testnet.sha1
+      cd -
+    fi
+  '
+```
+
+### 2.2. Docker Run
 
 Make sure to set VALIDATOR_NAME to make it easier to identify your node in the telemetry dashboard.
 
@@ -139,11 +170,14 @@ docker run -d --restart always \
   --port 30333 \
   --log info \
   --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5' \
+  --state-pruning 256 \
+  --blocks-pruning 256 \
+  --sync fast \
   --no-private-ipv4 \
   --name ${VALIDATOR_NAME?}
 ```
 
-### 2.2. Docker Compose
+### 2.3. Docker Compose
 Prepare a `docker-compose.yaml` file as follows:
 
 ```yaml
@@ -182,6 +216,9 @@ services:
       --port 30333
       --log info
       --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5'
+      --state-pruning 256
+      --blocks-pruning 256
+      --sync fast
       --no-private-ipv4
 
 volumes:
