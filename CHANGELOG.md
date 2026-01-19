@@ -1,3 +1,7 @@
+## [1.51.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.51.2...v1.51.3) (2026-01-19)
+
+
+
 ## [1.51.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.51.1...v1.51.2) (2026-01-16)
 
 
@@ -16,15 +20,6 @@
 
 
 ## [1.50.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.50.0...v1.50.1) (2026-01-09)
-
-
-
-# [1.50.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.49.0...v1.50.0) (2026-01-09)
-
-
-### Features
-
-* Update alloy after updating Substrate ([#128](https://github.com/spaceandtimefdn/sxt-node/issues/128)) ([0782352](https://github.com/spaceandtimefdn/sxt-node/commit/07823529a2e52f420758c052f1871aff3c15385f))
 
 
 
