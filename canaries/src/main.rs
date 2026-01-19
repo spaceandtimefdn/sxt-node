@@ -135,20 +135,22 @@ impl BlockProcessor for SimpleProcessor {
             ),
         }
 
-        let watchlist_balances: Vec<(AccountId32, u128)> = {
-            let balances = futures::future::join_all(
-                self.watchlist
-                    .iter()
-                    .map(|acct| storage::read_account_free_balance(acct, &block, api)),
-            )
+        let watchlist_balances: Vec<(AccountId32, u128)> =
+            futures::future::join_all(self.watchlist.iter().cloned().map(|acct| {
+                let block_hash = block.hash();
+                async move {
+                    (
+                        acct.clone(),
+                        storage::read_account_free_balance(&acct, block_hash, api)
+                            .await
+                            .ok()
+                            .flatten()
+                            .unwrap_or_default(),
+                    )
+                }
+            }))
             .await;
 
-            self.watchlist
-                .iter()
-                .cloned()
-                .zip(balances.into_iter().map(|r| r.ok().flatten().unwrap_or(0)))
-                .collect()
-        };
         record_watchlist(block.number(), watchlist_balances);
 
         // If it's a new session, record rewards and total stake as well

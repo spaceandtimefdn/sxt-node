@@ -1,5 +1,6 @@
 use anyhow::Result;
 use event_forwarder::chain_listener::{Block, API};
+use subxt::{Config, PolkadotConfig};
 use sxt_core::sxt_chain_runtime::api::runtime_apis::system_tables_api::SystemTablesApi;
 use sxt_core::sxt_chain_runtime::{self};
 
@@ -58,13 +59,13 @@ pub(crate) async fn read_total_staked(era: u32, block: &Block, api: &API) -> Res
 
 pub(crate) async fn read_account_free_balance(
     account: &AccountId32,
-    block: &Block,
+    block_hash: <PolkadotConfig as Config>::Hash,
     api: &API,
 ) -> Result<Option<u128>> {
     let free_balance_query = sxt_chain_runtime::api::storage().system().account(account);
     if let Some(info) = api
         .storage()
-        .at(block.hash())
+        .at(block_hash)
         .fetch(&free_balance_query)
         .await?
     {
