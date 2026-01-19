@@ -157,7 +157,7 @@ services:
   sxt-node:
     platform: linux/amd64
     restart: unless-stopped
-    image: ghcr.io/spaceandtimefdn/sxt-node:mainnet-v0.114.5
+    image: ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0
     ports:
       - '9615:9615' # metrics
       - '9944:9944' # rpc
