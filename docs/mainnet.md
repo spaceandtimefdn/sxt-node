@@ -32,8 +32,8 @@ On Azure cloud, this is equivalent to SKU `Standard_D16as_v5` with storage SKU o
 Assuming Docker Desktop is installed and working on your computer. The SXT Node Docker image can be downloaded with `docker pull` command.
 
 ```bash
-docker pull ghcr.io/spaceandtimefdn/sxt-node:mainnet-v0.114.5
-docker images --digests ghcr.io/spaceandtimefdn/sxt-node:mainnet-v0.114.5
+docker pull ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0
+docker images --digests ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0
 ```
 
 When each new docker image is released we will also be sharing the full `sha256` hash of the image. Please confirm that hash against the image pulled down by docker with an extra docker `images` argument `--digests` to make sure that you are pulling the right one.
@@ -44,7 +44,7 @@ SXT mainnet chainspecs are part of the docker images mentioned in [section 1.2.1
 ```bash
 docker run -it --rm \
   --platform linux/amd64 \
-  --entrypoint=bash ghcr.io/spaceandtimefdn/sxt-node:mainnet-v0.114.5 \
+  --entrypoint=bash ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0 \
   -c "cat /opt/chainspecs/mainnet-spec.json"
 ```
 
@@ -71,7 +71,7 @@ docker run -it --rm \
   --platform linux/amd64 \
   -v sxt-node-key:/data \
   --entrypoint=/usr/local/bin/sxt-node \
-  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v0.114.5 \
+  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0 \
   key generate-node-key --chain /opt/chainspecs/mainnet-spec.json --file /data/subkey.key
 ```
 
@@ -81,7 +81,38 @@ The generated key should now be in a file called `subkey.key` in the sxt-node-ke
 
 Here we assume the setup uses the following volumes: `sxt-mainnet-data` is the block storage volume and the volume where the generated node key is stored is `sxt-node-key`.
 
-### 2.1. Docker Run
+### 2.1 Download Snapshot (Optional)
+
+This step is optional, but encouraged, if you are starting the node for the first time or if you want to reduce the disk usage on a previously run node.
+
+```bash
+docker run -it --rm \
+  --platform linux/amd64 \
+  -v sxt-mainnet-data:/data \
+  --entrypoint=bash \
+  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0 \
+  -c '
+    set -ex
+    # Optional step if you want to keep a backup of the old database, can be deleted later
+    if [ -d /data/chains ]; then
+      mv /data/chains $(mktemp -d -p /data backup.XXXX)
+    fi
+
+    # Download and unpack the snapshot
+    if [ ! -d /data/chains ]; then
+      cd /data
+      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-16/sxt-mainnet.tar.gz"
+      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-16/sxt-mainnet.sha1"
+      sha1sum --check sxt-mainnet.sha1
+      mkdir -p chains
+      tar xvf sxt-mainnet.tar.gz -C chains
+      rm sxt-mainnet.tar.gz sxt-mainnet.sha1
+      cd -
+    fi
+  '
+```
+
+### 2.2. Docker Run
 
 Make sure to set VALIDATOR_NAME to make it easier to identify your node in the telemetry dashboard.
 
@@ -95,7 +126,7 @@ docker run -d --restart always \
   -p 9615:9615/tcp \
   -p 9944:9944/tcp \
   --env HYPER_KZG_PUBLIC_SETUP_DIRECTORY=/data \
-  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v0.114.5 \
+  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0 \
   --base-path /data \
   --prometheus-port 9615 \
   --prometheus-external \
@@ -111,11 +142,14 @@ docker run -d --restart always \
   --port 30333 \
   --log info \
   --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5' \
+  --state-pruning 256 \
+  --blocks-pruning 256 \
+  --sync fast \
   --no-private-ipv4 \
   --name ${VALIDATOR_NAME?}
 ```
 
-### 2.2. Docker Compose
+### 2.3. Docker Compose
 Prepare a `docker-compose.yaml` file as follows:
 
 ```yaml
@@ -126,7 +160,7 @@ services:
   sxt-mainnet:
     platform: linux/amd64
     restart: unless-stopped
-    image: ghcr.io/spaceandtimefdn/sxt-node:mainnet-v0.114.5
+    image: ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0
     ports:
       - '9615:9615' # metrics
       - '9944:9944' # rpc
@@ -154,6 +188,9 @@ services:
       --port 30333
       --log info
       --telemetry-url 'wss://telemetry.polkadot.io/submit/ 5'
+      --state-pruning 256
+      --blocks-pruning 256
+      --sync fast
       --no-private-ipv4
 
 volumes:
@@ -346,7 +383,7 @@ docker run -it --rm \
   --platform linux/amd64 \
   -v sxt-node-key:/data \
   --entrypoint=/usr/local/bin/sxt-node \
-  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v0.114.5 \
+  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0 \
   key inspect $SS58_KEY
 ```
 
