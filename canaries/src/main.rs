@@ -20,13 +20,36 @@ use event_forwarder::chain_listener::{
     API,
 };
 use log::info;
-use snafu::{ResultExt, Snafu};
+use snafu::Snafu;
+use subxt::utils::AccountId32;
 use subxt::{OnlineClient, PolkadotConfig};
 use url::Url;
 
 use crate::metrics::*;
 use crate::parsing::*;
 use crate::storage::*;
+
+/// Errors that can occur during block processing.
+/// These are non-fatal errors that are logged as warnings.
+#[derive(Debug, Snafu)]
+enum BlockProcessingError {
+    /// Failed to fetch attestations from RPC
+    #[snafu(display("Failed to fetch attestations: {source}"))]
+    AttestationFetch { source: anyhow::Error },
+
+    /// Failed to read unstaked claims count
+    #[snafu(display("Failed to read unstaked claims count: {source}"))]
+    UnstakedClaimsRead { source: anyhow::Error },
+
+    /// Failed to read watchlist balance for an account
+    #[snafu(display("Failed to read watchlist balance: {source}"))]
+    WatchlistBalanceRead { source: anyhow::Error },
+}
+
+/// Logs a block processing error as a warning with the block number context.
+fn log_processing_error(block_number: u32, error: &BlockProcessingError) {
+    log::warn!("Block {}: {}", block_number, error);
+}
 
 /// Canary: Substrate Finalized Block Event Monitor
 #[derive(Debug, Parser)]
@@ -46,6 +69,15 @@ pub struct CanaryConfig {
     /// Bind address for Prometheus metrics (e.g., 0.0.0.0:9000)
     #[arg(long, env = "CANARY_METRICS_BIND", default_value = "0.0.0.0:9000")]
     pub metrics_bind: SocketAddr,
+
+    /// List of account IDs for balance monitoring in SS58 format
+    #[arg(
+        long,
+        env = "CANARY_WATCHLIST_IDS",
+        value_delimiter = ',',
+        num_args = 0..
+    )]
+    pub watchlist_ids: Vec<AccountId32>,
 }
 
 #[tokio::main]
@@ -72,6 +104,7 @@ async fn main() -> Result<(), CanaryError> {
     let stream = FinalizedBlockStream;
     let processor = SimpleProcessor {
         rpc_url: config.rpc_url.clone(),
+        watchlist: config.watchlist_ids,
     };
 
     let listener = ChainListener::new(processor, stream, api)
@@ -87,25 +120,9 @@ async fn main() -> Result<(), CanaryError> {
 struct SimpleProcessor {
     /// The RPC URL to connect to.
     pub rpc_url: Url,
-}
 
-impl SimpleProcessor {
-    /// Converts the WebSocket URL to an HTTP URL.
-    fn _get_http_url(&self) -> Result<Url, CanaryError> {
-        let mut out = self.rpc_url.clone();
-        match self.rpc_url.scheme() {
-            "wss" => {
-                out.set_scheme("https")
-                    .map_err(|_| CanaryError::UrlHttpConversionError)?;
-            }
-            "ws" => {
-                out.set_scheme("http")
-                    .map_err(|_| CanaryError::UrlHttpConversionError)?;
-            }
-            _ => {}
-        };
-        Ok(out)
-    }
+    /// A list of account IDs for balance monitoring
+    pub watchlist: Vec<AccountId32>,
 }
 
 #[async_trait::async_trait]
@@ -122,13 +139,42 @@ impl BlockProcessor for SimpleProcessor {
 
         parse_balance_stats(&events).iter().for_each(record_balance);
 
-        if let Ok(attestations) = rpc::fetch_attestations(self.rpc_url.clone()).await {
-            record_attestations(block.number(), attestations);
+        match rpc::fetch_attestations(self.rpc_url.clone()).await {
+            Ok(attestations) => record_attestations(block.number(), attestations),
+            Err(e) => log_processing_error(
+                block.number(),
+                &BlockProcessingError::AttestationFetch { source: e },
+            ),
         }
 
-        if let Ok(count) = storage::read_unstaked_claims_count(&block, api).await {
-            record_claimed_unstake_count(block.number(), count);
+        match storage::read_unstaked_claims_count(&block, api).await {
+            Ok(count) => record_claimed_unstake_count(block.number(), count),
+            Err(e) => log_processing_error(
+                block.number(),
+                &BlockProcessingError::UnstakedClaimsRead { source: e },
+            ),
         }
+
+        let block_number = block.number();
+        let block_hash = block.hash();
+        let watchlist_balances: Vec<(AccountId32, u128)> =
+            futures::future::join_all(self.watchlist.iter().cloned().map(|acct| async move {
+                let balance = match storage::read_account_free_balance(&acct, block_hash, api).await
+                {
+                    Ok(Some(balance)) => balance,
+                    Ok(None) => 0,
+                    Err(e) => {
+                        log_processing_error(
+                            block_number,
+                            &BlockProcessingError::WatchlistBalanceRead { source: e },
+                        );
+                        0
+                    }
+                };
+                (acct, balance)
+            }))
+            .await;
+        record_watchlist(watchlist_balances);
 
         // If it's a new session, record rewards and total stake as well
         if has_new_session(&events) {
@@ -179,8 +225,6 @@ pub enum CanaryError {
         /// source
         source: Box<event_forwarder::block_processing::Error>,
     },
-    /// We were unable to parse the http url from the provided rpc url
-    UrlHttpConversionError,
 }
 
 impl From<subxt::Error> for CanaryError {
