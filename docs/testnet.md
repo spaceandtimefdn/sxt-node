@@ -42,7 +42,7 @@ The minimum system requirements for running a SXT validator node are shown in th
 | CPU cores        | 16              |
 | CPU Architecture | amd64           |
 | Memory (GiB)     | 64              |
-| Storage (GiB)    | 512             |
+| Storage (GiB)    | 100             |
 | Storage Type     | SSD             |
 | OS               | Linux           |
 | Network Speed    | 500Mbps up/down |
