@@ -147,12 +147,12 @@ pub(crate) fn record_claimed_unstake_count(block_number: u32, count: u64) {
 
 pub(crate) fn record_watchlist(watchlist_balances: Vec<(AccountId32, u128)>) {
     for (acct, balance) in watchlist_balances {
-        // Prometheus only supports 64 bits for metrics, so we convert to whole tokens
-        // by dividing by 10^18 (the token decimal places)
-        let balance_in_tokens: u128 = balance.saturating_div(DOLLARS);
+        // Prometheus only supports 64-bit floats for metrics; convert to tokens as f64
+        // by dividing the raw balance (u128) by DOLLARS as f64. This preserves fractional tokens.
+        let balance_in_tokens: f64 = (balance as f64) / (DOLLARS as f64);
         FREE_BALANCE_BY_ID
             .with_label_values(&[acct.to_string().as_str()])
-            .set(balance_in_tokens as f64);
+            .set(balance_in_tokens);
     }
 }
 
