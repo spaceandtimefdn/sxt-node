@@ -1,9 +1,11 @@
 use anyhow::Result;
 use event_forwarder::chain_listener::{Block, API};
+use subxt::utils::AccountId32;
+use subxt::{Config, PolkadotConfig};
 use sxt_core::sxt_chain_runtime::api::runtime_apis::system_tables_api::SystemTablesApi;
 use sxt_core::sxt_chain_runtime::{self};
 
-/// Reads the active era, if one is present. Retuns Some(u32) if an era is found, None if there is
+/// Reads the active era, if one is present. Returns Some(u32) if an era is found, None if there is
 /// no era, and an error if we were not able to read it.
 pub(crate) async fn read_active_era(block: &Block, api: &API) -> Result<Option<u32>> {
     let active_era_query = sxt_chain_runtime::api::storage().staking().active_era();
@@ -49,6 +51,26 @@ pub(crate) async fn read_total_staked(era: u32, block: &Block, api: &API) -> Res
         .await?
     {
         Ok(Some(total_staked))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Reads the free balance of an account at a given block.
+/// Returns Some(balance) if a balance exists, otherwise returns None.
+pub(crate) async fn read_account_free_balance(
+    account: &AccountId32,
+    block_hash: <PolkadotConfig as Config>::Hash,
+    api: &API,
+) -> Result<Option<u128>> {
+    let free_balance_query = sxt_chain_runtime::api::storage().system().account(account);
+    if let Some(info) = api
+        .storage()
+        .at(block_hash)
+        .fetch(&free_balance_query)
+        .await?
+    {
+        Ok(Some(info.data.free))
     } else {
         Ok(None)
     }
