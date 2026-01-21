@@ -1,3 +1,12 @@
+# [1.53.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.52.1...v1.53.0) (2026-01-21)
+
+
+### Features
+
+* Add account balance monitoring to canary service ([#133](https://github.com/spaceandtimefdn/sxt-node/issues/133)) ([778f115](https://github.com/spaceandtimefdn/sxt-node/commit/778f115548891947e0c5053e6c491dfd54d75661))
+
+
+
 ## [1.52.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.52.0...v1.52.1) (2026-01-20)
 
 
@@ -21,10 +30,6 @@
 
 
 ## [1.51.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.51.1...v1.51.2) (2026-01-16)
-
-
-
-## [1.51.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.51.0...v1.51.1) (2026-01-16)
 
 
 
