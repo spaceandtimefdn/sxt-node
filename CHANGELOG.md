@@ -1,3 +1,12 @@
+## [1.53.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.53.0...v1.53.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* **canaries:** preserve fractional token precision in balance metrics ([22f07ed](https://github.com/spaceandtimefdn/sxt-node/commit/22f07ede4ac1af454df5cf3f1a3b000cbaf67a6b))
+
+
+
 # [1.53.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.52.1...v1.53.0) (2026-01-21)
 
 
@@ -26,10 +35,6 @@
 
 
 ## [1.51.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.51.2...v1.51.3) (2026-01-19)
-
-
-
-## [1.51.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.51.1...v1.51.2) (2026-01-16)
 
 
 
