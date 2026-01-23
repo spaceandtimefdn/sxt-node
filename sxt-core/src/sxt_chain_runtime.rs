@@ -2509,6 +2509,9 @@ pub mod api {
             }
         }
     }
+    pub fn view_functions() -> ViewFunctionsApi {
+        ViewFunctionsApi
+    }
     pub fn custom() -> CustomValuesApi {
         CustomValuesApi
     }
@@ -2730,6 +2733,8 @@ pub mod api {
             zk_pay::calls::TransactionApi
         }
     }
+    pub struct ViewFunctionsApi;
+    impl ViewFunctionsApi {}
     #[doc = r" check whether the metadata provided is aligned with this statically generated code."]
     pub fn is_codegen_valid_for(metadata: &::subxt::ext::subxt_core::Metadata) -> bool {
         let runtime_metadata_hash = metadata
@@ -2739,9 +2744,9 @@ pub mod api {
             .hash();
         runtime_metadata_hash
             == [
-                78u8, 89u8, 213u8, 113u8, 97u8, 54u8, 134u8, 89u8, 105u8, 190u8, 88u8, 112u8,
-                199u8, 151u8, 19u8, 97u8, 185u8, 155u8, 180u8, 99u8, 143u8, 79u8, 236u8, 164u8,
-                156u8, 192u8, 190u8, 120u8, 126u8, 37u8, 212u8, 129u8,
+                86u8, 37u8, 164u8, 66u8, 178u8, 200u8, 237u8, 220u8, 97u8, 176u8, 90u8, 246u8,
+                35u8, 14u8, 220u8, 165u8, 246u8, 63u8, 146u8, 123u8, 2u8, 0u8, 130u8, 133u8, 142u8,
+                72u8, 240u8, 143u8, 214u8, 116u8, 153u8, 54u8,
             ]
     }
     pub mod system {
