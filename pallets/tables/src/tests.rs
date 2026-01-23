@@ -126,6 +126,62 @@ fn create_namespace_for_testing(namespace: &str) {
     ));
 }
 
+/// Creates a generic community table for testing using the supplied signer
+fn create_community_table_for_user(
+    signer: RuntimeOrigin,
+    namespace: &str,
+    table_name: &str,
+) -> TableIdentifier {
+    let test_identifier =
+        TableIdentifier::from_str_unchecked_with_preserved_casing(table_name, namespace);
+
+    let ddl = format!(
+        "CREATE TABLE IF NOT EXISTS {}.{} (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));",
+        namespace, table_name
+    );
+    let create_statement: CreateStatement =
+        BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+
+    let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+        ident: test_identifier.clone(),
+        create_statement,
+        table_type: TableType::Community,
+        commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+        source: Source::UserCreated(ByteString::default()),
+    }])
+    .expect("Table list should fit in BoundedVec");
+
+    assert_ok!(Tables::create_tables(signer, tables));
+
+    test_identifier.try_normalize().unwrap()
+}
+
+/// asserts that a given AccountId has permission to insert data into a given table as well as
+/// permission to give another user the right to insert data.
+fn assert_has_table_owner_permissions(
+    who: &sp_runtime::AccountId32,
+    table_identifier: &TableIdentifier,
+) {
+    let submit_permission = PermissionLevel::IndexingPallet(
+        IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_identifier.clone()),
+    );
+    assert!(
+        pallet_permissions::Pallet::<Test>::has_permissions(who, &submit_permission),
+        "Owner should have SubmitDataForPrivilegedQuorum permission for table {:?}",
+        table_identifier
+    );
+
+    let meta_permission =
+        PermissionLevel::EditSpecificPermission(Box::new(PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPrivilegedQuorum(table_identifier.clone()),
+        )));
+    assert!(
+        pallet_permissions::Pallet::<Test>::has_permissions(who, &meta_permission),
+        "Owner should have EditSpecificPermission for SubmitDataForPrivilegedQuorum for table {:?}",
+        table_identifier
+    );
+}
+
 #[test]
 fn test_pallet() {
     new_test_ext().execute_with(|| {
@@ -773,6 +829,53 @@ fn creating_community_table_fails_with_insufficient_funds() {
         ));
 
         assert_err!(Tables::create_tables(signer, tables.clone()), TokenError::FundsUnavailable);
+    });
+}
+
+#[test]
+fn creating_many_community_tables_assigns_correct_permissions() {
+    /// How many tables we should try creating
+    const TABLE_COUNT: u32 = 50;
+
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let namespace = "COMMUNITY_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT";
+        create_namespace_for_testing(namespace);
+
+        let (who, signer) = user(1);
+
+        // Fund the account with enough to create all the tables
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &who,
+            crate::CREATE_COST * (TABLE_COUNT as u128 + 1),
+        ));
+
+        let tables = (0..TABLE_COUNT).map(|i| {
+            let table_name = format!("TABLE_{}", i);
+            create_community_table_for_user(signer.clone(), namespace, &table_name)
+        });
+
+        // Verify all tables exist and have correct permissions
+        for (i, table_identifier) in tables.enumerate() {
+            // Verify the table was created
+            assert!(
+                TableVersions::<Test>::contains_key(&table_identifier, 0),
+                "Table {} should exist in TableVersions",
+                i
+            );
+
+            // Verify the table owner is set correctly
+            assert_eq!(
+                TableOwners::<Test>::get(&table_identifier),
+                Some(who.clone()),
+                "Table {} should have correct owner",
+                i
+            );
+
+            // Verify the permissions were assigned correctly
+            assert_has_table_owner_permissions(&who, &table_identifier);
+        }
     });
 }
 
