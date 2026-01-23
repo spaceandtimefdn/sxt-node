@@ -1569,3 +1569,279 @@ fn we_can_submit_to_permissionless_table_with_no_permissions() {
         assert!(Indexing::final_data(&internal_batch_id).is_some());
     })
 }
+
+/// Helper to set up a table with a given quorum size and fund its treasury account.
+fn setup_table_with_treasury(
+    quorum_size: u32,
+    treasury_balance: u128,
+) -> (TableIdentifier, CreateStatement) {
+    let (table_id, create_statement) = sample_table_definition();
+    Tables::create_tables(
+        RuntimeOrigin::root(),
+        vec![UpdateTable {
+            ident: table_id.clone(),
+            create_statement: create_statement.clone(),
+            table_type: TableType::CoreBlockchain,
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                hyper_kzg: true,
+                dynamic_dory: true,
+            }),
+            source: sxt_core::tables::Source::Ethereum,
+        }]
+        .try_into()
+        .unwrap(),
+    )
+    .unwrap();
+
+    // Fund the table treasury
+    if treasury_balance > 0 {
+        let treasury = sxt_core::utils::account_id_from_table_id::<Test>(&table_id).unwrap();
+        assert_ok!(Balances::force_set_balance(
+            RuntimeOrigin::root(),
+            treasury,
+            treasury_balance,
+        ));
+    }
+
+    (table_id, create_statement)
+}
+
+/// Grant public quorum submission permission to accounts [start..end] (each id is [n; 32]).
+fn grant_public_permissions(start: u8, end: u8) {
+    let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+        IndexingPalletPermission::SubmitDataForPublicQuorum,
+    )])
+    .unwrap();
+    for id in start..end {
+        let who = ensure_signed(RuntimeOrigin::signed(sp_runtime::AccountId32::new(
+            [id; 32],
+        )))
+        .unwrap();
+        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+    }
+}
+
+/// Submit data from N distinct signers (ids [1; 32] .. [n; 32]) to reach quorum.
+fn submit_from_n_signers(n: u8, submission: &TestSubmission) {
+    for id in 1..=n {
+        assert_ok!(submit_test_data(
+            RuntimeOrigin::signed(sp_runtime::AccountId32::new([id; 32])),
+            submission.clone()
+        ));
+    }
+}
+
+#[test]
+fn refund_issued_event_emitted_when_treasury_is_funded() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let treasury_balance = 1_000_000_000_000_000_000u128; // 1 UNIT, plenty of funds
+        let (table_id, _) = setup_table_with_treasury(4, treasury_balance);
+
+        grant_public_permissions(1, 6);
+
+        let test_submission = TestSubmission {
+            table: table_id.clone(),
+            batch_id: BatchId::try_from(b"refund_batch".to_vec()).unwrap(),
+            data: row_data(),
+        };
+
+        // Submit 4 times to reach quorum (CoreBlockchain default is 4)
+        submit_from_n_signers(4, &test_submission);
+
+        // Verify quorum was reached
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
+        assert!(Indexing::final_data(&internal_batch_id).is_some());
+
+        // Verify RefundIssued event was emitted
+        let events = System::events();
+        let refund_issued = events
+            .iter()
+            .find(|e| matches!(&e.event, RuntimeEvent::Indexing(Event::RefundIssued { .. })));
+        assert!(
+            refund_issued.is_some(),
+            "Expected RefundIssued event to be emitted"
+        );
+    })
+}
+
+#[test]
+fn insufficient_table_funds_event_when_treasury_empty() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        // Set up a table with zero treasury balance
+        let (table_id, _) = setup_table_with_treasury(4, 0);
+
+        grant_public_permissions(1, 6);
+
+        let test_submission = TestSubmission {
+            table: table_id.clone(),
+            batch_id: BatchId::try_from(b"empty_treasury_batch".to_vec()).unwrap(),
+            data: row_data(),
+        };
+
+        submit_from_n_signers(4, &test_submission);
+
+        // Quorum should still be reached (refund failure doesn't block finalization)
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
+        assert!(Indexing::final_data(&internal_batch_id).is_some());
+
+        // Verify InsufficientTableFunds event was emitted
+        let events = System::events();
+        let insufficient = events.iter().find(|e| {
+            matches!(
+                &e.event,
+                RuntimeEvent::Indexing(Event::InsufficientTableFunds { .. })
+            )
+        });
+        assert!(
+            insufficient.is_some(),
+            "Expected InsufficientTableFunds event to be emitted"
+        );
+    })
+}
+
+#[test]
+fn refund_transfers_funds_from_treasury_to_participants() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let treasury_balance = 1_000_000_000_000_000_000u128;
+        let (table_id, _) = setup_table_with_treasury(4, treasury_balance);
+
+        grant_public_permissions(1, 6);
+
+        let test_submission = TestSubmission {
+            table: table_id.clone(),
+            batch_id: BatchId::try_from(b"transfer_batch".to_vec()).unwrap(),
+            data: row_data(),
+        };
+
+        // Check participant balances before
+        let participant = sp_runtime::AccountId32::new([1; 32]);
+        let balance_before = Balances::free_balance(&participant);
+
+        submit_from_n_signers(4, &test_submission);
+
+        // After quorum + refund, participant should have received funds
+        let balance_after = Balances::free_balance(&participant);
+        assert!(
+            balance_after > balance_before,
+            "Participant balance should increase after refund: before={balance_before}, after={balance_after}"
+        );
+
+        // Treasury should have decreased
+        let treasury =
+            sxt_core::utils::account_id_from_table_id::<Test>(&table_id).unwrap();
+        let treasury_after = Balances::free_balance(&treasury);
+        assert!(
+            treasury_after < treasury_balance,
+            "Treasury balance should decrease after refunds"
+        );
+    })
+}
+
+#[test]
+fn refund_issued_with_correct_cost_amount() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let treasury_balance = 1_000_000_000_000_000_000u128;
+        let (table_id, _) = setup_table_with_treasury(4, treasury_balance);
+
+        grant_public_permissions(1, 6);
+
+        let test_submission = TestSubmission {
+            table: table_id.clone(),
+            batch_id: BatchId::try_from(b"cost_batch".to_vec()).unwrap(),
+            data: row_data(),
+        };
+
+        submit_from_n_signers(4, &test_submission);
+
+        // Extract the refund amount from the event
+        let events = System::events();
+        let refund_event = events.iter().find_map(|e| match &e.event {
+            RuntimeEvent::Indexing(Event::RefundIssued { refund, .. }) => Some(*refund),
+            _ => None,
+        });
+        assert!(refund_event.is_some(), "RefundIssued event should exist");
+        let refund = refund_event.unwrap();
+        // The refund should be positive (cost = weight.ref_time() * WEIGHT_FEE)
+        assert!(refund > 0, "Refund amount should be greater than zero");
+    })
+}
+
+#[test]
+fn insufficient_funds_when_treasury_has_partial_balance() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        // Fund with just 1 unit (existential deposit) — not enough for 4 refunds
+        let (table_id, _) = setup_table_with_treasury(4, 1);
+
+        grant_public_permissions(1, 6);
+
+        let test_submission = TestSubmission {
+            table: table_id.clone(),
+            batch_id: BatchId::try_from(b"partial_batch".to_vec()).unwrap(),
+            data: row_data(),
+        };
+
+        submit_from_n_signers(4, &test_submission);
+
+        // Data should still finalize
+        let internal_batch_id =
+            build_inner_batch_id::<Test, Api>(&test_submission.batch_id, &table_id);
+        assert!(Indexing::final_data(&internal_batch_id).is_some());
+
+        // Should get InsufficientTableFunds since 1 unit < cost * 4 participants
+        let events = System::events();
+        let has_insufficient = events.iter().any(|e| {
+            matches!(
+                &e.event,
+                RuntimeEvent::Indexing(Event::InsufficientTableFunds { .. })
+            )
+        });
+        assert!(
+            has_insufficient,
+            "Expected InsufficientTableFunds when treasury balance is too low"
+        );
+    })
+}
+
+#[test]
+fn all_quorum_participants_receive_refund() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let treasury_balance = 1_000_000_000_000_000_000u128;
+        let (table_id, _) = setup_table_with_treasury(4, treasury_balance);
+
+        grant_public_permissions(1, 6);
+
+        let test_submission = TestSubmission {
+            table: table_id.clone(),
+            batch_id: BatchId::try_from(b"all_participants_batch".to_vec()).unwrap(),
+            data: row_data(),
+        };
+
+        // Record balances before
+        let participants: Vec<sp_runtime::AccountId32> = (1..=4u8)
+            .map(|id| sp_runtime::AccountId32::new([id; 32]))
+            .collect();
+        let balances_before: Vec<u128> = participants.iter().map(Balances::free_balance).collect();
+
+        submit_from_n_signers(4, &test_submission);
+
+        // All 4 participants should have increased balance
+        for (i, participant) in participants.iter().enumerate() {
+            let balance_after = Balances::free_balance(participant);
+            assert!(
+                balance_after > balances_before[i],
+                "Participant {} should have received a refund: before={}, after={}",
+                i + 1,
+                balances_before[i],
+                balance_after,
+            );
+        }
+    })
+}

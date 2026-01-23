@@ -17,9 +17,12 @@ mod mock;
 #[cfg(test)]
 mod tests;
 pub mod weights;
+
+pub mod refunds;
 // Do not remove this or the same attribute for the pallet
 // The cargo doc command will fail because of a bug even though the code is working properly
 pub use pallet::*;
+use sxt_core::fees::WEIGHT_FEE;
 pub use sxt_core::indexing::*;
 pub use weights::*;
 
@@ -48,6 +51,7 @@ pub mod pallet {
     use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
     use super::*;
+    use crate::refunds::refund_quorum_participants;
 
     #[pallet::pallet]
     pub struct Pallet<T, I = ()>(_);
@@ -144,6 +148,26 @@ pub mod pallet {
             /// Voters against this quorum
             dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
         },
+
+        /// A refund could not be issued because the table treasury had insufficient funds.
+        InsufficientTableFunds {
+            /// The table whose treasury was insufficient
+            table: TableIdentifier,
+            /// The batch id associated with the quorum that couldn't be refunded
+            batch_id: BatchId,
+            /// The table's treasury account
+            treasury: T::AccountId,
+        },
+
+        /// A refund of the specified amount was issued for the given batch
+        RefundIssued {
+            /// The table of the refund
+            table: TableIdentifier,
+            /// The batch_id of the quorum
+            batch_id: BatchId,
+            /// The amount of the base refund
+            refund: u128,
+        },
     }
 
     #[pallet::error]
@@ -186,6 +210,8 @@ pub mod pallet {
         TableSerializationError,
         /// Submitter Injection Failed
         SubmitterInjectionFailed,
+        /// The table treasury was insufficient to reward all submitters
+        InsufficientTableFunds,
     }
 
     #[pallet::call]
@@ -221,6 +247,7 @@ pub mod pallet {
         /// - the table to be public-permissionless
         #[pallet::call_index(0)]
         #[pallet::weight(submit_data_weight::<T, I>(table))]
+        #[allow(clippy::useless_conversion)]
         pub fn submit_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
@@ -259,6 +286,7 @@ pub mod pallet {
         /// - the table to be public-permissionless
         #[pallet::call_index(1)]
         #[pallet::weight(submit_data_weight::<T, I>(table))]
+        #[allow(clippy::useless_conversion)]
         pub fn submit_blockchain_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
@@ -389,7 +417,32 @@ pub mod pallet {
         };
 
         if let Some(data_quorum) = opt_data_quorum {
-            finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
+            finalize_quorum::<T, I>(data_quorum.clone(), data, block_number, who)?;
+
+            // After finalizing, attempt to refund quorum participants from the table treasury
+            let cost: u128 = u128::from(submit_data_weight::<T, I>(&table).ref_time()) * WEIGHT_FEE;
+
+            match refund_quorum_participants::<T, I>(&data_quorum, cost) {
+                Err(Error::<T, I>::InsufficientTableFunds) => {
+                    Pallet::<T, I>::deposit_event(Event::InsufficientTableFunds {
+                        table: data_quorum.table.clone(),
+                        batch_id: data_quorum.batch_id.clone(),
+                        treasury: sxt_core::utils::account_id_from_table_id::<T>(&data_quorum.table)
+                            .expect("In order to have insufficient funds, the table must have a valid account"),
+                    })
+                }
+                Ok(results) => {
+                    results.iter().for_each(|(who, result)| {});
+
+                    Pallet::<T,I>::deposit_event(
+                    Event::RefundIssued {
+                        table: data_quorum.table,
+                        batch_id: data_quorum.batch_id.clone(),
+                        refund: cost,
+                    });
+                }
+                Err(e) => {}
+            }
         }
 
         Ok(())

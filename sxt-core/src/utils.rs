@@ -71,6 +71,17 @@ pub fn eth_address_to_substrate_account_id<T: frame_system::Config>(
     try_get_account_from_20_byte_vec::<T>(raw_bytes)
 }
 
+/// Takes a table identifier and returns the corresponding AccountId for its treasury
+pub fn account_id_from_table_id<T: frame_system::Config>(
+    table: &crate::tables::TableIdentifier,
+) -> Option<T::AccountId>
+where
+    T::AccountId: Decode,
+{
+    use polkadot_sdk::frame_support::Hashable;
+    convert_account_id::<T>(AccountId32::new(table.blake2_256())).ok()
+}
+
 /// Convert the supplied AccountId32 to the runtime's AccountId type
 pub fn convert_account_id<T: frame_system::Config>(
     account_id32: AccountId32,

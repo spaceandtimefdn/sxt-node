@@ -396,20 +396,7 @@ impl pallet_utility::Config for Runtime {
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
-/// We want to base our pricing on the cost of the data insertion transaction since this is the
-/// most common action on the network. The values below are intended to represent an 'Average'
-/// Insert of 5000 bytes of data.
-pub const CALIBRATION_MULTIPLIER: u128 = 43; // A Calibration multiplier to reach the desired target pricing
-pub const AVERAGE_INSERT_SIZE_BYTES: u128 = 8192;
-pub const AVERAGE_INSERT_TARGET_COST: u128 = MILLICENTS
-    .saturating_mul(20)
-    .saturating_mul(CALIBRATION_MULTIPLIER);
-pub const TARGET_BYTE_FEE: u128 =
-    AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_SIZE_BYTES);
-/// Approximated Average Insert Weight from actual transactions on testnet
-pub const AVERAGE_INSERT_CALL_WEIGHT: u128 = 7_582_873_000;
-pub const WEIGHT_FEE: u128 = AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_CALL_WEIGHT);
-
+use sxt_core::fees::*;
 parameter_types! {
     pub const TransactionByteFee: Balance = TARGET_BYTE_FEE;
     pub const WeightFeePerRefTime: Balance = WEIGHT_FEE;
@@ -1385,9 +1372,13 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_tables::runtime_api::TablesApi<Block> for Runtime {
+    impl pallet_tables::runtime_api::TablesApi<Block, AccountId> for Runtime {
         fn table_schema(table_identifier: sxt_core::tables::TableIdentifier) -> Result<sxt_core::tables::TableSchema, sxt_core::tables::GetTableSchemaError> {
             Tables::table_schema(table_identifier)
+        }
+
+        fn table_treasury(table_identifier: sxt_core::tables::TableIdentifier) -> Option<AccountId> {
+            sxt_core::utils::account_id_from_table_id::<Runtime>(&table_identifier)
         }
     }
 
