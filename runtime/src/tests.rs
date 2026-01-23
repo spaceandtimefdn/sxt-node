@@ -18,6 +18,6 @@ fn era_payout_calculation_works() {
         SXTPayout::era_payout(test_staked, test_issued, test_ms_per_era);
     assert_eq!(to_treasury, Balance::zero());
 
-    let single_era_payout = Balance::from(21629021218343597u128);
+    let single_era_payout = Balance::from(26557152635181379u128);
     assert_eq!(to_stakers, single_era_payout);
 }

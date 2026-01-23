@@ -533,7 +533,7 @@ impl pallet_staking::EraPayout<Balance> for EraPayout {
         let relative_era_len =
             FixedU128::from_rational(era_duration_millis.into(), MILLISECONDS_PER_YEAR.into());
 
-        let base_rate = FixedU128::from_rational(79, 1000);
+        let base_rate = FixedU128::from_rational(97, 1000);
         let yearly_emission = base_rate.saturating_mul_int(total_staked);
 
         let era_emission = relative_era_len.saturating_mul_int(yearly_emission);
