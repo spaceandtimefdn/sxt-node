@@ -125,6 +125,7 @@ runtime-benchmarks = [
 	"pallet-system-contracts/runtime-benchmarks",
 	"pallet-tables/runtime-benchmarks",
 	"pallet-smartcontracts/runtime-benchmarks",
+        "pallet-commitments/runtime-benchmarks",
 ]
 
 try-runtime = [

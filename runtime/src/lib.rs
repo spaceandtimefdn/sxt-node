@@ -1053,6 +1053,7 @@ mod benches {
         [pallet_system_contracts, SystemContracts]
         [pallet_tables, Tables]
         [pallet_smartcontracts, Smartcontracts]
+        [pallet_commitments, Commitments]
     );
 }
 
