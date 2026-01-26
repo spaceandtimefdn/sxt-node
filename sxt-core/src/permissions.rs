@@ -147,4 +147,4 @@ pub enum SmartContractsPalletPermission {
 }
 
 /// A collection of user permissions
-pub type PermissionList = BoundedVec<PermissionLevel, ConstU32<32>>;
+pub type PermissionList = BoundedVec<PermissionLevel, ConstU32<1024>>;
