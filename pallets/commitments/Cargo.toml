@@ -24,7 +24,8 @@ scale-info = { features = [
 
 polkadot-sdk = { workspace = true, features = [
 	"frame-benchmarking", "frame-support", "frame-system",
-	"sp-core", "sp-api", "sp-io", "sp-runtime",
+	"sp-core", "sp-api", "sp-io", "sp-runtime", "pallet-migrations",
+        "sp-weights",
 ]}
 
 native-api.workspace = true
@@ -46,6 +47,11 @@ log = { workspace = true, optional = true }
 polkadot-sdk = { workspace = true, default-features = true, features = [
 	"sp-core", "sp-io", "sp-runtime",
 ]}
+sxt-core = { workspace = true, features = ["proptest"] }
+commitment-sql = { workspace = true, features = ["proptest"] }
+proptest = { workspace = true, features = ["std"] }
+on-chain-table = { workspace = true, features = ["proptest"] }
+proof-of-sql-commitment-map = { workspace = true, features = ["substrate", "proptest"] }
 
 [[bin]]
 name = "test_end_row_limits"

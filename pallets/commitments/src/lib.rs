@@ -24,6 +24,8 @@ mod test_insert;
 #[cfg(test)]
 mod test_table_commitments;
 
+pub mod migrations;
+
 /// Error type conversions for commitment operations.
 mod error_conversions;
 

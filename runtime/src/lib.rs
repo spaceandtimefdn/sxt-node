@@ -13,6 +13,7 @@ extern crate alloc;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use pallet_commitments::migrations::delete_dynamic_dory::DeleteDynamicDoryCommitmentsLazyMigration;
 use polkadot_sdk::frame_election_provider_support::{
     generate_solution_type,
     onchain,
@@ -958,7 +959,7 @@ mod runtime {
     pub type Statement = pallet_statement;
 
     #[runtime::pallet_index(72)]
-    pub type MultiBlockMigrations = pallet_migrations;
+    pub type MultiBlockMigrations = pallet_migrations::Pallet<Runtime>;
 
     // Custom pallets start at index 100 to ensure room for future consensus work
     #[runtime::pallet_index(100)]
@@ -1007,7 +1008,10 @@ pub type SignedExtra = (
 ///
 /// This can be a tuple of types, each implementing `OnRuntimeUpgrade`.
 #[allow(unused_parens)]
-type Migrations = ();
+type Migrations = DeleteDynamicDoryCommitmentsLazyMigration<
+    Runtime,
+    pallet_commitments::migrations::delete_dynamic_dory::weights::SubstrateWeight<Runtime>,
+>;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -1021,7 +1025,6 @@ pub type Executive = polkadot_sdk::frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
-    Migrations,
 >;
 
 #[cfg(feature = "try-runtime")]
@@ -1053,6 +1056,7 @@ mod benches {
         [pallet_system_contracts, SystemContracts]
         [pallet_tables, Tables]
         [pallet_smartcontracts, Smartcontracts]
+        [pallet_commitments, Commitments]
     );
 }
 
