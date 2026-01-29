@@ -129,8 +129,8 @@ docker run -it --rm \
     # Download and unpack the snapshot
     if [ ! -d /data/chains ]; then
       cd /data
-      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-09/sxt-testnet.tar.gz"
-      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-09/sxt-testnet.sha1"
+      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-29/sxt-testnet.tar.gz"
+      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-29/sxt-testnet.sha1"
       sha1sum --check sxt-testnet.sha1
       mkdir -p chains
       tar xvf sxt-testnet.tar.gz -C chains
