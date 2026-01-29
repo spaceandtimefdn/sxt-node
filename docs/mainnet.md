@@ -101,8 +101,8 @@ docker run -it --rm \
     # Download and unpack the snapshot
     if [ ! -d /data/chains ]; then
       cd /data
-      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-28/sxt-mainnet.tar.gz"
-      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-28/sxt-mainnet.sha1"
+      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-29/sxt-mainnet.tar.gz"
+      curl -O "https://blocks.testnet.sxt.network/snapshots/2026-01-29/sxt-mainnet.sha1"
       sha1sum --check sxt-mainnet.sha1
       mkdir -p chains
       tar xvf sxt-mainnet.tar.gz -C chains
