@@ -21,6 +21,8 @@ serde_json = { workspace = true, default-features = true }
 jsonrpsee = { features = ["server"], workspace = true }
 snafu = { workspace = true, default-features = false }
 
+sc-cli = { version = "0.47.0", default-features = false, features = ["rocksdb"] }
+sc-client-db = { version = "0.44.1", default-features = false, features = ["rocksdb"] }
 polkadot-sdk = { workspace = true, features = [
 	"sc-cli", "sp-core", "sc-executor", "sc-network", "sc-service", "sc-telemetry", "sc-transaction-pool", "sc-transaction-pool-api",
 	"sc-consensus", "sc-offchain", "sc-consensus-grandpa", "sc-consensus-babe", "sc-client-api", "sc-rpc-api", "sc-basic-authorship", 
