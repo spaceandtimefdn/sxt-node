@@ -30,6 +30,8 @@ polkadot-sdk = { workspace = true, features = [
 	"pallet-staking", "sp-authority-discovery",
 	"pallet-transaction-payment", "pallet-transaction-payment-rpc", "frame-benchmarking", "frame-benchmarking-cli",
 ]}
+sc-cli = { workspace = true, features = ["rocksdb"] }
+sc-client-db = { workspace = true, features = ["rocksdb"] }
 
 sxt-runtime.workspace = true
 native.workspace = true
