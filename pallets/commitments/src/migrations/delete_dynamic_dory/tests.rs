@@ -15,8 +15,8 @@ use proof_of_sql_commitment_map::{
 use proptest::prelude::*;
 use sxt_core::proptest::table_identifier;
 
-use crate::migrations::delete_dynamic_dory::weights;
 use crate::migrations::delete_dynamic_dory::weights::WeightInfo as _;
+use crate::migrations::delete_dynamic_dory::{weights, MAX_DELETIONS_PER_BLOCK};
 use crate::mock::{
     new_test_ext,
     run_to_block,
@@ -63,7 +63,7 @@ proptest! {
                 table_identifier(),
                 dummy_table_commitment_bytes_per_commitment_scheme(commitment_scheme_flags())
             ),
-            16..=64
+            1..=64
         )
     )
     {
@@ -103,7 +103,7 @@ proptest! {
             AllPalletsWithSystem::on_runtime_upgrade(); // onboard MBMs
 
             let mut previous_dynamic_dory_count = initial_dynamic_dory_count;
-            for block in 2..=((tables.len() as u64).div_ceil(16) + 3) {
+            for block in 2..=((tables.len() as u64).div_ceil(16.min(MAX_DELETIONS_PER_BLOCK)) + 3) {
                 run_to_block(block);
 
                 let (hyperkzg_count, dynamic_dory_count) = count_commitments_by_scheme();

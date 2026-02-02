@@ -20,6 +20,9 @@ pub struct DeleteDynamicDoryCommitmentsLazyMigration<T: Config, W: super::weight
     PhantomData<(T, W)>,
 );
 
+/// An extra limit to avoid significant single block lag from any weight misrepresentations.
+pub const MAX_DELETIONS_PER_BLOCK: usize = 5;
+
 impl<T: Config, W: super::weights::WeightInfo> SteppedMigration
     for DeleteDynamicDoryCommitmentsLazyMigration<T, W>
 {
@@ -54,7 +57,8 @@ impl<T: Config, W: super::weights::WeightInfo> SteppedMigration
             .ok_or(SteppedMigrationError::Failed)?
             .try_into()
             // can only happen if the u64 exceeds usize::MAX, so clamp.
-            .unwrap_or(usize::MAX);
+            .unwrap_or(usize::MAX)
+            .min(MAX_DELETIONS_PER_BLOCK);
 
         let table_entries: Vec<_> = cursor
             .map_or_else(
