@@ -2,7 +2,7 @@
 //! current tables.
 
 mod migration;
-pub use migration::DeleteDynamicDoryCommitmentsLazyMigration;
+pub use migration::{DeleteDynamicDoryCommitmentsLazyMigration, MAX_DELETIONS_PER_BLOCK};
 
 pub mod weights;
 

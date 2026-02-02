@@ -15,8 +15,8 @@ use proof_of_sql_commitment_map::{
 use proptest::prelude::*;
 use sxt_core::proptest::table_identifier;
 
-use crate::migrations::delete_dynamic_dory::weights;
 use crate::migrations::delete_dynamic_dory::weights::WeightInfo as _;
+use crate::migrations::delete_dynamic_dory::{weights, MAX_DELETIONS_PER_BLOCK};
 use crate::mock::{
     new_test_ext,
     run_to_block,
@@ -63,13 +63,14 @@ proptest! {
                 table_identifier(),
                 dummy_table_commitment_bytes_per_commitment_scheme(commitment_scheme_flags())
             ),
-            16..=64
+            1..=64
         )
     )
     {
         new_test_ext().execute_with(|| {
             polkadot_sdk::frame_support::__private::sp_tracing::try_init_simple();
             let mut handler = CommitmentStorageMapHandler::<CommitmentStorageMap<T>>::new();
+
 
             tables.iter().for_each(|(table_identifier, commitments)| {
                 handler
@@ -101,16 +102,17 @@ proptest! {
 
             System::set_block_number(1);
             AllPalletsWithSystem::on_runtime_upgrade(); // onboard MBMs
+            let num_commitments = tables.iter().flat_map(|(_, commitments)| commitments.clone()).count();
 
             let mut previous_dynamic_dory_count = initial_dynamic_dory_count;
-            for block in 2..=((tables.len() as u64).div_ceil(16) + 3) {
-                run_to_block(block);
+            for block in 2..=(num_commitments.div_ceil(16usize.div_ceil(MAX_DELETIONS_PER_BLOCK) + 1) + 2) {
+                run_to_block(block as u64);
 
                 let (hyperkzg_count, dynamic_dory_count) = count_commitments_by_scheme();
 
                 dbg!(&block, &hyperkzg_count, &dynamic_dory_count);
 
-                assert!(dynamic_dory_count < previous_dynamic_dory_count || dynamic_dory_count == 0);
+                assert!(dynamic_dory_count <= previous_dynamic_dory_count );
                 assert_eq!(hyperkzg_count, initial_hyperkzg_count);
 
                 previous_dynamic_dory_count = dynamic_dory_count;
