@@ -102,7 +102,7 @@ proptest! {
 
             System::set_block_number(1);
             AllPalletsWithSystem::on_runtime_upgrade(); // onboard MBMs
-            let num_commitments = tables.iter().map(|(_, commitments)| commitments.clone()).flatten().count();
+            let num_commitments = tables.iter().flat_map(|(_, commitments)| commitments.clone()).count();
 
             let mut previous_dynamic_dory_count = initial_dynamic_dory_count;
             for block in 2..=(num_commitments.div_ceil(16usize.div_ceil(MAX_DELETIONS_PER_BLOCK) + 1) + 2) {
