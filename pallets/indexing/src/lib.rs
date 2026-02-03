@@ -40,18 +40,19 @@ pub mod pallet {
     use commitment_sql::InsertAndCommitmentMetadata;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
+    use polkadot_sdk::frame_support::dispatch::PostDispatchInfo;
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_support::Blake2_128Concat;
     use polkadot_sdk::frame_system;
     use polkadot_sdk::frame_system::pallet_prelude::*;
     use polkadot_sdk::sp_runtime::traits::Hash;
-    use polkadot_sdk::sp_runtime::BoundedVec;
+    use polkadot_sdk::sp_runtime::{BoundedVec, DispatchErrorWithPostInfo};
     use proof_of_sql_commitment_map::CommitmentScheme;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
     use super::*;
-    use crate::refunds::refund_quorum_participants;
+    use crate::refunds::{refund_late_submission, refund_quorum_participants};
 
     #[pallet::pallet]
     pub struct Pallet<T, I = ()>(_);
@@ -168,6 +169,18 @@ pub mod pallet {
             /// The amount of the base refund
             refund: u128,
         },
+
+        /// There was an error processing an indexer refund
+        RefundError {
+            /// The intended refund recipient
+            recipient: T::AccountId,
+            /// The intended refund amount
+            amount: u128,
+            /// The table of the insert being refunded
+            table: TableIdentifier,
+            /// The error received
+            error: DispatchError,
+        },
     }
 
     #[pallet::error]
@@ -253,7 +266,7 @@ pub mod pallet {
             table: TableIdentifier,
             batch_id: BatchId,
             data: RowData,
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             submit_data_inner::<T, I>(origin, table, batch_id, data, None)
         }
 
@@ -293,7 +306,7 @@ pub mod pallet {
             batch_id: BatchId,
             data: RowData,
             block_number: u64,
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             submit_data_inner::<T, I>(origin, table, batch_id, data, Some(block_number))
         }
     }
@@ -341,7 +354,7 @@ pub mod pallet {
         outer_batch_id: BatchId,
         data: RowData,
         block_number: Option<u64>,
-    ) -> DispatchResult
+    ) -> DispatchResultWithPostInfo
     where
         T: Config<I>,
         I: NativeApi,
@@ -389,7 +402,25 @@ pub mod pallet {
 
         let batch_id = build_inner_batch_id::<T, I>(&outer_batch_id, &table);
 
-        validate_submission::<T, I>(&table, &batch_id, &data)?;
+        if let Err(e) = validate_submission::<T, I>(&table, &batch_id, &data) {
+            match e {
+                e if e == Error::<T, I>::LateBatch.into() => {
+                    // Transfers are reverted when an error is returned, so we provide postinfo
+                    // indicating that the caller should not be charged for the late batch
+                    return Err(DispatchErrorWithPostInfo {
+                        post_info: PostDispatchInfo {
+                            actual_weight: None,
+                            pays_fee: Pays::No,
+                        },
+                        error: Error::<T, I>::LateBatch.into(),
+                    });
+                }
+                _ => {
+                    //Any other type of error we don't do anything special
+                }
+            }
+            return Err(e.into());
+        }
 
         let hash_input = (&data, block_number).encode();
         let data_hash = T::Hashing::hash(&hash_input);
@@ -432,7 +463,18 @@ pub mod pallet {
                     })
                 }
                 Ok(results) => {
-                    results.iter().for_each(|(who, result)| {});
+                    results.iter().for_each(|(who, result)| {
+                        if let Some(e) = result.err() {
+                            // Log any errors from individual refund attempts
+                            Pallet::<T, I>::deposit_event(
+                                Event::RefundError {
+                                    recipient: who.clone(),
+                                    amount: cost,
+                                    table: table.clone(),
+                                    error: e,
+                                });
+                        }
+                    });
 
                     Pallet::<T,I>::deposit_event(
                     Event::RefundIssued {
@@ -441,11 +483,13 @@ pub mod pallet {
                         refund: cost,
                     });
                 }
-                Err(e) => {}
+                Err(e) => {
+                    // Should we emit this error as an event?
+                }
             }
         }
 
-        Ok(())
+        Ok(().into())
     }
 
     /// Submit data and check if we have a quorum.

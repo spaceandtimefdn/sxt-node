@@ -6,6 +6,7 @@ use alloc::vec::Vec;
 
 use native_api::NativeApi;
 use polkadot_sdk::frame_support::dispatch::DispatchResult;
+use polkadot_sdk::frame_support::ensure;
 use polkadot_sdk::frame_system::RawOrigin;
 use polkadot_sdk::sp_runtime::traits::StaticLookup;
 use polkadot_sdk::sp_runtime::{DispatchError, SaturatedConversion};
@@ -13,7 +14,30 @@ use polkadot_sdk::{frame_system, pallet_balances};
 use sxt_core::tables::TableIdentifier;
 
 use crate::pallet::Config;
-use crate::DataQuorum;
+use crate::{BatchId, DataQuorum};
+
+/// Refund a single indexer who submitted a late batch
+pub fn refund_late_submission<T, I>(
+    who: &T::AccountId,
+    table: &TableIdentifier,
+    refund: u128,
+) -> DispatchResult
+where
+    T: Config<I>,
+    I: NativeApi,
+{
+    if let Some(treasury) = sxt_core::utils::account_id_from_table_id::<T>(table) {
+        let free_balance: u128 =
+            polkadot_sdk::pallet_balances::Pallet::<T>::free_balance(&treasury).saturated_into();
+        ensure!(
+            free_balance > refund,
+            crate::Error::<T, I>::InsufficientTableFunds
+        );
+        payout_indexer::<T>(&treasury, who, refund)
+    } else {
+        Err(crate::Error::<T, I>::InvalidTable.into())
+    }
+}
 
 /// Refund all quorum participants from the table's treasury. By default everyone gets a full
 /// refund. In the future agreements may receive a bonus.
@@ -47,20 +71,31 @@ where
         let free_balance: u128 =
             polkadot_sdk::pallet_balances::Pallet::<T>::free_balance(&treasury).saturated_into();
 
-        if free_balance < total_needed {
-            return Err(crate::Error::<T, I>::InsufficientTableFunds);
-        }
+        ensure!(
+            free_balance > total_needed,
+            crate::Error::<T, I>::InsufficientTableFunds
+        );
 
         let agreements: Vec<(T::AccountId, DispatchResult)> = quorum
             .agreements
             .iter()
-            .map(|who| payout_indexer::<T>(treasury_lookup.clone(), who, reward_amount))
+            .map(|who| {
+                (
+                    who.clone(),
+                    payout_indexer::<T>(&treasury, who, reward_amount),
+                )
+            })
             .collect();
 
         let dissents: Vec<(T::AccountId, DispatchResult)> = quorum
             .dissents
             .iter()
-            .map(|who| payout_indexer::<T>(treasury_lookup.clone(), who, base_refund))
+            .map(|who| {
+                (
+                    who.clone(),
+                    payout_indexer::<T>(&treasury, who, base_refund),
+                )
+            })
             .collect();
 
         Ok(agreements.into_iter().chain(dissents).collect())
@@ -71,19 +106,17 @@ where
 
 // Helper also used in the balances pallet for this type
 fn payout_indexer<T: frame_system::Config + pallet_balances::Config>(
-    treasury: AccountIdLookupOf<T>,
+    treasury: &T::AccountId,
     who: &T::AccountId,
     amount: u128,
-) -> (T::AccountId, DispatchResult) {
+) -> DispatchResult {
     let indexer_lookup = <T as frame_system::Config>::Lookup::unlookup(who.clone());
+    let treasury_lookup = <T as frame_system::Config>::Lookup::unlookup(treasury.clone());
 
-    (
-        who.clone(),
-        pallet_balances::Pallet::<T>::force_transfer(
-            RawOrigin::Root.into(),
-            treasury,
-            indexer_lookup,
-            amount.saturated_into(),
-        ),
+    pallet_balances::Pallet::<T>::force_transfer(
+        RawOrigin::Root.into(),
+        treasury_lookup,
+        indexer_lookup,
+        amount.saturated_into(),
     )
 }
