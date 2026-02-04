@@ -48,6 +48,8 @@ resolver = "2"
 
 [workspace.dependencies]
 polkadot-sdk = { version = "0.9.0", default-features = false }
+sc-cli = { version = "0.47.0", default-features = false }
+sc-client-db = { version = "0.44.1", default-features = false }
 
 # Required for the runtime_interface macro in our native modules
 sp-runtime-interface = { version = "28.0.0", default-features = false }

@@ -21221,6 +21221,8 @@ dependencies = [
  "proof-of-sql-commitment-map",
  "proof-of-sql-static-setups",
  "rand 0.8.5",
+ "sc-cli",
+ "sc-client-db",
  "serde",
  "serde_json",
  "snafu 0.8.5",
