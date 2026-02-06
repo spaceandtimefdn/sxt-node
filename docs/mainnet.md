@@ -36,8 +36,8 @@ On Azure cloud, this is equivalent to SKU `Standard_D16as_v5` with storage SKU o
 Assuming Docker Desktop is installed and working on your computer. The SXT Node Docker image can be downloaded with `docker pull` command.
 
 ```bash
-docker pull ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0
-docker images --digests ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0
+docker pull ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.33.1
+docker images --digests ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.33.1
 ```
 
 When each new docker image is released we will also be sharing the full `sha256` hash of the image. Please confirm that hash against the image pulled down by docker with an extra docker `images` argument `--digests` to make sure that you are pulling the right one.
@@ -49,7 +49,7 @@ SXT mainnet chainspecs are part of the docker images mentioned in [section 1.2.1
 ```bash
 docker run -it --rm \
   --platform linux/amd64 \
-  --entrypoint=bash ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0 \
+  --entrypoint=bash ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.33.1 \
   -c "cat /opt/chainspecs/mainnet-spec.json"
 ```
 
@@ -79,7 +79,7 @@ docker run -it --rm \
   --platform linux/amd64 \
   -v sxt-node-key:/data \
   --entrypoint=/usr/local/bin/sxt-node \
-  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0 \
+  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.33.1 \
   key generate-node-key --chain /opt/chainspecs/mainnet-spec.json --file /data/subkey.key
 ```
 
@@ -103,7 +103,7 @@ docker run -d --restart always \
   -p 9615:9615/tcp \
   -p 9944:9944/tcp \
   --env HYPER_KZG_PUBLIC_SETUP_DIRECTORY=/data \
-  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0 \
+  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.33.1 \
   --base-path /data \
   --prometheus-port 9615 \
   --prometheus-external \
@@ -136,7 +136,7 @@ services:
   sxt-mainnet:
     platform: linux/amd64
     restart: unless-stopped
-    image: ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0
+    image: ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.33.1
     ports:
       - "9615:9615" # metrics
       - "9944:9944" # rpc
@@ -368,7 +368,7 @@ docker run -it --rm \
   --platform linux/amd64 \
   -v sxt-node-key:/data \
   --entrypoint=/usr/local/bin/sxt-node \
-  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.17.0 \
+  ghcr.io/spaceandtimefdn/sxt-node:mainnet-v1.33.1 \
   key inspect $SS58_KEY
 ```
 
