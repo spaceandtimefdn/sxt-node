@@ -1,3 +1,7 @@
+## [1.55.4](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.3...v1.55.4) (2026-02-06)
+
+
+
 ## [1.55.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.2...v1.55.3) (2026-02-04)
 
 
@@ -22,10 +26,6 @@
 
 * add DeleteDynamicDoryCommitmentsLazyMigration to runtime ([416b668](https://github.com/spaceandtimefdn/sxt-node/commit/416b668b2d2475fe265e1b85a09a40e97905f4ef))
 * migrate existing tables away from dynamic dory ([b4fb359](https://github.com/spaceandtimefdn/sxt-node/commit/b4fb3593d76c546193d1d8673578d654c716da23))
-
-
-
-## [1.54.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.54.0...v1.54.1) (2026-01-26)
 
 
 
