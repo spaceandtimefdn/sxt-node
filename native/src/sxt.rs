@@ -10,6 +10,8 @@ use proof_of_sql_commitment_map::{
 };
 #[cfg(feature = "std")]
 use proof_of_sql_static_setups::io::PUBLIC_SETUPS;
+#[cfg(feature = "runtime-benchmarks")]
+use sxt_core::native::OnChainTableToRecordBatchError;
 use sxt_core::native::{
     CreateStatementPassBy,
     NativeCommitmentError,
@@ -127,6 +129,43 @@ pub trait Interface {
         let new_commitments_bytes = TableCommitmentBytesPerCommitmentSchemePassBy { data };
 
         Ok((table_bytes, new_commitments_bytes))
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn on_chain_table_to_record_batch(
+        on_chain_table_bytes: OnChainTableBytes,
+    ) -> Result<RowData, OnChainTableToRecordBatchError> {
+        use arrow::array::RecordBatch;
+        use arrow::ipc::writer::StreamWriter;
+        use on_chain_table::OnChainTable;
+
+        let table = OnChainTable::try_from(on_chain_table_bytes)
+            .map_err(|_| OnChainTableToRecordBatchError::OnChainTableDeserialization)?;
+
+        let record_batch = RecordBatch::from(table);
+
+        let record_batch_bytes = {
+            let mut buffer = Vec::new();
+            let mut writer = StreamWriter::try_new(&mut buffer, record_batch.schema().as_ref())
+                .map_err(|_| OnChainTableToRecordBatchError::ArrowStreamWriterNew)?;
+
+            writer
+                .write(&record_batch)
+                .map_err(|_| OnChainTableToRecordBatchError::ArrowStreamWriterWrite)?;
+            writer
+                .finish()
+                .map_err(|_| OnChainTableToRecordBatchError::ArrowStreamWriterFinish)?;
+
+            buffer
+        };
+
+        let row_data = RowData {
+            row_data: record_batch_bytes
+                .try_into()
+                .map_err(|_| OnChainTableToRecordBatchError::RecordBatchIpcTooLarge)?,
+        };
+
+        Ok(row_data)
     }
 }
 
