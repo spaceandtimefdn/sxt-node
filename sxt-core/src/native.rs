@@ -170,3 +170,19 @@ impl From<OnChainTableToBytesError> for NativeCommitmentError {
         NativeCommitmentError::TableSerialization
     }
 }
+
+#[cfg(feature = "runtime-benchmarks")]
+/// Errors that can occur in the native OnChainTable to RecordBatch conversion function.
+#[derive(Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum OnChainTableToRecordBatchError {
+    /// The table failed to deserialize.
+    OnChainTableDeserialization,
+    /// Arrow stream writer failed on stream creation.
+    ArrowStreamWriterNew,
+    /// Arrow stream writer failed when writing a record batch.
+    ArrowStreamWriterWrite,
+    /// Arrow stream writer failed when finishing a stream.
+    ArrowStreamWriterFinish,
+    /// Record batch IPC bytes exceed insert limits.
+    RecordBatchIpcTooLarge,
+}
