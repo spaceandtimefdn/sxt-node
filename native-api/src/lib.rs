@@ -27,6 +27,12 @@ pub trait NativeApi: 'static {
         ),
         NativeCommitmentError,
     >;
+
+    /// Convert OnChainTable bytes into an Arrow IPC RecordBatch.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn on_chain_table_to_record_batch(
+        on_chain_table_bytes: OnChainTableBytes,
+    ) -> Result<RowData, sxt_core::native::OnChainTableToRecordBatchError>;
 }
 
 /// Needed for type checks in pallets, if adding new functions to the NativeApi they will need to be implemented here.
@@ -46,6 +52,13 @@ impl NativeApi for () {
         ),
         NativeCommitmentError,
     > {
+        unimplemented!()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn on_chain_table_to_record_batch(
+        _: OnChainTableBytes,
+    ) -> Result<RowData, sxt_core::native::OnChainTableToRecordBatchError> {
         unimplemented!()
     }
 }
@@ -74,5 +87,12 @@ impl NativeApi for Api {
             insert_data_bytes,
             previous_commitments_bytes,
         )
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn on_chain_table_to_record_batch(
+        on_chain_table_bytes: OnChainTableBytes,
+    ) -> Result<RowData, sxt_core::native::OnChainTableToRecordBatchError> {
+        native::interface::on_chain_table_to_record_batch(on_chain_table_bytes)
     }
 }
