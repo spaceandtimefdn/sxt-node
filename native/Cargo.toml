@@ -60,6 +60,7 @@ std = [
     "sxt-core/std",
 ]
 generate_backwards_compatibility_cases = ["std", "dep:proptest", "dep:hex", "sxt-core/proptest", "proof-of-sql-commitment-map/proptest", "commitment-sql/proptest", "dep:proof-of-sql", "dep:clap"]
+runtime-benchmarks = ["sxt-core/runtime-benchmarks"]
 
 [target.'cfg(not(target_arch = "aarch64"))'.dependencies]
 proof-of-sql = { workspace = true, optional = true, features = ["cpu-perf"] }
