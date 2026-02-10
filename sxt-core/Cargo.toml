@@ -67,6 +67,7 @@ std = [
 	"dep:subxt",
 	"dep:exponential-backoff",
 ]
+runtime-benchmarks = []
 proptest = ["std", "dep:proptest", "on-chain-table/proptest"]
 
 [lints]
