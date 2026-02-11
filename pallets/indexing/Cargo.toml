@@ -35,6 +35,9 @@ postcard.workspace = true
 proof-of-sql-static-setups = { workspace = true, features = ["io"], optional = true }
 on-chain-table = { workspace = true, default-features = false }
 proof-of-sql-commitment-map.workspace = true
+sqlparser = { workspace = true, optional = true }
+arrow-ipc-no-std.workspace = true
+snafu.workspace = true
 
 [dev-dependencies]
 polkadot-sdk = { workspace = true, features = ["sp-staking", "frame-election-provider-support", "pallet-staking-reward-curve", "pallet-timestamp", "pallet-balances", "pallet-staking", "sp-core", "sp-io", "sp-runtime"]}
@@ -44,6 +47,9 @@ native.workspace = true
 arrow.workspace = true
 proof-of-sql-commitment-map.workspace = true
 pallet-zkpay.workspace = true
+proptest.workspace = true
+sxt-core = { workspace = true, features = ["proptest"] }
+arrow-ipc-no-std = { workspace = true, features = ["std"] }
 
 [features]
 default = ["std"]
@@ -63,6 +69,8 @@ runtime-benchmarks = [
 	"polkadot-sdk/runtime-benchmarks",
 	"pallet-system-tables/runtime-benchmarks",
 	"pallet-tables/runtime-benchmarks",
+        "native-api/runtime-benchmarks",
+        "dep:sqlparser",
 ]
 try-runtime = [
 	"polkadot-sdk/try-runtime",

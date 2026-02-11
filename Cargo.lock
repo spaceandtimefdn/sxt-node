@@ -11370,6 +11370,7 @@ name = "pallet-indexing"
 version = "0.1.0"
 dependencies = [
  "arrow 54.2.1",
+ "arrow-ipc-no-std",
  "commitment-sql",
  "hex",
  "native",
@@ -11385,7 +11386,10 @@ dependencies = [
  "postcard",
  "proof-of-sql-commitment-map",
  "proof-of-sql-static-setups",
+ "proptest",
  "scale-info",
+ "snafu 0.8.5",
+ "sqlparser",
  "sxt-core",
 ]
 

@@ -1,4 +1,5 @@
 use alloc::boxed::Box;
+use alloc::vec;
 use std::convert::Into;
 use std::io::Cursor;
 use std::sync::Arc;
@@ -6,6 +7,7 @@ use std::sync::Arc;
 use arrow::array::{ArrayRef, Int32Array, Int64Array, RecordBatch};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::ipc::writer::StreamWriter;
+use arrow_ipc_no_std::single_batch_stream_bytes;
 use codec::{Decode, Encode, MaxEncodedLen};
 use native_api::Api;
 use pallet_tables::{CommitmentCreationCmd, UpdateTable};
@@ -18,7 +20,9 @@ use polkadot_sdk::sp_core::Hasher;
 use polkadot_sdk::sp_runtime::BoundedVec;
 use polkadot_sdk::{frame_system, sp_runtime};
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
+use proptest::prelude::*;
 use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
+use sxt_core::proptest::{canonical_record_batch, DataCorruption};
 use sxt_core::tables::{
     CreateStatement,
     InsertQuorumSize,
@@ -564,6 +568,102 @@ fn inserting_data_fails_when_data_is_empty() {
             crate::Error::<Test, Api>::NoData
         );
     })
+}
+
+#[test]
+fn inserting_data_fails_when_data_is_not_a_record_batch() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+        pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+
+        let (test_identifier, create_statement) = sample_table_definition();
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: test_identifier.clone(),
+                create_statement,
+                table_type: TableType::CoreBlockchain,
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: false,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+
+        // Create an empty data submission to ensure the submission fails
+        let test_data = RowData::try_from(vec![0, 1, 2, 3]).unwrap();
+
+        assert_err!(
+            Indexing::submit_data(signer, test_identifier, test_batch, test_data,),
+            crate::Error::<Test, Api>::ArrowParseSchemaMessage
+        );
+    })
+}
+
+proptest! {
+    // generating the (up to) 64x64 record batches for this test is a bit slow
+    // Default value for this is 256, so this halves the test time and test coverage.
+    #![proptest_config(ProptestConfig::with_cases(128))]
+
+    #[test]
+    fn inserting_corrupted_record_batch_does_not_panic(
+        record_batch in canonical_record_batch(),
+        corruptions in proptest::collection::vec(any::<DataCorruption>(), 0..1024)
+    ) {
+        new_test_ext().execute_with(|| {
+            let record_batch_bytes = single_batch_stream_bytes(&record_batch).unwrap();
+            let corrupted_bytes = corruptions
+                .iter()
+                .fold(record_batch_bytes, |data, corruption| {
+                    DataCorruption::corrupt(corruption, data)
+                })
+                .try_into()
+                .unwrap();
+
+            System::set_block_number(1);
+            let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+            let who = ensure_signed(signer.clone()).unwrap();
+            let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+                IndexingPalletPermission::SubmitDataForPublicQuorum,
+            )])
+            .unwrap();
+            pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+
+            let (test_identifier, create_statement) = sample_table_definition();
+            Tables::create_tables(
+                RuntimeOrigin::root(),
+                vec![UpdateTable {
+                    ident: test_identifier.clone(),
+                    create_statement,
+                    table_type: TableType::CoreBlockchain,
+                    commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                        hyper_kzg: false,
+                        dynamic_dory: true,
+                    }),
+                    source: sxt_core::tables::Source::Ethereum,
+                }]
+                .try_into()
+                .unwrap(),
+            )
+            .unwrap();
+
+            let test_batch = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+
+            let _no_panic = Indexing::submit_data(signer, test_identifier, test_batch, corrupted_bytes);
+        })
+    }
 }
 
 #[test]
