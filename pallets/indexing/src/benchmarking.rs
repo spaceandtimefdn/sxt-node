@@ -21,7 +21,7 @@ use crate::Pallet as Indexing;
 mod benchmarks {
     use native_api::NativeApi;
     use on_chain_table::{OnChainColumn, OnChainTable};
-    use pallet_tables::benchmarking::{integers_table_definition, schema_bytes_and_ddl_and_source};
+    use pallet_tables::benchmarking::schema_bytes_and_ddl_and_source;
     use pallet_tables::{CommitmentCreationCmd, UpdateTable};
     use proof_of_sql_commitment_map::CommitmentSchemeFlags;
     use sqlparser::ast::Ident;
@@ -33,6 +33,7 @@ mod benchmarks {
         TableName,
         TableNamespace,
         TableType,
+        MAX_COLS_PER_TABLE,
     };
 
     use super::*;
@@ -107,16 +108,18 @@ mod benchmarks {
     }
 
     fn benchmark_expensive_table_and_data<I: NativeApi>(
+        num_rows: usize,
+        num_cols: usize,
         commitment_schemes: CommitmentSchemeFlags,
     ) -> (UpdateTable, BatchId, RowData) {
-        let update_table = expensive_update_table(commitment_schemes, 64);
+        let update_table = expensive_update_table(commitment_schemes, num_cols);
 
         let batch_id = BatchId::try_from(b"benchmark".to_vec()).unwrap();
 
         let table = if cfg!(test) {
-            expensive_on_chain_table(4, 64)
+            expensive_on_chain_table(4, num_cols)
         } else {
-            expensive_on_chain_table(1024, 64)
+            expensive_on_chain_table(num_rows, num_cols)
         };
 
         let row_data_bytes = I::on_chain_table_to_record_batch(table.try_into().unwrap()).unwrap();
@@ -127,9 +130,12 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_not_reached() {
-        let (update_table, batch_id, row_data) =
-            benchmark_expensive_table_and_data::<I>(CommitmentSchemeFlags::all());
+    fn submit_data_quorum_not_reached(r: Linear<0, 1024>, c: Linear<1, MAX_COLS_PER_TABLE>) {
+        let (update_table, batch_id, row_data) = benchmark_expensive_table_and_data::<I>(
+            r as usize,
+            c as usize,
+            CommitmentSchemeFlags::all(),
+        );
         let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
 
         pallet_tables::Pallet::<T>::create_namespace(
@@ -168,6 +174,8 @@ mod benchmarks {
     }
 
     fn setup_quorum_reached_benchmark<T, I>(
+        num_rows: usize,
+        num_cols: usize,
         commitment_schemes: CommitmentSchemeFlags,
     ) -> (T::AccountId, TableIdentifier, BatchId, RowData)
     where
@@ -176,7 +184,7 @@ mod benchmarks {
         I: NativeApi,
     {
         let (update_table, batch_id, row_data) =
-            benchmark_expensive_table_and_data::<I>(commitment_schemes);
+            benchmark_expensive_table_and_data::<I>(num_rows, num_cols, commitment_schemes);
         let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
 
         pallet_tables::Pallet::<T>::create_namespace(
@@ -236,12 +244,18 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_reached_dynamic_dory() {
-        let (caller, table_identifier, batch_id, row_data) =
-            setup_quorum_reached_benchmark::<T, I>(CommitmentSchemeFlags {
+    fn submit_data_quorum_reached_dynamic_dory(
+        r: Linear<0, 1024>,
+        c: Linear<1, MAX_COLS_PER_TABLE>,
+    ) {
+        let (caller, table_identifier, batch_id, row_data) = setup_quorum_reached_benchmark::<T, I>(
+            r as usize,
+            c as usize,
+            CommitmentSchemeFlags {
                 dynamic_dory: true,
                 ..Default::default()
-            });
+            },
+        );
 
         let internal_batch_id = build_inner_batch_id::<T, I>(&batch_id, &table_identifier);
         assert!(Indexing::<T, I>::final_data(internal_batch_id.clone()).is_none());
@@ -258,12 +272,15 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_reached_hyper_kzg() {
-        let (caller, table_identifier, batch_id, row_data) =
-            setup_quorum_reached_benchmark::<T, I>(CommitmentSchemeFlags {
+    fn submit_data_quorum_reached_hyper_kzg(r: Linear<0, 1024>, c: Linear<1, MAX_COLS_PER_TABLE>) {
+        let (caller, table_identifier, batch_id, row_data) = setup_quorum_reached_benchmark::<T, I>(
+            r as usize,
+            c as usize,
+            CommitmentSchemeFlags {
                 hyper_kzg: true,
                 ..Default::default()
-            });
+            },
+        );
 
         let internal_batch_id = build_inner_batch_id::<T, I>(&batch_id, &table_identifier);
         assert!(Indexing::<T, I>::final_data(internal_batch_id.clone()).is_none());
