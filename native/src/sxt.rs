@@ -131,6 +131,7 @@ pub trait Interface {
         Ok((table_bytes, new_commitments_bytes))
     }
 
+    /// Convert OnChainTable bytes into an Arrow IPC RecordBatch.
     #[cfg(feature = "runtime-benchmarks")]
     fn on_chain_table_to_record_batch(
         on_chain_table_bytes: OnChainTableBytes,
