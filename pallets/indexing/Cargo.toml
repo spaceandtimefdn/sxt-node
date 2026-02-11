@@ -35,6 +35,7 @@ postcard.workspace = true
 proof-of-sql-static-setups = { workspace = true, features = ["io"], optional = true }
 on-chain-table = { workspace = true, default-features = false }
 proof-of-sql-commitment-map.workspace = true
+sqlparser = { workspace = true, optional = true }
 
 [dev-dependencies]
 polkadot-sdk = { workspace = true, features = ["sp-staking", "frame-election-provider-support", "pallet-staking-reward-curve", "pallet-timestamp", "pallet-balances", "pallet-staking", "sp-core", "sp-io", "sp-runtime"]}
@@ -63,6 +64,7 @@ runtime-benchmarks = [
 	"polkadot-sdk/runtime-benchmarks",
 	"pallet-system-tables/runtime-benchmarks",
 	"pallet-tables/runtime-benchmarks",
+        "dep:sqlparser",
 ]
 try-runtime = [
 	"polkadot-sdk/try-runtime",
