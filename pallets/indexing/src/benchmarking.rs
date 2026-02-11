@@ -20,9 +20,11 @@ use crate::Pallet as Indexing;
 )]
 mod benchmarks {
     use native_api::NativeApi;
+    use on_chain_table::{OnChainColumn, OnChainTable};
     use pallet_tables::benchmarking::{integers_table_definition, schema_bytes_and_ddl_and_source};
     use pallet_tables::{CommitmentCreationCmd, UpdateTable};
     use proof_of_sql_commitment_map::CommitmentSchemeFlags;
+    use sqlparser::ast::Ident;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
     use sxt_core::tables::{
         InsertQuorumSize,
@@ -35,30 +37,91 @@ mod benchmarks {
 
     use super::*;
 
-    fn benchmark_integers_table_and_data(
+    fn expensive_on_chain_table(num_rows: usize, num_cols: usize) -> OnChainTable {
+        OnChainTable::try_from_iter((0..num_cols).map(|col_num| {
+            let column = OnChainColumn::VarBinary(
+                (0..num_rows)
+                    .map(|row_num| {
+                        let element_num = (row_num * num_cols) + col_num;
+
+                        element_num
+                            .to_le_bytes()
+                            .into_iter()
+                            .chain(core::iter::repeat(0))
+                            .take(256)
+                            .collect()
+                    })
+                    .collect(),
+            );
+
+            let name = Ident::new(alloc::format!("COL_{col_num}"));
+            (name, column)
+        }))
+        .unwrap()
+    }
+
+    fn expensive_update_table(
         commitment_schemes: CommitmentSchemeFlags,
-    ) -> (UpdateTable, BatchId, RowData) {
+        num_cols: usize,
+    ) -> UpdateTable {
+        let create_statement_columns = (0..num_cols)
+            .map(|col_num| alloc::format!("COL_{col_num} BINARY NOT NULL"))
+            .collect::<alloc::vec::Vec<_>>()
+            .join(", ");
+
         let ident = TableIdentifier {
             namespace: TableNamespace::try_from(b"BENCHMARK".to_vec()).unwrap(),
-            name: TableName::try_from(b"INTEGERS".to_vec()).unwrap(),
+            name: TableName::try_from(b"EXPENSIVE_BINARY".to_vec()).unwrap(),
         };
+
+        let create_statement_table_identifier = alloc::format!(
+            "{}.{}",
+            core::str::from_utf8(ident.namespace.as_slice()).unwrap(),
+            core::str::from_utf8(ident.name.as_slice()).unwrap()
+        );
+
+        let create_statement = alloc::format!(
+            "CREATE TABLE {create_statement_table_identifier} ({create_statement_columns})"
+        )
+        .as_bytes()
+        .to_vec()
+        .try_into()
+        .unwrap();
 
         let table_type = TableType::Testing(InsertQuorumSize {
             public: Some(3),
             privileged: None,
         });
 
-        let update_table = integers_table_definition(ident, table_type, commitment_schemes);
+        let commitment = CommitmentCreationCmd::Empty(commitment_schemes);
+
+        let source = Source::UserCreated(b"benchmark".to_vec().try_into().unwrap());
+
+        UpdateTable {
+            ident,
+            create_statement,
+            table_type,
+            commitment,
+            source,
+        }
+    }
+
+    fn benchmark_expensive_table_and_data<I: NativeApi>(
+        commitment_schemes: CommitmentSchemeFlags,
+    ) -> (UpdateTable, BatchId, RowData) {
+        let update_table = expensive_update_table(commitment_schemes, 64);
 
         let batch_id = BatchId::try_from(b"benchmark".to_vec()).unwrap();
 
-        let row_data_bytes = if cfg!(test) {
-            include_bytes!("../benchmark-integers-row-data-small").to_vec()
+        let table = if cfg!(test) {
+            expensive_on_chain_table(4, 64)
         } else {
-            include_bytes!("../benchmark-integers-row-data-large").to_vec()
+            expensive_on_chain_table(1024, 64)
         };
 
-        let row_data = RowData::try_from(row_data_bytes).unwrap();
+        let row_data_bytes = I::on_chain_table_to_record_batch(table.try_into().unwrap()).unwrap();
+
+        let row_data = row_data_bytes.row_data;
 
         (update_table, batch_id, row_data)
     }
@@ -66,7 +129,7 @@ mod benchmarks {
     #[benchmark]
     fn submit_data_quorum_not_reached() {
         let (update_table, batch_id, row_data) =
-            benchmark_integers_table_and_data(CommitmentSchemeFlags::all());
+            benchmark_expensive_table_and_data::<I>(CommitmentSchemeFlags::all());
         let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
 
         pallet_tables::Pallet::<T>::create_namespace(
@@ -113,7 +176,7 @@ mod benchmarks {
         I: NativeApi,
     {
         let (update_table, batch_id, row_data) =
-            benchmark_integers_table_and_data(commitment_schemes);
+            benchmark_expensive_table_and_data::<I>(commitment_schemes);
         let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
 
         pallet_tables::Pallet::<T>::create_namespace(
