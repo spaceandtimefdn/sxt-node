@@ -64,6 +64,7 @@ runtime-benchmarks = [
 	"polkadot-sdk/runtime-benchmarks",
 	"pallet-system-tables/runtime-benchmarks",
 	"pallet-tables/runtime-benchmarks",
+        "native-api/runtime-benchmarks",
         "dep:sqlparser",
 ]
 try-runtime = [
