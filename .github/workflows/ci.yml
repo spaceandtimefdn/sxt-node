@@ -140,3 +140,19 @@ jobs:
           docker buildx version
           docker buildx ls
           docker buildx build -f ./sxtnode.Dockerfile . -t sxt-node
+
+  check-nix-flake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: ./.github/actions/free-disk-space
+      - name: Install nix
+        uses: cachix/install-nix-action@v31
+      - name: Check flake
+        run: nix flake check
+      - name: Check project with flake
+        run: nix develop --command cargo check
