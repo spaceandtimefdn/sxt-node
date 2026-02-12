@@ -130,7 +130,7 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_not_reached(r: Linear<0, 8>) {
+    fn submit_data_quorum_not_reached(r: Linear<0, 64>) {
         let (update_table, batch_id, row_data) = benchmark_expensive_table_and_data::<I>(
             r as usize,
             MAX_COLS_PER_TABLE as usize,
@@ -244,7 +244,7 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_reached_dynamic_dory(r: Linear<0, 8>) {
+    fn submit_data_quorum_reached_dynamic_dory(r: Linear<0, 64>) {
         let (caller, table_identifier, batch_id, row_data) = setup_quorum_reached_benchmark::<T, I>(
             r as usize,
             MAX_COLS_PER_TABLE as usize,
@@ -269,7 +269,7 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_reached_hyper_kzg(r: Linear<0, 8>) {
+    fn submit_data_quorum_reached_hyper_kzg(r: Linear<0, 64>) {
         let (caller, table_identifier, batch_id, row_data) = setup_quorum_reached_benchmark::<T, I>(
             r as usize,
             MAX_COLS_PER_TABLE as usize,
