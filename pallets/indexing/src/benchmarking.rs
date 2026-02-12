@@ -130,10 +130,10 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_not_reached(r: Linear<0, 8>, c: Linear<1, 8>) {
+    fn submit_data_quorum_not_reached(r: Linear<0, 8>) {
         let (update_table, batch_id, row_data) = benchmark_expensive_table_and_data::<I>(
             r as usize,
-            c as usize,
+            MAX_COLS_PER_TABLE as usize,
             CommitmentSchemeFlags::all(),
         );
         let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
@@ -244,10 +244,10 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_reached_dynamic_dory(r: Linear<0, 8>, c: Linear<1, 8>) {
+    fn submit_data_quorum_reached_dynamic_dory(r: Linear<0, 8>) {
         let (caller, table_identifier, batch_id, row_data) = setup_quorum_reached_benchmark::<T, I>(
             r as usize,
-            c as usize,
+            MAX_COLS_PER_TABLE as usize,
             CommitmentSchemeFlags {
                 dynamic_dory: true,
                 ..Default::default()
@@ -269,10 +269,10 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_reached_hyper_kzg(r: Linear<0, 8>, c: Linear<1, 8>) {
+    fn submit_data_quorum_reached_hyper_kzg(r: Linear<0, 8>) {
         let (caller, table_identifier, batch_id, row_data) = setup_quorum_reached_benchmark::<T, I>(
             r as usize,
-            c as usize,
+            MAX_COLS_PER_TABLE as usize,
             CommitmentSchemeFlags {
                 hyper_kzg: true,
                 ..Default::default()
