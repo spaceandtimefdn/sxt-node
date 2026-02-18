@@ -40,6 +40,7 @@ members = [
     "pallets/zkpay",
     "proof-of-sql/commitment-column-mapping",
     "eth-ecdsa",
+    "arrow-ipc-no-std",
 ]
 exclude = [
     "utoipa",  
@@ -159,6 +160,9 @@ proptest = { version = "1.7.0", default-features = false }
 proptest-derive = { version = "0.6.0", default-features = false }
 blake3 = { version = "1.6.1", default-features = false }
 derive_more = { version = "0.99" }
+flatbuffers = { version = "24.12.23", default-features = false }
+flatc-rust = { version = "0.2.0", default-features = false }
+arrow-ipc-no-std = { path = "./arrow-ipc-no-std/" }
 
 [workspace.lints]
 rust.missing_docs = "warn"

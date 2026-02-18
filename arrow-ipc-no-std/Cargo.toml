@@ -1,0 +1,19 @@
+[package]
+name = "arrow-ipc-no-std"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+flatbuffers.workspace = true
+snafu.workspace = true
+arrow = { workspace = true, features = ["ipc"], optional = true }
+
+[build-dependencies]
+flatc-rust = "0.2.0"
+
+[dev-dependencies]
+on-chain-table = { workspace = true, features = ["arrow", "proptest"] }
+proptest = { workspace = true, features = ["std"] }
+
+[features]
+std = ["dep:arrow"]
