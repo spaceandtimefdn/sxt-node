@@ -54,5 +54,8 @@ pub mod utils;
 
 pub mod heavy;
 
+/// Utility functions related to record batches.
+pub mod record_batch;
+
 #[cfg(feature = "proptest")]
 pub mod proptest;

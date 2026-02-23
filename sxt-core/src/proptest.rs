@@ -1,12 +1,19 @@
 //! Strategies for producing sxt-core types for use in tests.
 use alloc::vec;
 
-use on_chain_table::proptest::ident;
+use arrow::array::RecordBatch;
+use on_chain_table::proptest::{
+    ident,
+    on_chain_table,
+    on_chain_table_compatible_record_batch,
+    proof_of_sql_schema,
+};
+use on_chain_table::OnChainTable;
 use proptest::prelude::*;
 use proptest_derive::Arbitrary;
 use sqlparser::ast::ObjectName;
 
-use crate::tables::TableIdentifier;
+use crate::tables::{TableIdentifier, MAX_COLS_PER_TABLE};
 
 prop_compose! {
     /// Strategy for producing [`TableIdentifier`]s.
@@ -58,4 +65,19 @@ impl DataCorruption {
         }
         data
     }
+}
+
+/// Common strategy for creating an on-chain-table with up to MAX_COLS_PER_TABLE columns and up to
+/// 64 rows
+pub fn canonical_on_chain_table() -> impl Strategy<Value = OnChainTable> {
+    on_chain_table(
+        proof_of_sql_schema(1..MAX_COLS_PER_TABLE as usize),
+        0..64usize,
+    )
+}
+
+/// Common strategy for creating a record batch with up to MAX_COLS_PER_TABLE columns and up to
+/// 64 rows
+pub fn canonical_record_batch() -> impl Strategy<Value = RecordBatch> {
+    on_chain_table_compatible_record_batch(canonical_on_chain_table())
 }

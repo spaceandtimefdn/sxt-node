@@ -45,10 +45,14 @@ rand_core = { workspace = true, default-features = false }
 rand_chacha = { workspace = true, default-features = false }
 proptest = { workspace = true, features = ["std"], optional = true }
 proptest-derive = { workspace = true, optional = true }
+arrow-ipc-no-std.workspace = true
 
 [dev-dependencies]
 rand = "0.8.5"
 proptest = { workspace = true, features = ["std"] }
+arrow = { workspace = true, features = ["ipc"] }
+on-chain-table = { workspace = true, features = ["arrow", "proptest"] }
+arrow-ipc-no-std = { workspace = true, features = ["std"] }
 
 [features]
 default = ["std"]
