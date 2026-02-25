@@ -222,3 +222,14 @@ where
             )
         })
 }
+
+/// Simple wrapper strategy for creating a record batch given an [`OnChainTable`] strategy.
+#[cfg(feature = "arrow")]
+pub fn on_chain_table_compatible_record_batch<O>(
+    on_chain_table: O,
+) -> impl Strategy<Value = arrow::array::RecordBatch>
+where
+    O: Strategy<Value = OnChainTable>,
+{
+    on_chain_table.prop_map(arrow::array::RecordBatch::from)
+}
