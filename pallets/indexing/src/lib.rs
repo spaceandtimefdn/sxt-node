@@ -352,14 +352,7 @@ pub mod pallet {
             Error::<T, I>::UnauthorizedSubmitter
         );
 
-        ensure!(
-            !is_legacy_duplicate::<T, I>(&outer_batch_id, &table),
-            Error::<T, I>::LateBatch
-        );
-
-        ensure!(!outer_batch_id.is_empty(), Error::<T, I>::InvalidBatch);
-
-        let batch_id = build_inner_batch_id::<T, I>(&outer_batch_id, &table);
+        let batch_id = validate_and_build_batch_id::<T, I>(&outer_batch_id, &table)?;
 
         validate_submission::<T, I>(&table, &batch_id, &data)?;
 
@@ -574,6 +567,23 @@ pub mod pallet {
         }
 
         Ok(())
+    }
+
+    /// Validate the batch ID (non-empty, not a legacy duplicate) and build the inner batch ID.
+    fn validate_and_build_batch_id<T, I>(
+        outer_batch_id: &BatchId,
+        table: &TableIdentifier,
+    ) -> Result<BatchId, DispatchError>
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        ensure!(
+            !is_legacy_duplicate::<T, I>(outer_batch_id, table),
+            Error::<T, I>::LateBatch
+        );
+        ensure!(!outer_batch_id.is_empty(), Error::<T, I>::InvalidBatch);
+        Ok(build_inner_batch_id::<T, I>(outer_batch_id, table))
     }
 
     pub(crate) fn build_inner_batch_id<T, I>(
