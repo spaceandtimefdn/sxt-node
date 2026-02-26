@@ -307,19 +307,18 @@ pub mod pallet {
         Weight::from_parts(submit_avg_time, submit_avg_proof)
     }
 
-    fn submit_data_inner<T, I>(
+    /// Check that the caller has permission to submit data for the given table.
+    ///
+    /// Returns `(quorum_scope, table_insert_quorum)`.
+    fn get_submission_permissions<T, I>(
         origin: OriginFor<T>,
-        table: TableIdentifier,
-        outer_batch_id: BatchId,
-        data: RowData,
-        block_number: Option<u64>,
-    ) -> DispatchResult
+        table: &TableIdentifier,
+    ) -> Result<(Option<QuorumScope>, InsertQuorumSize), DispatchError>
     where
         T: Config<I>,
         I: NativeApi,
     {
-        let who = ensure_signed(origin.clone())?;
-        let table_insert_quorum = pallet_tables::TableInsertQuorums::<T>::get(&table);
+        let table_insert_quorum = pallet_tables::TableInsertQuorums::<T>::get(table);
 
         let can_submit_for_public_quorum =
             pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
@@ -343,14 +342,32 @@ pub mod pallet {
 
         let is_permissionless_insert =
             pallet_tables::Identifiers::<T>::get(sxt_core::tables::TableType::PublicPermissionless)
-                .contains(&table);
+                .contains(table);
 
-        ensure!(
-            can_submit_for_public_quorum
-                || can_submit_for_privileged_quorum
-                || is_permissionless_insert,
-            Error::<T, I>::UnauthorizedSubmitter
-        );
+        let quorum_scope = can_submit_for_privileged_quorum
+            .then_some(QuorumScope::Privileged)
+            .or((can_submit_for_public_quorum || is_permissionless_insert)
+                .then_some(QuorumScope::Public));
+
+        ensure!(quorum_scope.is_some(), Error::<T, I>::UnauthorizedSubmitter);
+
+        Ok((quorum_scope, table_insert_quorum))
+    }
+
+    fn submit_data_inner<T, I>(
+        origin: OriginFor<T>,
+        table: TableIdentifier,
+        outer_batch_id: BatchId,
+        data: RowData,
+        block_number: Option<u64>,
+    ) -> DispatchResult
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let who = ensure_signed(origin.clone())?;
+        let (maybe_quorum_scope, table_insert_quorum) =
+            get_submission_permissions::<T, I>(origin, &table)?;
 
         let batch_id = validate_and_build_batch_id::<T, I>(&outer_batch_id, &table)?;
 
@@ -359,30 +376,17 @@ pub mod pallet {
         let hash_input = (&data, block_number).encode();
         let data_hash = T::Hashing::hash(&hash_input);
 
-        let opt_data_quorum = if can_submit_for_privileged_quorum {
-            submit_data_and_find_quorum::<T, I>(
+        if let Some(quorum_scope) = maybe_quorum_scope {
+            if let Some(data_quorum) = submit_data_and_find_quorum::<T, I>(
                 who.clone(),
                 batch_id,
                 data_hash,
-                table.clone(),
+                table,
                 &table_insert_quorum,
-                &QuorumScope::Privileged,
-            )?
-        } else if can_submit_for_public_quorum || is_permissionless_insert {
-            submit_data_and_find_quorum::<T, I>(
-                who.clone(),
-                batch_id.clone(),
-                data_hash,
-                table.clone(),
-                &table_insert_quorum,
-                &QuorumScope::Public,
-            )?
-        } else {
-            None
-        };
-
-        if let Some(data_quorum) = opt_data_quorum {
-            finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
+                &quorum_scope,
+            )? {
+                finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
+            }
         }
 
         Ok(())
