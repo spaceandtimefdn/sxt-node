@@ -468,6 +468,17 @@ pub mod pallet {
         }
     }
 
+    /// Clean up submissions and record the final quorum decision.
+    fn clean_up_and_record_quorum<T, I>(quorum: &DataQuorum<T::AccountId, T::Hash>)
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        Submissions::<T, I>::iter_key_prefix(&quorum.batch_id)
+            .for_each(|key| Submissions::<T, I>::remove(&quorum.batch_id, key));
+        FinalData::<T, I>::insert(&quorum.batch_id, quorum);
+    }
+
     /// Performs all steps necessary after reaching quorum, such as...
     /// - recording final data
     /// - committing to data
@@ -483,12 +494,7 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
-        // Clean up submissions for this batch
-        Submissions::<T, I>::iter_key_prefix(&quorum.batch_id)
-            .for_each(|key| Submissions::<T, I>::remove(&quorum.batch_id, key));
-
-        // Record final decision
-        FinalData::<T, I>::insert(&quorum.batch_id, &quorum);
+        clean_up_and_record_quorum::<T, I>(&quorum);
 
         // Deserialize into Arrow-compatible OnChainTable
         let table_bytes = I::record_batch_to_onchain(sxt_core::native::RowData { row_data })
