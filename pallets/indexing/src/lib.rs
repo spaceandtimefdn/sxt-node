@@ -17,9 +17,12 @@ mod mock;
 #[cfg(test)]
 mod tests;
 pub mod weights;
+
+pub mod refunds;
 // Do not remove this or the same attribute for the pallet
 // The cargo doc command will fail because of a bug even though the code is working properly
 pub use pallet::*;
+use sxt_core::fees::WEIGHT_FEE;
 pub use sxt_core::indexing::*;
 pub use weights::*;
 
@@ -37,17 +40,19 @@ pub mod pallet {
     use commitment_sql::InsertAndCommitmentMetadata;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
+    use polkadot_sdk::frame_support::dispatch::PostDispatchInfo;
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_support::Blake2_128Concat;
     use polkadot_sdk::frame_system;
     use polkadot_sdk::frame_system::pallet_prelude::*;
     use polkadot_sdk::sp_runtime::traits::Hash;
-    use polkadot_sdk::sp_runtime::BoundedVec;
+    use polkadot_sdk::sp_runtime::{BoundedVec, DispatchErrorWithPostInfo};
     use proof_of_sql_commitment_map::CommitmentScheme;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
     use super::*;
+    use crate::refunds::{refund_late_submission, refund_quorum_participants};
 
     #[pallet::pallet]
     pub struct Pallet<T, I = ()>(_);
@@ -144,6 +149,38 @@ pub mod pallet {
             /// Voters against this quorum
             dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
         },
+
+        /// A refund could not be issued because the table treasury had insufficient funds.
+        InsufficientTableFunds {
+            /// The table whose treasury was insufficient
+            table: TableIdentifier,
+            /// The batch id associated with the quorum that couldn't be refunded
+            batch_id: BatchId,
+            /// The table's treasury account
+            treasury: T::AccountId,
+        },
+
+        /// A refund of the specified amount was issued for the given batch
+        RefundIssued {
+            /// The table of the refund
+            table: TableIdentifier,
+            /// The batch_id of the quorum
+            batch_id: BatchId,
+            /// The amount of the base refund
+            refund: u128,
+        },
+
+        /// There was an error processing an indexer refund
+        RefundError {
+            /// The intended refund recipient
+            recipient: T::AccountId,
+            /// The intended refund amount
+            amount: u128,
+            /// The table of the insert being refunded
+            table: TableIdentifier,
+            /// The error received
+            error: DispatchError,
+        },
     }
 
     #[pallet::error]
@@ -186,6 +223,8 @@ pub mod pallet {
         TableSerializationError,
         /// Submitter Injection Failed
         SubmitterInjectionFailed,
+        /// The table treasury was insufficient to reward all submitters
+        InsufficientTableFunds,
     }
 
     #[pallet::call]
@@ -221,12 +260,13 @@ pub mod pallet {
         /// - the table to be public-permissionless
         #[pallet::call_index(0)]
         #[pallet::weight(submit_data_weight::<T, I>(table))]
+        #[allow(clippy::useless_conversion)]
         pub fn submit_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
             batch_id: BatchId,
             data: RowData,
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             submit_data_inner::<T, I>(origin, table, batch_id, data, None)
         }
 
@@ -259,13 +299,14 @@ pub mod pallet {
         /// - the table to be public-permissionless
         #[pallet::call_index(1)]
         #[pallet::weight(submit_data_weight::<T, I>(table))]
+        #[allow(clippy::useless_conversion)]
         pub fn submit_blockchain_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
             batch_id: BatchId,
             data: RowData,
             block_number: u64,
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             submit_data_inner::<T, I>(origin, table, batch_id, data, Some(block_number))
         }
     }
@@ -313,7 +354,7 @@ pub mod pallet {
         outer_batch_id: BatchId,
         data: RowData,
         block_number: Option<u64>,
-    ) -> DispatchResult
+    ) -> DispatchResultWithPostInfo
     where
         T: Config<I>,
         I: NativeApi,
@@ -361,7 +402,25 @@ pub mod pallet {
 
         let batch_id = build_inner_batch_id::<T, I>(&outer_batch_id, &table);
 
-        validate_submission::<T, I>(&table, &batch_id, &data)?;
+        if let Err(e) = validate_submission::<T, I>(&table, &batch_id, &data) {
+            match e {
+                e if e == Error::<T, I>::LateBatch.into() => {
+                    // Transfers are reverted when an error is returned, so we provide postinfo
+                    // indicating that the caller should not be charged for the late batch
+                    return Err(DispatchErrorWithPostInfo {
+                        post_info: PostDispatchInfo {
+                            actual_weight: None,
+                            pays_fee: Pays::No,
+                        },
+                        error: Error::<T, I>::LateBatch.into(),
+                    });
+                }
+                _ => {
+                    //Any other type of error we don't do anything special
+                }
+            }
+            return Err(e.into());
+        }
 
         let hash_input = (&data, block_number).encode();
         let data_hash = T::Hashing::hash(&hash_input);
@@ -389,10 +448,48 @@ pub mod pallet {
         };
 
         if let Some(data_quorum) = opt_data_quorum {
-            finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
+            finalize_quorum::<T, I>(data_quorum.clone(), data, block_number, who)?;
+
+            // After finalizing, attempt to refund quorum participants from the table treasury
+            let cost: u128 = u128::from(submit_data_weight::<T, I>(&table).ref_time()) * WEIGHT_FEE;
+
+            match refund_quorum_participants::<T, I>(&data_quorum, cost) {
+                Err(Error::<T, I>::InsufficientTableFunds) => {
+                    Pallet::<T, I>::deposit_event(Event::InsufficientTableFunds {
+                        table: data_quorum.table.clone(),
+                        batch_id: data_quorum.batch_id.clone(),
+                        treasury: sxt_core::utils::account_id_from_table_id::<T>(&data_quorum.table)
+                            .expect("In order to have insufficient funds, the table must have a valid account"),
+                    })
+                }
+                Ok(results) => {
+                    results.iter().for_each(|(who, result)| {
+                        if let Some(e) = result.err() {
+                            // Log any errors from individual refund attempts
+                            Pallet::<T, I>::deposit_event(
+                                Event::RefundError {
+                                    recipient: who.clone(),
+                                    amount: cost,
+                                    table: table.clone(),
+                                    error: e,
+                                });
+                        }
+                    });
+
+                    Pallet::<T,I>::deposit_event(
+                    Event::RefundIssued {
+                        table: data_quorum.table,
+                        batch_id: data_quorum.batch_id.clone(),
+                        refund: cost,
+                    });
+                }
+                Err(e) => {
+                    // Should we emit this error as an event?
+                }
+            }
         }
 
-        Ok(())
+        Ok(().into())
     }
 
     /// Submit data and check if we have a quorum.
