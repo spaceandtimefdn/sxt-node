@@ -1,0 +1,10 @@
+[package]
+name = "arrow-ipc-no-std"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+flatbuffers.workspace = true
+
+[build-dependencies]
+flatc-rust = "0.2.0"
