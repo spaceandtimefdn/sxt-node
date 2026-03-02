@@ -1,3 +1,7 @@
+## [1.55.7](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.6...v1.55.7) (2026-03-02)
+
+
+
 ## [1.55.6](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.5...v1.55.6) (2026-02-26)
 
 
@@ -16,10 +20,6 @@
 ### Bug Fixes
 
 * enable rocksdb for sc-client-db and sc-cli ([e9cf7b3](https://github.com/spaceandtimefdn/sxt-node/commit/e9cf7b3d381c474fd38903faee7b53e6c8b357a6))
-
-
-
-## [1.55.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.1...v1.55.2) (2026-01-30)
 
 
 
