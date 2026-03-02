@@ -12,5 +12,6 @@
     clippy::derivable_impls,
     clippy::doc_lazy_continuation
 )]
+#[rustfmt::skip]
 #[path = "../target/flatbuffers/Message_generated.rs"]
 pub mod generated;
