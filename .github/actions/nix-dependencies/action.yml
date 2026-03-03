@@ -1,0 +1,10 @@
+name: Install Nix and enter development environment
+description: Installs nix and enters the development environment defined by the nix flake.
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install nix
+      uses: cachix/install-nix-action@v31
+    - name: Enter nix development environment
+      uses: nicknovitski/nix-develop@v1
