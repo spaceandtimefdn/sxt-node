@@ -82,7 +82,10 @@ jobs:
           oidc-provider-name: ${{ secrets.OIDC_PROVIDER_NAME }}
           oidc-audience: ${{ secrets.OIDC_AUDIENCE }}
       - uses: ./.github/actions/free-disk-space
-      - uses: ./.github/actions/ubuntu-dependencies
+
+      - name: install dependencies
+        uses: ./.github/actions/nix-dependencies
+
       - name: Build and Release SxT-Node Binaries
         env:
           VERSION: ${{ needs.setup.outputs.VERSION }}
@@ -186,7 +189,8 @@ jobs:
           oidc-provider-name: ${{ secrets.OIDC_PROVIDER_NAME }}
           oidc-audience: ${{ secrets.OIDC_AUDIENCE }}
       - uses: ./.github/actions/free-disk-space
-      - uses: ./.github/actions/ubuntu-dependencies
+      - name: install dependencies
+        uses: ./.github/actions/nix-dependencies
       - name: Build and Release Development SxT-Node Binaries
         env:
           VERSION: ${{ needs.setup.outputs.VERSION }}

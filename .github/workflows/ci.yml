@@ -21,7 +21,7 @@ jobs:
       - if: ${{ !contains(matrix.os, 'macos') }}
         uses: ./.github/actions/free-disk-space
       - if: ${{ !contains(matrix.os, 'macos') }}
-        uses: ./.github/actions/ubuntu-dependencies
+        uses: ./.github/actions/nix-dependencies
       - if: contains(matrix.os, 'macos')
         uses: ./.github/actions/macos-dependencies
 
@@ -84,7 +84,7 @@ jobs:
       - if: ${{ !contains(matrix.os, 'macos') }}
         uses: ./.github/actions/free-disk-space
       - if: ${{ !contains(matrix.os, 'macos') }}
-        uses: ./.github/actions/ubuntu-dependencies
+        uses: ./.github/actions/nix-dependencies
       - if: contains(matrix.os, 'macos')
         uses: ./.github/actions/macos-dependencies
 
@@ -117,7 +117,9 @@ jobs:
           fetch-tags: true
 
       - uses: ./.github/actions/free-disk-space
-      - uses: ./.github/actions/ubuntu-dependencies
+
+      - name: install dependencies
+        uses: ./.github/actions/nix-dependencies
 
       - name: Build
         run: |-
