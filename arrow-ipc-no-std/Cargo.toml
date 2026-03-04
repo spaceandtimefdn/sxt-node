@@ -5,6 +5,15 @@ edition = "2021"
 
 [dependencies]
 flatbuffers.workspace = true
+snafu.workspace = true
+arrow = { workspace = true, features = ["ipc"], optional = true }
 
 [build-dependencies]
 flatc-rust.workspace = true
+
+[dev-dependencies]
+on-chain-table = { workspace = true, features = ["arrow", "proptest"] }
+proptest = { workspace = true, features = ["std"] }
+
+[features]
+std = ["dep:arrow"]
