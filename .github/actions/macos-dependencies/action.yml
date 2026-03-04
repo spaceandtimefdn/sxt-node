@@ -6,5 +6,5 @@ runs:
   steps:
     - run: |
         curl https://sh.rustup.rs -sSf -y | sh
-        brew install protobuf
+        brew install protobuf flatbuffers
       shell: sh
