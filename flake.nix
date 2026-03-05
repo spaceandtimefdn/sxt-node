@@ -28,6 +28,8 @@
               protobuf
               pkg-config
               rustPlatform.bindgenHook
+              # for compiling arrow-ipc-no-std
+              flatbuffers
             ];
           };
       }
