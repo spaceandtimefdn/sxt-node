@@ -44,6 +44,7 @@ pub trait WeightInfo {
 	fn update_table_uuid() -> Weight;
 	fn update_table_quorum() -> Weight;
 	fn update_schema_quorum() -> Weight;
+	fn set_block_enforcement() -> Weight;
 }
 
 /// Weights for `pallet_tables` using the Substrate node and recommended hardware.
@@ -208,6 +209,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2050_u64))
 			.saturating_add(T::DbWeight::get().writes(1024_u64))
 	}
+	/// Storage: `Tables::BlockEnforcement` (r:0 w:1)
+	/// Proof: `Tables::BlockEnforcement` (`max_values`: None, `max_size`: Some(149), added: 2624, mode: `MaxEncodedLen`)
+	fn set_block_enforcement() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 3_621_000 picoseconds.
+		Weight::from_parts(4_087_000, 0)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -370,5 +381,15 @@ impl WeightInfo for () {
 		Weight::from_parts(14_419_576_000, 11104815)
 			.saturating_add(RocksDbWeight::get().reads(2050_u64))
 			.saturating_add(RocksDbWeight::get().writes(1024_u64))
+	}
+	/// Storage: `Tables::BlockEnforcement` (r:0 w:1)
+	/// Proof: `Tables::BlockEnforcement` (`max_values`: None, `max_size`: Some(149), added: 2624, mode: `MaxEncodedLen`)
+	fn set_block_enforcement() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 3_621_000 picoseconds.
+		Weight::from_parts(4_087_000, 0)
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }
