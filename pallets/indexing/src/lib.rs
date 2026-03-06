@@ -37,6 +37,8 @@ pub mod pallet {
     use commitment_sql::InsertAndCommitmentMetadata;
     use native_api::NativeApi;
     use on_chain_table::OnChainTable;
+    use pallet_tables::pallet::BlockEnforcementMode;
+    use pallet_tables::BlockEnforcement;
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_support::Blake2_128Concat;
     use polkadot_sdk::frame_system;
@@ -186,6 +188,12 @@ pub mod pallet {
         TableSerializationError,
         /// Submitter Injection Failed
         SubmitterInjectionFailed,
+        /// Block number is required for this table because contiguous block enforcement is enabled
+        BlockNumberRequired,
+        /// Block number must be strictly greater than the previous block number
+        BlockNumberNotIncreasing,
+        /// Block number must be exactly one more than the previous block number
+        BlockNumberNotContiguous,
     }
 
     #[pallet::call]
@@ -551,8 +559,24 @@ pub mod pallet {
                 .try_into()
                 .map_err(|_| Error::<T, I>::TableSerializationError)?;
 
-        // Update latest indexed block number if applicable
-        if let Some(bn) =
+        // Enforce block number ordering if the table requires it
+        if let Some(mode) = BlockEnforcement::<T>::get(&quorum.table) {
+            let bn = block_number.ok_or(Error::<T, I>::BlockNumberRequired)?;
+            if let Some(prev) = BlockNumbers::<T, I>::get(&quorum.table) {
+                match mode {
+                    BlockEnforcementMode::Increasing => {
+                        ensure!(bn > prev, Error::<T, I>::BlockNumberNotIncreasing);
+                    }
+                    BlockEnforcementMode::Contiguous => {
+                        ensure!(
+                            bn == prev.saturating_add(1),
+                            Error::<T, I>::BlockNumberNotContiguous
+                        );
+                    }
+                }
+            }
+            BlockNumbers::<T, I>::insert(&quorum.table, bn);
+        } else if let Some(bn) =
             block_number.or_else(|| oc_table.max_block_number().and_then(|v| v.try_into().ok()))
         {
             BlockNumbers::<T, I>::insert(&quorum.table, bn);
