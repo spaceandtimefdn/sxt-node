@@ -268,6 +268,22 @@ pub mod pallet {
         ) -> DispatchResult {
             submit_data_inner::<T, I>(origin, table, batch_id, data, Some(block_number))
         }
+
+        /// Set the block number for a table.
+        ///
+        /// # Permissions
+        /// Requires sudo.
+        #[pallet::call_index(2)]
+        #[pallet::weight(<T as Config<I>>::WeightInfo::set_block_number())]
+        pub fn set_block_number(
+            origin: OriginFor<T>,
+            table: TableIdentifier,
+            block_number: u64,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            BlockNumbers::<T, I>::insert(&table, block_number);
+            Ok(())
+        }
     }
 
     fn submit_data_weight<T, I>(table: &TableIdentifier) -> Weight

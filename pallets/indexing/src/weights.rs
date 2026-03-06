@@ -37,6 +37,7 @@ pub trait WeightInfo {
 	fn submit_data_quorum_not_reached() -> Weight;
 	fn submit_data_quorum_reached_dynamic_dory() -> Weight;
 	fn submit_data_quorum_reached_hyper_kzg() -> Weight;
+	fn set_block_number() -> Weight;
 }
 
 /// Weights for `pallet_indexing` using the Substrate node and recommended hardware.
@@ -109,6 +110,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(10_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
+	/// Storage: `Indexing::BlockNumbers` (r:0 w:1)
+	/// Proof: `Indexing::BlockNumbers` (`max_values`: None, `max_size`: Some(156), added: 2631, mode: `MaxEncodedLen`)
+	fn set_block_number() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 3_520_000 picoseconds.
+		Weight::from_parts(3_910_000, 0)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -179,5 +190,15 @@ impl WeightInfo for () {
 		Weight::from_parts(7_582_873_000, 276827554)
 			.saturating_add(RocksDbWeight::get().reads(10_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Storage: `Indexing::BlockNumbers` (r:0 w:1)
+	/// Proof: `Indexing::BlockNumbers` (`max_values`: None, `max_size`: Some(156), added: 2631, mode: `MaxEncodedLen`)
+	fn set_block_number() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 3_520_000 picoseconds.
+		Weight::from_parts(3_910_000, 0)
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }

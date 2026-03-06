@@ -1569,3 +1569,39 @@ fn we_can_submit_to_permissionless_table_with_no_permissions() {
         assert!(Indexing::final_data(&internal_batch_id).is_some());
     })
 }
+
+#[test]
+fn set_block_number_works() {
+    new_test_ext().execute_with(|| {
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"TEST_NAMESPACE".to_vec()).unwrap(),
+            name: TableName::try_from(b"TEST_TABLE".to_vec()).unwrap(),
+        };
+
+        assert_eq!(Indexing::block_numbers(&table_id), None);
+
+        assert_ok!(Indexing::set_block_number(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            42,
+        ));
+
+        assert_eq!(Indexing::block_numbers(&table_id), Some(42));
+    });
+}
+
+#[test]
+fn set_block_number_fails_for_non_sudo() {
+    new_test_ext().execute_with(|| {
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"TEST_NAMESPACE".to_vec()).unwrap(),
+            name: TableName::try_from(b"TEST_TABLE".to_vec()).unwrap(),
+        };
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        assert_err!(
+            Indexing::set_block_number(signer, table_id, 42),
+            sp_runtime::DispatchError::BadOrigin,
+        );
+    });
+}

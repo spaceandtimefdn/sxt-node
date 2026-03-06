@@ -216,6 +216,20 @@ mod benchmarks {
         assert!(Indexing::<T, I>::final_data(internal_batch_id).is_some());
     }
 
+    #[benchmark]
+    fn set_block_number() {
+        let table = TableIdentifier {
+            namespace: TableNamespace::try_from(b"BENCHMARK".to_vec()).unwrap(),
+            name: TableName::try_from(b"INTEGERS".to_vec()).unwrap(),
+        };
+        let block_number: u64 = 42;
+
+        #[extrinsic_call]
+        set_block_number(RawOrigin::Root, table.clone(), block_number);
+
+        assert_eq!(Indexing::<T, I>::block_numbers(&table), Some(block_number));
+    }
+
     impl_benchmark_test_suite!(
         PalletWithApi,
         crate::mock::new_test_ext(),
