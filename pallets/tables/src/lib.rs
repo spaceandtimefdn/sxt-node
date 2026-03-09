@@ -107,6 +107,15 @@ pub mod pallet {
     /// A list of tables that we want to create or update
     pub type UpdateTableList = BoundedVec<UpdateTable, ConstU32<1024>>;
 
+    /// The enforcement mode for block numbers on a table.
+    #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, Clone, PartialEq, Eq, Debug)]
+    pub enum BlockEnforcementMode {
+        /// Block numbers must be strictly increasing (each > previous).
+        Increasing,
+        /// Block numbers must be contiguous (each == previous + 1).
+        Contiguous,
+    }
+
     /// What type of commitment to create
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum CommitmentCreationCmd {
@@ -261,6 +270,15 @@ pub mod pallet {
     #[pallet::storage]
     pub type TableInsertQuorums<T: Config> =
         StorageMap<_, Blake2_128Concat, TableIdentifier, InsertQuorumSize, ValueQuery>;
+
+    /// Per-table block number enforcement mode.
+    ///
+    /// When set, inserts must provide a block number satisfying the chosen
+    /// mode (`Increasing` or `Contiguous`).
+    #[pallet::storage]
+    #[pallet::getter(fn block_enforcement)]
+    pub type BlockEnforcement<T: Config> =
+        StorageMap<_, Blake2_128Concat, TableIdentifier, BlockEnforcementMode>;
 
     /// Storage map of `TableIdentifier`s to their `Source`.
     #[pallet::storage]
@@ -768,6 +786,26 @@ pub mod pallet {
                 });
             });
 
+            Ok(())
+        }
+
+        /// Set or clear the block number enforcement mode for a table.
+        ///
+        /// When set, inserts for this table must provide a block number
+        /// satisfying the chosen mode (`Increasing` or `Contiguous`).
+        /// Pass `None` to disable enforcement.
+        ///
+        /// # Permissions
+        /// Requires sudo.
+        #[pallet::call_index(11)]
+        #[pallet::weight(<T as Config>::WeightInfo::set_block_enforcement())]
+        pub fn set_block_enforcement(
+            origin: OriginFor<T>,
+            table: TableIdentifier,
+            mode: Option<BlockEnforcementMode>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            BlockEnforcement::<T>::set(&table, mode);
             Ok(())
         }
     }

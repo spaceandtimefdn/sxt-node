@@ -1808,3 +1808,70 @@ fn create_tables_should_fail_when_there_are_too_many_tables_in_a_namespace() {
         );
     })
 }
+
+#[test]
+fn setting_block_enforcement_works() {
+    new_test_ext().execute_with(|| {
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"TEST_NAMESPACE".to_vec()).unwrap(),
+            name: TableName::try_from(b"TEST_TABLE".to_vec()).unwrap(),
+        };
+
+        assert!(Tables::block_enforcement(&table_id).is_none());
+
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(crate::pallet::BlockEnforcementMode::Increasing),
+        ));
+
+        assert_eq!(
+            Tables::block_enforcement(&table_id),
+            Some(crate::pallet::BlockEnforcementMode::Increasing),
+        );
+    });
+}
+
+#[test]
+fn clearing_block_enforcement_works() {
+    new_test_ext().execute_with(|| {
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"TEST_NAMESPACE".to_vec()).unwrap(),
+            name: TableName::try_from(b"TEST_TABLE".to_vec()).unwrap(),
+        };
+
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(crate::pallet::BlockEnforcementMode::Increasing),
+        ));
+        assert!(Tables::block_enforcement(&table_id).is_some());
+
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            None,
+        ));
+        assert!(Tables::block_enforcement(&table_id).is_none());
+    });
+}
+
+#[test]
+fn set_block_enforcement_fails_for_non_sudo() {
+    new_test_ext().execute_with(|| {
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"TEST_NAMESPACE".to_vec()).unwrap(),
+            name: TableName::try_from(b"TEST_TABLE".to_vec()).unwrap(),
+        };
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        assert_err!(
+            Tables::set_block_enforcement(
+                signer,
+                table_id,
+                Some(crate::pallet::BlockEnforcementMode::Increasing),
+            ),
+            sp_runtime::DispatchError::BadOrigin,
+        );
+    });
+}

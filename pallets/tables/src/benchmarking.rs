@@ -558,5 +558,25 @@ mod benchmarks {
         })
     }
 
+    #[benchmark]
+    fn set_block_enforcement() {
+        let table = TableIdentifier {
+            namespace: TableNamespace::try_from(b"BENCHMARK".to_vec()).unwrap(),
+            name: sxt_core::tables::TableName::try_from(b"INTEGERS".to_vec()).unwrap(),
+        };
+
+        #[extrinsic_call]
+        set_block_enforcement(
+            RawOrigin::Root,
+            table.clone(),
+            Some(crate::pallet::BlockEnforcementMode::Contiguous),
+        );
+
+        assert_eq!(
+            Tables::<T>::block_enforcement(&table),
+            Some(crate::pallet::BlockEnforcementMode::Contiguous)
+        );
+    }
+
     impl_benchmark_test_suite!(Tables, crate::mock::new_test_ext(), crate::mock::Test);
 }

@@ -1569,3 +1569,393 @@ fn we_can_submit_to_permissionless_table_with_no_permissions() {
         assert!(Indexing::final_data(&internal_batch_id).is_some());
     })
 }
+
+#[test]
+fn set_block_number_works() {
+    new_test_ext().execute_with(|| {
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"TEST_NAMESPACE".to_vec()).unwrap(),
+            name: TableName::try_from(b"TEST_TABLE".to_vec()).unwrap(),
+        };
+
+        assert_eq!(Indexing::block_numbers(&table_id), None);
+
+        assert_ok!(Indexing::set_block_number(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            42,
+        ));
+
+        assert_eq!(Indexing::block_numbers(&table_id), Some(42));
+    });
+}
+
+#[test]
+fn set_block_number_fails_for_non_sudo() {
+    new_test_ext().execute_with(|| {
+        let table_id = TableIdentifier {
+            namespace: TableNamespace::try_from(b"TEST_NAMESPACE".to_vec()).unwrap(),
+            name: TableName::try_from(b"TEST_TABLE".to_vec()).unwrap(),
+        };
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        assert_err!(
+            Indexing::set_block_number(signer, table_id, 42),
+            sp_runtime::DispatchError::BadOrigin,
+        );
+    });
+}
+
+#[test]
+fn submit_with_block_enforcement_succeeds_with_increasing_block_numbers() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_stmt) = sample_table_definition();
+
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement: create_stmt,
+                table_type: TableType::Testing(InsertQuorumSize {
+                    public: Some(0),
+                    privileged: None,
+                }),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: true,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(
+            who,
+            PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+                IndexingPalletPermission::SubmitDataForPublicQuorum,
+            )])
+            .unwrap(),
+        );
+
+        // Enable increasing block enforcement
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(pallet_tables::pallet::BlockEnforcementMode::Increasing),
+        ));
+
+        // First insert with block_number 100
+        assert_ok!(Indexing::submit_blockchain_data(
+            signer.clone(),
+            table_id.clone(),
+            BatchId::try_from(b"batch_1".to_vec()).unwrap(),
+            row_data_with_count(1),
+            100,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), Some(100));
+
+        // Second insert with block_number 200 (strictly greater)
+        assert_ok!(Indexing::submit_blockchain_data(
+            signer,
+            table_id.clone(),
+            BatchId::try_from(b"batch_2".to_vec()).unwrap(),
+            row_data_with_count(1),
+            200,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), Some(200));
+    });
+}
+
+#[test]
+fn submit_with_block_enforcement_fails_without_block_number() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_stmt) = sample_table_definition();
+
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement: create_stmt,
+                table_type: TableType::Testing(InsertQuorumSize {
+                    public: Some(0),
+                    privileged: None,
+                }),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: true,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(
+            who,
+            PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+                IndexingPalletPermission::SubmitDataForPublicQuorum,
+            )])
+            .unwrap(),
+        );
+
+        // Enable increasing block enforcement
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(pallet_tables::pallet::BlockEnforcementMode::Increasing),
+        ));
+
+        // Submit via submit_data (no block number) should fail
+        assert_err!(
+            Indexing::submit_data(
+                signer,
+                table_id.clone(),
+                BatchId::try_from(b"batch_no_bn".to_vec()).unwrap(),
+                row_data(),
+            ),
+            crate::Error::<Test, Api>::BlockNumberRequired,
+        );
+
+        // Block number should remain unset
+        assert_eq!(Indexing::block_numbers(&table_id), None);
+    });
+}
+
+#[test]
+fn submit_with_block_enforcement_fails_with_non_increasing_block_number() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_stmt) = sample_table_definition();
+
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement: create_stmt,
+                table_type: TableType::Testing(InsertQuorumSize {
+                    public: Some(0),
+                    privileged: None,
+                }),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: true,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(
+            who,
+            PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+                IndexingPalletPermission::SubmitDataForPublicQuorum,
+            )])
+            .unwrap(),
+        );
+
+        // Enable increasing block enforcement
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(pallet_tables::pallet::BlockEnforcementMode::Increasing),
+        ));
+
+        // First insert at block 100
+        assert_ok!(Indexing::submit_blockchain_data(
+            signer.clone(),
+            table_id.clone(),
+            BatchId::try_from(b"batch_first".to_vec()).unwrap(),
+            row_data_with_count(1),
+            100,
+        ));
+
+        // Submit with same block number (not strictly greater) should fail
+        assert_err!(
+            Indexing::submit_blockchain_data(
+                signer.clone(),
+                table_id.clone(),
+                BatchId::try_from(b"batch_equal".to_vec()).unwrap(),
+                row_data_with_count(1),
+                100,
+            ),
+            crate::Error::<Test, Api>::BlockNumberNotIncreasing,
+        );
+
+        // Block number should remain at 100
+        assert_eq!(Indexing::block_numbers(&table_id), Some(100));
+
+        // Submit with lower block number should also fail
+        assert_err!(
+            Indexing::submit_blockchain_data(
+                signer,
+                table_id.clone(),
+                BatchId::try_from(b"batch_lower".to_vec()).unwrap(),
+                row_data_with_count(1),
+                50,
+            ),
+            crate::Error::<Test, Api>::BlockNumberNotIncreasing,
+        );
+
+        // Block number should still remain at 100
+        assert_eq!(Indexing::block_numbers(&table_id), Some(100));
+    });
+}
+
+#[test]
+fn submit_with_contiguous_enforcement_succeeds_with_sequential_blocks() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_stmt) = sample_table_definition();
+
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement: create_stmt,
+                table_type: TableType::Testing(InsertQuorumSize {
+                    public: Some(0),
+                    privileged: None,
+                }),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: true,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(
+            who,
+            PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+                IndexingPalletPermission::SubmitDataForPublicQuorum,
+            )])
+            .unwrap(),
+        );
+
+        // Enable contiguous block enforcement
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(pallet_tables::pallet::BlockEnforcementMode::Contiguous),
+        ));
+
+        // First insert at block 10
+        assert_ok!(Indexing::submit_blockchain_data(
+            signer.clone(),
+            table_id.clone(),
+            BatchId::try_from(b"batch_1".to_vec()).unwrap(),
+            row_data_with_count(1),
+            10,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), Some(10));
+
+        // Second insert at block 11 (prev + 1)
+        assert_ok!(Indexing::submit_blockchain_data(
+            signer,
+            table_id.clone(),
+            BatchId::try_from(b"batch_2".to_vec()).unwrap(),
+            row_data_with_count(1),
+            11,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), Some(11));
+    });
+}
+
+#[test]
+fn submit_with_contiguous_enforcement_fails_with_non_sequential_blocks() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_stmt) = sample_table_definition();
+
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement: create_stmt,
+                table_type: TableType::Testing(InsertQuorumSize {
+                    public: Some(0),
+                    privileged: None,
+                }),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: true,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(
+            who,
+            PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+                IndexingPalletPermission::SubmitDataForPublicQuorum,
+            )])
+            .unwrap(),
+        );
+
+        // Enable contiguous block enforcement
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(pallet_tables::pallet::BlockEnforcementMode::Contiguous),
+        ));
+
+        // First insert at block 10
+        assert_ok!(Indexing::submit_blockchain_data(
+            signer.clone(),
+            table_id.clone(),
+            BatchId::try_from(b"batch_1".to_vec()).unwrap(),
+            row_data_with_count(1),
+            10,
+        ));
+
+        // Skip to block 12 (not prev + 1) should fail
+        assert_err!(
+            Indexing::submit_blockchain_data(
+                signer.clone(),
+                table_id.clone(),
+                BatchId::try_from(b"batch_skip".to_vec()).unwrap(),
+                row_data_with_count(1),
+                12,
+            ),
+            crate::Error::<Test, Api>::BlockNumberNotContiguous,
+        );
+
+        // Same block number should also fail
+        assert_err!(
+            Indexing::submit_blockchain_data(
+                signer,
+                table_id.clone(),
+                BatchId::try_from(b"batch_same".to_vec()).unwrap(),
+                row_data_with_count(1),
+                10,
+            ),
+            crate::Error::<Test, Api>::BlockNumberNotContiguous,
+        );
+
+        // Block number should remain at 10
+        assert_eq!(Indexing::block_numbers(&table_id), Some(10));
+    });
+}
