@@ -1,3 +1,12 @@
+# [1.58.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.57.0...v1.58.0) (2026-03-09)
+
+
+### Features
+
+* add utility for parsing single-record-batch IPC stream ([b650d85](https://github.com/spaceandtimefdn/sxt-node/commit/b650d85d69ebca71034cc796cb6dc84ca47dca2f))
+
+
+
 # [1.57.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.56.0...v1.57.0) (2026-03-09)
 
 
@@ -30,10 +39,6 @@
 
 
 ## [1.55.7](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.6...v1.55.7) (2026-03-02)
-
-
-
-## [1.55.6](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.5...v1.55.6) (2026-02-26)
 
 
 
