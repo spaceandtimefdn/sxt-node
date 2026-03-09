@@ -1,3 +1,7 @@
+## [1.58.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.58.0...v1.58.1) (2026-03-09)
+
+
+
 # [1.58.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.57.0...v1.58.0) (2026-03-09)
 
 
@@ -35,10 +39,6 @@
 
 
 ## [1.55.8](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.7...v1.55.8) (2026-03-04)
-
-
-
-## [1.55.7](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.6...v1.55.7) (2026-03-02)
 
 
 
