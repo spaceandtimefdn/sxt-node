@@ -1,3 +1,14 @@
+# [1.57.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.56.0...v1.57.0) (2026-03-09)
+
+
+### Features
+
+* add `set_block_enforcement` extrinsic ([77d67aa](https://github.com/spaceandtimefdn/sxt-node/commit/77d67aa497c2e9b9f03353407dc8b0c0c7749311))
+* add `set_block_number` extrinsic ([0689b08](https://github.com/spaceandtimefdn/sxt-node/commit/0689b08882874d8be98b141b5b4173ffd9312c71))
+* enforce block number ordering ([b747bb1](https://github.com/spaceandtimefdn/sxt-node/commit/b747bb1403753e93b35f295fb2faeab473603085))
+
+
+
 # [1.56.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.8...v1.56.0) (2026-03-05)
 
 
@@ -23,10 +34,6 @@
 
 
 ## [1.55.6](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.5...v1.55.6) (2026-02-26)
-
-
-
-## [1.55.5](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.4...v1.55.5) (2026-02-11)
 
 
 
