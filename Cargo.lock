@@ -1806,8 +1806,12 @@ dependencies = [
 name = "arrow-ipc-no-std"
 version = "0.1.0"
 dependencies = [
+ "arrow 54.2.1",
  "flatbuffers 24.12.23",
  "flatc-rust",
+ "on-chain-table",
+ "proptest",
+ "snafu 0.8.5",
 ]
 
 [[package]]
