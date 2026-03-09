@@ -25,6 +25,8 @@ pub mod native_pallet;
 #[allow(clippy::manual_inspect)]
 #[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
+    use core::iter;
+
     use native_api::NativeApi;
     use pallet_tables::UpdateTableList;
     use polkadot_sdk::frame_support::pallet_prelude::{OptionQuery, StorageDoubleMap, *};
@@ -266,7 +268,7 @@ pub mod pallet {
                 address,
             });
 
-            pallet_tables::Pallet::<T>::create_tables_inner(origin, tables)?;
+            pallet_tables::Pallet::<T>::create_tables_inner(origin, tables, None, None)?;
             Ok(())
         }
     }

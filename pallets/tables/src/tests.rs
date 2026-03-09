@@ -36,6 +36,7 @@ use crate::mock::*;
 use crate::{
     ColumnVersions,
     CommitmentCreationCmd,
+    CreateSciTableRequest,
     CreateTableList,
     Error,
     Event,
@@ -1965,6 +1966,118 @@ fn set_table_metadata_fails_for_non_sudo() {
         assert_err!(
             Tables::set_table_metadata(signer, domain, table, Some(metadata)),
             sp_runtime::DispatchError::BadOrigin,
+        );
+    });
+}
+
+// ---------------------------------------------------------------------------
+// create_table_with_sci_metadata
+// ---------------------------------------------------------------------------
+
+fn make_sci_table(namespace: &str, table_name: &str) -> CreateSciTableRequest {
+    let ident = TableIdentifier::from_str_unchecked_with_preserved_casing(table_name, namespace);
+    let ddl = format!(
+        "CREATE TABLE IF NOT EXISTS {}.{} (BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));",
+        namespace, table_name
+    );
+    let create_statement: CreateStatement =
+        BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL fits");
+    CreateSciTableRequest {
+        ident,
+        create_statement,
+        source: Source::Ethereum,
+        commitment_scheme_flags: CommitmentSchemeFlags::default(),
+    }
+}
+
+#[test]
+fn create_table_with_sci_metadata_stores_metadata_and_sets_contiguous_enforcement() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
+
+        let table = make_sci_table("ETHEREUM", "SCI_TEST");
+        let expected_ident = table.ident.clone().try_normalize().unwrap();
+        let metadata: TableMetadataBytes =
+            BoundedVec::try_from(b"raw metadata bytes".to_vec()).unwrap();
+
+        assert_ok!(Tables::create_table_with_sci_metadata(
+            RuntimeOrigin::root(),
+            table,
+            metadata.clone(),
+        ));
+
+        // Metadata stored under the normalised identifier with the "sci" domain.
+        let sci_domain: ByteString = crate::pallet::SCI_METADATA_DOMAIN
+            .to_vec()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            TableMetadata::<Test>::get(&sci_domain, &expected_ident),
+            Some(metadata)
+        );
+
+        // Block enforcement set to Contiguous.
+        assert_eq!(
+            Tables::block_enforcement(&expected_ident),
+            Some(crate::pallet::BlockEnforcementMode::Contiguous),
+        );
+
+        // SciTableCreated event emitted.
+        System::assert_has_event(
+            Event::<Test>::SciTableCreated {
+                table: expected_ident,
+            }
+            .into(),
+        );
+    });
+}
+
+#[test]
+fn create_table_with_sci_metadata_works_when_permissioned() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
+
+        let (who, signer) = user(1);
+        set_permission!(who, TablesPalletPermission::EditSchema);
+
+        let table = make_sci_table("ETHEREUM", "SCI_PERM");
+        let metadata: TableMetadataBytes = BoundedVec::try_from(b"perm metadata".to_vec()).unwrap();
+
+        assert_ok!(Tables::create_table_with_sci_metadata(
+            signer, table, metadata
+        ));
+    });
+}
+
+#[test]
+fn create_table_with_sci_metadata_fails_when_namespace_does_not_exist() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let table = make_sci_table("NO_SUCH_NS", "SCI_MISSING");
+        let metadata: TableMetadataBytes = BoundedVec::try_from(b"meta".to_vec()).unwrap();
+
+        assert!(
+            Tables::create_table_with_sci_metadata(RuntimeOrigin::root(), table, metadata).is_err()
+        );
+    });
+}
+
+#[test]
+fn create_table_with_sci_metadata_fails_for_unpermissioned_user() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
+
+        let (_who, signer) = user(2);
+        let table = make_sci_table("ETHEREUM", "SCI_NOPERM");
+        let metadata: TableMetadataBytes = BoundedVec::try_from(b"meta".to_vec()).unwrap();
+
+        assert_err!(
+            Tables::create_table_with_sci_metadata(signer, table, metadata),
+            pallet_permissions::Error::<Test>::InsufficientPermissions,
         );
     });
 }

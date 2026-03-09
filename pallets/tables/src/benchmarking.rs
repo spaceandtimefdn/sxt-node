@@ -619,5 +619,49 @@ mod benchmarks {
         assert_eq!(TableMetadata::<T>::get(&domain, &table), Some(metadata));
     }
 
+    #[benchmark]
+    fn create_table_with_sci_metadata() {
+        let creator: T::AccountId = whitelisted_caller();
+        grant_edit_schema::<T>(creator.clone());
+        setup_full_namespace::<T>(creator.clone(), "SCHEMA", TableType::SCI);
+        let table_identifier = TableIdentifier::from_str_unchecked("ONE", "SCHEMA");
+        let base_table = integers_table_definition(
+            table_identifier.clone(),
+            TableType::SCI,
+            CommitmentSchemeFlags::all(),
+        );
+        let table_definition = crate::pallet::CreateSciTableRequest {
+            ident: base_table.ident,
+            create_statement: base_table.create_statement,
+            source: base_table.source,
+            commitment_scheme_flags: CommitmentSchemeFlags::all(),
+        };
+
+        let metadata: TableMetadataBytes = vec![0u8; MAX_TABLE_METADATA_LENGTH as usize]
+            .try_into()
+            .unwrap();
+
+        #[extrinsic_call]
+        create_table_with_sci_metadata(
+            RawOrigin::Signed(creator),
+            table_definition,
+            metadata.clone(),
+        );
+
+        assert!(TableVersions::<T>::contains_key(&table_identifier, 0));
+        let sci_domain: ByteString = crate::pallet::SCI_METADATA_DOMAIN
+            .to_vec()
+            .try_into()
+            .unwrap();
+        assert!(TableMetadata::<T>::contains_key(
+            &sci_domain,
+            &table_identifier
+        ));
+        assert_eq!(
+            Tables::<T>::block_enforcement(&table_identifier),
+            Some(crate::pallet::BlockEnforcementMode::Contiguous)
+        );
+    }
+
     impl_benchmark_test_suite!(Tables, crate::mock::new_test_ext(), crate::mock::Test);
 }
