@@ -44,6 +44,7 @@ regex = { workspace = true, default-features = false }
 rand_core = { workspace = true, default-features = false }
 rand_chacha = { workspace = true, default-features = false }
 proptest = { workspace = true, features = ["std"], optional = true }
+proptest-derive = { workspace = true, optional = true }
 
 [dev-dependencies]
 rand = "0.8.5"
@@ -67,7 +68,7 @@ std = [
 	"dep:subxt",
 	"dep:exponential-backoff",
 ]
-proptest = ["std", "dep:proptest", "on-chain-table/proptest"]
+proptest = ["std", "dep:proptest", "on-chain-table/proptest", "dep:proptest-derive"]
 
 [lints]
 workspace = true
