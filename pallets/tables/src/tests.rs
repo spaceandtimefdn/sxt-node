@@ -23,6 +23,7 @@ use sxt_core::tables::{
     Source,
     SourceAndMode,
     TableIdentifier,
+    TableMetadataBytes,
     TableName,
     TableNamespace,
     TableType,
@@ -43,6 +44,7 @@ use crate::{
     Schemas,
     Snapshots,
     TableInsertQuorums,
+    TableMetadata,
     TableOwners,
     TableSources,
     TableVersions,
@@ -1871,6 +1873,97 @@ fn set_block_enforcement_fails_for_non_sudo() {
                 table_id,
                 Some(crate::pallet::BlockEnforcementMode::Increasing),
             ),
+            sp_runtime::DispatchError::BadOrigin,
+        );
+    });
+}
+
+#[test]
+fn set_table_metadata_sets_value() {
+    new_test_ext().execute_with(|| {
+        let domain: ByteString = b"test_domain".to_vec().try_into().unwrap();
+        let table = TableIdentifier {
+            namespace: TableNamespace::try_from(b"SCI_SCHEMA".to_vec()).unwrap(),
+            name: TableName::try_from(b"SCI_TABLE".to_vec()).unwrap(),
+        };
+        let metadata: TableMetadataBytes = b"some metadata bytes".to_vec().try_into().unwrap();
+
+        assert_ok!(Tables::set_table_metadata(
+            RuntimeOrigin::root(),
+            domain.clone(),
+            table.clone(),
+            Some(metadata.clone()),
+        ));
+        assert_eq!(TableMetadata::<Test>::get(&domain, &table), Some(metadata));
+    });
+}
+
+#[test]
+fn set_table_metadata_replaces_existing_value() {
+    new_test_ext().execute_with(|| {
+        let domain: ByteString = b"test_domain".to_vec().try_into().unwrap();
+        let table = TableIdentifier {
+            namespace: TableNamespace::try_from(b"SCI_SCHEMA".to_vec()).unwrap(),
+            name: TableName::try_from(b"SCI_TABLE".to_vec()).unwrap(),
+        };
+        let metadata1: TableMetadataBytes = b"first metadata".to_vec().try_into().unwrap();
+        let metadata2: TableMetadataBytes = b"second metadata".to_vec().try_into().unwrap();
+
+        assert_ok!(Tables::set_table_metadata(
+            RuntimeOrigin::root(),
+            domain.clone(),
+            table.clone(),
+            Some(metadata1),
+        ));
+        assert_ok!(Tables::set_table_metadata(
+            RuntimeOrigin::root(),
+            domain.clone(),
+            table.clone(),
+            Some(metadata2.clone()),
+        ));
+        assert_eq!(TableMetadata::<Test>::get(&domain, &table), Some(metadata2));
+    });
+}
+
+#[test]
+fn set_table_metadata_clears_entry_when_none() {
+    new_test_ext().execute_with(|| {
+        let domain: ByteString = b"test_domain".to_vec().try_into().unwrap();
+        let table = TableIdentifier {
+            namespace: TableNamespace::try_from(b"SCI_SCHEMA".to_vec()).unwrap(),
+            name: TableName::try_from(b"SCI_TABLE".to_vec()).unwrap(),
+        };
+        let metadata: TableMetadataBytes = b"some metadata bytes".to_vec().try_into().unwrap();
+
+        assert_ok!(Tables::set_table_metadata(
+            RuntimeOrigin::root(),
+            domain.clone(),
+            table.clone(),
+            Some(metadata),
+        ));
+        assert_ok!(Tables::set_table_metadata(
+            RuntimeOrigin::root(),
+            domain.clone(),
+            table.clone(),
+            None,
+        ));
+        assert_eq!(TableMetadata::<Test>::get(&domain, &table), None);
+    });
+}
+
+#[test]
+fn set_table_metadata_fails_for_non_sudo() {
+    new_test_ext().execute_with(|| {
+        let domain: ByteString = b"test_domain".to_vec().try_into().unwrap();
+        let table = TableIdentifier {
+            namespace: TableNamespace::try_from(b"SCI_SCHEMA".to_vec()).unwrap(),
+            name: TableName::try_from(b"SCI_TABLE".to_vec()).unwrap(),
+        };
+        let metadata: TableMetadataBytes = b"some metadata bytes".to_vec().try_into().unwrap();
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+
+        assert_err!(
+            Tables::set_table_metadata(signer, domain, table, Some(metadata)),
             sp_runtime::DispatchError::BadOrigin,
         );
     });

@@ -353,6 +353,12 @@ pub type CreateStatement = BoundedVec<u8, ConstU32<CREATE_STMNT_LENGTH>>;
 /// TODO: add docs
 pub type CreateStatements = BoundedVec<CreateStatement, ConstU32<MAX_TABLES_PER_SCHEMA>>;
 
+/// Maximum byte length for table metadata.
+pub const MAX_TABLE_METADATA_LENGTH: u32 = 8192;
+
+/// Raw metadata bytes stored for tables.
+pub type TableMetadataBytes = BoundedVec<u8, ConstU32<MAX_TABLE_METADATA_LENGTH>>;
+
 /// Identifier for the scope of a quorum procedure.
 #[derive(
     Copy,

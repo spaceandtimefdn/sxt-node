@@ -45,6 +45,7 @@ pub trait WeightInfo {
 	fn update_table_quorum() -> Weight;
 	fn update_schema_quorum() -> Weight;
 	fn set_block_enforcement() -> Weight;
+	fn set_table_metadata() -> Weight;
 }
 
 /// Weights for `pallet_tables` using the Substrate node and recommended hardware.
@@ -219,6 +220,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		Weight::from_parts(4_087_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Storage: `Tables::TableMetadata` (r:0 w:1)
+	/// Proof: `Tables::TableMetadata` (`max_values`: None, `max_size`: Some(8342), added: 10817, mode: `MaxEncodedLen`)
+	fn set_table_metadata() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 7_534_000 picoseconds.
+		Weight::from_parts(7_954_000, 0)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -390,6 +401,16 @@ impl WeightInfo for () {
 		//  Estimated: `0`
 		// Minimum execution time: 3_621_000 picoseconds.
 		Weight::from_parts(4_087_000, 0)
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `Tables::TableMetadata` (r:0 w:1)
+	/// Proof: `Tables::TableMetadata` (`max_values`: None, `max_size`: Some(8342), added: 10817, mode: `MaxEncodedLen`)
+	fn set_table_metadata() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 7_534_000 picoseconds.
+		Weight::from_parts(7_954_000, 0)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }
