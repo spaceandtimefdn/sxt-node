@@ -1,3 +1,12 @@
+# [1.59.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.58.1...v1.59.0) (2026-03-10)
+
+
+### Features
+
+* add utility for extracting row count from record batch ([0dc267e](https://github.com/spaceandtimefdn/sxt-node/commit/0dc267e91d7eeca3a84e55397fae4e04c9e7d287))
+
+
+
 ## [1.58.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.58.0...v1.58.1) (2026-03-09)
 
 
@@ -35,10 +44,6 @@
 ### Features
 
 * add crate for no-std arrow ipc flatbuffers ([b29f756](https://github.com/spaceandtimefdn/sxt-node/commit/b29f75674d08c34cbb8210cfa945f60fff28b87b))
-
-
-
-## [1.55.8](https://github.com/spaceandtimefdn/sxt-node/compare/v1.55.7...v1.55.8) (2026-03-04)
 
 
 
