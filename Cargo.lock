@@ -21199,6 +21199,7 @@ version = "0.1.0"
 dependencies = [
  "alloy",
  "arrow 54.2.1",
+ "arrow-ipc-no-std",
  "bincode 2.0.0",
  "exponential-backoff",
  "glob",
