@@ -18,3 +18,4 @@ std = [
     'sxt-core/std',
     'native/std'
 ]
+runtime-benchmarks = ["native/runtime-benchmarks"]

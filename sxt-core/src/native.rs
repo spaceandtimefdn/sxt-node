@@ -170,3 +170,22 @@ impl From<OnChainTableToBytesError> for NativeCommitmentError {
         NativeCommitmentError::TableSerialization
     }
 }
+
+#[cfg(feature = "runtime-benchmarks")]
+/// Errors that can occur in the native OnChainTable to RecordBatch conversion function.
+#[derive(Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum OnChainTableToRecordBatchError {
+    /// The table failed to deserialize.
+    OnChainTableDeserialization,
+    /// Failed to write single-batch arrow IPC stream.
+    ArrowStreamWriter,
+    /// Record batch IPC bytes exceed insert limits.
+    RecordBatchIpcTooLarge,
+}
+
+#[cfg(all(feature = "runtime-benchmarks", feature = "std"))]
+impl From<arrow::error::ArrowError> for OnChainTableToRecordBatchError {
+    fn from(_: arrow::error::ArrowError) -> Self {
+        OnChainTableToRecordBatchError::ArrowStreamWriter
+    }
+}

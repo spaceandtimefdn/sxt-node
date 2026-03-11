@@ -9879,6 +9879,7 @@ name = "native"
 version = "0.2.0"
 dependencies = [
  "arrow 54.2.1",
+ "arrow-ipc-no-std",
  "clap 4.5.32",
  "commitment-sql",
  "futures",

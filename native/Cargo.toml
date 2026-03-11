@@ -34,6 +34,7 @@ hex = { workspace = true, optional = true }
 sxt-core.workspace = true
 proof-of-sql = { workspace = true, optional = true }
 clap = { workspace = true, optional = true, features = ["env", "derive"] }
+arrow-ipc-no-std = { workspace = true, optional = true, features = ["std"] }
 
 [dev-dependencies]
 proof-of-sql = { workspace = true }
@@ -58,8 +59,10 @@ std = [
     "dep:futures",
     "dep:proof-of-sql",
     "sxt-core/std",
+    "dep:arrow-ipc-no-std",
 ]
 generate_backwards_compatibility_cases = ["std", "dep:proptest", "dep:hex", "sxt-core/proptest", "proof-of-sql-commitment-map/proptest", "commitment-sql/proptest", "dep:proof-of-sql", "dep:clap"]
+runtime-benchmarks = ["sxt-core/runtime-benchmarks"]
 
 [target.'cfg(not(target_arch = "aarch64"))'.dependencies]
 proof-of-sql = { workspace = true, optional = true, features = ["cpu-perf"] }
