@@ -393,9 +393,8 @@ pub mod pallet {
         let (maybe_quorum_scope, table_insert_quorum) =
             get_submission_permissions::<T, I>(origin, &table)?;
 
-        let batch_id = validate_and_build_batch_id::<T, I>(&outer_batch_id, &table)?;
-
-        validate_submission::<T, I>(&table, &batch_id, &data)?;
+        let batch_id = validate_and_build_batch_id::<T, I>(outer_batch_id, &table)?;
+        ensure!(!data.is_empty(), Error::<T, I>::NoData);
 
         let hash_input = (&data, block_number).encode();
         let data_hash = T::Hashing::hash(&hash_input);
@@ -636,21 +635,47 @@ pub mod pallet {
         Ok(())
     }
 
-    /// Validate the batch ID (non-empty, not a legacy duplicate) and build the inner batch ID.
+    /// Validate the outer batch ID and table, then return the table-scoped inner batch ID.
+    ///
+    /// Checks (in order):
+    /// - The outer `batch_id` is not a legacy duplicate (an un-scoped batch ID that was
+    ///   finalized for the same table before inner-ID scoping was introduced).
+    /// - The outer `batch_id` is non-empty.
+    /// - The derived inner batch ID has not already been finalized.
+    /// - The table namespace and name are both non-empty.
+    /// - A schema exists for the table.
     fn validate_and_build_batch_id<T, I>(
-        outer_batch_id: &BatchId,
+        outer_batch_id: BatchId,
         table: &TableIdentifier,
     ) -> Result<BatchId, DispatchError>
     where
         T: Config<I>,
         I: NativeApi,
     {
+        // Legacy duplicate check: the outer batch_id was used as the storage key before
+        // table-scoped inner IDs were introduced. Reject if it was already finalized for
+        // this table to prevent re-submission under the old keying scheme.
+        if let Some(old_final_data) = FinalData::<T, I>::get(&outer_batch_id) {
+            ensure!(&old_final_data.table != table, Error::<T, I>::LateBatch);
+        }
+        ensure!(!outer_batch_id.is_empty(), Error::<T, I>::InvalidBatch);
+
+        let inner_batch_id = build_inner_batch_id::<T, I>(&outer_batch_id, table);
+
         ensure!(
-            !is_legacy_duplicate::<T, I>(outer_batch_id, table),
+            !FinalData::<T, I>::contains_key(&inner_batch_id),
             Error::<T, I>::LateBatch
         );
-        ensure!(!outer_batch_id.is_empty(), Error::<T, I>::InvalidBatch);
-        Ok(build_inner_batch_id::<T, I>(outer_batch_id, table))
+        ensure!(
+            !(table.namespace.is_empty() || table.name.is_empty()),
+            Error::<T, I>::InvalidTable
+        );
+        ensure!(
+            pallet_tables::Schemas::<T>::contains_key(&table.namespace, &table.name),
+            Error::<T, I>::InvalidTable
+        );
+
+        Ok(inner_batch_id)
     }
 
     pub(crate) fn build_inner_batch_id<T, I>(
@@ -666,49 +691,5 @@ pub mod pallet {
                 .as_ref()
                 .to_vec(),
         )
-    }
-
-    pub(crate) fn is_legacy_duplicate<T, I>(
-        outer_batch_id: &BatchId,
-        table_id: &TableIdentifier,
-    ) -> bool
-    where
-        T: Config<I>,
-        I: NativeApi,
-    {
-        if let Some(old_final_data) = FinalData::<T, I>::get(outer_batch_id) {
-            &old_final_data.table == table_id
-        } else {
-            false
-        }
-    }
-
-    /// Run some checks to verify that table, batch_id, and data are reasonable, non-empty values\
-    /// If the transaction is considered invalid, a relevant error will be returned
-    pub fn validate_submission<T, I>(
-        table: &TableIdentifier,
-        batch_id: &BatchId,
-        data: &RowData,
-    ) -> DispatchResult
-    where
-        T: Config<I>,
-        I: NativeApi,
-    {
-        // Check if this batch has already been decided on
-        if FinalData::<T, I>::contains_key(batch_id) {
-            Err(Error::<T, I>::LateBatch)?
-        }
-
-        ensure!(
-            !(table.namespace.is_empty() || table.name.is_empty()),
-            Error::<T, I>::InvalidTable
-        );
-        ensure!(!data.is_empty(), Error::<T, I>::NoData);
-        // Make sure the schema exists for this table
-        ensure!(
-            pallet_tables::Schemas::<T>::contains_key(&table.namespace, &table.name),
-            Error::<T, I>::InvalidTable
-        );
-        Ok(())
     }
 }
