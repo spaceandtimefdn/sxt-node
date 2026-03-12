@@ -402,9 +402,6 @@ pub mod pallet {
             // Only transactions with calculable weights should be performed.
             .unwrap_or(0);
 
-        let submit_no_quorum =
-            <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_not_reached(num_rows);
-
         let submit_w_quorum_dynamic_dory =
             if pallet_commitments::CommitmentStorageMap::<T>::contains_key(
                 table,
@@ -427,14 +424,7 @@ pub mod pallet {
                 Weight::zero()
             };
 
-        let submit_w_quorum =
-            submit_w_quorum_dynamic_dory.saturating_add(submit_w_quorum_hyper_kzg);
-
-        // Assume in 4 submissions, one will have a quorum event
-        let submit_avg_time = ((3 * submit_no_quorum.ref_time()) + submit_w_quorum.ref_time()) / 4;
-        let submit_avg_proof =
-            ((3 * submit_no_quorum.proof_size()) + submit_w_quorum.proof_size()) / 4;
-        Weight::from_parts(submit_avg_time, submit_avg_proof)
+        submit_w_quorum_dynamic_dory.saturating_add(submit_w_quorum_hyper_kzg)
     }
 
     /// Check that the caller has permission to submit data for the given table.

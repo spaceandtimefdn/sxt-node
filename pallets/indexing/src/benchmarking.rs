@@ -130,50 +130,6 @@ mod benchmarks {
         (update_table, batch_id, row_data)
     }
 
-    #[benchmark]
-    fn submit_data_quorum_not_reached(r: Linear<0, 64>) {
-        let (update_table, batch_id, row_data) = benchmark_expensive_table_and_data::<I>(
-            r as usize,
-            MAX_COLS_PER_TABLE as usize,
-            CommitmentSchemeFlags::all(),
-        );
-        let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
-
-        pallet_tables::Pallet::<T>::create_namespace(
-            RawOrigin::<T::AccountId>::Root.into(),
-            namespace,
-            0,
-            namespace_ddl,
-            TableType::CoreBlockchain,
-            source,
-        )
-        .expect("creating namespace in benchmark setup should work");
-
-        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
-            IndexingPalletPermission::SubmitDataForPublicQuorum,
-        )])
-        .unwrap();
-
-        pallet_tables::Pallet::<T>::create_tables(
-            RawOrigin::<T::AccountId>::Root.into(),
-            vec![update_table.clone()].try_into().unwrap(),
-        )
-        .unwrap();
-
-        let caller: T::AccountId = account("alice", 0, 0);
-        pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
-
-        #[extrinsic_call]
-        submit_data(
-            RawOrigin::Signed(caller),
-            update_table.ident.clone(),
-            batch_id.clone(),
-            row_data,
-        );
-        let internal_batch_id = build_inner_batch_id::<T, I>(&batch_id, &update_table.ident);
-        assert!(Indexing::<T, I>::final_data(internal_batch_id).is_none());
-    }
-
     fn setup_quorum_reached_benchmark<T, I>(
         num_rows: usize,
         num_cols: usize,
