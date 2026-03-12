@@ -337,7 +337,7 @@ pub mod pallet {
     fn get_submission_permissions<T, I>(
         origin: OriginFor<T>,
         table: &TableIdentifier,
-    ) -> Result<(Option<QuorumScope>, InsertQuorumSize), DispatchError>
+    ) -> Result<(QuorumScope, InsertQuorumSize), DispatchError>
     where
         T: Config<I>,
         I: NativeApi,
@@ -368,12 +368,13 @@ pub mod pallet {
             pallet_tables::Identifiers::<T>::get(sxt_core::tables::TableType::PublicPermissionless)
                 .contains(table);
 
-        let quorum_scope = can_submit_for_privileged_quorum
-            .then_some(QuorumScope::Privileged)
-            .or((can_submit_for_public_quorum || is_permissionless_insert)
-                .then_some(QuorumScope::Public));
-
-        ensure!(quorum_scope.is_some(), Error::<T, I>::UnauthorizedSubmitter);
+        let quorum_scope = if can_submit_for_privileged_quorum {
+            QuorumScope::Privileged
+        } else if can_submit_for_public_quorum || is_permissionless_insert {
+            QuorumScope::Public
+        } else {
+            Err(Error::<T, I>::UnauthorizedSubmitter)?
+        };
 
         Ok((quorum_scope, table_insert_quorum))
     }
@@ -390,7 +391,7 @@ pub mod pallet {
         I: NativeApi,
     {
         let who = ensure_signed(origin.clone())?;
-        let (maybe_quorum_scope, table_insert_quorum) =
+        let (quorum_scope, table_insert_quorum) =
             get_submission_permissions::<T, I>(origin, &table)?;
 
         let batch_id = validate_and_build_batch_id::<T, I>(outer_batch_id, &table)?;
@@ -399,17 +400,15 @@ pub mod pallet {
         let hash_input = (&data, block_number).encode();
         let data_hash = T::Hashing::hash(&hash_input);
 
-        if let Some(quorum_scope) = maybe_quorum_scope {
-            if let Some(data_quorum) = submit_data_and_find_quorum::<T, I>(
-                who.clone(),
-                batch_id,
-                data_hash,
-                table,
-                &table_insert_quorum,
-                &quorum_scope,
-            )? {
-                finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
-            }
+        if let Some(data_quorum) = submit_data_and_find_quorum::<T, I>(
+            who.clone(),
+            batch_id,
+            data_hash,
+            table,
+            &table_insert_quorum,
+            &quorum_scope,
+        )? {
+            finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
         }
 
         Ok(())
