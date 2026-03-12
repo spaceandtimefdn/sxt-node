@@ -51,6 +51,11 @@ pub mod pallet {
 
     use super::*;
 
+    /// Domain-separation prefix for empty-block submission hashes.
+    ///
+    /// Ensures empty-block hashes cannot collide with data submission hashes.
+    const EMPTY_BLOCKS_HASH_PREFIX: &[u8] = b"empty_blocks";
+
     #[pallet::pallet]
     pub struct Pallet<T, I = ()>(_);
 
@@ -146,6 +151,20 @@ pub mod pallet {
             /// Voters against this quorum
             dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
         },
+
+        /// Quorum has been reached for a range of empty blockchain blocks.
+        QuorumEmptyBlockRange {
+            /// The table identifier
+            table: TableIdentifier,
+            /// The first empty block number in the range (inclusive)
+            start_block_number: u64,
+            /// The last empty block number in the range (inclusive)
+            end_block_number: u64,
+            /// Voters for this quorum
+            agreements: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
+            /// Voters against this quorum
+            dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
+        },
     }
 
     #[pallet::error]
@@ -194,6 +213,8 @@ pub mod pallet {
         BlockNumberNotIncreasing,
         /// Block number must be exactly one more than the previous block number
         BlockNumberNotContiguous,
+        /// The start block number must be less than or equal to the end block number
+        InvalidBlockRange,
     }
 
     #[pallet::call]
@@ -292,6 +313,69 @@ pub mod pallet {
             BlockNumbers::<T, I>::insert(&table, block_number);
             Ok(())
         }
+
+        /// Submit a range of empty blocks for a given table.
+        ///
+        /// This is used when a blockchain source produces blocks with no relevant
+        /// data for a table. The range is inclusive on both ends.
+        ///
+        /// Submissions go through the same quorum-finding process as `submit_data`.
+        ///
+        /// # Events
+        /// Emits..
+        /// - `Event::DataSubmitted`
+        /// - `Event::QuorumEmptyBlockRange`
+        ///
+        /// # Permissions
+        /// Same as `submit_data`.
+        #[pallet::call_index(3)]
+        #[pallet::weight(<T as Config<I>>::WeightInfo::submit_empty_blocks())]
+        pub fn submit_empty_blocks(
+            origin: OriginFor<T>,
+            table: TableIdentifier,
+            batch_id: BatchId,
+            start_block_number: u64,
+            end_block_number: u64,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin.clone())?;
+            let (quorum_scope, table_insert_quorum) =
+                get_submission_permissions::<T, I>(origin, &table)?;
+
+            ensure!(
+                start_block_number <= end_block_number,
+                Error::<T, I>::InvalidBlockRange
+            );
+
+            let inner_batch_id = validate_and_build_batch_id::<T, I>(batch_id, &table)?;
+
+            // Domain-separated hash so empty-block submissions don't collide
+            // with data submissions
+            let hash_input = (
+                EMPTY_BLOCKS_HASH_PREFIX,
+                &table,
+                start_block_number,
+                end_block_number,
+            )
+                .encode();
+            let data_hash = T::Hashing::hash(&hash_input);
+
+            if let Some(data_quorum) = submit_data_and_find_quorum::<T, I>(
+                who,
+                inner_batch_id,
+                data_hash,
+                table,
+                &table_insert_quorum,
+                &quorum_scope,
+            )? {
+                finalize_empty_blocks_quorum::<T, I>(
+                    data_quorum,
+                    start_block_number,
+                    end_block_number,
+                )?
+            }
+
+            Ok(())
+        }
     }
 
     fn submit_data_weight<T, I>(table: &TableIdentifier) -> Weight
@@ -337,7 +421,7 @@ pub mod pallet {
     fn get_submission_permissions<T, I>(
         origin: OriginFor<T>,
         table: &TableIdentifier,
-    ) -> Result<(Option<QuorumScope>, InsertQuorumSize), DispatchError>
+    ) -> Result<(QuorumScope, InsertQuorumSize), DispatchError>
     where
         T: Config<I>,
         I: NativeApi,
@@ -368,12 +452,13 @@ pub mod pallet {
             pallet_tables::Identifiers::<T>::get(sxt_core::tables::TableType::PublicPermissionless)
                 .contains(table);
 
-        let quorum_scope = can_submit_for_privileged_quorum
-            .then_some(QuorumScope::Privileged)
-            .or((can_submit_for_public_quorum || is_permissionless_insert)
-                .then_some(QuorumScope::Public));
-
-        ensure!(quorum_scope.is_some(), Error::<T, I>::UnauthorizedSubmitter);
+        let quorum_scope = if can_submit_for_privileged_quorum {
+            QuorumScope::Privileged
+        } else if can_submit_for_public_quorum || is_permissionless_insert {
+            QuorumScope::Public
+        } else {
+            Err(Error::<T, I>::UnauthorizedSubmitter)?
+        };
 
         Ok((quorum_scope, table_insert_quorum))
     }
@@ -390,27 +475,24 @@ pub mod pallet {
         I: NativeApi,
     {
         let who = ensure_signed(origin.clone())?;
-        let (maybe_quorum_scope, table_insert_quorum) =
+        let (quorum_scope, table_insert_quorum) =
             get_submission_permissions::<T, I>(origin, &table)?;
 
-        let batch_id = validate_and_build_batch_id::<T, I>(&outer_batch_id, &table)?;
-
-        validate_submission::<T, I>(&table, &batch_id, &data)?;
+        let batch_id = validate_and_build_batch_id::<T, I>(outer_batch_id, &table)?;
+        ensure!(!data.is_empty(), Error::<T, I>::NoData);
 
         let hash_input = (&data, block_number).encode();
         let data_hash = T::Hashing::hash(&hash_input);
 
-        if let Some(quorum_scope) = maybe_quorum_scope {
-            if let Some(data_quorum) = submit_data_and_find_quorum::<T, I>(
-                who.clone(),
-                batch_id,
-                data_hash,
-                table,
-                &table_insert_quorum,
-                &quorum_scope,
-            )? {
-                finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
-            }
+        if let Some(data_quorum) = submit_data_and_find_quorum::<T, I>(
+            who.clone(),
+            batch_id,
+            data_hash,
+            table,
+            &table_insert_quorum,
+            &quorum_scope,
+        )? {
+            finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
         }
 
         Ok(())
@@ -507,6 +589,35 @@ pub mod pallet {
         FinalData::<T, I>::insert(&quorum.batch_id, quorum);
     }
 
+    /// Validate that `block_number` satisfies `mode` for the given `table`.
+    ///
+    /// If no prior block number has been recorded for the table the check is skipped.
+    /// Returns an error if the block number violates the mode.
+    fn check_block_number_ordering<T, I>(
+        mode: &BlockEnforcementMode,
+        block_number: u64,
+        table: &TableIdentifier,
+    ) -> DispatchResult
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        if let Some(prev) = BlockNumbers::<T, I>::get(table) {
+            match mode {
+                BlockEnforcementMode::Increasing => {
+                    ensure!(block_number > prev, Error::<T, I>::BlockNumberNotIncreasing);
+                }
+                BlockEnforcementMode::Contiguous => {
+                    ensure!(
+                        block_number == prev.saturating_add(1),
+                        Error::<T, I>::BlockNumberNotContiguous
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Performs all steps necessary after reaching quorum, such as...
     /// - recording final data
     /// - committing to data
@@ -562,19 +673,7 @@ pub mod pallet {
         // Enforce block number ordering if the table requires it
         if let Some(mode) = BlockEnforcement::<T>::get(&quorum.table) {
             let bn = block_number.ok_or(Error::<T, I>::BlockNumberRequired)?;
-            if let Some(prev) = BlockNumbers::<T, I>::get(&quorum.table) {
-                match mode {
-                    BlockEnforcementMode::Increasing => {
-                        ensure!(bn > prev, Error::<T, I>::BlockNumberNotIncreasing);
-                    }
-                    BlockEnforcementMode::Contiguous => {
-                        ensure!(
-                            bn == prev.saturating_add(1),
-                            Error::<T, I>::BlockNumberNotContiguous
-                        );
-                    }
-                }
-            }
+            check_block_number_ordering::<T, I>(&mode, bn, &quorum.table)?;
             BlockNumbers::<T, I>::insert(&quorum.table, bn);
         } else if let Some(bn) =
             block_number.or_else(|| oc_table.max_block_number().and_then(|v| v.try_into().ok()))
@@ -619,21 +718,85 @@ pub mod pallet {
         Ok(())
     }
 
-    /// Validate the batch ID (non-empty, not a legacy duplicate) and build the inner batch ID.
+    /// Performs all steps necessary after reaching quorum on an empty-blocks
+    /// submission, such as...
+    /// - cleaning up submissions
+    /// - recording final data
+    /// - enforcing block number ordering
+    /// - updating the stored block number
+    /// - emitting `QuorumEmptyBlockRange` event
+    fn finalize_empty_blocks_quorum<T, I>(
+        quorum: DataQuorum<T::AccountId, T::Hash>,
+        start_block_number: u64,
+        end_block_number: u64,
+    ) -> DispatchResult
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        clean_up_and_record_quorum::<T, I>(&quorum);
+
+        // Enforce block number ordering if the table requires it
+        if let Some(mode) = BlockEnforcement::<T>::get(&quorum.table) {
+            check_block_number_ordering::<T, I>(&mode, start_block_number, &quorum.table)?;
+        }
+
+        // Update stored block number to the end of the range
+        BlockNumbers::<T, I>::insert(&quorum.table, end_block_number);
+
+        // Emit event
+        Pallet::<T, I>::deposit_event(Event::QuorumEmptyBlockRange {
+            table: quorum.table,
+            start_block_number,
+            end_block_number,
+            agreements: quorum.agreements,
+            dissents: quorum.dissents,
+        });
+
+        Ok(())
+    }
+
+    /// Validate the outer batch ID and table, then return the table-scoped inner batch ID.
+    ///
+    /// Checks (in order):
+    /// - The outer `batch_id` is not a legacy duplicate (an un-scoped batch ID that was
+    ///   finalized for the same table before inner-ID scoping was introduced).
+    /// - The outer `batch_id` is non-empty.
+    /// - The derived inner batch ID has not already been finalized.
+    /// - The table namespace and name are both non-empty.
+    /// - A schema exists for the table.
     fn validate_and_build_batch_id<T, I>(
-        outer_batch_id: &BatchId,
+        outer_batch_id: BatchId,
         table: &TableIdentifier,
     ) -> Result<BatchId, DispatchError>
     where
         T: Config<I>,
         I: NativeApi,
     {
+        // Legacy duplicate check: the outer batch_id was used as the storage key before
+        // table-scoped inner IDs were introduced. Reject if it was already finalized for
+        // this table to prevent re-submission under the old keying scheme.
+        if let Some(old_final_data) = FinalData::<T, I>::get(&outer_batch_id) {
+            ensure!(&old_final_data.table != table, Error::<T, I>::LateBatch);
+        }
+        ensure!(!outer_batch_id.is_empty(), Error::<T, I>::InvalidBatch);
+
+        let inner_batch_id = build_inner_batch_id::<T, I>(&outer_batch_id, table);
+
         ensure!(
-            !is_legacy_duplicate::<T, I>(outer_batch_id, table),
+            !FinalData::<T, I>::contains_key(&inner_batch_id),
             Error::<T, I>::LateBatch
         );
-        ensure!(!outer_batch_id.is_empty(), Error::<T, I>::InvalidBatch);
-        Ok(build_inner_batch_id::<T, I>(outer_batch_id, table))
+        ensure!(
+            !(table.namespace.is_empty() || table.name.is_empty()),
+            Error::<T, I>::InvalidTable
+        );
+        ensure!(
+            pallet_tables::Schemas::<T>::contains_key(&table.namespace, &table.name),
+            Error::<T, I>::InvalidTable
+        );
+
+        Ok(inner_batch_id)
     }
 
     pub(crate) fn build_inner_batch_id<T, I>(
@@ -649,49 +812,5 @@ pub mod pallet {
                 .as_ref()
                 .to_vec(),
         )
-    }
-
-    pub(crate) fn is_legacy_duplicate<T, I>(
-        outer_batch_id: &BatchId,
-        table_id: &TableIdentifier,
-    ) -> bool
-    where
-        T: Config<I>,
-        I: NativeApi,
-    {
-        if let Some(old_final_data) = FinalData::<T, I>::get(outer_batch_id) {
-            &old_final_data.table == table_id
-        } else {
-            false
-        }
-    }
-
-    /// Run some checks to verify that table, batch_id, and data are reasonable, non-empty values\
-    /// If the transaction is considered invalid, a relevant error will be returned
-    pub fn validate_submission<T, I>(
-        table: &TableIdentifier,
-        batch_id: &BatchId,
-        data: &RowData,
-    ) -> DispatchResult
-    where
-        T: Config<I>,
-        I: NativeApi,
-    {
-        // Check if this batch has already been decided on
-        if FinalData::<T, I>::contains_key(batch_id) {
-            Err(Error::<T, I>::LateBatch)?
-        }
-
-        ensure!(
-            !(table.namespace.is_empty() || table.name.is_empty()),
-            Error::<T, I>::InvalidTable
-        );
-        ensure!(!data.is_empty(), Error::<T, I>::NoData);
-        // Make sure the schema exists for this table
-        ensure!(
-            pallet_tables::Schemas::<T>::contains_key(&table.namespace, &table.name),
-            Error::<T, I>::InvalidTable
-        );
-        Ok(())
     }
 }

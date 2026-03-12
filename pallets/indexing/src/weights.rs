@@ -38,6 +38,7 @@ pub trait WeightInfo {
 	fn submit_data_quorum_reached_dynamic_dory() -> Weight;
 	fn submit_data_quorum_reached_hyper_kzg() -> Weight;
 	fn set_block_number() -> Weight;
+	fn submit_empty_blocks() -> Weight;
 }
 
 /// Weights for `pallet_indexing` using the Substrate node and recommended hardware.
@@ -120,6 +121,31 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		Weight::from_parts(3_910_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Storage: `Tables::TableInsertQuorums` (r:1 w:0)
+	/// Proof: `Tables::TableInsertQuorums` (`max_values`: None, `max_size`: Some(152), added: 2627, mode: `MaxEncodedLen`)
+	/// Storage: `Permissions::Permissions` (r:1 w:0)
+	/// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Tables::Identifiers` (r:1 w:0)
+	/// Proof: `Tables::Identifiers` (`max_values`: None, `max_size`: Some(276824089), added: 276826564, mode: `MaxEncodedLen`)
+	/// Storage: `Indexing::FinalData` (r:2 w:1)
+	/// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2337), added: 4812, mode: `MaxEncodedLen`)
+	/// Storage: `Tables::Schemas` (r:1 w:0)
+	/// Proof: `Tables::Schemas` (`max_values`: None, `max_size`: Some(8358), added: 10833, mode: `MaxEncodedLen`)
+	/// Storage: `Indexing::Submissions` (r:2 w:1)
+	/// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(2151), added: 4626, mode: `MaxEncodedLen`)
+	/// Storage: `Tables::BlockEnforcement` (r:1 w:0)
+	/// Proof: `Tables::BlockEnforcement` (`max_values`: None, `max_size`: Some(149), added: 2624, mode: `MaxEncodedLen`)
+	/// Storage: `Indexing::BlockNumbers` (r:1 w:1)
+	/// Proof: `Indexing::BlockNumbers` (`max_values`: None, `max_size`: Some(156), added: 2631, mode: `MaxEncodedLen`)
+	fn submit_empty_blocks() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1067`
+		//  Estimated: `276827554`
+		// Minimum execution time: 77_753_000 picoseconds.
+		Weight::from_parts(82_788_000, 276827554)
+			.saturating_add(T::DbWeight::get().reads(10_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -200,5 +226,30 @@ impl WeightInfo for () {
 		// Minimum execution time: 3_520_000 picoseconds.
 		Weight::from_parts(3_910_000, 0)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `Tables::TableInsertQuorums` (r:1 w:0)
+	/// Proof: `Tables::TableInsertQuorums` (`max_values`: None, `max_size`: Some(152), added: 2627, mode: `MaxEncodedLen`)
+	/// Storage: `Permissions::Permissions` (r:1 w:0)
+	/// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Tables::Identifiers` (r:1 w:0)
+	/// Proof: `Tables::Identifiers` (`max_values`: None, `max_size`: Some(276824089), added: 276826564, mode: `MaxEncodedLen`)
+	/// Storage: `Indexing::FinalData` (r:2 w:1)
+	/// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2337), added: 4812, mode: `MaxEncodedLen`)
+	/// Storage: `Tables::Schemas` (r:1 w:0)
+	/// Proof: `Tables::Schemas` (`max_values`: None, `max_size`: Some(8358), added: 10833, mode: `MaxEncodedLen`)
+	/// Storage: `Indexing::Submissions` (r:2 w:1)
+	/// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(2151), added: 4626, mode: `MaxEncodedLen`)
+	/// Storage: `Tables::BlockEnforcement` (r:1 w:0)
+	/// Proof: `Tables::BlockEnforcement` (`max_values`: None, `max_size`: Some(149), added: 2624, mode: `MaxEncodedLen`)
+	/// Storage: `Indexing::BlockNumbers` (r:1 w:1)
+	/// Proof: `Indexing::BlockNumbers` (`max_values`: None, `max_size`: Some(156), added: 2631, mode: `MaxEncodedLen`)
+	fn submit_empty_blocks() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1067`
+		//  Estimated: `276827554`
+		// Minimum execution time: 79_144_000 picoseconds.
+		Weight::from_parts(83_687_000, 276827554)
+			.saturating_add(RocksDbWeight::get().reads(10_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 }

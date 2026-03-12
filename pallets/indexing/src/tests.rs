@@ -1959,3 +1959,461 @@ fn submit_with_contiguous_enforcement_fails_with_non_sequential_blocks() {
         assert_eq!(Indexing::block_numbers(&table_id), Some(10));
     });
 }
+
+// ---- submit_empty_blocks tests ----
+
+/// Helper to set up a table with permissions for submit_empty_blocks tests.
+fn setup_table_and_permissions() -> (TableIdentifier, RuntimeOrigin) {
+    let (table_id, create_stmt) = sample_table_definition();
+
+    Tables::create_tables(
+        RuntimeOrigin::root(),
+        vec![UpdateTable {
+            ident: table_id.clone(),
+            create_statement: create_stmt,
+            table_type: TableType::Testing(InsertQuorumSize {
+                public: Some(0),
+                privileged: None,
+            }),
+            commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                hyper_kzg: true,
+                dynamic_dory: true,
+            }),
+            source: sxt_core::tables::Source::Ethereum,
+        }]
+        .try_into()
+        .unwrap(),
+    )
+    .unwrap();
+
+    let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+    let who = ensure_signed(signer.clone()).unwrap();
+    pallet_permissions::Permissions::<Test>::insert(
+        who,
+        PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap(),
+    );
+
+    (table_id, signer)
+}
+
+#[test]
+fn submit_empty_blocks_succeeds() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, signer) = setup_table_and_permissions();
+
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer,
+            table_id.clone(),
+            BatchId::try_from(b"eb_1".to_vec()).unwrap(),
+            100,
+            105,
+        ));
+
+        // Block number should be updated to end_block_number
+        assert_eq!(Indexing::block_numbers(&table_id), Some(105));
+    });
+}
+
+#[test]
+fn submit_empty_blocks_fails_with_invalid_range() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, signer) = setup_table_and_permissions();
+
+        assert_err!(
+            Indexing::submit_empty_blocks(
+                signer,
+                table_id,
+                BatchId::try_from(b"eb_bad".to_vec()).unwrap(),
+                105,
+                100,
+            ),
+            crate::Error::<Test, Api>::InvalidBlockRange,
+        );
+    });
+}
+
+#[test]
+fn submit_empty_blocks_fails_for_unauthorized() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, _) = setup_table_and_permissions();
+
+        // Use an account without permissions
+        let bad_signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([99; 32]));
+        assert_err!(
+            Indexing::submit_empty_blocks(
+                bad_signer,
+                table_id,
+                BatchId::try_from(b"eb_unauth".to_vec()).unwrap(),
+                1,
+                5,
+            ),
+            crate::Error::<Test, Api>::UnauthorizedSubmitter,
+        );
+    });
+}
+
+#[test]
+fn submit_empty_blocks_with_increasing_enforcement_succeeds() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, signer) = setup_table_and_permissions();
+
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(pallet_tables::pallet::BlockEnforcementMode::Increasing),
+        ));
+
+        // First empty blocks range
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer.clone(),
+            table_id.clone(),
+            BatchId::try_from(b"eb_inc1".to_vec()).unwrap(),
+            10,
+            20,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), Some(20));
+
+        // Second range starting above previous end
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer,
+            table_id.clone(),
+            BatchId::try_from(b"eb_inc2".to_vec()).unwrap(),
+            25,
+            30,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), Some(30));
+    });
+}
+
+#[test]
+fn submit_empty_blocks_with_increasing_enforcement_fails_non_increasing() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, signer) = setup_table_and_permissions();
+
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(pallet_tables::pallet::BlockEnforcementMode::Increasing),
+        ));
+
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer.clone(),
+            table_id.clone(),
+            BatchId::try_from(b"eb_first".to_vec()).unwrap(),
+            10,
+            20,
+        ));
+
+        // start_block_number not greater than previous end (20)
+        assert_err!(
+            Indexing::submit_empty_blocks(
+                signer,
+                table_id.clone(),
+                BatchId::try_from(b"eb_bad_inc".to_vec()).unwrap(),
+                15,
+                25,
+            ),
+            crate::Error::<Test, Api>::BlockNumberNotIncreasing,
+        );
+
+        assert_eq!(Indexing::block_numbers(&table_id), Some(20));
+    });
+}
+
+#[test]
+fn submit_empty_blocks_with_contiguous_enforcement_succeeds() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, signer) = setup_table_and_permissions();
+
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(pallet_tables::pallet::BlockEnforcementMode::Contiguous),
+        ));
+
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer.clone(),
+            table_id.clone(),
+            BatchId::try_from(b"eb_c1".to_vec()).unwrap(),
+            10,
+            15,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), Some(15));
+
+        // Next range starts at prev + 1 = 16
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer,
+            table_id.clone(),
+            BatchId::try_from(b"eb_c2".to_vec()).unwrap(),
+            16,
+            20,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), Some(20));
+    });
+}
+
+#[test]
+fn submit_empty_blocks_with_contiguous_enforcement_fails_gap() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, signer) = setup_table_and_permissions();
+
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(pallet_tables::pallet::BlockEnforcementMode::Contiguous),
+        ));
+
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer.clone(),
+            table_id.clone(),
+            BatchId::try_from(b"eb_g1".to_vec()).unwrap(),
+            10,
+            15,
+        ));
+
+        // Gap: expected 16 but got 17
+        assert_err!(
+            Indexing::submit_empty_blocks(
+                signer,
+                table_id.clone(),
+                BatchId::try_from(b"eb_gap".to_vec()).unwrap(),
+                17,
+                20,
+            ),
+            crate::Error::<Test, Api>::BlockNumberNotContiguous,
+        );
+
+        assert_eq!(Indexing::block_numbers(&table_id), Some(15));
+    });
+}
+
+#[test]
+fn submit_empty_blocks_with_contiguous_enforcement_fails_non_increasing() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, signer) = setup_table_and_permissions();
+
+        assert_ok!(Tables::set_block_enforcement(
+            RuntimeOrigin::root(),
+            table_id.clone(),
+            Some(pallet_tables::pallet::BlockEnforcementMode::Contiguous),
+        ));
+
+        // First range: [10, 20] succeeds, BlockNumbers = Some(20)
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer.clone(),
+            table_id.clone(),
+            BatchId::try_from(b"eb_c_first".to_vec()).unwrap(),
+            10,
+            20,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), Some(20));
+
+        // Second range [15, 25]: start (15) < prev_end (20), so 15 != 20 + 1 = 21
+        assert_err!(
+            Indexing::submit_empty_blocks(
+                signer,
+                table_id.clone(),
+                BatchId::try_from(b"eb_c_overlap".to_vec()).unwrap(),
+                15,
+                25,
+            ),
+            crate::Error::<Test, Api>::BlockNumberNotContiguous,
+        );
+
+        // BlockNumbers unchanged
+        assert_eq!(Indexing::block_numbers(&table_id), Some(20));
+    });
+}
+
+#[test]
+fn submit_empty_blocks_batch_id_is_scoped_to_table() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        // Create a shared namespace for two tables
+        let namespace = TableNamespace::try_from(b"SCOPE_TEST".to_vec()).unwrap();
+        Tables::create_namespace(
+            RuntimeOrigin::root(),
+            namespace.clone(),
+            0,
+            b"CREATE SCHEMA IF NOT EXISTS SCOPE_TEST"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+            TableType::CoreBlockchain,
+            sxt_core::tables::Source::Ethereum,
+        )
+        .unwrap();
+
+        let table_a = TableIdentifier {
+            namespace: namespace.clone(),
+            name: TableName::try_from(b"TABLE_A".to_vec()).unwrap(),
+        };
+        let table_b = TableIdentifier {
+            namespace: namespace.clone(),
+            name: TableName::try_from(b"TABLE_B".to_vec()).unwrap(),
+        };
+
+        let table_type = TableType::Testing(InsertQuorumSize {
+            public: Some(0),
+            privileged: None,
+        });
+
+        for (table, suffix) in [(&table_a, "TABLE_A"), (&table_b, "TABLE_B")] {
+            Tables::create_tables(
+                RuntimeOrigin::root(),
+                vec![UpdateTable {
+                    ident: table.clone(),
+                    create_statement: CreateStatement::try_from(
+                        format!("CREATE TABLE SCOPE_TEST.{suffix} (int_column INT NOT NULL)")
+                            .into_bytes(),
+                    )
+                    .unwrap(),
+                    table_type: table_type.clone(),
+                    commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                        hyper_kzg: true,
+                        dynamic_dory: true,
+                    }),
+                    source: sxt_core::tables::Source::Ethereum,
+                }]
+                .try_into()
+                .unwrap(),
+            )
+            .unwrap();
+        }
+
+        let signer = RuntimeOrigin::signed(sp_runtime::AccountId32::new([42; 32]));
+        let who = ensure_signed(signer.clone()).unwrap();
+        pallet_permissions::Permissions::<Test>::insert(
+            who,
+            PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+                IndexingPalletPermission::SubmitDataForPublicQuorum,
+            )])
+            .unwrap(),
+        );
+
+        // The same outer batch_id is reused for both tables
+        let outer_batch_id = BatchId::try_from(b"shared_batch".to_vec()).unwrap();
+
+        // Inner batch ids must differ because they are hashed with the table identifier
+        let inner_a = build_inner_batch_id::<Test, Api>(&outer_batch_id, &table_a);
+        let inner_b = build_inner_batch_id::<Test, Api>(&outer_batch_id, &table_b);
+        assert_ne!(
+            inner_a, inner_b,
+            "inner batch IDs must differ across tables"
+        );
+
+        // Submit to table_a with quorum=0 — finalizes immediately
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer.clone(),
+            table_a.clone(),
+            outer_batch_id.clone(),
+            10,
+            20,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_a), Some(20));
+        assert!(Indexing::final_data(&inner_a).is_some());
+
+        // table_b must be unaffected
+        assert_eq!(Indexing::block_numbers(&table_b), None);
+        assert!(Indexing::final_data(&inner_b).is_none());
+
+        // Submit to table_b with the same outer batch_id — must also succeed independently
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer,
+            table_b.clone(),
+            outer_batch_id.clone(),
+            10,
+            20,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_b), Some(20));
+        assert!(Indexing::final_data(&inner_b).is_some());
+
+        // Each FinalData entry is keyed to its own table
+        assert_eq!(Indexing::final_data(&inner_a).unwrap().table, table_a);
+        assert_eq!(Indexing::final_data(&inner_b).unwrap().table, table_b);
+    });
+}
+
+#[test]
+fn submit_empty_blocks_respects_quorum() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (table_id, create_stmt) = sample_table_definition();
+
+        // Require 2 out of 3 submissions (quorum_size = 1 means >1 i.e. 2+ needed)
+        Tables::create_tables(
+            RuntimeOrigin::root(),
+            vec![UpdateTable {
+                ident: table_id.clone(),
+                create_statement: create_stmt,
+                table_type: TableType::Testing(InsertQuorumSize {
+                    public: Some(1),
+                    privileged: None,
+                }),
+                commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                    hyper_kzg: true,
+                    dynamic_dory: true,
+                }),
+                source: sxt_core::tables::Source::Ethereum,
+            }]
+            .try_into()
+            .unwrap(),
+        )
+        .unwrap();
+
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+        for seed in [1u8, 2, 3] {
+            let who = ensure_signed(RuntimeOrigin::signed(sp_runtime::AccountId32::new(
+                [seed; 32],
+            )))
+            .unwrap();
+            pallet_permissions::Permissions::<Test>::insert(who, permissions.clone());
+        }
+
+        let batch_id = BatchId::try_from(b"quorum_eb".to_vec()).unwrap();
+        let signer1 = RuntimeOrigin::signed(sp_runtime::AccountId32::new([1; 32]));
+        let signer2 = RuntimeOrigin::signed(sp_runtime::AccountId32::new([2; 32]));
+        let signer3 = RuntimeOrigin::signed(sp_runtime::AccountId32::new([3; 32]));
+
+        // First submission — quorum not yet reached, block number not updated
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer1,
+            table_id.clone(),
+            batch_id.clone(),
+            10,
+            20,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), None);
+
+        // Second submission — quorum reached, block number updated to end_block_number
+        assert_ok!(Indexing::submit_empty_blocks(
+            signer2,
+            table_id.clone(),
+            batch_id.clone(),
+            10,
+            20,
+        ));
+        assert_eq!(Indexing::block_numbers(&table_id), Some(20));
+
+        // Third submission — batch already finalized
+        assert_err!(
+            Indexing::submit_empty_blocks(signer3, table_id.clone(), batch_id.clone(), 10, 20,),
+            crate::Error::<Test, Api>::LateBatch,
+        );
+    });
+}
