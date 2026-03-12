@@ -406,9 +406,19 @@ pub const AVERAGE_INSERT_TARGET_COST: u128 = MILLICENTS
     .saturating_mul(CALIBRATION_MULTIPLIER);
 pub const TARGET_BYTE_FEE: u128 =
     AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_SIZE_BYTES);
-/// Approximated Average Insert Weight from actual transactions on testnet
-pub const AVERAGE_INSERT_CALL_WEIGHT: u128 = 7_582_873_000;
-pub const WEIGHT_FEE: u128 = AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_CALL_WEIGHT);
+
+/// This value should be the weight of a 0-row-insert, as measured in pallet-indexing's weights.rs
+pub const INSERT_CALL_WEIGHT_BASE: u128 = 981_211_000;
+/// This value should be the coefficient of a 1-row-insert, as measured in pallet-indexing's weights.rs
+pub const INSERT_CALL_WEIGHT_PER_ROW: u128 = 1_280_623_403;
+/// The number of rows per insert that the target cost should apply to
+pub const INSERT_FEE_TARGET_ROW_COUNT: u128 = 1;
+
+/// Insert weight for an insert with INSERT_FEE_TARGET_ROW_COUNT rows.
+pub const INSERT_FEE_TARGET_CALL_WEIGHT: u128 = INSERT_CALL_WEIGHT_BASE
+    .saturating_add(INSERT_FEE_TARGET_ROW_COUNT.saturating_mul(INSERT_CALL_WEIGHT_PER_ROW));
+pub const WEIGHT_FEE: u128 =
+    AVERAGE_INSERT_TARGET_COST.saturating_div(INSERT_FEE_TARGET_CALL_WEIGHT);
 
 parameter_types! {
     pub const TransactionByteFee: Balance = TARGET_BYTE_FEE;

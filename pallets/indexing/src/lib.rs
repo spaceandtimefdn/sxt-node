@@ -47,6 +47,7 @@ pub mod pallet {
     use polkadot_sdk::sp_runtime::BoundedVec;
     use proof_of_sql_commitment_map::CommitmentScheme;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
+    use sxt_core::record_batch::record_batch_bytes_row_count;
     use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
     use super::*;
@@ -215,6 +216,18 @@ pub mod pallet {
         BlockNumberNotContiguous,
         /// The start block number must be less than or equal to the end block number
         InvalidBlockRange,
+        /// Failed to parse arrow schema message.
+        ArrowParseSchemaMessage,
+        /// Expected arrow message to be a schema.
+        ArrowExpectedSchemaMessage,
+        /// Failed to parse arrow record batch message.
+        ArrowParseRecordBatchMessage,
+        /// Expected arrow message to be a record batch.
+        ArrowExpectedRecordBatchMessage,
+        /// Input has more bytes than expected for single batch arrow stream.
+        ArrowParserUnfinished,
+        /// Input record batch claims to have a row count out of u32 bounds.
+        ArrowRowCountOutOfBounds,
     }
 
     #[pallet::call]
@@ -249,7 +262,7 @@ pub mod pallet {
         /// privileged quorum size.
         /// - the table to be public-permissionless
         #[pallet::call_index(0)]
-        #[pallet::weight(submit_data_weight::<T, I>(table))]
+        #[pallet::weight(submit_data_weight::<T, I>(table, data))]
         pub fn submit_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
@@ -287,7 +300,7 @@ pub mod pallet {
         /// privileged quorum size.
         /// - the table to be public-permissionless
         #[pallet::call_index(1)]
-        #[pallet::weight(submit_data_weight::<T, I>(table))]
+        #[pallet::weight(submit_data_weight::<T, I>(table, data))]
         pub fn submit_blockchain_data(
             origin: OriginFor<T>,
             table: TableIdentifier,
@@ -378,19 +391,28 @@ pub mod pallet {
         }
     }
 
-    fn submit_data_weight<T, I>(table: &TableIdentifier) -> Weight
+    fn submit_data_weight<T, I>(table: &TableIdentifier, data: &RowData) -> Weight
     where
         T: Config<I>,
         I: NativeApi,
     {
-        let submit_no_quorum = <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_not_reached();
+        let num_rows = record_batch_bytes_row_count(data)
+            // Weight calculation needs to be infallible, so default to 0.
+            // This means this result NEEDS to be re-evaluated in the extrinsic.
+            // Only transactions with calculable weights should be performed.
+            .unwrap_or(0);
+
+        let submit_no_quorum =
+            <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_not_reached(num_rows);
 
         let submit_w_quorum_dynamic_dory =
             if pallet_commitments::CommitmentStorageMap::<T>::contains_key(
                 table,
                 CommitmentScheme::DynamicDory,
             ) {
-                <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached_dynamic_dory()
+                <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached_dynamic_dory(
+                    num_rows,
+                )
             } else {
                 Weight::zero()
             };
@@ -400,7 +422,7 @@ pub mod pallet {
                 table,
                 CommitmentScheme::HyperKzg,
             ) {
-                <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached_hyper_kzg()
+                <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached_hyper_kzg(num_rows)
             } else {
                 Weight::zero()
             };
@@ -475,11 +497,12 @@ pub mod pallet {
         I: NativeApi,
     {
         let who = ensure_signed(origin.clone())?;
+
         let (quorum_scope, table_insert_quorum) =
             get_submission_permissions::<T, I>(origin, &table)?;
 
         let batch_id = validate_and_build_batch_id::<T, I>(outer_batch_id, &table)?;
-        ensure!(!data.is_empty(), Error::<T, I>::NoData);
+        validate_data::<T, I>(&data)?;
 
         let hash_input = (&data, block_number).encode();
         let data_hash = T::Hashing::hash(&hash_input);
@@ -812,5 +835,24 @@ pub mod pallet {
                 .as_ref()
                 .to_vec(),
         )
+    }
+
+    /// Validate RowData for a submission.
+    ///
+    /// Checks that
+    /// - submission is non-empty
+    /// - weights for the submission are calculable
+    pub fn validate_data<T, I>(data: &RowData) -> DispatchResult
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        ensure!(!data.is_empty(), Error::<T, I>::NoData);
+
+        // This calculation is performed infallibly to determine weights.
+        // We need to make sure the weight of the extrinsic was calculable before proceeding.
+        let _num_rows = record_batch_bytes_row_count(data).map_err(Error::<T, I>::from)?;
+
+        Ok(())
     }
 }
