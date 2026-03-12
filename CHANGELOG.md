@@ -1,3 +1,17 @@
+# [1.63.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.62.0...v1.63.0) (2026-03-12)
+
+
+### Bug Fixes
+
+* adjust pricing to row-count-sensitive data submission weights ([6906874](https://github.com/spaceandtimefdn/sxt-node/commit/690687411d169a3f90dc8b203d0fd8d858f3ab58))
+
+
+### Features
+
+* weigh inserts based off row count ([85cac8f](https://github.com/spaceandtimefdn/sxt-node/commit/85cac8ffd7c56625e90e90bf79f20f9ddb3922eb))
+
+
+
 # [1.62.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.61.0...v1.62.0) (2026-03-12)
 
 
@@ -36,10 +50,6 @@
 ### Features
 
 * add utility for extracting row count from record batch ([0dc267e](https://github.com/spaceandtimefdn/sxt-node/commit/0dc267e91d7eeca3a84e55397fae4e04c9e7d287))
-
-
-
-## [1.58.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.58.0...v1.58.1) (2026-03-09)
 
 
 
