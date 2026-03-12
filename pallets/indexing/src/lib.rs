@@ -51,6 +51,11 @@ pub mod pallet {
 
     use super::*;
 
+    /// Domain-separation prefix for empty-block submission hashes.
+    ///
+    /// Ensures empty-block hashes cannot collide with data submission hashes.
+    const EMPTY_BLOCKS_HASH_PREFIX: &[u8] = b"empty_blocks";
+
     #[pallet::pallet]
     pub struct Pallet<T, I = ()>(_);
 
@@ -146,6 +151,20 @@ pub mod pallet {
             /// Voters against this quorum
             dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
         },
+
+        /// Quorum has been reached for a range of empty blockchain blocks.
+        QuorumEmptyBlockRange {
+            /// The table identifier
+            table: TableIdentifier,
+            /// The first empty block number in the range (inclusive)
+            start_block_number: u64,
+            /// The last empty block number in the range (inclusive)
+            end_block_number: u64,
+            /// Voters for this quorum
+            agreements: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
+            /// Voters against this quorum
+            dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
+        },
     }
 
     #[pallet::error]
@@ -194,6 +213,8 @@ pub mod pallet {
         BlockNumberNotIncreasing,
         /// Block number must be exactly one more than the previous block number
         BlockNumberNotContiguous,
+        /// The start block number must be less than or equal to the end block number
+        InvalidBlockRange,
     }
 
     #[pallet::call]
@@ -290,6 +311,69 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
             BlockNumbers::<T, I>::insert(&table, block_number);
+            Ok(())
+        }
+
+        /// Submit a range of empty blocks for a given table.
+        ///
+        /// This is used when a blockchain source produces blocks with no relevant
+        /// data for a table. The range is inclusive on both ends.
+        ///
+        /// Submissions go through the same quorum-finding process as `submit_data`.
+        ///
+        /// # Events
+        /// Emits..
+        /// - `Event::DataSubmitted`
+        /// - `Event::QuorumEmptyBlockRange`
+        ///
+        /// # Permissions
+        /// Same as `submit_data`.
+        #[pallet::call_index(3)]
+        #[pallet::weight(<T as Config<I>>::WeightInfo::submit_empty_blocks())]
+        pub fn submit_empty_blocks(
+            origin: OriginFor<T>,
+            table: TableIdentifier,
+            batch_id: BatchId,
+            start_block_number: u64,
+            end_block_number: u64,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin.clone())?;
+            let (quorum_scope, table_insert_quorum) =
+                get_submission_permissions::<T, I>(origin, &table)?;
+
+            ensure!(
+                start_block_number <= end_block_number,
+                Error::<T, I>::InvalidBlockRange
+            );
+
+            let inner_batch_id = validate_and_build_batch_id::<T, I>(batch_id, &table)?;
+
+            // Domain-separated hash so empty-block submissions don't collide
+            // with data submissions
+            let hash_input = (
+                EMPTY_BLOCKS_HASH_PREFIX,
+                &table,
+                start_block_number,
+                end_block_number,
+            )
+                .encode();
+            let data_hash = T::Hashing::hash(&hash_input);
+
+            if let Some(data_quorum) = submit_data_and_find_quorum::<T, I>(
+                who,
+                inner_batch_id,
+                data_hash,
+                table,
+                &table_insert_quorum,
+                &quorum_scope,
+            )? {
+                finalize_empty_blocks_quorum::<T, I>(
+                    data_quorum,
+                    start_block_number,
+                    end_block_number,
+                )?
+            }
+
             Ok(())
         }
     }
@@ -630,6 +714,44 @@ pub mod pallet {
                 });
             }
         }
+
+        Ok(())
+    }
+
+    /// Performs all steps necessary after reaching quorum on an empty-blocks
+    /// submission, such as...
+    /// - cleaning up submissions
+    /// - recording final data
+    /// - enforcing block number ordering
+    /// - updating the stored block number
+    /// - emitting `QuorumEmptyBlockRange` event
+    fn finalize_empty_blocks_quorum<T, I>(
+        quorum: DataQuorum<T::AccountId, T::Hash>,
+        start_block_number: u64,
+        end_block_number: u64,
+    ) -> DispatchResult
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        clean_up_and_record_quorum::<T, I>(&quorum);
+
+        // Enforce block number ordering if the table requires it
+        if let Some(mode) = BlockEnforcement::<T>::get(&quorum.table) {
+            check_block_number_ordering::<T, I>(&mode, start_block_number, &quorum.table)?;
+        }
+
+        // Update stored block number to the end of the range
+        BlockNumbers::<T, I>::insert(&quorum.table, end_block_number);
+
+        // Emit event
+        Pallet::<T, I>::deposit_event(Event::QuorumEmptyBlockRange {
+            table: quorum.table,
+            start_block_number,
+            end_block_number,
+            agreements: quorum.agreements,
+            dissents: quorum.dissents,
+        });
 
         Ok(())
     }

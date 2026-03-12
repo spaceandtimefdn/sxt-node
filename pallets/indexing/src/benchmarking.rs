@@ -21,7 +21,8 @@ use crate::Pallet as Indexing;
 mod benchmarks {
     use native_api::NativeApi;
     use pallet_tables::benchmarking::{integers_table_definition, schema_bytes_and_ddl_and_source};
-    use pallet_tables::{CommitmentCreationCmd, UpdateTable};
+    use pallet_tables::pallet::BlockEnforcementMode;
+    use pallet_tables::{BlockEnforcement, CommitmentCreationCmd, UpdateTable};
     use proof_of_sql_commitment_map::CommitmentSchemeFlags;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
     use sxt_core::tables::{
@@ -228,6 +229,75 @@ mod benchmarks {
         set_block_number(RawOrigin::Root, table.clone(), block_number);
 
         assert_eq!(Indexing::<T, I>::block_numbers(&table), Some(block_number));
+    }
+
+    #[benchmark]
+    fn submit_empty_blocks() {
+        let (update_table, _, _) = benchmark_integers_table_and_data(CommitmentSchemeFlags::all());
+        let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
+
+        pallet_tables::Pallet::<T>::create_namespace(
+            RawOrigin::<T::AccountId>::Root.into(),
+            namespace,
+            0,
+            namespace_ddl,
+            TableType::CoreBlockchain,
+            source,
+        )
+        .expect("creating namespace in benchmark setup should work");
+
+        pallet_tables::Pallet::<T>::create_tables(
+            RawOrigin::<T::AccountId>::Root.into(),
+            vec![update_table.clone()].try_into().unwrap(),
+        )
+        .unwrap();
+
+        let permissions = PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+            IndexingPalletPermission::SubmitDataForPublicQuorum,
+        )])
+        .unwrap();
+
+        let batch_id = BatchId::try_from(b"benchmark_empty".to_vec()).unwrap();
+        let start_block_number: u64 = 100;
+        let end_block_number: u64 = 105;
+
+        // Pre-submit from alice, bob, carol so the measured call (dave) is the one that
+        // reaches quorum and exercises the full finalization path (writes FinalData /
+        // BlockNumbers and runs the block-enforcement check).
+        for name in ["alice", "bob", "carol"] {
+            let submitter: T::AccountId = account(name, 0, 0);
+            pallet_permissions::Permissions::<T>::insert(&submitter, &permissions);
+            Indexing::<T, I>::submit_empty_blocks(
+                RawOrigin::Signed(submitter).into(),
+                update_table.ident.clone(),
+                batch_id.clone(),
+                start_block_number,
+                end_block_number,
+            )
+            .expect("pre-submission in benchmark setup should succeed");
+        }
+
+        // Enable increasing block-number enforcement and seed the previous block number so
+        // the enforcement-check branch is exercised during finalization (worst-case path).
+        BlockEnforcement::<T>::insert(&update_table.ident, BlockEnforcementMode::Increasing);
+        BlockNumbers::<T, I>::insert(&update_table.ident, start_block_number - 1);
+
+        let caller: T::AccountId = account("dave", 0, 0);
+        pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
+
+        #[extrinsic_call]
+        submit_empty_blocks(
+            RawOrigin::Signed(caller),
+            update_table.ident.clone(),
+            batch_id,
+            start_block_number,
+            end_block_number,
+        );
+
+        assert_eq!(
+            BlockNumbers::<T, I>::get(&update_table.ident),
+            Some(end_block_number)
+        );
     }
 
     impl_benchmark_test_suite!(
