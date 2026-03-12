@@ -507,6 +507,35 @@ pub mod pallet {
         FinalData::<T, I>::insert(&quorum.batch_id, quorum);
     }
 
+    /// Validate that `block_number` satisfies `mode` for the given `table`.
+    ///
+    /// If no prior block number has been recorded for the table the check is skipped.
+    /// Returns an error if the block number violates the mode.
+    fn check_block_number_ordering<T, I>(
+        mode: &BlockEnforcementMode,
+        block_number: u64,
+        table: &TableIdentifier,
+    ) -> DispatchResult
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        if let Some(prev) = BlockNumbers::<T, I>::get(table) {
+            match mode {
+                BlockEnforcementMode::Increasing => {
+                    ensure!(block_number > prev, Error::<T, I>::BlockNumberNotIncreasing);
+                }
+                BlockEnforcementMode::Contiguous => {
+                    ensure!(
+                        block_number == prev.saturating_add(1),
+                        Error::<T, I>::BlockNumberNotContiguous
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Performs all steps necessary after reaching quorum, such as...
     /// - recording final data
     /// - committing to data
@@ -562,19 +591,7 @@ pub mod pallet {
         // Enforce block number ordering if the table requires it
         if let Some(mode) = BlockEnforcement::<T>::get(&quorum.table) {
             let bn = block_number.ok_or(Error::<T, I>::BlockNumberRequired)?;
-            if let Some(prev) = BlockNumbers::<T, I>::get(&quorum.table) {
-                match mode {
-                    BlockEnforcementMode::Increasing => {
-                        ensure!(bn > prev, Error::<T, I>::BlockNumberNotIncreasing);
-                    }
-                    BlockEnforcementMode::Contiguous => {
-                        ensure!(
-                            bn == prev.saturating_add(1),
-                            Error::<T, I>::BlockNumberNotContiguous
-                        );
-                    }
-                }
-            }
+            check_block_number_ordering::<T, I>(&mode, bn, &quorum.table)?;
             BlockNumbers::<T, I>::insert(&quorum.table, bn);
         } else if let Some(bn) =
             block_number.or_else(|| oc_table.max_block_number().and_then(|v| v.try_into().ok()))
