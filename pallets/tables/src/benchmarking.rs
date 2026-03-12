@@ -8,7 +8,16 @@ use polkadot_sdk::frame_system::RawOrigin;
 use polkadot_sdk::{frame_support, frame_system};
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use sxt_core::permissions::{PermissionLevel, TablesPalletPermission};
-use sxt_core::tables::{CreateStatement, Source, TableIdentifier, TableNamespace, TableType};
+use sxt_core::tables::{
+    CreateStatement,
+    Source,
+    TableIdentifier,
+    TableMetadataBytes,
+    TableName,
+    TableNamespace,
+    TableType,
+    MAX_TABLE_METADATA_LENGTH,
+};
 use sxt_core::ByteString;
 
 use super::*;
@@ -576,6 +585,28 @@ mod benchmarks {
             Tables::<T>::block_enforcement(&table),
             Some(crate::pallet::BlockEnforcementMode::Contiguous)
         );
+    }
+
+    #[benchmark]
+    fn set_table_metadata() {
+        let domain: ByteString = b"benchmark_domain".to_vec().try_into().unwrap();
+        let table = TableIdentifier {
+            namespace: TableNamespace::try_from(b"SCI_SCHEMA".to_vec()).unwrap(),
+            name: TableName::try_from(b"SCI_TABLE".to_vec()).unwrap(),
+        };
+        let metadata: TableMetadataBytes = vec![0u8; MAX_TABLE_METADATA_LENGTH as usize]
+            .try_into()
+            .unwrap();
+
+        #[extrinsic_call]
+        set_table_metadata(
+            RawOrigin::Root,
+            domain.clone(),
+            table.clone(),
+            Some(metadata.clone()),
+        );
+
+        assert_eq!(TableMetadata::<T>::get(&domain, &table), Some(metadata));
     }
 
     impl_benchmark_test_suite!(Tables, crate::mock::new_test_ext(), crate::mock::Test);

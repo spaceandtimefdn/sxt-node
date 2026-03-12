@@ -70,6 +70,7 @@ pub mod pallet {
         Source,
         SourceAndMode,
         TableIdentifier,
+        TableMetadataBytes,
         TableName,
         TableNamespace,
         TableSchema,
@@ -279,6 +280,21 @@ pub mod pallet {
     #[pallet::getter(fn block_enforcement)]
     pub type BlockEnforcement<T: Config> =
         StorageMap<_, Blake2_128Concat, TableIdentifier, BlockEnforcementMode>;
+
+    /// Storage double map of metadata domains to `TableIdentifier`s to their metadata bytes.
+    ///
+    /// The first key is a `ByteString` domain that allows different metadata namespaces to coexist
+    /// for the same table.
+    #[pallet::storage]
+    #[pallet::getter(fn table_metadata)]
+    pub type TableMetadata<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        ByteString,
+        Blake2_128Concat,
+        TableIdentifier,
+        TableMetadataBytes,
+    >;
 
     /// Storage map of `TableIdentifier`s to their `Source`.
     #[pallet::storage]
@@ -806,6 +822,25 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
             BlockEnforcement::<T>::set(&table, mode);
+            Ok(())
+        }
+
+        /// Set or replace the metadata bytes for a table.
+        ///
+        /// Pass `None` to remove the metadata entry.
+        ///
+        /// # Permissions
+        /// Requires sudo.
+        #[pallet::call_index(12)]
+        #[pallet::weight(<T as Config>::WeightInfo::set_table_metadata())]
+        pub fn set_table_metadata(
+            origin: OriginFor<T>,
+            domain: ByteString,
+            table: TableIdentifier,
+            metadata: Option<TableMetadataBytes>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            TableMetadata::<T>::set(&domain, &table, metadata);
             Ok(())
         }
     }
