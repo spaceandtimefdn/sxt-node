@@ -1,3 +1,12 @@
+# [1.62.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.61.0...v1.62.0) (2026-03-12)
+
+
+### Features
+
+* add `submit_empty_blocks` extrinsic ([73b6b91](https://github.com/spaceandtimefdn/sxt-node/commit/73b6b9189fda572b4506d9ff0ad251d6774ee2e8))
+
+
+
 # [1.61.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.60.0...v1.61.0) (2026-03-12)
 
 
@@ -31,15 +40,6 @@
 
 
 ## [1.58.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.58.0...v1.58.1) (2026-03-09)
-
-
-
-# [1.58.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.57.0...v1.58.0) (2026-03-09)
-
-
-### Features
-
-* add utility for parsing single-record-batch IPC stream ([b650d85](https://github.com/spaceandtimefdn/sxt-node/commit/b650d85d69ebca71034cc796cb6dc84ca47dca2f))
 
 
 
