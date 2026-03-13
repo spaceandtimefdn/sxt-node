@@ -1,3 +1,12 @@
+## [1.64.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.0...v1.64.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* assume quorum is reached in submit data weights ([0faf174](https://github.com/spaceandtimefdn/sxt-node/commit/0faf174eb42f3c232d89ecd969277d5d1363999d))
+
+
+
 # [1.64.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.63.0...v1.64.0) (2026-03-13)
 
 
@@ -36,20 +45,6 @@
 ### Features
 
 * add `TableMetadata` storage ([79b1c7a](https://github.com/spaceandtimefdn/sxt-node/commit/79b1c7a6106878788a3b2cd40052461443cdf531))
-
-
-
-# [1.60.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.59.0...v1.60.0) (2026-03-11)
-
-
-### Bug Fixes
-
-* upgrade runtime spec version to 246 ([888f97d](https://github.com/spaceandtimefdn/sxt-node/commit/888f97d06968f5df9dd8c81dcd18f194655b61ee))
-
-
-### Features
-
-* add on_chain_table_to_record_batch native interface for benches ([762f11e](https://github.com/spaceandtimefdn/sxt-node/commit/762f11efb71c72d7f811093d7d3fdd6705e9a775))
 
 
 
