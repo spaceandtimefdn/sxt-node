@@ -398,14 +398,11 @@ impl pallet_utility::Config for Runtime {
 
 /// We want to base our pricing on the cost of the data insertion transaction since this is the
 /// most common action on the network. The values below are intended to represent an 'Average'
-/// Insert of 5000 bytes of data.
-pub const CALIBRATION_MULTIPLIER: u128 = 43; // A Calibration multiplier to reach the desired target pricing
-pub const AVERAGE_INSERT_SIZE_BYTES: u128 = 8192;
-pub const AVERAGE_INSERT_TARGET_COST: u128 = MILLICENTS
-    .saturating_mul(20)
-    .saturating_mul(CALIBRATION_MULTIPLIER);
+/// Insert of 256 bytes of data per row.
+pub const AVERAGE_INSERT_SIZE_BYTES_PER_ROW: u128 = 256;
+pub const AVERAGE_INSERT_TARGET_COST_PER_ROW: u128 = MILLICENTS.saturating_mul(20);
 pub const TARGET_BYTE_FEE: u128 =
-    AVERAGE_INSERT_TARGET_COST.saturating_div(AVERAGE_INSERT_SIZE_BYTES);
+    AVERAGE_INSERT_TARGET_COST_PER_ROW.saturating_div(AVERAGE_INSERT_SIZE_BYTES_PER_ROW);
 
 /// This value should be the weight of a 0-row-insert, as measured in pallet-indexing's weights.rs
 pub const INSERT_CALL_WEIGHT_BASE: u128 = 981_211_000;
@@ -418,7 +415,7 @@ pub const INSERT_FEE_TARGET_ROW_COUNT: u128 = 1;
 pub const INSERT_FEE_TARGET_CALL_WEIGHT: u128 = INSERT_CALL_WEIGHT_BASE
     .saturating_add(INSERT_FEE_TARGET_ROW_COUNT.saturating_mul(INSERT_CALL_WEIGHT_PER_ROW));
 pub const WEIGHT_FEE: u128 =
-    AVERAGE_INSERT_TARGET_COST.saturating_div(INSERT_FEE_TARGET_CALL_WEIGHT);
+    AVERAGE_INSERT_TARGET_COST_PER_ROW.saturating_div(INSERT_FEE_TARGET_CALL_WEIGHT);
 
 parameter_types! {
     pub const TransactionByteFee: Balance = TARGET_BYTE_FEE;
