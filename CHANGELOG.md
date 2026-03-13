@@ -1,3 +1,7 @@
+## [1.64.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.1...v1.64.2) (2026-03-13)
+
+
+
 ## [1.64.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.0...v1.64.1) (2026-03-13)
 
 
@@ -36,15 +40,6 @@
 ### Features
 
 * add `submit_empty_blocks` extrinsic ([73b6b91](https://github.com/spaceandtimefdn/sxt-node/commit/73b6b9189fda572b4506d9ff0ad251d6774ee2e8))
-
-
-
-# [1.61.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.60.0...v1.61.0) (2026-03-12)
-
-
-### Features
-
-* add `TableMetadata` storage ([79b1c7a](https://github.com/spaceandtimefdn/sxt-node/commit/79b1c7a6106878788a3b2cd40052461443cdf531))
 
 
 
