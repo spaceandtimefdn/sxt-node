@@ -34,7 +34,6 @@ use core::marker::PhantomData;
 
 /// Weight functions needed for `pallet_indexing`.
 pub trait WeightInfo {
-	fn submit_data_quorum_not_reached(r: u32, ) -> Weight;
 	fn submit_data_quorum_reached_dynamic_dory(r: u32, ) -> Weight;
 	fn submit_data_quorum_reached_hyper_kzg(r: u32, ) -> Weight;
 	fn set_block_number() -> Weight;
@@ -44,30 +43,6 @@ pub trait WeightInfo {
 /// Weights for `pallet_indexing` using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-	/// Storage: `Tables::TableInsertQuorums` (r:1 w:0)
-	/// Proof: `Tables::TableInsertQuorums` (`max_values`: None, `max_size`: Some(152), added: 2627, mode: `MaxEncodedLen`)
-	/// Storage: `Permissions::Permissions` (r:1 w:0)
-	/// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Tables::Identifiers` (r:1 w:0)
-	/// Proof: `Tables::Identifiers` (`max_values`: None, `max_size`: Some(276824089), added: 276826564, mode: `MaxEncodedLen`)
-	/// Storage: `Indexing::FinalData` (r:2 w:0)
-	/// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2337), added: 4812, mode: `MaxEncodedLen`)
-	/// Storage: `Tables::Schemas` (r:1 w:0)
-	/// Proof: `Tables::Schemas` (`max_values`: None, `max_size`: Some(8358), added: 10833, mode: `MaxEncodedLen`)
-	/// Storage: `Indexing::Submissions` (r:1 w:1)
-	/// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(2151), added: 4626, mode: `MaxEncodedLen`)
-	/// The range of component `r` is `[0, 64]`.
-	fn submit_data_quorum_not_reached(r: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `637`
-		//  Estimated: `276827554`
-		// Minimum execution time: 76_092_000 picoseconds.
-		Weight::from_parts(76_383_000, 276827554)
-			// Standard Error: 704_910
-			.saturating_add(Weight::from_parts(90_809_282, 0).saturating_mul(r.into()))
-			.saturating_add(T::DbWeight::get().reads(7_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
 	/// Storage: `Tables::TableInsertQuorums` (r:1 w:0)
 	/// Proof: `Tables::TableInsertQuorums` (`max_values`: None, `max_size`: Some(152), added: 2627, mode: `MaxEncodedLen`)
 	/// Storage: `Permissions::Permissions` (r:1 w:0)
@@ -159,30 +134,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 
 // For backwards compatibility and tests.
 impl WeightInfo for () {
-	/// Storage: `Tables::TableInsertQuorums` (r:1 w:0)
-	/// Proof: `Tables::TableInsertQuorums` (`max_values`: None, `max_size`: Some(152), added: 2627, mode: `MaxEncodedLen`)
-	/// Storage: `Permissions::Permissions` (r:1 w:0)
-	/// Proof: `Permissions::Permissions` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Tables::Identifiers` (r:1 w:0)
-	/// Proof: `Tables::Identifiers` (`max_values`: None, `max_size`: Some(276824089), added: 276826564, mode: `MaxEncodedLen`)
-	/// Storage: `Indexing::FinalData` (r:2 w:0)
-	/// Proof: `Indexing::FinalData` (`max_values`: None, `max_size`: Some(2337), added: 4812, mode: `MaxEncodedLen`)
-	/// Storage: `Tables::Schemas` (r:1 w:0)
-	/// Proof: `Tables::Schemas` (`max_values`: None, `max_size`: Some(8358), added: 10833, mode: `MaxEncodedLen`)
-	/// Storage: `Indexing::Submissions` (r:1 w:1)
-	/// Proof: `Indexing::Submissions` (`max_values`: None, `max_size`: Some(2151), added: 4626, mode: `MaxEncodedLen`)
-	/// The range of component `r` is `[0, 64]`.
-	fn submit_data_quorum_not_reached(r: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `637`
-		//  Estimated: `276827554`
-		// Minimum execution time: 76_092_000 picoseconds.
-		Weight::from_parts(76_383_000, 276827554)
-			// Standard Error: 704_910
-			.saturating_add(Weight::from_parts(90_809_282, 0).saturating_mul(r.into()))
-			.saturating_add(RocksDbWeight::get().reads(7_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
-	}
 	/// Storage: `Tables::TableInsertQuorums` (r:1 w:0)
 	/// Proof: `Tables::TableInsertQuorums` (`max_values`: None, `max_size`: Some(152), added: 2627, mode: `MaxEncodedLen`)
 	/// Storage: `Permissions::Permissions` (r:1 w:0)
