@@ -1,3 +1,12 @@
+# [1.64.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.63.0...v1.64.0) (2026-03-13)
+
+
+### Features
+
+* add `create_table_with_sci_metadata` extrinsic ([187f661](https://github.com/spaceandtimefdn/sxt-node/commit/187f661992f8f6dd7797a5912b14c20a09b7a3f4))
+
+
+
 # [1.63.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.62.0...v1.63.0) (2026-03-12)
 
 
@@ -41,15 +50,6 @@
 ### Features
 
 * add on_chain_table_to_record_batch native interface for benches ([762f11e](https://github.com/spaceandtimefdn/sxt-node/commit/762f11efb71c72d7f811093d7d3fdd6705e9a775))
-
-
-
-# [1.59.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.58.1...v1.59.0) (2026-03-10)
-
-
-### Features
-
-* add utility for extracting row count from record batch ([0dc267e](https://github.com/spaceandtimefdn/sxt-node/commit/0dc267e91d7eeca3a84e55397fae4e04c9e7d287))
 
 
 
