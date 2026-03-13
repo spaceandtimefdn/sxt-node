@@ -30,6 +30,7 @@ mod metadata_prefix;
 #[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
     use alloc::boxed::Box;
+    use core::iter;
     use core::str::from_utf8;
 
     use codec::alloc::borrow::ToOwned;
@@ -90,6 +91,9 @@ pub mod pallet {
     /// This is 20 UNITS
     pub const CREATE_COST: u128 = 20 * 10u128.pow(18);
 
+    /// The `TableMetadata` domain key used to store Smart Contract Indexing (SCI) metadata.
+    pub const SCI_METADATA_DOMAIN: &[u8] = b"SCI";
+
     /// The individual information needed to create (update) a table
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct UpdateTable {
@@ -107,6 +111,23 @@ pub mod pallet {
 
     /// A list of tables that we want to create or update
     pub type UpdateTableList = BoundedVec<UpdateTable, ConstU32<1024>>;
+
+    /// The information needed to create a Smart Contract Indexing (SCI) table.
+    ///
+    /// SCI tables always use [`TableType::SCI`] and an empty commitment; those
+    /// fields are populated internally by the extrinsic and do not need to be
+    /// supplied by the caller.
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    pub struct CreateSciTableRequest {
+        /// Table identifier (name, namespace)
+        pub ident: TableIdentifier,
+        /// DDL statement
+        pub create_statement: CreateStatement,
+        /// Source chain
+        pub source: Source,
+        /// Commitment scheme flags for the empty commitment
+        pub commitment_scheme_flags: CommitmentSchemeFlags,
+    }
 
     /// The enforcement mode for block numbers on a table.
     #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, Clone, PartialEq, Eq, Debug)]
@@ -193,6 +214,12 @@ pub mod pallet {
 
         /// A table has been successfully dropped.
         TableDropped(Option<T::AccountId>, TableType, TableIdentifier, Source),
+
+        /// A Smart Contract Indexing (SCI) table has been created.
+        SciTableCreated {
+            /// The table that was created
+            table: TableIdentifier,
+        },
 
         /// A table's insert quorum size has been updated.
         QuorumUpdated {
@@ -417,7 +444,7 @@ pub mod pallet {
         #[pallet::call_index(0)]
         #[pallet::weight(create_tables_weight::<T>(tables.len()))]
         pub fn create_tables(origin: OriginFor<T>, tables: UpdateTableList) -> DispatchResult {
-            Self::create_tables_inner(origin, tables)
+            Self::create_tables_inner(origin, tables, None, None)
         }
 
         /// Create tables with a known commitment and snapshot url from which data can be loaded.
@@ -843,6 +870,44 @@ pub mod pallet {
             TableMetadata::<T>::set(&domain, &table, metadata);
             Ok(())
         }
+
+        /// Create a single Smart Contract Indexing (SCI) table.
+        ///
+        /// Behaves identically to [`create_tables`] for a single table, but additionally:
+        /// - stores the supplied `metadata` bytes
+        /// - forces [`BlockEnforcementMode::Contiguous`] for the table.
+        ///
+        /// # Events
+        /// Emits `Event::SchemaUpdated` (from the inner create) and `Event::SciTableCreated`.
+        ///
+        /// # Permissions
+        /// Same as `create_tables`.
+        #[pallet::call_index(13)]
+        #[pallet::weight(<T as Config>::WeightInfo::create_table_with_sci_metadata())]
+        pub fn create_table_with_sci_metadata(
+            origin: OriginFor<T>,
+            table: CreateSciTableRequest,
+            metadata: TableMetadataBytes,
+        ) -> DispatchResult {
+            let sci_domain = ByteString::try_from(SCI_METADATA_DOMAIN.to_vec())
+                .expect("SCI_METADATA_DOMAIN fits within ByteString bounds");
+            Self::create_tables_inner(
+                origin,
+                vec![UpdateTable {
+                    ident: table.ident.clone(),
+                    create_statement: table.create_statement,
+                    table_type: TableType::SCI,
+                    commitment: CommitmentCreationCmd::Empty(table.commitment_scheme_flags),
+                    source: table.source,
+                }]
+                .try_into()
+                .map_err(|_| Error::<T>::BoundedVecError)?,
+                iter::once(Some((sci_domain, metadata))),
+                iter::once(Some(BlockEnforcementMode::Contiguous)),
+            )?;
+            Self::deposit_event(Event::<T>::SciTableCreated { table: table.ident });
+            Ok(())
+        }
     }
 
     fn map_uuid_error<T: Config>(error: UpdateUuidError) -> DispatchError {
@@ -1051,6 +1116,8 @@ pub mod pallet {
         pub fn create_tables_inner(
             origin: OriginFor<T>,
             tables: UpdateTableList,
+            metadata_iter: impl IntoIterator<Item = Option<(ByteString, TableMetadataBytes)>>,
+            block_enforcement_iter: impl IntoIterator<Item = Option<BlockEnforcementMode>>,
         ) -> DispatchResult {
             // If all the tables being submitted are public or community, then we only need the transaction to
             // be signed, not specially permissioned
@@ -1090,7 +1157,13 @@ pub mod pallet {
 
             let tables_with_meta_columns = tables
                 .into_iter()
-                .map(|mut table| {
+                .zip(
+                    metadata_iter
+                        .into_iter()
+                        .zip(block_enforcement_iter)
+                        .chain(iter::repeat((None, None))),
+                )
+                .map(|(mut table, (domain_metadata, block_enforcement))| {
                     if !is_privileged_boolean {
                         pallet_balances::Pallet::<T>::burn(
                             origin.clone(),
@@ -1112,6 +1185,13 @@ pub mod pallet {
                             .is_some(),
                         DispatchError::Other("Namespace does not exist.")
                     );
+
+                    if let Some((domain, metadata)) = domain_metadata {
+                        TableMetadata::<T>::set(&domain, &table.ident, Some(metadata));
+                    }
+                    if let Some(mode) = block_enforcement {
+                        BlockEnforcement::<T>::insert(&table.ident, mode);
+                    }
 
                     // Generate or extract UUIDs
                     let (table_uuid, column_uuids) =

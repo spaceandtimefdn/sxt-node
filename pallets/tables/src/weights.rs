@@ -46,6 +46,7 @@ pub trait WeightInfo {
 	fn update_schema_quorum() -> Weight;
 	fn set_block_enforcement() -> Weight;
 	fn set_table_metadata() -> Weight;
+	fn create_table_with_sci_metadata() -> Weight;
 }
 
 /// Weights for `pallet_tables` using the Substrate node and recommended hardware.
@@ -230,6 +231,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		Weight::from_parts(7_954_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Storage: `Tables::TableMetadata` (r:0 w:1)
+	/// Storage: `Tables::BlockEnforcement` (r:0 w:1)
+	/// (Plus the reads/writes from create_one_table)
+	fn create_table_with_sci_metadata() -> Weight {
+		// Placeholder: delegate to create_one_table cost plus 2 extra writes.
+		<Self as WeightInfo>::create_one_table()
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -412,5 +421,13 @@ impl WeightInfo for () {
 		// Minimum execution time: 7_534_000 picoseconds.
 		Weight::from_parts(7_954_000, 0)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `Tables::TableMetadata` (r:0 w:1)
+	/// Storage: `Tables::BlockEnforcement` (r:0 w:1)
+	/// (Plus the reads/writes from create_one_table)
+	fn create_table_with_sci_metadata() -> Weight {
+		// Placeholder: delegate to create_one_table cost plus 2 extra writes.
+		<() as WeightInfo>::create_one_table()
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 }

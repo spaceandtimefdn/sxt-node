@@ -5,6 +5,7 @@ use alloc::{format, vec};
 
 use polkadot_sdk::frame_benchmarking::v2::*;
 use polkadot_sdk::frame_system::RawOrigin;
+use polkadot_sdk::sp_core::crypto::Ss58Codec;
 use polkadot_sdk::{frame_support, frame_system};
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use sxt_core::permissions::{PermissionLevel, TablesPalletPermission};
@@ -16,6 +17,7 @@ use sxt_core::tables::{
     TableName,
     TableNamespace,
     TableType,
+    MAX_TABLES_PER_SCHEMA,
     MAX_TABLE_METADATA_LENGTH,
 };
 use sxt_core::ByteString;
@@ -23,6 +25,45 @@ use sxt_core::ByteString;
 use super::*;
 #[allow(unused)]
 use crate::Pallet as Tables;
+
+/// Creates a namespace with `schema_name`, pre-fills it with `MAX_TABLES_PER_SCHEMA - 1`
+/// tables of the given `table_type`.
+pub fn setup_full_namespace<T: Config + pallet_permissions::Config>(
+    creator: T::AccountId,
+    schema_name: &str,
+    table_type: TableType,
+) where
+    T::AccountId: Ss58Codec,
+{
+    let (schema_name_bytes, create_statement, source) =
+        schema_bytes_and_ddl_and_source(schema_name);
+
+    Tables::<T>::create_namespace(
+        RawOrigin::Signed(creator.clone()).into(),
+        schema_name_bytes.clone(),
+        0,
+        create_statement,
+        table_type.clone(),
+        source,
+    )
+    .unwrap();
+
+    let existing_tables = (0..(MAX_TABLES_PER_SCHEMA - 1))
+        .map(|i| {
+            let table_identifier =
+                TableIdentifier::from_str_unchecked(&format!("EXISTING{}", i), schema_name);
+            integers_table_definition(
+                table_identifier.clone(),
+                table_type.clone(),
+                CommitmentSchemeFlags::all(),
+            )
+        })
+        .collect::<alloc::vec::Vec<_>>()
+        .try_into()
+        .unwrap();
+
+    Tables::<T>::create_tables(RawOrigin::Signed(creator).into(), existing_tables).unwrap();
+}
 
 /// Grants the given account the `EditSchema` permission.
 pub fn grant_edit_schema<T: pallet_permissions::Config>(account: T::AccountId) {
@@ -104,8 +145,7 @@ pub fn integers_table_definition(
         <T as polkadot_sdk::frame_system::Config>::AccountId: Ss58Codec,
 )]
 mod benchmarks {
-    use polkadot_sdk::sp_core::crypto::Ss58Codec;
-    use sxt_core::tables::{InsertQuorumSize, TableUuid, MAX_TABLES_PER_SCHEMA};
+    use sxt_core::tables::{InsertQuorumSize, TableUuid};
 
     use super::*;
 
@@ -122,37 +162,7 @@ mod benchmarks {
     fn create_one_table() {
         let creator: T::AccountId = whitelisted_caller();
         grant_edit_schema::<T>(creator.clone());
-
-        let (schema_name_bytes, create_statement, source) =
-            schema_bytes_and_ddl_and_source("SCHEMA");
-
-        Tables::<T>::create_namespace(
-            RawOrigin::Signed(creator.clone()).into(),
-            schema_name_bytes.clone(),
-            0,
-            create_statement,
-            TableType::Community,
-            source,
-        )
-        .unwrap();
-
-        let existing_tables = (0..(MAX_TABLES_PER_SCHEMA - 1))
-            .map(|i| {
-                let table_identifier =
-                    TableIdentifier::from_str_unchecked(&format!("EXISTING{}", i), "SCHEMA");
-                integers_table_definition(
-                    table_identifier.clone(),
-                    TableType::Community,
-                    CommitmentSchemeFlags::all(),
-                )
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-
-        Tables::<T>::create_tables(RawOrigin::Signed(creator.clone()).into(), existing_tables)
-            .unwrap();
-
+        setup_full_namespace::<T>(creator.clone(), "SCHEMA", TableType::Community);
         let table_identifier = TableIdentifier::from_str_unchecked("ONE", "SCHEMA");
 
         let update_tables = vec![integers_table_definition(
@@ -607,6 +617,50 @@ mod benchmarks {
         );
 
         assert_eq!(TableMetadata::<T>::get(&domain, &table), Some(metadata));
+    }
+
+    #[benchmark]
+    fn create_table_with_sci_metadata() {
+        let creator: T::AccountId = whitelisted_caller();
+        grant_edit_schema::<T>(creator.clone());
+        setup_full_namespace::<T>(creator.clone(), "SCHEMA", TableType::SCI);
+        let table_identifier = TableIdentifier::from_str_unchecked("ONE", "SCHEMA");
+        let base_table = integers_table_definition(
+            table_identifier.clone(),
+            TableType::SCI,
+            CommitmentSchemeFlags::all(),
+        );
+        let table_definition = crate::pallet::CreateSciTableRequest {
+            ident: base_table.ident,
+            create_statement: base_table.create_statement,
+            source: base_table.source,
+            commitment_scheme_flags: CommitmentSchemeFlags::all(),
+        };
+
+        let metadata: TableMetadataBytes = vec![0u8; MAX_TABLE_METADATA_LENGTH as usize]
+            .try_into()
+            .unwrap();
+
+        #[extrinsic_call]
+        create_table_with_sci_metadata(
+            RawOrigin::Signed(creator),
+            table_definition,
+            metadata.clone(),
+        );
+
+        assert!(TableVersions::<T>::contains_key(&table_identifier, 0));
+        let sci_domain: ByteString = crate::pallet::SCI_METADATA_DOMAIN
+            .to_vec()
+            .try_into()
+            .unwrap();
+        assert!(TableMetadata::<T>::contains_key(
+            &sci_domain,
+            &table_identifier
+        ));
+        assert_eq!(
+            Tables::<T>::block_enforcement(&table_identifier),
+            Some(crate::pallet::BlockEnforcementMode::Contiguous)
+        );
     }
 
     impl_benchmark_test_suite!(Tables, crate::mock::new_test_ext(), crate::mock::Test);
