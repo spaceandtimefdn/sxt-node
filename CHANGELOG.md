@@ -1,3 +1,14 @@
+## [1.64.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.2...v1.64.3) (2026-03-16)
+
+
+### Bug Fixes
+
+* measure pallet-indexing weights for runtime 246 ([a8fd70f](https://github.com/spaceandtimefdn/sxt-node/commit/a8fd70fcc622c32d7bc587b818526fd6fb880cb1))
+* measure pallet-tables weights for runtime 246 ([4ef15ee](https://github.com/spaceandtimefdn/sxt-node/commit/4ef15ee564865cdc0c51e86e7946669291ece73c))
+* update runtime fee constants to match new insert weights ([9575b0f](https://github.com/spaceandtimefdn/sxt-node/commit/9575b0f6e382ac30d5fe0e2c2ace4a9327e914bf))
+
+
+
 ## [1.64.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.1...v1.64.2) (2026-03-13)
 
 
@@ -31,15 +42,6 @@
 ### Features
 
 * weigh inserts based off row count ([85cac8f](https://github.com/spaceandtimefdn/sxt-node/commit/85cac8ffd7c56625e90e90bf79f20f9ddb3922eb))
-
-
-
-# [1.62.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.61.0...v1.62.0) (2026-03-12)
-
-
-### Features
-
-* add `submit_empty_blocks` extrinsic ([73b6b91](https://github.com/spaceandtimefdn/sxt-node/commit/73b6b9189fda572b4506d9ff0ad251d6774ee2e8))
 
 
 
