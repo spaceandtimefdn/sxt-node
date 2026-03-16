@@ -405,9 +405,9 @@ pub const TARGET_BYTE_FEE: u128 =
     AVERAGE_INSERT_TARGET_COST_PER_ROW.saturating_div(AVERAGE_INSERT_SIZE_BYTES_PER_ROW);
 
 /// This value should be the weight of a 0-row-insert, as measured in pallet-indexing's weights.rs
-pub const INSERT_CALL_WEIGHT_BASE: u128 = 981_211_000;
+pub const INSERT_CALL_WEIGHT_BASE: u128 = 975_062_000;
 /// This value should be the coefficient of a 1-row-insert, as measured in pallet-indexing's weights.rs
-pub const INSERT_CALL_WEIGHT_PER_ROW: u128 = 1_280_623_403;
+pub const INSERT_CALL_WEIGHT_PER_ROW: u128 = 1_279_835_167;
 /// The number of rows per insert that the target cost should apply to
 pub const INSERT_FEE_TARGET_ROW_COUNT: u128 = 1;
 
