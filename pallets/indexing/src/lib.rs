@@ -404,15 +404,14 @@ pub mod pallet {
             // Only transactions with calculable weights should be performed.
             .unwrap_or((0, 0));
         let num_elements = num_rows.saturating_mul(num_cols);
-        let _ = num_elements;
-
         let submit_w_quorum_dynamic_dory =
             if pallet_commitments::CommitmentStorageMap::<T>::contains_key(
                 table,
                 CommitmentScheme::DynamicDory,
             ) {
                 <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached_dynamic_dory(
-                    num_rows,
+                    num_cols,
+                    num_elements,
                 )
             } else {
                 Weight::zero()
@@ -423,7 +422,10 @@ pub mod pallet {
                 table,
                 CommitmentScheme::HyperKzg,
             ) {
-                <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached_hyper_kzg(num_rows)
+                <SubstrateWeight<T> as WeightInfo>::submit_data_quorum_reached_hyper_kzg(
+                    num_cols,
+                    num_elements,
+                )
             } else {
                 Weight::zero()
             };

@@ -34,8 +34,8 @@ use core::marker::PhantomData;
 
 /// Weight functions needed for `pallet_indexing`.
 pub trait WeightInfo {
-	fn submit_data_quorum_reached_dynamic_dory(r: u32, ) -> Weight;
-	fn submit_data_quorum_reached_hyper_kzg(r: u32, ) -> Weight;
+	fn submit_data_quorum_reached_dynamic_dory(c: u32, n: u32, ) -> Weight;
+	fn submit_data_quorum_reached_hyper_kzg(c: u32, n: u32, ) -> Weight;
 	fn set_block_number() -> Weight;
 	fn submit_empty_blocks() -> Weight;
 }
@@ -59,15 +59,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: `Commitments::CommitmentStorageMap` (`max_values`: None, `max_size`: Some(45497), added: 47972, mode: `MaxEncodedLen`)
 	/// Storage: `Tables::BlockEnforcement` (r:1 w:0)
 	/// Proof: `Tables::BlockEnforcement` (`max_values`: None, `max_size`: Some(149), added: 2624, mode: `MaxEncodedLen`)
-	/// The range of component `r` is `[0, 64]`.
-	fn submit_data_quorum_reached_dynamic_dory(r: u32, ) -> Weight {
+	/// The range of component `c` is `[0, 64]`.
+	fn submit_data_quorum_reached_dynamic_dory(c: u32, _n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `40036`
 		//  Estimated: `276827554`
 		// Minimum execution time: 2_197_536_000 picoseconds.
 		Weight::from_parts(27_450_900_711, 276827554)
 			// Standard Error: 12_741_758
-			.saturating_add(Weight::from_parts(2_125_268_905, 0).saturating_mul(r.into()))
+			.saturating_add(Weight::from_parts(2_125_268_905, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(11_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -87,15 +87,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: `Commitments::CommitmentStorageMap` (`max_values`: None, `max_size`: Some(45497), added: 47972, mode: `MaxEncodedLen`)
 	/// Storage: `Tables::BlockEnforcement` (r:1 w:0)
 	/// Proof: `Tables::BlockEnforcement` (`max_values`: None, `max_size`: Some(149), added: 2624, mode: `MaxEncodedLen`)
-	/// The range of component `r` is `[0, 64]`.
-	fn submit_data_quorum_reached_hyper_kzg(r: u32, ) -> Weight {
+	/// The range of component `c` is `[0, 64]`.
+	fn submit_data_quorum_reached_hyper_kzg(c: u32, _n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `6752`
 		//  Estimated: `276827554`
 		// Minimum execution time: 919_598_000 picoseconds.
 		Weight::from_parts(975_062_000, 276827554)
 			// Standard Error: 2_447_500
-			.saturating_add(Weight::from_parts(1_279_835_167, 0).saturating_mul(r.into()))
+			.saturating_add(Weight::from_parts(1_279_835_167, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(11_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -154,15 +154,15 @@ impl WeightInfo for () {
 	/// Proof: `Commitments::CommitmentStorageMap` (`max_values`: None, `max_size`: Some(45497), added: 47972, mode: `MaxEncodedLen`)
 	/// Storage: `Tables::BlockEnforcement` (r:1 w:0)
 	/// Proof: `Tables::BlockEnforcement` (`max_values`: None, `max_size`: Some(149), added: 2624, mode: `MaxEncodedLen`)
-	/// The range of component `r` is `[0, 64]`.
-	fn submit_data_quorum_reached_dynamic_dory(r: u32, ) -> Weight {
+	/// The range of component `c` is `[0, 64]`.
+	fn submit_data_quorum_reached_dynamic_dory(c: u32, _n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `40036`
 		//  Estimated: `276827554`
 		// Minimum execution time: 2_197_536_000 picoseconds.
 		Weight::from_parts(27_450_900_711, 276827554)
 			// Standard Error: 12_741_758
-			.saturating_add(Weight::from_parts(2_125_268_905, 0).saturating_mul(r.into()))
+			.saturating_add(Weight::from_parts(2_125_268_905, 0).saturating_mul(c.into()))
 			.saturating_add(RocksDbWeight::get().reads(11_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
@@ -182,15 +182,15 @@ impl WeightInfo for () {
 	/// Proof: `Commitments::CommitmentStorageMap` (`max_values`: None, `max_size`: Some(45497), added: 47972, mode: `MaxEncodedLen`)
 	/// Storage: `Tables::BlockEnforcement` (r:1 w:0)
 	/// Proof: `Tables::BlockEnforcement` (`max_values`: None, `max_size`: Some(149), added: 2624, mode: `MaxEncodedLen`)
-	/// The range of component `r` is `[0, 64]`.
-	fn submit_data_quorum_reached_hyper_kzg(r: u32, ) -> Weight {
+	/// The range of component `c` is `[0, 64]`.
+	fn submit_data_quorum_reached_hyper_kzg(c: u32, _n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `6752`
 		//  Estimated: `276827554`
 		// Minimum execution time: 919_598_000 picoseconds.
 		Weight::from_parts(975_062_000, 276827554)
 			// Standard Error: 2_447_500
-			.saturating_add(Weight::from_parts(1_279_835_167, 0).saturating_mul(r.into()))
+			.saturating_add(Weight::from_parts(1_279_835_167, 0).saturating_mul(c.into()))
 			.saturating_add(RocksDbWeight::get().reads(11_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}

@@ -141,7 +141,7 @@ pub fn run() -> sc_cli::Result<()> {
                 &"proof-of-sql/static-setups/public_parameters_nu_15"
                     .parse()
                     .unwrap(),
-                &"proof-of-sql/static-setups/ppot_0080_08.bin"
+                &"proof-of-sql/static-setups/ppot_0080_16.bin"
                     .parse()
                     .unwrap(),
             );

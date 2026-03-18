@@ -201,10 +201,10 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_reached_dynamic_dory(r: Linear<0, 64>) {
+    fn submit_data_quorum_reached_dynamic_dory(c: Linear<1, 64>, n: Linear<0, 16384>) {
         let (caller, table_identifier, batch_id, row_data) = setup_quorum_reached_benchmark::<T, I>(
-            r as usize,
-            MAX_COLS_PER_TABLE as usize,
+            n.div_ceil(c) as usize,
+            c as usize,
             CommitmentSchemeFlags {
                 dynamic_dory: true,
                 ..Default::default()
@@ -226,10 +226,10 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn submit_data_quorum_reached_hyper_kzg(r: Linear<0, 64>) {
+    fn submit_data_quorum_reached_hyper_kzg(c: Linear<1, 64>, n: Linear<0, 16384>) {
         let (caller, table_identifier, batch_id, row_data) = setup_quorum_reached_benchmark::<T, I>(
-            r as usize,
-            MAX_COLS_PER_TABLE as usize,
+            n.div_ceil(c) as usize,
+            c as usize,
             CommitmentSchemeFlags {
                 hyper_kzg: true,
                 ..Default::default()
