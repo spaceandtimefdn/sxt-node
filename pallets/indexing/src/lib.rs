@@ -47,7 +47,7 @@ pub mod pallet {
     use polkadot_sdk::sp_runtime::BoundedVec;
     use proof_of_sql_commitment_map::CommitmentScheme;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
-    use sxt_core::record_batch::record_batch_bytes_row_count;
+    use sxt_core::record_batch::record_batch_bytes_dimensions;
     use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
     use super::*;
@@ -228,6 +228,8 @@ pub mod pallet {
         ArrowParserUnfinished,
         /// Input record batch claims to have a row count out of u32 bounds.
         ArrowRowCountOutOfBounds,
+        /// Arrow schema contains no fields.
+        ArrowSchemaMissingFields,
     }
 
     #[pallet::call]
@@ -396,11 +398,13 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
-        let num_rows = record_batch_bytes_row_count(data)
-            // Weight calculation needs to be infallible, so default to 0.
+        let (num_rows, num_cols) = record_batch_bytes_dimensions(data)
+            // Weight calculation needs to be infallible, so default to (0, 0).
             // This means this result NEEDS to be re-evaluated in the extrinsic.
             // Only transactions with calculable weights should be performed.
-            .unwrap_or(0);
+            .unwrap_or((0, 0));
+        let num_elements = num_rows.saturating_mul(num_cols);
+        let _ = num_elements;
 
         let submit_w_quorum_dynamic_dory =
             if pallet_commitments::CommitmentStorageMap::<T>::contains_key(
@@ -841,7 +845,7 @@ pub mod pallet {
 
         // This calculation is performed infallibly to determine weights.
         // We need to make sure the weight of the extrinsic was calculable before proceeding.
-        let _num_rows = record_batch_bytes_row_count(data).map_err(Error::<T, I>::from)?;
+        let _dimensions = record_batch_bytes_dimensions(data).map_err(Error::<T, I>::from)?;
 
         Ok(())
     }

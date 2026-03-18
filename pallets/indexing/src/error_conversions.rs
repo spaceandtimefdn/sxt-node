@@ -5,7 +5,7 @@ use arrow_ipc_no_std::{
     SingleBatchStreamParseError,
 };
 use sxt_core::native::NativeError;
-use sxt_core::record_batch::RecordBatchBytesRowCountError;
+use sxt_core::record_batch::RecordBatchBytesDimensionsError;
 
 use crate::Error;
 
@@ -72,11 +72,12 @@ where
     }
 }
 
-impl<T, I> From<RecordBatchBytesRowCountError> for Error<T, I> {
-    fn from(error: RecordBatchBytesRowCountError) -> Self {
+impl<T, I> From<RecordBatchBytesDimensionsError> for Error<T, I> {
+    fn from(error: RecordBatchBytesDimensionsError) -> Self {
         match error {
-            RecordBatchBytesRowCountError::Parse { source } => source.into(),
-            RecordBatchBytesRowCountError::OutOfU32Bounds => Error::ArrowParserUnfinished,
+            RecordBatchBytesDimensionsError::Parse { source } => source.into(),
+            RecordBatchBytesDimensionsError::OutOfU32Bounds => Error::ArrowRowCountOutOfBounds,
+            RecordBatchBytesDimensionsError::MissingFields => Error::ArrowSchemaMissingFields,
         }
     }
 }
