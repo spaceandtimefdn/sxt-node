@@ -1,3 +1,18 @@
+# [1.65.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.3...v1.65.0) (2026-03-19)
+
+
+### Bug Fixes
+
+* remeasure pallet-indexing weights with n parameter ([4dde534](https://github.com/spaceandtimefdn/sxt-node/commit/4dde5340fbc10fc01275e296f6356b7963247dfb))
+
+
+### Features
+
+* base benchmarks on num_cols and total number of elements ([e3304a1](https://github.com/spaceandtimefdn/sxt-node/commit/e3304a1eb171d560ffe357a2375a9fd465efd762))
+* update spec version to 247 ([856d7d2](https://github.com/spaceandtimefdn/sxt-node/commit/856d7d23414b24484e971a7d47524f1f189caa1d))
+
+
+
 ## [1.64.3](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.2...v1.64.3) (2026-03-16)
 
 
@@ -28,20 +43,6 @@
 ### Features
 
 * add `create_table_with_sci_metadata` extrinsic ([187f661](https://github.com/spaceandtimefdn/sxt-node/commit/187f661992f8f6dd7797a5912b14c20a09b7a3f4))
-
-
-
-# [1.63.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.62.0...v1.63.0) (2026-03-12)
-
-
-### Bug Fixes
-
-* adjust pricing to row-count-sensitive data submission weights ([6906874](https://github.com/spaceandtimefdn/sxt-node/commit/690687411d169a3f90dc8b203d0fd8d858f3ab58))
-
-
-### Features
-
-* weigh inserts based off row count ([85cac8f](https://github.com/spaceandtimefdn/sxt-node/commit/85cac8ffd7c56625e90e90bf79f20f9ddb3922eb))
 
 
 
