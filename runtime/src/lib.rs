@@ -404,16 +404,14 @@ pub const AVERAGE_INSERT_TARGET_COST_PER_ROW: u128 = MILLICENTS.saturating_mul(2
 pub const TARGET_BYTE_FEE: u128 =
     AVERAGE_INSERT_TARGET_COST_PER_ROW.saturating_div(AVERAGE_INSERT_SIZE_BYTES_PER_ROW);
 
-/// This value should be the weight of a 0-row-insert, as measured in pallet-indexing's weights.rs
-pub const INSERT_CALL_WEIGHT_BASE: u128 = 975_062_000;
-/// This value should be the coefficient of a 1-row-insert, as measured in pallet-indexing's weights.rs
-pub const INSERT_CALL_WEIGHT_PER_ROW: u128 = 1_279_835_167;
-/// The number of rows per insert that the target cost should apply to
-pub const INSERT_FEE_TARGET_ROW_COUNT: u128 = 1;
+/// This value should be the coefficient of a 1-element-insert, as measured in pallet-indexing's weights.rs
+pub const INSERT_CALL_WEIGHT_PER_ELEMENT: u128 = 33_482_779;
+/// The number of elements per row that the target cost should apply to
+pub const INSERT_FEE_TARGET_ROW_LENGTH: u128 = 16;
 
 /// Insert weight for an insert with INSERT_FEE_TARGET_ROW_COUNT rows.
-pub const INSERT_FEE_TARGET_CALL_WEIGHT: u128 = INSERT_CALL_WEIGHT_BASE
-    .saturating_add(INSERT_FEE_TARGET_ROW_COUNT.saturating_mul(INSERT_CALL_WEIGHT_PER_ROW));
+pub const INSERT_FEE_TARGET_CALL_WEIGHT: u128 =
+    INSERT_CALL_WEIGHT_PER_ELEMENT.saturating_mul(INSERT_FEE_TARGET_ROW_LENGTH);
 pub const WEIGHT_FEE: u128 =
     AVERAGE_INSERT_TARGET_COST_PER_ROW.saturating_div(INSERT_FEE_TARGET_CALL_WEIGHT);
 
