@@ -168,10 +168,15 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Returns `true` if the account `who` has permission `p`
         pub fn has_permissions(who: &T::AccountId, p: &PermissionLevel) -> bool {
+            Self::has_any_permissions(who, core::slice::from_ref(p))
+        }
+
+        /// Returns `true` if the account `who` has **at least one** of the given permissions.
+        pub fn has_any_permissions(who: &T::AccountId, permissions: &[PermissionLevel]) -> bool {
             Permissions::<T>::get(who)
                 .iter()
                 .flatten()
-                .any(|x| *x == *p)
+                .any(|stored| permissions.contains(stored))
         }
 
         /// Checks whether the origin is either `Root` or a signed account with the required permission level.
@@ -190,10 +195,26 @@ pub mod pallet {
             origin: OriginFor<T>,
             permission: &PermissionLevel,
         ) -> Result<Option<T::AccountId>, DispatchError> {
+            Self::ensure_root_or_any_permissioned(origin, core::slice::from_ref(permission))
+        }
+
+        /// Like [`ensure_root_or_permissioned`], but accepts an iterator of permission levels and
+        /// succeeds if the signed account holds **at least one** of them.
+        ///
+        /// Returns:
+        /// - `Ok(None)` if the origin is `Root`,
+        /// - `Ok(Some(account_id))` if the origin is a signed account that holds any of the
+        ///   supplied permissions,
+        /// - `Err(UnsignedTransaction)` if the origin is unsigned,
+        /// - `Err(InsufficientPermissions)` if the signed account holds none of the permissions.
+        pub fn ensure_root_or_any_permissioned(
+            origin: OriginFor<T>,
+            permissions: &[PermissionLevel],
+        ) -> Result<Option<T::AccountId>, DispatchError> {
             match origin.into() {
                 Ok(frame_system::RawOrigin::Root) => Ok(None),
                 Ok(frame_system::RawOrigin::Signed(who)) => {
-                    if Self::has_permissions(&who, permission) {
+                    if Self::has_any_permissions(&who, permissions) {
                         Ok(Some(who))
                     } else {
                         Err(Error::<T>::InsufficientPermissions.into())

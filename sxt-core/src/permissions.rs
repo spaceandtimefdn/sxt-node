@@ -63,6 +63,8 @@ pub enum TablesPalletPermission {
     EditRewards,
     /// Permission related to updating the UUIDs for tables or namespaces
     EditUuid,
+    /// Permission to update the insert quorum size for a specific table
+    UpdateTableQuorum(TableIdentifier),
 }
 
 /// Permissions for pallet_governance TODO

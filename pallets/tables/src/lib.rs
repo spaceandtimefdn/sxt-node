@@ -770,7 +770,8 @@ pub mod pallet {
         /// Emits `Event::QuorumUpdated`.
         ///
         /// # Permissions
-        /// Requires `TablesPalletPermission::EditSchema`.
+        /// Requires `TablesPalletPermission::EditSchema`, or
+        /// `TablesPalletPermission::UpdateTableQuorum` for the specific table.
         #[pallet::call_index(9)]
         #[pallet::weight(<T as Config>::WeightInfo::update_table_quorum())]
         pub fn update_table_quorum(
@@ -778,9 +779,14 @@ pub mod pallet {
             table: TableIdentifier,
             new_quorum: InsertQuorumSize,
         ) -> DispatchResult {
-            let _ = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
+            let _ = pallet_permissions::Pallet::<T>::ensure_root_or_any_permissioned(
                 origin.clone(),
-                &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+                &[
+                    PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+                    PermissionLevel::TablesPallet(TablesPalletPermission::UpdateTableQuorum(
+                        table.clone(),
+                    )),
+                ],
             )?;
 
             let old_quorum = Self::inner_update_table_quorum(&table, new_quorum);
@@ -1320,6 +1326,22 @@ pub mod pallet {
                             RawOrigin::Root.into(),
                             owner.clone(),
                             PermissionLevel::EditSpecificPermission(Box::new(table_permission)),
+                        );
+
+                        let quorum_permission = PermissionLevel::TablesPallet(
+                            TablesPalletPermission::UpdateTableQuorum(table.ident.clone()),
+                        );
+
+                        let _ = pallet_permissions::Pallet::<T>::add_proxy_permission(
+                            RawOrigin::Root.into(),
+                            owner.clone(),
+                            quorum_permission.clone(),
+                        );
+
+                        let _ = pallet_permissions::Pallet::<T>::add_proxy_permission(
+                            RawOrigin::Root.into(),
+                            owner.clone(),
+                            PermissionLevel::EditSpecificPermission(Box::new(quorum_permission)),
                         );
                     }
 
