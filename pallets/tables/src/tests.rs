@@ -2081,3 +2081,30 @@ fn create_table_with_sci_metadata_fails_for_unpermissioned_user() {
         );
     });
 }
+
+/// Helper: create a community table owned by `user(1)` in the test namespace.
+/// Returns the normalised `TableIdentifier`.
+fn create_community_table_for_user1() -> TableIdentifier {
+    let (who, signer) = user(1);
+    let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
+        "VOTES",
+        "FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+    );
+    let ddl = "CREATE TABLE IF NOT EXISTS FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+    let create_statement: CreateStatement =
+        BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("fits");
+    let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+        ident: test_identifier.clone(),
+        create_statement,
+        table_type: TableType::Community,
+        commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+        source: Source::Ethereum,
+    }])
+    .expect("fits");
+    assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+        &who,
+        crate::CREATE_COST * 10,
+    ));
+    assert_ok!(Tables::create_tables(signer, tables));
+    test_identifier.try_normalize().unwrap()
+}

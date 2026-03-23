@@ -1333,6 +1333,30 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Checks whether the origin is either `Root` or the recorded owner of `table`.
+        ///
+        /// Returns:
+        /// - `Ok(stored_owner)` if the origin is `Root`, where `stored_owner` is the current
+        ///   value in [`TableOwners`] (may be `None` if no owner is recorded),
+        /// - `Ok(Some(caller))` if the origin is a signed account that matches the stored owner,
+        /// - `Err(UnsignedTransaction)` if the origin is neither signed nor root,
+        /// - `Err(InsufficientPermissions)` if the signed account is not the stored owner.
+        fn ensure_root_or_owner(
+            origin: OriginFor<T>,
+            table: &TableIdentifier,
+        ) -> Result<Option<T::AccountId>, DispatchError> {
+            let maybe_owner = TableOwners::<T>::get(table);
+            match origin.into() {
+                Ok(RawOrigin::Root) => Ok(maybe_owner),
+                Ok(RawOrigin::Signed(who)) => {
+                    Ok(Some(maybe_owner.filter(|owner| owner == &who).ok_or(
+                        pallet_permissions::Error::<T>::InsufficientPermissions,
+                    )?))
+                }
+                _ => Err(pallet_permissions::Error::<T>::UnsignedTransaction)?,
+            }
+        }
+
         /// Returns the schema for the given table identifier.
         pub fn table_schema(
             table_identifier: TableIdentifier,
