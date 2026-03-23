@@ -1,3 +1,12 @@
+# [1.66.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.65.0...v1.66.0) (2026-03-23)
+
+
+### Features
+
+* allow SCI table creation without special permissions ([c9631de](https://github.com/spaceandtimefdn/sxt-node/commit/c9631de06084396aa92e370fbe74895f5c7d4e0e))
+
+
+
 # [1.65.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.3...v1.65.0) (2026-03-19)
 
 
@@ -34,15 +43,6 @@
 ### Bug Fixes
 
 * assume quorum is reached in submit data weights ([0faf174](https://github.com/spaceandtimefdn/sxt-node/commit/0faf174eb42f3c232d89ecd969277d5d1363999d))
-
-
-
-# [1.64.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.63.0...v1.64.0) (2026-03-13)
-
-
-### Features
-
-* add `create_table_with_sci_metadata` extrinsic ([187f661](https://github.com/spaceandtimefdn/sxt-node/commit/187f661992f8f6dd7797a5912b14c20a09b7a3f4))
 
 
 
