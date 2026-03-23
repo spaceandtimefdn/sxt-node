@@ -1119,11 +1119,13 @@ pub mod pallet {
             metadata_iter: impl IntoIterator<Item = Option<(ByteString, TableMetadataBytes)>>,
             block_enforcement_iter: impl IntoIterator<Item = Option<BlockEnforcementMode>>,
         ) -> DispatchResult {
-            // If all the tables being submitted are public or community, then we only need the transaction to
-            // be signed, not specially permissioned
+            // If all the tables being submitted are public, community, or SCI, then we only need
+            // the transaction to be signed, not specially permissioned
             let all_public = tables.iter().all(|table| {
-                table.table_type == TableType::PublicPermissionless
-                    || table.table_type == TableType::Community
+                matches!(
+                    table.table_type,
+                    TableType::PublicPermissionless | TableType::Community | TableType::SCI
+                )
             });
             let is_privileged = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),
