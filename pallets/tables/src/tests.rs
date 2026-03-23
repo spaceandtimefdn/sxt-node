@@ -2081,3 +2081,78 @@ fn create_table_with_sci_metadata_fails_for_unpermissioned_user() {
         );
     });
 }
+
+/// Helper: create a community table owned by `user(1)` in the test namespace.
+/// Returns the normalised `TableIdentifier`.
+fn create_community_table_for_user1() -> TableIdentifier {
+    let (who, signer) = user(1);
+    let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
+        "VOTES",
+        "FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+    );
+    let ddl = "CREATE TABLE IF NOT EXISTS FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+    let create_statement: CreateStatement =
+        BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("fits");
+    let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+        ident: test_identifier.clone(),
+        create_statement,
+        table_type: TableType::Community,
+        commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+        source: Source::Ethereum,
+    }])
+    .expect("fits");
+    assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+        &who,
+        crate::CREATE_COST * 10,
+    ));
+    assert_ok!(Tables::create_tables(signer, tables));
+    test_identifier.try_normalize().unwrap()
+}
+
+#[test]
+fn update_table_quorum_by_table_owner_succeeds() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+
+        let (who, signer) = user(1);
+        let ident = create_community_table_for_user1();
+
+        assert_eq!(TableOwners::<Test>::get(&ident), Some(who));
+        assert!(!pallet_permissions::Pallet::<Test>::has_permissions(
+            &user(1).0,
+            &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+        ));
+
+        let new_quorum = InsertQuorumSize {
+            public: None,
+            privileged: Some(0),
+        };
+
+        assert_ok!(Tables::update_table_quorum(
+            signer,
+            ident.clone(),
+            new_quorum
+        ));
+        assert_eq!(TableInsertQuorums::<Test>::get(&ident), new_quorum);
+    });
+}
+
+#[test]
+fn update_table_quorum_fails_for_non_owner_without_permission() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+
+        let ident = create_community_table_for_user1();
+        let new_quorum = InsertQuorumSize {
+            public: None,
+            privileged: Some(0),
+        };
+        let (_who2, signer2) = user(2);
+        assert_err!(
+            Tables::update_table_quorum(signer2, ident, new_quorum),
+            pallet_permissions::Error::<Test>::InsufficientPermissions,
+        );
+    });
+}
