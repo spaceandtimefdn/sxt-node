@@ -1,3 +1,14 @@
+# [1.67.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.66.0...v1.67.0) (2026-03-23)
+
+
+### Features
+
+* add ensure_root_or_any_permissioned and tests ([b21c079](https://github.com/spaceandtimefdn/sxt-node/commit/b21c07992d1c5e8b73100c1da047fafa5ed033fc))
+* add has_any_permissions and tests ([76e038a](https://github.com/spaceandtimefdn/sxt-node/commit/76e038a59f901d35041493164535e954fa278e3d))
+* use ensure_root_or_any_permissioned in update_table_quorum to allow UpdateTableQuorum permission ([f17e23f](https://github.com/spaceandtimefdn/sxt-node/commit/f17e23fbc5a417a5e301bd628537067c65f6da4f))
+
+
+
 # [1.66.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.65.0...v1.66.0) (2026-03-23)
 
 
@@ -34,15 +45,6 @@
 
 
 ## [1.64.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.1...v1.64.2) (2026-03-13)
-
-
-
-## [1.64.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.0...v1.64.1) (2026-03-13)
-
-
-### Bug Fixes
-
-* assume quorum is reached in submit data weights ([0faf174](https://github.com/spaceandtimefdn/sxt-node/commit/0faf174eb42f3c232d89ecd969277d5d1363999d))
 
 
 
