@@ -770,7 +770,8 @@ pub mod pallet {
         /// Emits `Event::QuorumUpdated`.
         ///
         /// # Permissions
-        /// Requires `TablesPalletPermission::EditSchema`.
+        /// Requires `TablesPalletPermission::EditSchema`, or the caller must be the current
+        /// owner of the table.
         #[pallet::call_index(9)]
         #[pallet::weight(<T as Config>::WeightInfo::update_table_quorum())]
         pub fn update_table_quorum(
@@ -781,7 +782,8 @@ pub mod pallet {
             let _ = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),
                 &PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
-            )?;
+            )
+            .or_else(|_| Self::ensure_root_or_owner(origin, &table))?;
 
             let old_quorum = Self::inner_update_table_quorum(&table, new_quorum);
 
