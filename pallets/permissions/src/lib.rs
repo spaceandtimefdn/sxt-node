@@ -168,15 +168,15 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Returns `true` if the account `who` has permission `p`
         pub fn has_permissions(who: &T::AccountId, p: &PermissionLevel) -> bool {
-            Permissions::<T>::get(who)
-                .iter()
-                .flatten()
-                .any(|x| *x == *p)
+            Self::has_any_permissions(who, core::slice::from_ref(p))
         }
 
         /// Returns `true` if the account `who` has **at least one** of the given permissions.
         pub fn has_any_permissions(who: &T::AccountId, permissions: &[PermissionLevel]) -> bool {
-            permissions.iter().any(|p| Self::has_permissions(who, p))
+            Permissions::<T>::get(who)
+                .iter()
+                .flatten()
+                .any(|stored| permissions.contains(stored))
         }
 
         /// Checks whether the origin is either `Root` or a signed account with the required permission level.
