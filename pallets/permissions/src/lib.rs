@@ -195,10 +195,26 @@ pub mod pallet {
             origin: OriginFor<T>,
             permission: &PermissionLevel,
         ) -> Result<Option<T::AccountId>, DispatchError> {
+            Self::ensure_root_or_any_permissioned(origin, core::slice::from_ref(permission))
+        }
+
+        /// Like [`ensure_root_or_permissioned`], but accepts an iterator of permission levels and
+        /// succeeds if the signed account holds **at least one** of them.
+        ///
+        /// Returns:
+        /// - `Ok(None)` if the origin is `Root`,
+        /// - `Ok(Some(account_id))` if the origin is a signed account that holds any of the
+        ///   supplied permissions,
+        /// - `Err(UnsignedTransaction)` if the origin is unsigned,
+        /// - `Err(InsufficientPermissions)` if the signed account holds none of the permissions.
+        pub fn ensure_root_or_any_permissioned(
+            origin: OriginFor<T>,
+            permissions: &[PermissionLevel],
+        ) -> Result<Option<T::AccountId>, DispatchError> {
             match origin.into() {
                 Ok(frame_system::RawOrigin::Root) => Ok(None),
                 Ok(frame_system::RawOrigin::Signed(who)) => {
-                    if Self::has_permissions(&who, permission) {
+                    if Self::has_any_permissions(&who, permissions) {
                         Ok(Some(who))
                     } else {
                         Err(Error::<T>::InsufficientPermissions.into())
