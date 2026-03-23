@@ -183,6 +183,25 @@ fn assert_has_table_owner_permissions(
         "Owner should have EditSpecificPermission for SubmitDataForPrivilegedQuorum for table {:?}",
         table_identifier
     );
+
+    let quorum_permission = PermissionLevel::TablesPallet(
+        TablesPalletPermission::UpdateTableQuorum(table_identifier.clone()),
+    );
+    assert!(
+        pallet_permissions::Pallet::<Test>::has_permissions(who, &quorum_permission),
+        "Owner should have UpdateTableQuorum permission for table {:?}",
+        table_identifier
+    );
+
+    let quorum_meta_permission =
+        PermissionLevel::EditSpecificPermission(Box::new(PermissionLevel::TablesPallet(
+            TablesPalletPermission::UpdateTableQuorum(table_identifier.clone()),
+        )));
+    assert!(
+        pallet_permissions::Pallet::<Test>::has_permissions(who, &quorum_meta_permission),
+        "Owner should have EditSpecificPermission for UpdateTableQuorum for table {:?}",
+        table_identifier
+    );
 }
 
 #[test]
@@ -2103,5 +2122,92 @@ fn sci_table_succeeds_for_unpermissioned_user_in_owned_namespace() {
         assert_ok!(Tables::create_table_with_sci_metadata(
             signer, table, metadata
         ));
+    });
+}
+
+#[test]
+fn update_table_quorum_succeeds_with_per_table_permission() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let namespace = "EXAMPLE_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT";
+        create_namespace_for_testing(namespace);
+
+        let (who, signer) = user(1);
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &who,
+            crate::CREATE_COST * 10,
+        ));
+        let table_identifier = create_community_table_for_user(signer, namespace, "MY_TABLE");
+
+        // The table owner should automatically receive UpdateTableQuorum for their table
+        let quorum_permission = PermissionLevel::TablesPallet(
+            TablesPalletPermission::UpdateTableQuorum(table_identifier.clone()),
+        );
+        assert!(pallet_permissions::Pallet::<Test>::has_permissions(
+            &who,
+            &quorum_permission
+        ));
+
+        let new_quorum = InsertQuorumSize {
+            public: None,
+            privileged: Some(5),
+        };
+        assert_ok!(Tables::update_table_quorum(
+            RuntimeOrigin::signed(who),
+            table_identifier,
+            new_quorum,
+        ));
+    });
+}
+
+#[test]
+fn update_table_quorum_succeeds_with_edit_schema_permission() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
+
+        let (who, signer) = user(1);
+        set_permission!(who.clone(), TablesPalletPermission::EditSchema);
+
+        assert_ok!(Tables::create_tables(signer, test_tables()));
+
+        let table_identifier = TableIdentifier {
+            name: b"BLOCKS".to_vec().try_into().unwrap(),
+            namespace: b"ETHEREUM".to_vec().try_into().unwrap(),
+        };
+
+        let new_quorum = InsertQuorumSize {
+            public: None,
+            privileged: Some(3),
+        };
+        assert_ok!(Tables::update_table_quorum(
+            RuntimeOrigin::signed(who),
+            table_identifier,
+            new_quorum,
+        ));
+    });
+}
+
+#[test]
+fn update_table_quorum_fails_without_any_permission() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("ETHEREUM");
+
+        assert_ok!(Tables::create_tables(RuntimeOrigin::root(), test_tables()));
+
+        let table_identifier = TableIdentifier {
+            name: b"BLOCKS".to_vec().try_into().unwrap(),
+            namespace: b"ETHEREUM".to_vec().try_into().unwrap(),
+        };
+
+        let new_quorum = InsertQuorumSize {
+            public: None,
+            privileged: Some(3),
+        };
+        assert_err!(
+            Tables::update_table_quorum(user(99).1, table_identifier, new_quorum,),
+            pallet_permissions::Error::<Test>::InsufficientPermissions
+        );
     });
 }
