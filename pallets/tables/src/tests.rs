@@ -2066,7 +2066,7 @@ fn create_table_with_sci_metadata_fails_when_namespace_does_not_exist() {
 }
 
 #[test]
-fn create_table_with_sci_metadata_fails_for_unpermissioned_user() {
+fn create_table_with_sci_metadata_fails_for_unpermissioned_user_with_incorrect_namespace() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         create_namespace_for_testing("ETHEREUM");
@@ -2077,7 +2077,31 @@ fn create_table_with_sci_metadata_fails_for_unpermissioned_user() {
 
         assert_err!(
             Tables::create_table_with_sci_metadata(signer, table, metadata),
-            pallet_permissions::Error::<Test>::InsufficientPermissions,
+            crate::Error::<Test>::InvalidNamespace,
         );
+    });
+}
+
+#[test]
+fn sci_table_succeeds_for_unpermissioned_user_in_owned_namespace() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("SCI_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+
+        let (who, signer) = user(1);
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &who,
+            crate::CREATE_COST * 10,
+        ));
+
+        let table = make_sci_table(
+            "SCI_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+            "MY_TABLE",
+        );
+        let metadata: TableMetadataBytes = BoundedVec::try_from(b"meta".to_vec()).unwrap();
+
+        assert_ok!(Tables::create_table_with_sci_metadata(
+            signer, table, metadata
+        ));
     });
 }
