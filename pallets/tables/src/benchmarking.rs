@@ -663,5 +663,34 @@ mod benchmarks {
         );
     }
 
+    #[benchmark]
+    fn transfer_table_ownership() {
+        let creator: T::AccountId = whitelisted_caller();
+        grant_edit_schema::<T>(creator.clone());
+        setup_full_namespace::<T>(creator.clone(), "SCHEMA", TableType::PublicPermissionless);
+        let table_identifier = TableIdentifier::from_str_unchecked("ONE", "SCHEMA");
+        let table_definition = integers_table_definition(
+            table_identifier.clone(),
+            TableType::PublicPermissionless,
+            CommitmentSchemeFlags::all(),
+        );
+        Tables::<T>::create_tables(
+            RawOrigin::Signed(creator.clone()).into(),
+            alloc::vec![table_definition].try_into().unwrap(),
+        )
+        .unwrap();
+
+        let new_owner: T::AccountId = account("new_owner", 0, 0);
+
+        #[extrinsic_call]
+        transfer_table_ownership(
+            RawOrigin::Signed(creator),
+            table_identifier.clone(),
+            Some(new_owner.clone()),
+        );
+
+        assert_eq!(TableOwners::<T>::get(&table_identifier), Some(new_owner));
+    }
+
     impl_benchmark_test_suite!(Tables, crate::mock::new_test_ext(), crate::mock::Test);
 }

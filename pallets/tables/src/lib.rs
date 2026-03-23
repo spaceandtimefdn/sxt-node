@@ -230,6 +230,16 @@ pub mod pallet {
             /// The new quorum Settings
             new_quorum: InsertQuorumSize,
         },
+
+        /// A table's ownership has been transferred.
+        TableOwnershipTransferred {
+            /// The table whose ownership changed
+            table: TableIdentifier,
+            /// The previous owner, if any
+            old_owner: Option<T::AccountId>,
+            /// The new owner, if any
+            new_owner: Option<T::AccountId>,
+        },
     }
 
     /// Storage map of Column UUIDs by `TableIdentifier` and Version.
@@ -906,6 +916,30 @@ pub mod pallet {
                 iter::once(Some(BlockEnforcementMode::Contiguous)),
             )?;
             Self::deposit_event(Event::<T>::SciTableCreated { table: table.ident });
+            Ok(())
+        }
+
+        /// Transfer ownership of a table to a new account.
+        ///
+        /// # Events
+        /// Emits `Event::TableOwnershipTransferred`.
+        ///
+        /// # Permissions
+        /// Requires sudo, or the caller must be the current owner of the table.
+        #[pallet::call_index(14)]
+        #[pallet::weight(<T as Config>::WeightInfo::transfer_table_ownership())]
+        pub fn transfer_table_ownership(
+            origin: OriginFor<T>,
+            table: TableIdentifier,
+            new_owner: Option<T::AccountId>,
+        ) -> DispatchResult {
+            let old_owner = Self::ensure_root_or_owner(origin, &table)?;
+            TableOwners::<T>::set(&table, new_owner.clone());
+            Self::deposit_event(Event::<T>::TableOwnershipTransferred {
+                table,
+                old_owner,
+                new_owner,
+            });
             Ok(())
         }
     }
