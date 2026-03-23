@@ -234,3 +234,78 @@ fn edit_specific_permission_does_not_spillover() {
         );
     })
 }
+
+#[test]
+fn has_any_permissions_returns_true_when_one_matches() {
+    new_test_ext().execute_with(|| {
+        let permissions =
+            PermissionList::try_from(vec![PermissionLevel::UpdatePermissions]).unwrap();
+        assert_ok!(Permissions::set_permissions(
+            RuntimeOrigin::root(),
+            1,
+            permissions
+        ));
+
+        assert!(Permissions::has_any_permissions(
+            &1,
+            &[
+                PermissionLevel::UpdatePermissions,
+                PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            ]
+        ));
+    })
+}
+
+#[test]
+fn has_any_permissions_returns_true_when_all_match() {
+    new_test_ext().execute_with(|| {
+        let permissions = PermissionList::try_from(vec![
+            PermissionLevel::UpdatePermissions,
+            PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+        ])
+        .unwrap();
+        assert_ok!(Permissions::set_permissions(
+            RuntimeOrigin::root(),
+            1,
+            permissions
+        ));
+
+        assert!(Permissions::has_any_permissions(
+            &1,
+            &[
+                PermissionLevel::UpdatePermissions,
+                PermissionLevel::TablesPallet(TablesPalletPermission::EditSchema),
+            ]
+        ));
+    })
+}
+
+#[test]
+fn has_any_permissions_returns_false_when_none_match() {
+    new_test_ext().execute_with(|| {
+        let permissions =
+            PermissionList::try_from(vec![PermissionLevel::UpdatePermissions]).unwrap();
+        assert_ok!(Permissions::set_permissions(
+            RuntimeOrigin::root(),
+            1,
+            permissions
+        ));
+
+        assert!(!Permissions::has_any_permissions(
+            &1,
+            &[PermissionLevel::TablesPallet(
+                TablesPalletPermission::EditSchema
+            )]
+        ));
+    })
+}
+
+#[test]
+fn has_any_permissions_returns_false_for_account_with_no_permissions() {
+    new_test_ext().execute_with(|| {
+        assert!(!Permissions::has_any_permissions(
+            &99,
+            &[PermissionLevel::UpdatePermissions]
+        ));
+    })
+}

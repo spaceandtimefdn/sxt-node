@@ -174,6 +174,11 @@ pub mod pallet {
                 .any(|x| *x == *p)
         }
 
+        /// Returns `true` if the account `who` has **at least one** of the given permissions.
+        pub fn has_any_permissions(who: &T::AccountId, permissions: &[PermissionLevel]) -> bool {
+            permissions.iter().any(|p| Self::has_permissions(who, p))
+        }
+
         /// Checks whether the origin is either `Root` or a signed account with the required permission level.
         ///
         /// Returns:
