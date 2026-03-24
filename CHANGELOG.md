@@ -1,3 +1,12 @@
+# [1.68.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.67.0...v1.68.0) (2026-03-24)
+
+
+### Features
+
+* bump `spec_version` to 248 ([ca451f0](https://github.com/spaceandtimefdn/sxt-node/commit/ca451f0570283048771b8c4819a98758ca36492e))
+
+
+
 # [1.67.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.66.0...v1.67.0) (2026-03-23)
 
 
@@ -41,10 +50,6 @@
 * measure pallet-indexing weights for runtime 246 ([a8fd70f](https://github.com/spaceandtimefdn/sxt-node/commit/a8fd70fcc622c32d7bc587b818526fd6fb880cb1))
 * measure pallet-tables weights for runtime 246 ([4ef15ee](https://github.com/spaceandtimefdn/sxt-node/commit/4ef15ee564865cdc0c51e86e7946669291ece73c))
 * update runtime fee constants to match new insert weights ([9575b0f](https://github.com/spaceandtimefdn/sxt-node/commit/9575b0f6e382ac30d5fe0e2c2ace4a9327e914bf))
-
-
-
-## [1.64.2](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.1...v1.64.2) (2026-03-13)
 
 
 
