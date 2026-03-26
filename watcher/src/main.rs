@@ -47,8 +47,8 @@ use sxt_runtime::Runtime;
 use thiserror::Error;
 use tokio::sync::{mpsc, watch};
 use tokio::time::{timeout, Duration};
-use translation_layer::tx_submitter::{TxSubmitter, TxUpdate};
 use watcher::attestation;
+use watcher::tx_submitter::{TxSubmitter, TxUpdate};
 
 type SxtConfig = PolkadotConfig;
 
@@ -160,7 +160,7 @@ pub enum AttestationError {
 
     /// TxSubmitterError
     #[error("TxSubmitterError")]
-    TxSubmitterError(Box<translation_layer::error::Error>),
+    TxSubmitterError(Box<watcher::tx_submitter::Error>),
 }
 
 impl From<subxt::Error> for AttestationError {
@@ -175,8 +175,8 @@ impl From<attestation::fetch::FetchError> for AttestationError {
     }
 }
 
-impl From<translation_layer::error::Error> for AttestationError {
-    fn from(err: translation_layer::error::Error) -> Self {
+impl From<watcher::tx_submitter::Error> for AttestationError {
+    fn from(err: watcher::tx_submitter::Error) -> Self {
         AttestationError::TxSubmitterError(Box::new(err))
     }
 }

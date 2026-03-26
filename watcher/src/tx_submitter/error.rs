@@ -1,3 +1,5 @@
+//! Errors used by `tx_submitter`.
+
 use snafu::Snafu;
 
 /// Represents errors that can occur during blockchain interactions, key management,

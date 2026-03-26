@@ -12,7 +12,7 @@ use sxt_core::sxt_chain_runtime;
 use tokio::sync::{mpsc, Mutex};
 use tokio::time::{sleep, Duration};
 
-use crate::error::{Error, FetchEventsSnafu, FetchInitialNonceSnafu, Result};
+use crate::tx_submitter::error::{Error, FetchEventsSnafu, FetchInitialNonceSnafu, Result};
 
 const MAX_RETRIES: usize = 3;
 

@@ -34,7 +34,6 @@ members = [
     "pallets/smartcontracts",
     "event-forwarder", 
     "chain-utils",
-    "translation-layer",
     "pallets/system-contracts",
     "canaries",
     "pallets/zkpay",
@@ -57,7 +56,6 @@ sp-runtime-interface = { version = "28.0.0", default-features = false }
 
 event-forwarder = { path = "./event-forwarder"}
 watcher = { path = "./watcher"}
-translation-layer = { path = "./translation-layer"}
 tokio = { version = "1.41.0", default-features = false }
 ahash = { version = "0.8.11", default-features = false }
 ark-serialize = { version = "0.5.0", default-features = false }
@@ -148,12 +146,6 @@ url = { version = "2.5.4", default-features = false }
 reqwest = { version = "0.11", default-features = false }
 async-stream = { version = "0.3.6", default-features = false }
 axum = { version = "0.8.0", default-features = false }
-tower-http = { version = "0.5", default-features = false}
-utoipa = { version = "5.3.1", default-features = false}
-utoipa-swagger-ui = { version = "9.0.1", default-features = false}
-utoipa-axum = { version = "0.2.0", default-features = false }
-linked-list = { version = "0.1.0", default-features = false }
-base64 = { version = "0.21", default-features = false }
 regex = { version = "1.11.1", default-features = false }
 prometheus = "0.14.0"
 proptest = { version = "1.7.0", default-features = false }
