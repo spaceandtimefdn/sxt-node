@@ -26,7 +26,6 @@ members = [
     "proof-of-sql/unversioned",
     "native",
     "native-api",
-    "utils/commit-grouper",
     "watcher",
     "pallets/attestation",
     "pallets/rewards",
