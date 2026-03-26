@@ -23040,6 +23040,7 @@ dependencies = [
 name = "watcher"
 version = "0.1.0"
 dependencies = [
+ "arrow 54.2.1",
  "attestation_tree",
  "clap 4.5.32",
  "crossterm 0.28.1",
@@ -23061,7 +23062,6 @@ dependencies = [
  "sxt-runtime",
  "thiserror 2.0.12",
  "tokio",
- "translation-layer",
 ]
 
 [[package]]
