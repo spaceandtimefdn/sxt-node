@@ -1,9 +1,5 @@
 name: Release
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+on: workflow_dispatch
 
 permissions:
   id-token: write # This is required for requesting the JWT
