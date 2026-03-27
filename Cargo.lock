@@ -3731,23 +3731,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "commit-grouper"
-version = "0.1.0"
-dependencies = [
- "clap 4.5.32",
- "glob",
- "parity-scale-codec",
- "polkadot-sdk 0.9.0",
- "postcard",
- "proof-of-sql-commitment-map",
- "scale-info",
- "serde",
- "serde_json",
- "snafu 0.8.5",
- "sxt-core",
-]
-
-[[package]]
 name = "commitment-column-mapping"
 version = "0.1.0"
 dependencies = [
