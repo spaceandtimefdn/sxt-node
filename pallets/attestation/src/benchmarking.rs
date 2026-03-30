@@ -102,7 +102,7 @@ mod benchmarks {
         let block_number: BlockNumber = 10;
 
         // Register the attestation key
-        let attestation_key = create_registered_attestation_key::<T>(caller.clone());
+        let _attestation_key = create_registered_attestation_key::<T>(caller.clone());
 
         // Generate deterministic attestation
         let (_, public_key, signature) =
