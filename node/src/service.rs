@@ -16,7 +16,6 @@ use polkadot_sdk::sc_telemetry::{Telemetry, TelemetryWorker};
 use polkadot_sdk::sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use polkadot_sdk::sp_runtime::traits::Block as BlockT;
 use polkadot_sdk::{
-    frame_benchmarking,
     sc_authority_discovery,
     sc_basic_authorship,
     sc_consensus,
@@ -57,7 +56,7 @@ pub type HostFunctions = (
     sp_io::SubstrateHostFunctions,
     sp_statement_store::runtime_api::HostFunctions,
     native::interface::HostFunctions,
-    frame_benchmarking::benchmarking::HostFunctions,
+    polkadot_sdk::frame_benchmarking::benchmarking::HostFunctions,
 );
 
 pub type RuntimeExecutor = sc_executor::WasmExecutor<HostFunctions>;
