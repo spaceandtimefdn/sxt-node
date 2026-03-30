@@ -13,9 +13,6 @@ mod cli;
 /// Service Configuration
 mod command;
 
-/// RPC setup
-mod rpc;
-
 /// Service instantiation
 mod service;
 

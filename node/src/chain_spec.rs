@@ -511,17 +511,3 @@ fn genesis_patch(
         },
     })
 }
-
-fn session_keys(
-    grandpa: GrandpaId,
-    babe: BabeId,
-    authority_discovery: AuthorityId,
-    im_online: ImOnlineId,
-) -> SessionKeys {
-    SessionKeys {
-        babe,
-        grandpa,
-        authority_discovery,
-        im_online,
-    }
-}
