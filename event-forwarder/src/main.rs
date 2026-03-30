@@ -48,7 +48,11 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use watcher::attestation::fetch::commitments_and_staking_contract_info_and_claimed_unstakes;
 
-#[allow(clippy::too_many_arguments, missing_docs)]
+#[allow(
+    clippy::too_many_arguments,
+    missing_docs,
+    clippy::missing_docs_in_private_items
+)]
 mod event_forwarder_contract {
     use alloy::sol;
     sol!(
