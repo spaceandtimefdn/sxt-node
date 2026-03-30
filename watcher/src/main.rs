@@ -825,9 +825,8 @@ fn verify_attestations<B: ratatui::backend::Backend>(
             signature,
             proposed_pub_key,
             state_root,
-            address20,
             block_number,
-            block_hash,
+            ..
         } = attestation;
 
         // Create message and verify signature
