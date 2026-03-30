@@ -5,6 +5,7 @@
 //! 1. Since it requires loading the full proof-of-sql setups, it can take over 10 minutes to run.
 //! 2. The proof-of-sql setups that the pallet uses exist in oncecells, and are shared across
 //!    tests. Other tests currently use much smaller proof-of-sql setups.
+#![allow(clippy::missing_docs_in_private_items)]
 use clap::Parser;
 use commitment_sql::OnChainTableToTableCommitmentFn;
 use native_api::Api;
@@ -31,7 +32,6 @@ use sqlparser::ast::Ident;
 use sqlparser::dialect::PostgreSqlDialect;
 use sxt_core::tables::TableIdentifier;
 
-#[allow(missing_docs)]
 mod mock {
     use polkadot_sdk::frame_support::derive_impl;
     use polkadot_sdk::{frame_support, frame_system};
