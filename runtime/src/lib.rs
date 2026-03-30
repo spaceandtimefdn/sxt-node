@@ -14,7 +14,6 @@ extern crate alloc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use pallet_commitments::migrations::delete_dynamic_dory::DeleteDynamicDoryCommitmentsLazyMigration;
 use polkadot_sdk::frame_election_provider_support::{
     generate_solution_type,
     onchain,
@@ -60,7 +59,7 @@ use polkadot_sdk::sp_api::impl_runtime_apis;
 use polkadot_sdk::sp_arithmetic::traits::UniqueSaturatedInto;
 use polkadot_sdk::sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use polkadot_sdk::sp_consensus_babe::AuthorityId as BabeId;
-use polkadot_sdk::sp_core::crypto::{AccountId32, KeyTypeId};
+use polkadot_sdk::sp_core::crypto::KeyTypeId;
 use polkadot_sdk::sp_core::OpaqueMetadata;
 use polkadot_sdk::sp_runtime::traits::{
     AccountIdLookup,
@@ -135,7 +134,7 @@ use polkadot_sdk::{
     sp_version,
 };
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
-use proof_of_sql_commitment_map::{AnyCommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
+use proof_of_sql_commitment_map::PerCommitmentScheme;
 use sxt_core::system_tables::ClaimedUnstake;
 pub use {
     pallet_attestation,
@@ -1014,10 +1013,11 @@ pub type SignedExtra = (
 ///
 /// This can be a tuple of types, each implementing `OnRuntimeUpgrade`.
 #[allow(unused_parens)]
-type Migrations = DeleteDynamicDoryCommitmentsLazyMigration<
-    Runtime,
-    pallet_commitments::migrations::delete_dynamic_dory::weights::SubstrateWeight<Runtime>,
->;
+type Migrations =
+    pallet_commitments::migrations::delete_dynamic_dory::DeleteDynamicDoryCommitmentsLazyMigration<
+        Runtime,
+        pallet_commitments::migrations::delete_dynamic_dory::weights::SubstrateWeight<Runtime>,
+    >;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -1036,7 +1036,7 @@ pub type Executive = polkadot_sdk::frame_executive::Executive<
 #[cfg(feature = "try-runtime")]
 use polkadot_sdk::frame_try_runtime;
 #[cfg(feature = "runtime-benchmarks")]
-use polkadot_sdk::{frame_benchmarking, frame_system_benchmarking, sp_storage};
+use polkadot_sdk::{frame_benchmarking, frame_system_benchmarking};
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
