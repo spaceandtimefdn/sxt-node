@@ -41,6 +41,7 @@ use sxt_core::sxt_chain_runtime::api::{self, tx};
     about = "CLI for interacting with SxT chain"
 )]
 struct Cli {
+    /// The chain utilities as subcommands.
     #[command(subcommand)]
     command: Commands,
 }
@@ -84,6 +85,7 @@ enum Commands {
 
     /// Stub for future utility to print batch
     PrintBatch {
+        /// The arrow record batch IPC bytes.
         #[arg(short, long)]
         row_data: String,
     },
