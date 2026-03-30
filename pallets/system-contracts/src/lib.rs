@@ -84,7 +84,7 @@ pub mod pallet {
 
     /// Events that the system contracts pallet can emit.
     #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    #[pallet::generate_deposit(fn deposit_event)]
     pub enum Event<T: Config> {
         /// The staking contract information has been updated.
         StakingContractUpdated {
