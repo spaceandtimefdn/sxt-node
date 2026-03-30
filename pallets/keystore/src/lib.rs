@@ -76,7 +76,7 @@ pub mod pallet {
 
     /// Events emitted by the keystore pallet.
     #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    #[pallet::generate_deposit(fn deposit_event)]
     pub enum Event<T: Config> {
         /// A key has been successfully registered.
         EthereumKeyRegistered {
