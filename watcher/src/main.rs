@@ -24,8 +24,6 @@ use ratatui::Terminal;
 use runtime::api::runtime_types::sxt_core::attestation::Attestation;
 use sha3::digest::generic_array::GenericArray;
 use subxt::blocks::Block as BlockT;
-use subxt::config::substrate::{BlakeTwo256, SubstrateHeader};
-use subxt::config::Header;
 use subxt::tx::TxStatus;
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
