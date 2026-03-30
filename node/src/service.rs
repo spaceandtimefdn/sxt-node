@@ -268,14 +268,19 @@ pub struct NewFullBase {
     /// The task manager of the node.
     pub task_manager: TaskManager,
     /// The client instance of the node.
+    #[expect(dead_code)]
     pub client: Arc<FullClient>,
     /// The networking service of the node.
+    #[expect(dead_code)]
     pub network: Arc<dyn sc_network::service::traits::NetworkService>,
     /// The syncing service of the node.
+    #[expect(dead_code)]
     pub sync: Arc<sc_network_sync::SyncingService<Block>>,
     /// The transaction pool of the node.
+    #[expect(dead_code)]
     pub transaction_pool: Arc<TransactionPool>,
     /// The rpc handlers of the node.
+    #[expect(dead_code)]
     pub rpc_handlers: sc_service::RpcHandlers,
 }
 
