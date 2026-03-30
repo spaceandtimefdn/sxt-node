@@ -1,3 +1,4 @@
+//! Rpc Apis interacting with pallet-commitments.
 mod error;
 
 mod limits;

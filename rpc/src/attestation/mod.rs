@@ -1,3 +1,5 @@
+//! Rpc APIs interacting with the pallet-attestations.
+
 mod error;
 pub use error::AttestationApiError;
 
