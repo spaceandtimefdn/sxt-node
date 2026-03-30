@@ -495,7 +495,7 @@ impl AttestationClient {
             hex::decode(state_root.data.clone()).expect("could not decode for msg creation");
 
         let Ok(fixed_size_state_root) = <[u8; 32]>::try_from(hex_decoded_state_root)
-            .inspect_err(|e| log::error!("Error: computed commitments state root not 32 bytes"))
+            .inspect_err(|_| log::error!("Error: computed commitments state root not 32 bytes"))
         else {
             return Ok(());
         };
