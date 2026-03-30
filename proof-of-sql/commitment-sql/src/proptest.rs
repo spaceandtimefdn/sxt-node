@@ -14,7 +14,7 @@ use crate::OnChainTableToTableCommitmentFn;
 /// Strategy for producing [`TableCommitmentPerCommitmentScheme`]s by committing to the given table
 /// with the given commitment schemes, both of which can be themselves be strategies.
 pub fn table_commitment_per_commitment_scheme<T, CS>(
-    setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'_>>,
     table: T,
     commitment_schemes: CS,
 ) -> impl Strategy<Value = TableCommitmentPerCommitmentScheme> + use<'_, T, CS>
