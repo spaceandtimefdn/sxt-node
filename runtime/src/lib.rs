@@ -54,6 +54,7 @@ use polkadot_sdk::pallet_election_provider_multi_phase::GeometricDepositBase;
 use polkadot_sdk::pallet_grandpa::AuthorityId as GrandpaId;
 pub use polkadot_sdk::pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 pub use polkadot_sdk::pallet_timestamp::Call as TimestampCall;
+#[allow(deprecated)]
 use polkadot_sdk::pallet_transaction_payment::{CurrencyAdapter, Multiplier};
 use polkadot_sdk::sp_api::impl_runtime_apis;
 use polkadot_sdk::sp_arithmetic::traits::UniqueSaturatedInto;
@@ -427,6 +428,7 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    #[allow(deprecated)]
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
     type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
