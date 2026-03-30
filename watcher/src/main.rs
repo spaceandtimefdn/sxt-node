@@ -882,7 +882,7 @@ fn update_ui<B: ratatui::backend::Backend>(
             .style(Style::default().fg(Color::White));
 
         f.render_widget(list, chunks[0]);
-    });
+    })?;
 
     Ok(())
 }
