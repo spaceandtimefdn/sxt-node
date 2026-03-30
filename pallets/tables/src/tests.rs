@@ -67,8 +67,6 @@ macro_rules! set_permission {
 }
 
 const ETH_TEST_WALLET: &str = "44bCf7001D9C3fe8b7aA2BBaaf1B94410db31f5c";
-const EXPECTED_TRANSFORMED_ETH_TEST_WALLET_HEX: &str =
-    "00000000000000000000000044bCf7001D9C3fe8b7aA2BBaaf1B94410db31f5c";
 
 fn test_tables() -> UpdateTableList {
     let test_identifier =
