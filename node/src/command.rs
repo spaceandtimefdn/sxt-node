@@ -10,7 +10,7 @@ use polkadot_sdk::{sc_cli, sc_consensus_grandpa, sc_service, sp_runtime};
 use sxt_runtime::{Block, EXISTENTIAL_DEPOSIT};
 
 use crate::benchmarking::{inherent_benchmark_data, RemarkBuilder, TransferKeepAliveBuilder};
-use crate::cli::{Cli, EventForwarderDetails, Subcommand};
+use crate::cli::{Cli, Subcommand};
 use crate::service::HostFunctions;
 use crate::{chain_spec, service};
 

@@ -2,28 +2,19 @@
 
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
 
-use codec::Encode;
 use futures::prelude::*;
 use polkadot_sdk::sc_client_api::{Backend, BlockBackend};
 use polkadot_sdk::sc_consensus_babe::{self, SlotProportion};
 use polkadot_sdk::sc_network::event::Event;
-use polkadot_sdk::sc_network::service::traits::NetworkService;
 use polkadot_sdk::sc_network::{NetworkBackend, NetworkEventStream};
 use polkadot_sdk::sc_network_sync::strategy::warp::WarpSyncConfig;
-use polkadot_sdk::sc_network_sync::SyncingService;
-use polkadot_sdk::sc_rpc::chain::ChainApiClient;
 use polkadot_sdk::sc_service::config::Configuration;
 use polkadot_sdk::sc_service::error::Error as ServiceError;
-use polkadot_sdk::sc_service::{RpcHandlers, TaskManager};
-use polkadot_sdk::sc_statement_store::Store as StatementStore;
+use polkadot_sdk::sc_service::TaskManager;
 use polkadot_sdk::sc_telemetry::{Telemetry, TelemetryWorker};
 use polkadot_sdk::sc_transaction_pool_api::OffchainTransactionPoolFactory;
-use polkadot_sdk::sp_api::ProvideRuntimeApi;
-use polkadot_sdk::sp_core::crypto::Pair;
 use polkadot_sdk::sp_runtime::traits::Block as BlockT;
-use polkadot_sdk::sp_runtime::{generic, SaturatedConversion};
 use polkadot_sdk::{
     frame_benchmarking,
     sc_authority_discovery,
@@ -42,7 +33,6 @@ use polkadot_sdk::{
     sc_storage_monitor,
     sc_telemetry,
     sc_transaction_pool,
-    sp_authority_discovery,
     sp_consensus_babe,
     sp_io,
     sp_statement_store,
@@ -53,7 +43,7 @@ use proof_of_sql_static_setups::io::initialize_from_config;
 use sxt_runtime::opaque::Block;
 use sxt_runtime::{self, RuntimeApi};
 
-use crate::cli::{Cli, EventForwarderDetails};
+use crate::cli::Cli;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type HostFunctions = (
