@@ -135,18 +135,30 @@ struct Cli {
     substrate_rpc_url: String,
 }
 
+/// Errors that can occur in [`process_block`].
 #[derive(Debug, Snafu)]
 enum BlockProcessingError {
+    /// Error occurred when fetching attestation data.
     #[snafu(transparent)]
     Fetch {
+        /// The source error.
         source: watcher::attestation::fetch::FetchError,
     },
+    /// Error occurred when decoding blockchain data.
     #[snafu(transparent)]
-    Codec { source: codec::Error },
+    Codec {
+        /// The source codec error.
+        source: codec::Error,
+    },
+    /// Error occurred in substrate client.
     #[snafu(transparent)]
-    Subxt { source: subxt::Error },
+    Subxt {
+        /// The source subxt error.
+        source: subxt::Error,
+    },
 }
 
+/// Returns the attestations for the given block mapped by their state root value.
 async fn attestations_per_root<P>(
     config: &Config<P>,
     block_number: u32,
@@ -182,6 +194,7 @@ async fn attestations_per_root<P>(
     Ok(result)
 }
 
+/// Submits a FulfillUnstake transaction.
 async fn attempt_fulfill_unstake<P: alloy::providers::Provider<Ethereum>>(
     contract: &EventForwarder::EventForwarderInstance<P>,
     claimed_unstake: ClaimedUnstake<AccountId32, u32, u128>,
@@ -205,6 +218,7 @@ async fn attempt_fulfill_unstake<P: alloy::providers::Provider<Ethereum>>(
     }
 }
 
+/// Processes an individual block, collecting attestations and fulfilling unstakes.
 async fn process_block<P: alloy::providers::Provider<Ethereum>, Q>(
     config: &Config<Q>,
     contract: &EventForwarder::EventForwarderInstance<P>,
@@ -294,8 +308,11 @@ async fn main() -> Result<(), EventForwarderError> {
 
 /// Holds shared configuration for the blockchain processor and integration test
 struct Config<P> {
+    /// Alloy provider.
     provider: P,
+    /// Contract address of [`event_forwarder_contract`].
     contract_address: Address,
+    /// Polkadot client.
     api: OnlineClient<PolkadotConfig>,
 }
 
@@ -331,6 +348,7 @@ async fn setup_config(
     })
 }
 
+/// Loads a hex-encoded etheruem key from the file at the given path.
 async fn load_ethereum_key(path: &str) -> Result<SigningKey, EventForwarderError> {
     let mut file = File::open(path).await.context(KeyFileReadSnafu {
         path: path.to_string(),
