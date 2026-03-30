@@ -1,3 +1,4 @@
+//! Contains [`MemoryCommitmentMap`], a test implementation of [`CommitmentMapImplementor`].
 use std::collections::HashMap;
 
 use proof_of_sql::base::database::TableRef;
