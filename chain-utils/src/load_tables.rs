@@ -35,21 +35,6 @@ use url::Url;
 use sxt_core::tables::convert_ignite_create_statement;
 use crate::common;
 
-fn read_file(filename: &str) -> Result<String, std::io::Error> {
-    info!("Reading file: {}", filename);
-    fs::read_to_string(filename)
-}
-
-fn parse_sql(sql: &str) -> Result<Vec<sqlparser::ast::Statement>, sqlparser::parser::ParserError> {
-    info!("Parsing SQL content");
-    let dialect = GenericDialect;
-    SqlParser::parse_sql(&dialect, sql)
-}
-
-fn format_statements(statements: &[sqlparser::ast::Statement]) -> Vec<String> {
-    statements.iter().map(|stmt| stmt.to_string()).collect()
-}
-
 fn extract_table_data(statement: &Statement) -> Option<UpdateTable> {
     if let Statement::CreateTable { name, .. } = statement {
         info!("Extracting table data from statement: {}", statement);
