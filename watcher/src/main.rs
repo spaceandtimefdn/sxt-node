@@ -392,11 +392,6 @@ struct AttestationClient {
     /// This key is used to sign attestations for the SxT network.
     eth_key_path: String,
 
-    /// The file path to the Substrate SR25519 private key.
-    ///
-    /// This key is used to submit transactions to the blockchain.
-    substrate_key_path: String,
-
     /// The Substrate API client used to interact with the blockchain.
     ///
     /// This client provides access to blocks, storage, and transaction submission.
@@ -428,7 +423,6 @@ impl AttestationClient {
 
         Ok(Self {
             eth_key_path: eth_key_path.to_string(),
-            substrate_key_path: substrate_key_path.to_string(),
             tx_submitter,
             api,
             block_process_concurrency,
@@ -438,16 +432,13 @@ impl AttestationClient {
     /// Core loop of [`AttestationClient`], subscribing to blocks and processing them.
     async fn run(&self) -> Result<(), AttestationError> {
         let eth_signing_key = load_ethereum_key(&self.eth_key_path)?;
-        let substrate_key = load_substrate_key(&self.substrate_key_path)?;
 
         self.api
             .blocks()
             .subscribe_finalized()
             .await?
             .for_each_concurrent(self.block_process_concurrency, |block_result| async {
-                let _ = self
-                    .process_block(block_result, &eth_signing_key, &substrate_key)
-                    .await;
+                let _ = self.process_block(block_result, &eth_signing_key).await;
             })
             .await;
 
@@ -459,7 +450,6 @@ impl AttestationClient {
         &self,
         block_result: Result<SxtBlock, subxt::Error>,
         private_key: &SigningKey,
-        keypair: &Keypair,
     ) -> Result<(), ()> {
         let block = match block_result {
             Ok(block) => block,
