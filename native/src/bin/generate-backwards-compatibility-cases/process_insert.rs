@@ -81,7 +81,7 @@ fn process_insert_input(
 
 /// Strategy for generating `process_insert` input with malformed commitments.
 fn process_insert_input_bad_commitments(
-    setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'_>>,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -116,7 +116,7 @@ fn process_insert_input_bad_commitments(
 
 /// Strategy for generating `process_insert` input with malformed insert data.
 fn process_insert_input_bad_table(
-    setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'_>>,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -148,7 +148,7 @@ fn process_insert_input_bad_table(
 
 /// Strategy for generating `process_insert` input with out-of-bounds decimal insert data.
 fn process_insert_input_out_of_scalar_bounds(
-    setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'_>>,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -189,7 +189,7 @@ fn process_insert_input_out_of_scalar_bounds(
 /// Strategy for generating `process_insert` input with insert data/commitments that disagree on
 /// table schema.
 fn process_insert_input_mismatched_schemas(
-    setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'_>>,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -221,7 +221,7 @@ fn process_insert_input_mismatched_schemas(
 
 /// Strategy for generating `process_insert` input with commitments that disagree on table size.
 fn process_insert_input_mismatched_lengths(
-    setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'_>>,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
@@ -263,7 +263,7 @@ fn process_insert_input_mismatched_lengths(
 
 /// Strategy for generating `process_insert` input with commitments that disagree on column order.
 fn process_insert_input_mismatched_column_order(
-    setups: PerCommitmentScheme<AssociatedPublicSetupType>,
+    setups: PerCommitmentScheme<AssociatedPublicSetupType<'_>>,
 ) -> impl Strategy<
     Value = (
         TableIdentifier,
