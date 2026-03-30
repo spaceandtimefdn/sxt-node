@@ -1,3 +1,4 @@
+//! Common items used by various utilities.
 use std::sync::Arc;
 use std::time::Duration;
 

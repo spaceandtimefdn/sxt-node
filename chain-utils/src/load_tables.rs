@@ -1,3 +1,5 @@
+//! Utility to load table definitions from a DDL file and submit to chain.
+
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;

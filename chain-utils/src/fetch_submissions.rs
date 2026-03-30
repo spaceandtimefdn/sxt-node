@@ -1,3 +1,4 @@
+//! Utility to fetch SubmitData events from a given block
 use std::str::from_utf8;
 
 use anyhow::{anyhow, Result};

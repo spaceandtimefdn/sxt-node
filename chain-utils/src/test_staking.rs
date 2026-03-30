@@ -1,3 +1,4 @@
+//! Utility to submit staking + session keys message for a test validator (Sepolia impersonation)
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;

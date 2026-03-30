@@ -1,3 +1,4 @@
+//! Utility for printing record batches
 use std::io::Write;
 
 use arrow::ipc::reader::StreamReader;

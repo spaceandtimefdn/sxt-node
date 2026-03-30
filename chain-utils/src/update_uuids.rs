@@ -1,3 +1,4 @@
+//! Utility that reads UUIDs from a DDL file and update the corresponding tables.
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
