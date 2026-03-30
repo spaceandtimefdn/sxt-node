@@ -1023,6 +1023,7 @@ pub type SignedExtra = (
 ///
 /// This can be a tuple of types, each implementing `OnRuntimeUpgrade`.
 #[allow(unused_parens)]
+#[cfg(not(feature = "runtime-benchmarks"))]
 type Migrations =
     pallet_commitments::migrations::delete_dynamic_dory::DeleteDynamicDoryCommitmentsLazyMigration<
         Runtime,
