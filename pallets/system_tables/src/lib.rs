@@ -78,7 +78,7 @@ pub mod pallet {
     }
 
     #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    #[pallet::generate_deposit(fn deposit_event)]
     pub enum Event<T: Config> {
         /// This event is emitted whenever a message is received by Substrate from the EVM
         MessageReceived {
