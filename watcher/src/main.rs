@@ -781,9 +781,7 @@ async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationErr
             progress.push("Verifying attestations...".to_string());
             update_ui(&mut terminal, &progress)?;
 
-            if let Err(err) =
-                verify_attestations(block_number, &attestations.0, &mut progress, &mut terminal)
-            {
+            if let Err(err) = verify_attestations(&attestations.0, &mut progress, &mut terminal) {
                 progress.push(format!("Error: {:?}", err));
                 update_ui(&mut terminal, &progress)?;
             } else {
@@ -816,7 +814,6 @@ async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationErr
 
 /// Verifies a list of attestations.
 fn verify_attestations<B: ratatui::backend::Backend>(
-    block_number: u32,
     attestations: &[Attestation<H256>],
     progress: &mut Vec<String>,
     terminal: &mut Terminal<B>,
