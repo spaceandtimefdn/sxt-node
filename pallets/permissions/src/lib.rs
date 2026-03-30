@@ -49,7 +49,7 @@ pub mod pallet {
     pub type Permissions<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, PermissionList>;
 
     #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    #[pallet::generate_deposit(fn deposit_event)]
     pub enum Event<T: Config> {
         /// The permissions for an account were updated.
         PermissionsSet(T::AccountId, PermissionList),
