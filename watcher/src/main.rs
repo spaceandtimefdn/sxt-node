@@ -48,6 +48,7 @@ use tokio::time::{timeout, Duration};
 use watcher::attestation;
 use watcher::tx_submitter::{TxSubmitter, TxUpdate};
 
+/// Default set of commonly used types by SxT nodes.
 type SxtConfig = PolkadotConfig;
 
 /// A block in the SXT network
@@ -207,6 +208,7 @@ struct Cli {
     )]
     substrate_key_path: String,
 
+    /// Subcommands for this CLI.
     #[command(subcommand)]
     command: Commands,
 }
@@ -298,6 +300,7 @@ async fn main() {
     }
 }
 
+/// Spawns a green thread that logs transaction progress.
 async fn spawn_tx_progress_logger(
     mut tx_receiver: tokio::sync::mpsc::Receiver<TxUpdate>,
     restart_trigger: tokio::sync::watch::Sender<()>,
@@ -407,6 +410,7 @@ struct AttestationClient {
 }
 
 impl AttestationClient {
+    /// Returns a new [`AttestationClient`].
     async fn new(
         websocket: &str,
         eth_key_path: &str,
@@ -431,6 +435,7 @@ impl AttestationClient {
         })
     }
 
+    /// Core loop of [`AttestationClient`], subscribing to blocks and processing them.
     async fn run(&self) -> Result<(), AttestationError> {
         let eth_signing_key = load_ethereum_key(&self.eth_key_path)?;
         let substrate_key = load_substrate_key(&self.substrate_key_path)?;
@@ -449,6 +454,7 @@ impl AttestationClient {
         Ok(())
     }
 
+    /// Processes individual blocks for attesting.
     async fn process_block(
         &self,
         block_result: Result<SxtBlock, subxt::Error>,
@@ -580,6 +586,7 @@ impl AttestationClient {
         Ok(())
     }
 
+    /// Submit the given attestation using the [`TxSubmitter`].
     async fn submit_transaction_with_retry(
         &self,
         block: &BlockT<PolkadotConfig, OnlineClient<SxtConfig>>,
@@ -612,6 +619,8 @@ impl AttestationClient {
     }
 }
 
+/// Creates the runtime Attestation type by creating a message from the given attestation details
+/// and signing.
 fn create_attestation(
     block_hash: H256,
     private_key: &SigningKey,
@@ -643,7 +652,7 @@ fn create_attestation(
     )
 }
 
-// Placeholder function for the register command
+/// Placeholder function for the register command
 async fn register(eth_key_path: &str, substrate_key_path: &str) -> Result<(), AttestationError> {
     let eth_signing_key = load_ethereum_key(eth_key_path)?;
     let substrate_key = load_substrate_key(substrate_key_path)?;
@@ -679,6 +688,7 @@ async fn register(eth_key_path: &str, substrate_key_path: &str) -> Result<(), At
     Ok(())
 }
 
+/// Creates a full attestation message from the state root and block number.
 fn create_message(state_root: impl AsRef<[u8]>, block_number: u32) -> Vec<u8> {
     let mut msg = Vec::with_capacity(state_root.as_ref().len() + std::mem::size_of::<u32>());
     msg.extend_from_slice(state_root.as_ref());
@@ -686,6 +696,7 @@ fn create_message(state_root: impl AsRef<[u8]>, block_number: u32) -> Vec<u8> {
     msg
 }
 
+/// Returns a signature to the given message, converting the error to [`AttestationError`]
 fn generate_signature(
     private_key: &SigningKey,
     message: &[u8],
@@ -694,6 +705,7 @@ fn generate_signature(
         .map_err(|_| AttestationError::AttestationCreationError)
 }
 
+/// Returns the public key associated with the given private key as bytes.
 fn get_proposed_pub_key(private_key: &SigningKey) -> Result<[u8; 33], AttestationError> {
     let pub_key: &[u8] = &private_key.verifying_key().to_sec1_bytes();
 
@@ -701,6 +713,8 @@ fn get_proposed_pub_key(private_key: &SigningKey) -> Result<[u8; 33], Attestatio
         .try_into()
         .map_err(|_| AttestationError::SigningKeyParseError)
 }
+
+/// Loads an ethereum key from a file containing the hex.
 fn load_ethereum_key(path: &str) -> Result<SigningKey, AttestationError> {
     let mut file = File::open(path)?;
     let mut hex_string = String::new();
@@ -713,6 +727,7 @@ fn load_ethereum_key(path: &str) -> Result<SigningKey, AttestationError> {
     SigningKey::from_bytes(key_array).map_err(|_| AttestationError::SigningKeyParseError)
 }
 
+/// Loads a substrate key from a file containing the hex.
 fn load_substrate_key(file_path: &str) -> Result<Keypair, AttestationError> {
     let mut file = File::open(file_path)?;
     let mut hex_string = String::new();
@@ -729,6 +744,7 @@ fn load_substrate_key(file_path: &str) -> Result<Keypair, AttestationError> {
     Keypair::from_secret_key(key_bytes).map_err(|_| AttestationError::KeypairCreationError)
 }
 
+/// Tui implementation for verifying the attestations in the given block.
 async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationError> {
     // Initialize terminal
     enable_raw_mode()?;
