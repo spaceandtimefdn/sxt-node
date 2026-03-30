@@ -22,6 +22,7 @@ pub struct AttestationInfo {
     /// The 20-byte ethereum address as a hex string (with 0x prefix)
     pub address20: String,
     /// The block number that was attested
+    #[expect(dead_code)]
     pub block_number: u32,
 }
 
