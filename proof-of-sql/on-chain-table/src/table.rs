@@ -97,7 +97,7 @@ impl OnChainTable {
     }
 
     /// Returns a borrowing iterator over all identifier-column pairs.
-    pub fn iter(&self) -> Iter<Ident, OnChainColumn> {
+    pub fn iter(&self) -> Iter<'_, Ident, OnChainColumn> {
         self.into_iter()
     }
 
@@ -106,7 +106,7 @@ impl OnChainTable {
     /// After the error is handled, this can be supplied to the `proof-of-sql` commitment API.
     pub fn iter_committable<S: Scalar>(
         &self,
-    ) -> impl Iterator<Item = Result<(&Ident, CommittableColumn), OutOfScalarBounds>> {
+    ) -> impl Iterator<Item = Result<(&Ident, CommittableColumn<'_>), OutOfScalarBounds>> {
         self.iter().map(|(id, column)| {
             column
                 .try_to_committable_column::<S>()
