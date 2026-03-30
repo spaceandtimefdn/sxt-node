@@ -78,8 +78,6 @@ where
 mod tests {
     use core::marker::PhantomData;
 
-    use proof_of_sql::base::commitment::Commitment;
-
     use super::*;
     use crate::{
         CommitmentId,
