@@ -214,6 +214,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     state_version: 1,
 };
 
+/// Switches between 2 expressions depending on if `fast-runtime` is enabled.
 macro_rules! prod_or_dev {
     ($prod: expr, $dev: expr) => {
         if cfg!(feature = "fast-runtime") {
@@ -279,6 +280,7 @@ pub fn native_version() -> NativeVersion {
     }
 }
 
+/// Ratio between max and normal dispatch block lengths.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
 parameter_types! {
@@ -1040,6 +1042,7 @@ use polkadot_sdk::frame_try_runtime;
 #[cfg(feature = "runtime-benchmarks")]
 use polkadot_sdk::{frame_benchmarking, frame_system_benchmarking};
 
+/// Defines pallet benchmarks.
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
     polkadot_sdk::frame_benchmarking::define_benchmarks!(
