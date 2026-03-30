@@ -2,10 +2,9 @@ use core::str::from_utf8;
 
 use pallet_permissions::Pallet;
 use polkadot_sdk::frame_support::traits::fungible::Mutate;
-use polkadot_sdk::frame_support::{assert_err, assert_noop, assert_ok};
-use polkadot_sdk::sp_runtime::{BoundedVec, DispatchError, ModuleError, TokenError};
+use polkadot_sdk::frame_support::{assert_err, assert_ok};
+use polkadot_sdk::sp_runtime::{BoundedVec, DispatchError, TokenError};
 use polkadot_sdk::{pallet_balances, sp_runtime};
-use proof_of_sql::base::database::TableRef;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use sqlparser::ast::{ColumnDef, DataType, ExactNumberInfo, Ident, TimezoneInfo};
 use sxt_core::permissions::{
