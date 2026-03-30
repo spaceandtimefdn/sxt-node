@@ -25,7 +25,6 @@ pub mod native_pallet;
 #[allow(clippy::manual_inspect)]
 #[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
-    use core::iter;
 
     use native_api::NativeApi;
     use pallet_tables::UpdateTableList;
