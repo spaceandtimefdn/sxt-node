@@ -891,6 +891,12 @@ impl pallet_rewards::Config for Runtime {
     type MaxPayoutsPerBlock = ConstU32<3>;
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+impl frame_system_benchmarking::Config for Runtime {}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl polkadot_sdk::frame_benchmarking::baseline::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[polkadot_sdk::frame_support::runtime]
 mod runtime {
@@ -1334,8 +1340,6 @@ impl_runtime_apis! {
             use polkadot_sdk::frame_system_benchmarking::Pallet as SystemBench;
             use baseline::Pallet as BaselineBench;
 
-            impl frame_system_benchmarking::Config for Runtime {}
-            impl baseline::Config for Runtime {}
 
             use frame_support::traits::WhitelistedStorageKeys;
             let whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
