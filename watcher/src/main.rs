@@ -839,7 +839,7 @@ fn verify_attestations<B: ratatui::backend::Backend>(
         ));
         update_ui(terminal, progress)?;
 
-        verify_signature(&msg, signature, proposed_pub_key, *block_number)?;
+        verify_signature(&msg, signature, proposed_pub_key)?;
 
         // Check state root consistency
         if let Some(first_root) = first_state_root {
@@ -906,7 +906,6 @@ fn verify_signature(
     msg: &[u8],
     signature: &runtime::api::runtime_types::sxt_core::attestation::EthereumSignature,
     proposed_pub_key: &[u8; 33],
-    block_number: u32,
 ) -> Result<(), AttestationError> {
     let runtime::api::runtime_types::sxt_core::attestation::EthereumSignature { r, s, v } =
         signature;
