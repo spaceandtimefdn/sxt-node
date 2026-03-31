@@ -6148,15 +6148,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "exponential-backoff"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ffb309d235a642598183aeda8925e871e85dd5a433c2c877e69ff0a960f4c02"
-dependencies = [
- "fastrand 2.3.0",
-]
-
-[[package]]
 name = "fallible-iterator"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -21090,12 +21081,9 @@ dependencies = [
 name = "sxt-core"
 version = "0.1.0"
 dependencies = [
- "alloy",
  "arrow 54.2.1",
  "arrow-ipc-no-std",
  "bincode 2.0.0",
- "exponential-backoff",
- "glob",
  "hex",
  "k256",
  "on-chain-table",
@@ -21105,7 +21093,6 @@ dependencies = [
  "proof-of-sql",
  "proptest",
  "proptest-derive",
- "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "regex",
@@ -21117,8 +21104,6 @@ dependencies = [
  "sp-runtime-interface",
  "sqlparser",
  "subxt",
- "tokio",
- "tonic",
 ]
 
 [[package]]

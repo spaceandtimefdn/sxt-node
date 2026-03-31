@@ -28,17 +28,12 @@ sqlparser = { workspace = true, default-features = false }
 serde = { workspace = true, default-features = false, features = ["derive"]}
 postcard = { workspace = true, features = ["alloc"] }
 on-chain-table = { workspace = true, default-features = false }
-tonic = { workspace = true, optional = true }
 arrow = { workspace = true, optional = true, features = ["ipc"]}
 subxt = { workspace = true, optional = true, features = ["native", "reconnecting-rpc-client"] }
-glob.workspace = true
-tokio = { workspace = true, optional = true }
 proof-of-sql = { workspace = true, default-features = false }
-exponential-backoff = { workspace = true, default-features = false, optional = true }
 k256 = { workspace = true, default-features = false }
 sha3 = { workspace = true, default-features = false }
 hex = { workspace = true, default-features = false }
-alloy = { workspace = true, optional = true, features = ["full"]}
 serde_json = { workspace = true, default-features = false, features = ["alloc"] }
 regex = { workspace = true, default-features = false }
 rand_core = { workspace = true, default-features = false }
@@ -48,7 +43,6 @@ proptest-derive = { workspace = true, optional = true }
 arrow-ipc-no-std.workspace = true
 
 [dev-dependencies]
-rand = "0.8.5"
 proptest = { workspace = true, features = ["std"] }
 arrow = { workspace = true, features = ["ipc"] }
 on-chain-table = { workspace = true, features = ["arrow", "proptest"] }
@@ -59,18 +53,14 @@ default = ["std"]
 std = [
 	"polkadot-sdk/std",
 	"sp-runtime-interface/std",
-	"dep:alloy",
 	"hex/std",
 	"k256/std",
 	"sha3/std",
 	"codec/std",
 	"on-chain-table/arrow",
 	"scale-info/std",
-	"dep:tokio",
-	"dep:tonic",
 	"dep:arrow",
-	"dep:subxt",
-	"dep:exponential-backoff",
+        "dep:subxt",
 ]
 runtime-benchmarks = []
 proptest = ["std", "dep:proptest", "on-chain-table/proptest", "dep:proptest-derive"]
