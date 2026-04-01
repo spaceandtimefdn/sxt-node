@@ -12066,8 +12066,6 @@ dependencies = [
 name = "pallet-smartcontracts"
 version = "0.1.0"
 dependencies = [
- "arrow 54.2.1",
- "native",
  "native-api",
  "pallet-commitments",
  "pallet-indexing",
@@ -12078,7 +12076,6 @@ dependencies = [
  "parity-scale-codec",
  "polkadot-sdk 0.9.0",
  "proof-of-sql-commitment-map",
- "proof-of-sql-static-setups",
  "scale-info",
  "sxt-core",
 ]
