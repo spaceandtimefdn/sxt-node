@@ -4,6 +4,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::large_enum_variant)]
+#![cfg_attr(feature = "runtime-benchmarks", warn(unused_crate_dependencies))]
 
 pub use pallet::*;
 
