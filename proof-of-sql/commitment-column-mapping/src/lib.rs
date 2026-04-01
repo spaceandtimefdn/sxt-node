@@ -1,5 +1,10 @@
 #![doc = include_str!("../README.md")]
+#![warn(unused_crate_dependencies)]
 #![no_std]
+
+/// not used functionally, conveniently enables std features of polkadot crates
+#[cfg(test)]
+use sxt_core as _;
 
 extern crate alloc;
 
