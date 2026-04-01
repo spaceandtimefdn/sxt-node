@@ -1,5 +1,9 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(
+    all(feature = "proptest", feature = "cpu-perf"),
+    warn(unused_crate_dependencies)
+)]
 
 extern crate alloc;
 
