@@ -1,4 +1,6 @@
 //! Canary prototype
+#![warn(unused_crate_dependencies)]
+
 /// Prometheus metrics collection and serving.
 mod metrics;
 /// Parsing utilities for canary data.
