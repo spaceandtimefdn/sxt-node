@@ -1,5 +1,9 @@
 //! TODO: add docs
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(
+    all(feature = "std", feature = "proptest"),
+    warn(unused_crate_dependencies)
+)]
 
 extern crate alloc;
 extern crate core;
