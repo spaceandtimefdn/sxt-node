@@ -3748,7 +3748,6 @@ name = "commitment-sql"
 version = "0.1.0"
 dependencies = [
  "ahash 0.8.11",
- "const_format",
  "indexmap 2.8.0",
  "itertools 0.12.1",
  "on-chain-table",
@@ -3758,8 +3757,6 @@ dependencies = [
  "proof-of-sql-static-setups",
  "proof-of-sql-unversioned",
  "proptest",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
  "rayon",
  "snafu 0.8.5",
  "sqlparser",
