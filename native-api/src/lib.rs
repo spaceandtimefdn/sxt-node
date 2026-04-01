@@ -1,5 +1,6 @@
 //! The declaration for the native trait that can be adhered to by pallets that want to execute std code.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(unused_crate_dependencies)]
 
 use proof_of_sql_commitment_map::TableCommitmentBytesPerCommitmentSchemePassBy;
 use sxt_core::native::{NativeCommitmentError, NativeError, OnChainTableBytes, RowData};
