@@ -12248,7 +12248,6 @@ dependencies = [
  "pallet-permissions",
  "parity-scale-codec",
  "polkadot-sdk 0.9.0",
- "proof-of-sql",
  "proof-of-sql-commitment-map",
  "scale-info",
  "snafu 0.8.5",
