@@ -14,24 +14,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [large-8-core-32gb-22-04, macos-latest]
+        os: [large-8-core-32gb-22-04]
     steps:
       - uses: actions/checkout@v4
-
-      - if: ${{ !contains(matrix.os, 'macos') }}
-        uses: ./.github/actions/free-disk-space
-      - if: ${{ !contains(matrix.os, 'macos') }}
-        uses: ./.github/actions/nix-dependencies
-      - if: contains(matrix.os, 'macos')
-        uses: ./.github/actions/macos-dependencies
-
-      - name: install rustfmt
-        if: contains(matrix.os, 'macos')
-        run: rustup component add rustfmt
-
-      - name: install clippy
-        if: contains(matrix.os, 'macos')
-        run: rustup component add clippy
+      - uses: ./.github/actions/free-disk-space
+      - uses: ./.github/actions/nix-dependencies
 
       - name: Run fmt
         run: cargo f --check
@@ -77,16 +64,12 @@ jobs:
     needs: build # Wait for build step to finish
     strategy:
       matrix:
-        os: [large-8-core-32gb-22-04, macos-latest]
+        os: [large-8-core-32gb-22-04]
     steps:
       - uses: actions/checkout@v4
 
-      - if: ${{ !contains(matrix.os, 'macos') }}
-        uses: ./.github/actions/free-disk-space
-      - if: ${{ !contains(matrix.os, 'macos') }}
-        uses: ./.github/actions/nix-dependencies
-      - if: contains(matrix.os, 'macos')
-        uses: ./.github/actions/macos-dependencies
+      - uses: ./.github/actions/free-disk-space
+      - uses: ./.github/actions/nix-dependencies
 
       - name: Download built binary
         uses: actions/download-artifact@v4
