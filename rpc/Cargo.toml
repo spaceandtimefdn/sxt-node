@@ -59,10 +59,9 @@ sqlparser = { workspace = true, features = ["std", "visitor"] }
 sxt-core = { workspace = true }
 sxt-runtime = { workspace = true, default-features = false, features = ["std"] }
 
-hex.workspace = true
-
 [dev-dependencies]
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
 commitment-sql = { workspace = true }
 on-chain-table.workspace = true
 itertools.workspace = true
+hex.workspace = true

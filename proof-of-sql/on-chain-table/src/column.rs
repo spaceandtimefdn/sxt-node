@@ -103,7 +103,7 @@ impl OnChainColumn {
     /// Performs conversion to a proof-of-sql `CommittableColumn` in the scalar field `S`.
     pub fn try_to_committable_column<S: Scalar>(
         &self,
-    ) -> Result<CommittableColumn, OutOfScalarBounds> {
+    ) -> Result<CommittableColumn<'_>, OutOfScalarBounds> {
         match &self {
             OnChainColumn::Boolean(bools) => Ok(CommittableColumn::Boolean(bools)),
             OnChainColumn::UnsignedTinyInt(ints) => Ok(CommittableColumn::Uint8(ints)),

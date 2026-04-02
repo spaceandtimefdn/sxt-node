@@ -13,7 +13,6 @@ use polkadot_sdk::sp_keyring::Sr25519Keyring;
 use polkadot_sdk::sp_runtime::{OpaqueExtrinsic, SaturatedConversion};
 use polkadot_sdk::{
     frame_benchmarking_cli,
-    frame_support,
     frame_system,
     pallet_transaction_payment,
     sp_core,

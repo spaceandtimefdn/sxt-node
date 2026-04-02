@@ -6,7 +6,6 @@ use alloc::{format, vec};
 use polkadot_sdk::frame_benchmarking::v2::*;
 use polkadot_sdk::frame_system::RawOrigin;
 use polkadot_sdk::sp_core::crypto::Ss58Codec;
-use polkadot_sdk::{frame_support, frame_system};
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use sxt_core::permissions::{PermissionLevel, TablesPalletPermission};
 use sxt_core::tables::{

@@ -1,6 +1,7 @@
+//! Utility to fetch SubmitData events from a given block
 use std::str::from_utf8;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use log::{error, info};
 use subxt::utils::H256;
 use sxt_core::sxt_chain_runtime::api::indexing::calls::types::SubmitData;

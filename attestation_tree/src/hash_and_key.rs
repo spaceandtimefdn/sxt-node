@@ -99,7 +99,7 @@ mod tests {
             full_storage_suffix[0..storage_suffix_size].to_vec()
         );
 
-        let (decoded_key_tuple_0, remaining_bytes_0) =
+        let (_decoded_key_tuple_0, remaining_bytes_0) =
             <()>::decode_key_tuple_from_storage_key_suffix(&full_storage_suffix).unwrap();
         assert_eq!(
             remaining_bytes_0,

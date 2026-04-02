@@ -24,8 +24,6 @@ use ratatui::Terminal;
 use runtime::api::runtime_types::sxt_core::attestation::Attestation;
 use sha3::digest::generic_array::GenericArray;
 use subxt::blocks::Block as BlockT;
-use subxt::config::substrate::{BlakeTwo256, SubstrateHeader};
-use subxt::config::Header;
 use subxt::tx::TxStatus;
 use subxt::utils::H256;
 use subxt::{OnlineClient, PolkadotConfig};
@@ -50,6 +48,7 @@ use tokio::time::{timeout, Duration};
 use watcher::attestation;
 use watcher::tx_submitter::{TxSubmitter, TxUpdate};
 
+/// Default set of commonly used types by SxT nodes.
 type SxtConfig = PolkadotConfig;
 
 /// A block in the SXT network
@@ -209,6 +208,7 @@ struct Cli {
     )]
     substrate_key_path: String,
 
+    /// Subcommands for this CLI.
     #[command(subcommand)]
     command: Commands,
 }
@@ -300,6 +300,7 @@ async fn main() {
     }
 }
 
+/// Spawns a green thread that logs transaction progress.
 async fn spawn_tx_progress_logger(
     mut tx_receiver: tokio::sync::mpsc::Receiver<TxUpdate>,
     restart_trigger: tokio::sync::watch::Sender<()>,
@@ -391,11 +392,6 @@ struct AttestationClient {
     /// This key is used to sign attestations for the SxT network.
     eth_key_path: String,
 
-    /// The file path to the Substrate SR25519 private key.
-    ///
-    /// This key is used to submit transactions to the blockchain.
-    substrate_key_path: String,
-
     /// The Substrate API client used to interact with the blockchain.
     ///
     /// This client provides access to blocks, storage, and transaction submission.
@@ -409,6 +405,7 @@ struct AttestationClient {
 }
 
 impl AttestationClient {
+    /// Returns a new [`AttestationClient`].
     async fn new(
         websocket: &str,
         eth_key_path: &str,
@@ -426,36 +423,33 @@ impl AttestationClient {
 
         Ok(Self {
             eth_key_path: eth_key_path.to_string(),
-            substrate_key_path: substrate_key_path.to_string(),
             tx_submitter,
             api,
             block_process_concurrency,
         })
     }
 
+    /// Core loop of [`AttestationClient`], subscribing to blocks and processing them.
     async fn run(&self) -> Result<(), AttestationError> {
         let eth_signing_key = load_ethereum_key(&self.eth_key_path)?;
-        let substrate_key = load_substrate_key(&self.substrate_key_path)?;
 
         self.api
             .blocks()
             .subscribe_finalized()
             .await?
             .for_each_concurrent(self.block_process_concurrency, |block_result| async {
-                let _ = self
-                    .process_block(block_result, &eth_signing_key, &substrate_key)
-                    .await;
+                let _ = self.process_block(block_result, &eth_signing_key).await;
             })
             .await;
 
         Ok(())
     }
 
+    /// Processes individual blocks for attesting.
     async fn process_block(
         &self,
         block_result: Result<SxtBlock, subxt::Error>,
         private_key: &SigningKey,
-        keypair: &Keypair,
     ) -> Result<(), ()> {
         let block = match block_result {
             Ok(block) => block,
@@ -501,7 +495,7 @@ impl AttestationClient {
             hex::decode(state_root.data.clone()).expect("could not decode for msg creation");
 
         let Ok(fixed_size_state_root) = <[u8; 32]>::try_from(hex_decoded_state_root)
-            .inspect_err(|e| log::error!("Error: computed commitments state root not 32 bytes"))
+            .inspect_err(|_| log::error!("Error: computed commitments state root not 32 bytes"))
         else {
             return Ok(());
         };
@@ -582,6 +576,7 @@ impl AttestationClient {
         Ok(())
     }
 
+    /// Submit the given attestation using the [`TxSubmitter`].
     async fn submit_transaction_with_retry(
         &self,
         block: &BlockT<PolkadotConfig, OnlineClient<SxtConfig>>,
@@ -614,6 +609,8 @@ impl AttestationClient {
     }
 }
 
+/// Creates the runtime Attestation type by creating a message from the given attestation details
+/// and signing.
 fn create_attestation(
     block_hash: H256,
     private_key: &SigningKey,
@@ -645,7 +642,7 @@ fn create_attestation(
     )
 }
 
-// Placeholder function for the register command
+/// Placeholder function for the register command
 async fn register(eth_key_path: &str, substrate_key_path: &str) -> Result<(), AttestationError> {
     let eth_signing_key = load_ethereum_key(eth_key_path)?;
     let substrate_key = load_substrate_key(substrate_key_path)?;
@@ -681,6 +678,7 @@ async fn register(eth_key_path: &str, substrate_key_path: &str) -> Result<(), At
     Ok(())
 }
 
+/// Creates a full attestation message from the state root and block number.
 fn create_message(state_root: impl AsRef<[u8]>, block_number: u32) -> Vec<u8> {
     let mut msg = Vec::with_capacity(state_root.as_ref().len() + std::mem::size_of::<u32>());
     msg.extend_from_slice(state_root.as_ref());
@@ -688,6 +686,7 @@ fn create_message(state_root: impl AsRef<[u8]>, block_number: u32) -> Vec<u8> {
     msg
 }
 
+/// Returns a signature to the given message, converting the error to [`AttestationError`]
 fn generate_signature(
     private_key: &SigningKey,
     message: &[u8],
@@ -696,6 +695,7 @@ fn generate_signature(
         .map_err(|_| AttestationError::AttestationCreationError)
 }
 
+/// Returns the public key associated with the given private key as bytes.
 fn get_proposed_pub_key(private_key: &SigningKey) -> Result<[u8; 33], AttestationError> {
     let pub_key: &[u8] = &private_key.verifying_key().to_sec1_bytes();
 
@@ -703,6 +703,8 @@ fn get_proposed_pub_key(private_key: &SigningKey) -> Result<[u8; 33], Attestatio
         .try_into()
         .map_err(|_| AttestationError::SigningKeyParseError)
 }
+
+/// Loads an ethereum key from a file containing the hex.
 fn load_ethereum_key(path: &str) -> Result<SigningKey, AttestationError> {
     let mut file = File::open(path)?;
     let mut hex_string = String::new();
@@ -715,6 +717,7 @@ fn load_ethereum_key(path: &str) -> Result<SigningKey, AttestationError> {
     SigningKey::from_bytes(key_array).map_err(|_| AttestationError::SigningKeyParseError)
 }
 
+/// Loads a substrate key from a file containing the hex.
 fn load_substrate_key(file_path: &str) -> Result<Keypair, AttestationError> {
     let mut file = File::open(file_path)?;
     let mut hex_string = String::new();
@@ -731,6 +734,7 @@ fn load_substrate_key(file_path: &str) -> Result<Keypair, AttestationError> {
     Keypair::from_secret_key(key_bytes).map_err(|_| AttestationError::KeypairCreationError)
 }
 
+/// Tui implementation for verifying the attestations in the given block.
 async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationError> {
     // Initialize terminal
     enable_raw_mode()?;
@@ -777,9 +781,7 @@ async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationErr
             progress.push("Verifying attestations...".to_string());
             update_ui(&mut terminal, &progress)?;
 
-            if let Err(err) =
-                verify_attestations(block_number, &attestations.0, &mut progress, &mut terminal)
-            {
+            if let Err(err) = verify_attestations(&attestations.0, &mut progress, &mut terminal) {
                 progress.push(format!("Error: {:?}", err));
                 update_ui(&mut terminal, &progress)?;
             } else {
@@ -812,7 +814,6 @@ async fn verify(block_number: u32, websocket: &str) -> Result<(), AttestationErr
 
 /// Verifies a list of attestations.
 fn verify_attestations<B: ratatui::backend::Backend>(
-    block_number: u32,
     attestations: &[Attestation<H256>],
     progress: &mut Vec<String>,
     terminal: &mut Terminal<B>,
@@ -824,9 +825,8 @@ fn verify_attestations<B: ratatui::backend::Backend>(
             signature,
             proposed_pub_key,
             state_root,
-            address20,
             block_number,
-            block_hash,
+            ..
         } = attestation;
 
         // Create message and verify signature
@@ -838,7 +838,7 @@ fn verify_attestations<B: ratatui::backend::Backend>(
         ));
         update_ui(terminal, progress)?;
 
-        verify_signature(&msg, signature, proposed_pub_key, *block_number)?;
+        verify_signature(&msg, signature, proposed_pub_key)?;
 
         // Check state root consistency
         if let Some(first_root) = first_state_root {
@@ -882,7 +882,7 @@ fn update_ui<B: ratatui::backend::Backend>(
             .style(Style::default().fg(Color::White));
 
         f.render_widget(list, chunks[0]);
-    });
+    })?;
 
     Ok(())
 }
@@ -905,7 +905,6 @@ fn verify_signature(
     msg: &[u8],
     signature: &runtime::api::runtime_types::sxt_core::attestation::EthereumSignature,
     proposed_pub_key: &[u8; 33],
-    block_number: u32,
 ) -> Result<(), AttestationError> {
     let runtime::api::runtime_types::sxt_core::attestation::EthereumSignature { r, s, v } =
         signature;

@@ -1,6 +1,6 @@
 #![cfg(all(test, not(feature = "runtime-benchmarks")))]
 
-use polkadot_sdk::frame_support::traits::{Get, OnRuntimeUpgrade};
+use polkadot_sdk::frame_support::traits::OnRuntimeUpgrade;
 use polkadot_sdk::pallet_migrations;
 use polkadot_sdk::pallet_migrations::WeightInfo as _;
 use proof_of_sql_commitment_map::proptest::commitment_scheme_flags;

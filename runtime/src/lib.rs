@@ -1,3 +1,4 @@
+//! Defines the SxT chain runtime.
 #![allow(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 // runtime construction via `frame_support::runtime` does a lot of recursion and requires us to increase the limit.
@@ -13,7 +14,6 @@ extern crate alloc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use pallet_commitments::migrations::delete_dynamic_dory::DeleteDynamicDoryCommitmentsLazyMigration;
 use polkadot_sdk::frame_election_provider_support::{
     generate_solution_type,
     onchain,
@@ -54,12 +54,13 @@ use polkadot_sdk::pallet_election_provider_multi_phase::GeometricDepositBase;
 use polkadot_sdk::pallet_grandpa::AuthorityId as GrandpaId;
 pub use polkadot_sdk::pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 pub use polkadot_sdk::pallet_timestamp::Call as TimestampCall;
+#[allow(deprecated)]
 use polkadot_sdk::pallet_transaction_payment::{CurrencyAdapter, Multiplier};
 use polkadot_sdk::sp_api::impl_runtime_apis;
 use polkadot_sdk::sp_arithmetic::traits::UniqueSaturatedInto;
 use polkadot_sdk::sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use polkadot_sdk::sp_consensus_babe::AuthorityId as BabeId;
-use polkadot_sdk::sp_core::crypto::{AccountId32, KeyTypeId};
+use polkadot_sdk::sp_core::crypto::KeyTypeId;
 use polkadot_sdk::sp_core::OpaqueMetadata;
 use polkadot_sdk::sp_runtime::traits::{
     AccountIdLookup,
@@ -134,7 +135,7 @@ use polkadot_sdk::{
     sp_version,
 };
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
-use proof_of_sql_commitment_map::{AnyCommitmentScheme, PerCommitmentScheme, TableCommitmentBytes};
+use proof_of_sql_commitment_map::PerCommitmentScheme;
 use sxt_core::system_tables::ClaimedUnstake;
 pub use {
     pallet_attestation,
@@ -213,6 +214,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     state_version: 1,
 };
 
+/// Switches between 2 expressions depending on if `fast-runtime` is enabled.
 macro_rules! prod_or_dev {
     ($prod: expr, $dev: expr) => {
         if cfg!(feature = "fast-runtime") {
@@ -278,6 +280,7 @@ pub fn native_version() -> NativeVersion {
     }
 }
 
+/// Ratio between max and normal dispatch block lengths.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
 parameter_types! {
@@ -427,6 +430,7 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    #[allow(deprecated)]
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
     type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -887,6 +891,12 @@ impl pallet_rewards::Config for Runtime {
     type MaxPayoutsPerBlock = ConstU32<3>;
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+impl frame_system_benchmarking::Config for Runtime {}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl polkadot_sdk::frame_benchmarking::baseline::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[polkadot_sdk::frame_support::runtime]
 mod runtime {
@@ -1013,10 +1023,12 @@ pub type SignedExtra = (
 ///
 /// This can be a tuple of types, each implementing `OnRuntimeUpgrade`.
 #[allow(unused_parens)]
-type Migrations = DeleteDynamicDoryCommitmentsLazyMigration<
-    Runtime,
-    pallet_commitments::migrations::delete_dynamic_dory::weights::SubstrateWeight<Runtime>,
->;
+#[cfg(not(feature = "runtime-benchmarks"))]
+type Migrations =
+    pallet_commitments::migrations::delete_dynamic_dory::DeleteDynamicDoryCommitmentsLazyMigration<
+        Runtime,
+        pallet_commitments::migrations::delete_dynamic_dory::weights::SubstrateWeight<Runtime>,
+    >;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -1035,8 +1047,9 @@ pub type Executive = polkadot_sdk::frame_executive::Executive<
 #[cfg(feature = "try-runtime")]
 use polkadot_sdk::frame_try_runtime;
 #[cfg(feature = "runtime-benchmarks")]
-use polkadot_sdk::{frame_benchmarking, frame_system_benchmarking, sp_storage};
+use polkadot_sdk::{frame_benchmarking, frame_system_benchmarking};
 
+/// Defines pallet benchmarks.
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
     polkadot_sdk::frame_benchmarking::define_benchmarks!(
@@ -1328,8 +1341,6 @@ impl_runtime_apis! {
             use polkadot_sdk::frame_system_benchmarking::Pallet as SystemBench;
             use baseline::Pallet as BaselineBench;
 
-            impl frame_system_benchmarking::Config for Runtime {}
-            impl baseline::Config for Runtime {}
 
             use frame_support::traits::WhitelistedStorageKeys;
             let whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();

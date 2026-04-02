@@ -5,6 +5,7 @@
 //! 1. Since it requires loading the full proof-of-sql setups, it can take over 10 minutes to run.
 //! 2. The proof-of-sql setups that the pallet uses exist in oncecells, and are shared across
 //!    tests. Other tests currently use much smaller proof-of-sql setups.
+#![allow(clippy::missing_docs_in_private_items)]
 use clap::Parser;
 use commitment_sql::OnChainTableToTableCommitmentFn;
 use native_api::Api;
@@ -12,7 +13,7 @@ use on_chain_table::{OnChainColumn, OnChainTable};
 use pallet_commitments::Config;
 use polkadot_sdk::frame_support::assert_noop;
 use polkadot_sdk::sp_runtime::BuildStorage;
-use polkadot_sdk::{frame_support, frame_system, sp_io};
+use polkadot_sdk::{frame_system, sp_io};
 use proof_of_sql::base::commitment::TableCommitment;
 use proof_of_sql_commitment_map::generic_over_commitment::{OptionType, TableCommitmentType};
 use proof_of_sql_commitment_map::{
@@ -31,7 +32,6 @@ use sqlparser::ast::Ident;
 use sqlparser::dialect::PostgreSqlDialect;
 use sxt_core::tables::TableIdentifier;
 
-#[allow(missing_docs)]
 mod mock {
     use polkadot_sdk::frame_support::derive_impl;
     use polkadot_sdk::{frame_support, frame_system};

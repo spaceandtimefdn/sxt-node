@@ -2,7 +2,6 @@ use std::error::Error;
 
 use eth_merkle_tree::tree::MerkleTree;
 use eth_merkle_tree::utils::keccak::keccak256;
-use polkadot_sdk::frame_support::traits::StorageInstance;
 use polkadot_sdk::pallet_balances;
 use snafu::Snafu;
 

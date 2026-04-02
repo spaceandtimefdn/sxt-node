@@ -35,15 +35,24 @@ use crate::storage::*;
 enum BlockProcessingError {
     /// Failed to fetch attestations from RPC
     #[snafu(display("Failed to fetch attestations: {source}"))]
-    AttestationFetch { source: anyhow::Error },
+    AttestationFetch {
+        /// The source error.
+        source: anyhow::Error,
+    },
 
     /// Failed to read unstaked claims count
     #[snafu(display("Failed to read unstaked claims count: {source}"))]
-    UnstakedClaimsRead { source: anyhow::Error },
+    UnstakedClaimsRead {
+        /// The source error.
+        source: anyhow::Error,
+    },
 
     /// Failed to read watchlist balance for an account
     #[snafu(display("Failed to read watchlist balance: {source}"))]
-    WatchlistBalanceRead { source: anyhow::Error },
+    WatchlistBalanceRead {
+        /// The source error.
+        source: anyhow::Error,
+    },
 }
 
 /// Logs a block processing error as a warning with the block number context.
@@ -243,4 +252,5 @@ impl From<event_forwarder::block_processing::Error> for CanaryError {
     }
 }
 
+/// Type alias for `Result` with `CanaryError`.
 type Result<T, E = CanaryError> = std::result::Result<T, E>;

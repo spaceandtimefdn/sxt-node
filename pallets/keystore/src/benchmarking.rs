@@ -51,7 +51,7 @@ mod benchmarks {
         let seed: u64 = u64::from_le_bytes(caller_encoded[0..8].try_into().unwrap_or([0u8; 8]));
 
         // Generate a deterministic keypair and signature
-        let (private_key, public_key, signature) =
+        let (_private_key, public_key, signature) =
             create_signed_message_and_keypair(caller_encoded, seed);
 
         let address20 =
@@ -76,7 +76,7 @@ mod benchmarks {
         let seed: u64 = u64::from_le_bytes(caller_encoded[0..8].try_into().unwrap_or([0u8; 8]));
 
         // Generate a deterministic keypair and signature
-        let (private_key, public_key, signature) =
+        let (_private_key, public_key, signature) =
             create_signed_message_and_keypair(caller_encoded, seed);
 
         let address20 =

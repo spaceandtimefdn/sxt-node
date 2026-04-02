@@ -145,6 +145,7 @@ pub(crate) fn record_claimed_unstake_count(block_number: u32, count: u64) {
         .inc_by(count);
 }
 
+/// Records the balances of the accounts in the given watchlist.
 pub(crate) fn record_watchlist(watchlist_balances: Vec<(AccountId32, u128)>) {
     for (acct, balance) in watchlist_balances {
         // Prometheus only supports 64-bit floats for metrics; convert to tokens as f64

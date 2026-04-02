@@ -95,7 +95,7 @@ impl pallet_babe::Config for Test {
 
 impl pallet_authorship::Config for Test {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
-    type EventHandler = (Staking);
+    type EventHandler = Staking;
 }
 
 impl pallet_grandpa::Config for Test {
@@ -145,7 +145,7 @@ pub struct EraPayout;
 impl pallet_staking::EraPayout<Balance> for EraPayout {
     fn era_payout(
         total_staked: Balance,
-        total_issuance: Balance,
+        _total_issuance: Balance,
         era_duration_millis: u64,
     ) -> (Balance, Balance) {
         const MILLISECONDS_PER_YEAR: u64 = (1000 * 3600 * 24 * 36525) / 100;

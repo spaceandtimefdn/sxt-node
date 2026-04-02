@@ -85,7 +85,7 @@ pub mod pallet {
 
     /// Events that can be emitted by this pallet
     #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    #[pallet::generate_deposit(fn deposit_event)]
     pub enum Event<T: Config> {
         /// An era has been fully paid
         EraPaid {

@@ -25,7 +25,6 @@ pub mod native_pallet;
 #[allow(clippy::manual_inspect)]
 #[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
-    use core::iter;
 
     use native_api::NativeApi;
     use pallet_tables::UpdateTableList;
@@ -86,7 +85,7 @@ pub mod pallet {
 
     /// Events for the Pallet
     #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    #[pallet::generate_deposit(fn deposit_event)]
     pub enum Event<T: Config<I>, I: 'static = ()> {
         /// A smart contract was added to storage.
         SmartContractAdded {
