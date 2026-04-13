@@ -570,10 +570,12 @@ pub mod pallet {
             table_type: TableType,
             source: Source,
         ) -> DispatchResult {
-            // If all the tables being submitted are public or community, then we only need the transaction to
+            // If all the tables being submitted are public, community, or SCI, then we only need the transaction to
             // be signed, not specially permissioned
-            let is_public =
-                table_type == TableType::PublicPermissionless || table_type == TableType::Community;
+            let is_public = matches!(
+                table_type,
+                TableType::PublicPermissionless | TableType::Community | TableType::SCI
+            );
 
             let is_privileged = pallet_permissions::Pallet::<T>::ensure_root_or_permissioned(
                 origin.clone(),

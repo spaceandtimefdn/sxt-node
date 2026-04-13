@@ -1724,18 +1724,6 @@ fn creating_non_public_namespace_fails_if_not_sudo() {
                 test_schema.clone(),
                 1,
                 create_statement.clone(),
-                TableType::SCI,
-                test_source.clone(),
-            ),
-            pallet_permissions::Error::<Test>::InsufficientPermissions
-        );
-
-        assert_err!(
-            Tables::create_namespace(
-                signer.clone(),
-                test_schema.clone(),
-                1,
-                create_statement.clone(),
                 TableType::CoreBlockchain,
                 test_source.clone(),
             ),
@@ -1762,6 +1750,38 @@ fn creating_non_public_namespace_fails_if_not_sudo() {
                 panic!("Namespace created event was emitted!")
             }
         }
+    });
+}
+
+#[test]
+fn creating_sci_namespace_works_without_special_permissions() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let (account, signer) = user(1);
+        let ddl =
+            "CREATE SCHEMA IF NOT EXISTS SCI_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT;";
+        let schema_name: ByteString = "SCI_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT"
+            .as_bytes()
+            .to_vec()
+            .try_into()
+            .unwrap();
+        let create_statement: CreateStatement =
+            BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("DDL should fit in BoundedVec");
+        let test_source = Source::Ethereum;
+
+        assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+            &account,
+            crate::CREATE_COST * 10,
+        ));
+
+        assert_ok!(Tables::create_namespace(
+            signer,
+            schema_name,
+            1,
+            create_statement,
+            TableType::SCI,
+            test_source,
+        ));
     });
 }
 
