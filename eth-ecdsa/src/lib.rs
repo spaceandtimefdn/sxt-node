@@ -7,4 +7,4 @@ pub use signature::{EthEcdsaSignature, EthEcdsaSigner};
 
 /// Multi-signature support for combining multiple signature types.
 mod multi_signature;
-pub use multi_signature::MultiSignature;
+pub use multi_signature::{MultiSignature, MultiSigner};

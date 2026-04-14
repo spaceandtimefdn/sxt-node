@@ -14,6 +14,7 @@ extern crate alloc;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use codec::Encode;
 use polkadot_sdk::frame_election_provider_support::{
     generate_solution_type,
     onchain,
@@ -87,7 +88,10 @@ use polkadot_sdk::sp_runtime::{
     ApplyExtrinsicResult,
     FixedPointNumber,
     FixedU128,
+    MultiSignature,
+    MultiSigner,
     Perquintill,
+    RuntimeAppPublic,
 };
 pub use polkadot_sdk::sp_runtime::{Perbill, Percent, Permill};
 use polkadot_sdk::sp_staking::SessionIndex;
@@ -344,12 +348,78 @@ impl frame_system::offchain::SigningTypes for Runtime {
     type Public = <Signature as Verify>::Signer;
     type Signature = Signature;
 }
+
 impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
 where
     RuntimeCall: From<C>,
 {
     type Extrinsic = UncheckedExtrinsic;
     type OverarchingCall = RuntimeCall;
+}
+
+pub struct AttestationId;
+
+impl
+    polkadot_sdk::frame_system::offchain::AppCrypto<
+        <eth_ecdsa::MultiSignature as Verify>::Signer,
+        eth_ecdsa::MultiSignature,
+    > for AttestationId
+{
+    type RuntimeAppPublic = pallet_attestation::crypto::AuthorityId;
+    type GenericSignature = polkadot_sdk::sp_core::sr25519::Signature;
+    type GenericPublic = polkadot_sdk::sp_core::sr25519::Public;
+}
+
+impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+where
+    RuntimeCall: From<LocalCall>,
+{
+    fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+        call: RuntimeCall,
+        public: <Signature as Verify>::Signer,
+        account: AccountId,
+        nonce: <Runtime as frame_system::Config>::Nonce,
+    ) -> Option<(
+        RuntimeCall,
+        <UncheckedExtrinsic as polkadot_sdk::sp_runtime::traits::Extrinsic>::SignaturePayload,
+    )> {
+        use sp_runtime::traits::StaticLookup;
+        // take the biggest period possible.
+        let period = BlockHashCount::get()
+            .checked_next_power_of_two()
+            .map(|c| c / 2)
+            .unwrap_or(2) as u64;
+
+        let current_block = u64::from(System::block_number())
+            // The `System::block_number` is initialized with `n+1`,
+            // so the actual block number is `n`.
+            .saturating_sub(1);
+        let tip = 0;
+        let extra: SignedExtra = (
+            frame_system::CheckNonZeroSender::<Runtime>::new(),
+            frame_system::CheckSpecVersion::<Runtime>::new(),
+            frame_system::CheckTxVersion::<Runtime>::new(),
+            frame_system::CheckGenesis::<Runtime>::new(),
+            frame_system::CheckMortality::<Runtime>::from(generic::Era::mortal(
+                period,
+                current_block,
+            )),
+            frame_system::CheckNonce::<Runtime>::from(nonce),
+            frame_system::CheckWeight::<Runtime>::new(),
+            pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+            //frame_metadata_hash_extension::CheckMetadataHash::new(true),
+        );
+
+        let raw_payload = SignedPayload::new(call, extra)
+            .map_err(|e| {
+                polkadot_sdk::sp_tracing::warn!("Unable to create signed payload: {:?}", e);
+            })
+            .ok()?;
+        let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+        let (call, extra, _) = raw_payload.deconstruct();
+        let address = <Runtime as frame_system::Config>::Lookup::unlookup(account);
+        Some((call, (address, signature, extra)))
+    }
 }
 
 parameter_types! {
@@ -860,6 +930,7 @@ impl pallet_indexing::Config<native_api::Api> for Runtime {
 impl pallet_attestation::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_attestation::weights::SubstrateWeight<Runtime>;
+    type AuthorityId = AttestationId;
 }
 
 impl pallet_keystore::Config for Runtime {

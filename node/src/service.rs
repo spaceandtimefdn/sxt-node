@@ -14,6 +14,7 @@ use polkadot_sdk::sc_service::error::Error as ServiceError;
 use polkadot_sdk::sc_service::TaskManager;
 use polkadot_sdk::sc_telemetry::{Telemetry, TelemetryWorker};
 use polkadot_sdk::sc_transaction_pool_api::OffchainTransactionPoolFactory;
+use polkadot_sdk::sp_core::offchain::OffchainStorage;
 use polkadot_sdk::sp_runtime::traits::Block as BlockT;
 use polkadot_sdk::{
     sc_authority_discovery,
@@ -559,6 +560,10 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
     );
 
     if enable_offchain_worker {
+        if let Some(mut storage) = backend.offchain_storage() {
+            storage.set(b"storage", b"attestor ocw", b"Hello, World!");
+        }
+
         task_manager.spawn_handle().spawn(
             "offchain-workers-runner",
             "offchain-work",

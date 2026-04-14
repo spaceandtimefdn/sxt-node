@@ -20,6 +20,34 @@ mod benchmarking;
 
 extern crate alloc;
 
+use polkadot_sdk::sp_core::crypto::KeyTypeId;
+
+pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"atst");
+
+/// Based on the above `KeyTypeId` we need to generate a pallet-specific crypto type wrappers.
+/// We can use from supported crypto kinds (`sr25519`, `ed25519` and `ecdsa`) and augment
+/// the types with this pallet-specific identifier.
+pub mod crypto {
+    use polkadot_sdk::sp_core::sr25519::Signature as Sr25519Signature;
+    use polkadot_sdk::sp_runtime::app_crypto::{app_crypto, sr25519, with_pair};
+    use polkadot_sdk::sp_runtime::traits::Verify;
+    use polkadot_sdk::sp_runtime::{MultiSignature, MultiSigner};
+
+    use super::KEY_TYPE;
+    app_crypto!(sr25519, KEY_TYPE);
+
+    with_pair! {
+        /// An authority discovery authority keypair.
+        pub type AuthorityPair = Pair;
+    }
+
+    /// An authority discovery authority identifier.
+    pub type AuthorityId = Public;
+
+    /// An authority discovery authority signature.
+    pub type AuthoritySignature = Signature;
+}
+
 pub mod weights;
 pub use weights::*;
 #[allow(clippy::manual_inspect)]
@@ -29,7 +57,14 @@ pub mod pallet {
     use polkadot_sdk::frame_support::pallet_prelude::{OptionQuery, *};
     use polkadot_sdk::frame_support::sp_runtime::traits::UniqueSaturatedInto;
     use polkadot_sdk::frame_support::Blake2_128Concat;
+    use polkadot_sdk::frame_system::offchain::{
+        AppCrypto,
+        CreateSignedTransaction,
+        SendSignedTransaction,
+        Signer,
+    };
     use polkadot_sdk::frame_system::pallet_prelude::*;
+    use polkadot_sdk::sp_core::offchain::StorageKind;
     use sxt_core::attestation::{create_attestation_message, Attestation, AttestationKey};
     use sxt_core::keystore::EthereumKey;
     use sxt_core::permissions::{AttestationPalletPermission, PermissionLevel};
@@ -45,13 +80,19 @@ pub mod pallet {
     /// Configuration trait for the pallet.
     #[pallet::config]
     pub trait Config:
-        polkadot_sdk::frame_system::Config + pallet_permissions::Config + pallet_keystore::Config
+        CreateSignedTransaction<Call<Self>>
+        + polkadot_sdk::frame_system::offchain::SigningTypes
+        + polkadot_sdk::frame_system::Config
+        + pallet_permissions::Config
+        + pallet_keystore::Config
     {
         /// Associated event type.
         type RuntimeEvent: From<Event<Self>>
             + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         /// Weight information for extrinsics.
         type WeightInfo: WeightInfo;
+
+        type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
     }
 
     /// Events emitted by the attestation pallet.
@@ -267,6 +308,48 @@ pub mod pallet {
             LastForwardedBlock::<T>::set(Some(block_number));
 
             Ok(())
+        }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(Weight::zero())]
+        pub fn remark_test(origin: OriginFor<T>, remark: alloc::vec::Vec<u8>) -> DispatchResult {
+            polkadot_sdk::sp_tracing::info!(name: "attestor ocw", "remarking...");
+            let who = ensure_signed(origin.clone())?;
+            polkadot_sdk::frame_system::Pallet::<T>::remark_with_event(origin, remark);
+            Ok(())
+        }
+    }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn offchain_worker(block_number: BlockNumberFor<T>) {
+            polkadot_sdk::sp_tracing::info!(name: "attestor ocw", "attestor ocw: block number: {block_number:?}");
+
+            let current_storage = polkadot_sdk::sp_io::offchain::local_storage_get(
+                StorageKind::PERSISTENT,
+                b"attestor ocw",
+            );
+
+            polkadot_sdk::sp_tracing::info!(name: "attestor ocw", "attestor ocw: test storage: {current_storage:?}");
+
+            let signer_accounts = Signer::<T, T::AuthorityId>::keystore_accounts()
+                .map(|account| account.id)
+                .collect::<alloc::vec::Vec<_>>();
+
+            polkadot_sdk::sp_tracing::info!(name: "attestor ocw", "attestor ocw: keys: {signer_accounts:?}");
+
+            let signer = Signer::<T, T::AuthorityId>::all_accounts();
+            if !signer.can_sign() {
+                polkadot_sdk::sp_tracing::info!(name: "attestor ocw", "No local accounts available. Consider adding one via `author_insertKey` RPC.");
+            }
+
+            let result = signer.send_signed_transaction(|_x| Call::remark_test {
+                remark: b"attestor ocw: Hello, World!".to_vec(),
+            });
+
+            for (account, result) in result.into_iter() {
+                polkadot_sdk::sp_tracing::info!(name: "attestor ocw", "some(account) {result:?}")
+            }
         }
     }
 }

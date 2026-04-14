@@ -21,7 +21,7 @@ scale-info = { features = [
 ], workspace = true }
 
 polkadot-sdk = { workspace = true, features = [
-	"frame-benchmarking", "frame-support", "frame-system"
+	"frame-benchmarking", "frame-support", "frame-system", "sp-tracing", "sp-io",
 ]}
 k256 = { version = "0.13.4", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }

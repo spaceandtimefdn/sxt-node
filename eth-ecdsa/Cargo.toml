@@ -19,7 +19,7 @@ scale-info = { features = [
 ], workspace = true }
 
 polkadot-sdk = { workspace = true, features = [
-	"sp-core", "sp-io", "sp-runtime"
+	"sp-core", "sp-io", "sp-runtime",
 ]}
 
 serde = { workspace = true, optional = true }

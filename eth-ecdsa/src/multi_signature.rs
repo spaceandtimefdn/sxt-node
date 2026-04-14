@@ -139,9 +139,29 @@ impl From<sr25519::Signature> for MultiSignature {
     }
 }
 
+impl TryFrom<MultiSignature> for sr25519::Signature {
+    type Error = ();
+
+    fn try_from(value: MultiSignature) -> Result<Self, Self::Error> {
+        sp_runtime::MultiSignature::try_from(value)
+            .map_err(|_| ())?
+            .try_into()
+    }
+}
+
 impl From<sr25519::Public> for MultiSigner {
     fn from(x: sr25519::Public) -> Self {
         sp_runtime::MultiSigner::from(x).into()
+    }
+}
+
+impl TryFrom<MultiSigner> for sr25519::Public {
+    type Error = ();
+
+    fn try_from(value: MultiSigner) -> Result<Self, Self::Error> {
+        sp_runtime::MultiSigner::try_from(value)
+            .map_err(|_| ())?
+            .try_into()
     }
 }
 
