@@ -8653,6 +8653,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "mock-indexer-server"
+version = "0.1.0"
+dependencies = [
+ "axum 0.8.1",
+ "prost 0.13.5",
+ "prost-build 0.13.5",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "mockall"
 version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10649,6 +10663,34 @@ dependencies = [
  "pallet-nomination-pools",
  "parity-scale-codec",
  "sp-api",
+]
+
+[[package]]
+name = "pallet-offchain-indexing"
+version = "0.1.0"
+dependencies = [
+ "arrow 54.2.1",
+ "commitment-sql",
+ "frame-support",
+ "frame-system",
+ "log",
+ "on-chain-table",
+ "pallet-commitments",
+ "pallet-permissions",
+ "pallet-tables",
+ "parity-scale-codec",
+ "parking_lot 0.12.3",
+ "postcard",
+ "prost 0.13.5",
+ "prost-build 0.13.5",
+ "scale-info",
+ "serde",
+ "serde_json",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sqlparser",
+ "sxt-core",
 ]
 
 [[package]]
@@ -13259,6 +13301,26 @@ dependencies = [
  "prettyplease 0.2.30",
  "prost 0.12.6",
  "prost-types 0.12.6",
+ "regex",
+ "syn 2.0.99",
+ "tempfile",
+]
+
+[[package]]
+name = "prost-build"
+version = "0.13.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
+dependencies = [
+ "heck 0.5.0",
+ "itertools 0.14.0",
+ "log",
+ "multimap 0.10.0",
+ "once_cell",
+ "petgraph 0.7.1",
+ "prettyplease 0.2.30",
+ "prost 0.13.5",
+ "prost-types 0.13.5",
  "regex",
  "syn 2.0.99",
  "tempfile",
@@ -18606,6 +18668,7 @@ dependencies = [
  "pallet-indices",
  "pallet-keystore",
  "pallet-multisig",
+ "pallet-offchain-indexing",
  "pallet-offences",
  "pallet-permissions",
  "pallet-session",

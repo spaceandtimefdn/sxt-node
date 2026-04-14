@@ -31,9 +31,11 @@ members = [
     "pallets/attestation",
     "pallets/keystore",
     "pallets/smartcontracts",
-    "event-forwarder", 
+    "event-forwarder",
     "chain-utils",
     "translation-layer",
+    "pallets/offchain_indexing",
+    "pallets/offchain_indexing/mock-server",
 ]
 exclude = [
     "utoipa",  
@@ -64,6 +66,7 @@ pallet-smartcontracts = { path = "pallets/smartcontracts", default-features = fa
 sxt-core = { path = "sxt-core", default-features = false}
 pallet-tables = { path = "pallets/tables", default-features = false}
 pallet-indexing = { path = "pallets/indexing", default-features = false }
+pallet-offchain-indexing = { path = "pallets/offchain_indexing", default-features = false }
 native = { path = "native", default-features = false }
 native-api = { path = "native-api", default-features = false }
 num-bigint = { version = "0.4", default-features = false }

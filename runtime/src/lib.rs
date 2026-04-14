@@ -780,6 +780,10 @@ impl pallet_smartcontracts::Config for Runtime {
     type WeightInfo = pallet_smartcontracts::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_offchain_indexing::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -873,6 +877,8 @@ mod runtime {
     pub type Smartcontracts = pallet_smartcontracts;
     #[runtime::pallet_index(107)]
     pub type SystemTables = pallet_system_tables;
+    #[runtime::pallet_index(108)]
+    pub type OffchainIndexing = pallet_offchain_indexing;
 }
 
 /// The address format for describing accounts.
