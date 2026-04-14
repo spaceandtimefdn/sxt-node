@@ -28,6 +28,7 @@ sha3 = { version = "0.10.8", default-features = false }
 sxt-core.workspace = true
 pallet-permissions.workspace = true
 pallet-keystore.workspace = true
+eth_merkle_tree = { workspace = true }
 
 [dev-dependencies]
 polkadot-sdk = { workspace = true, features = [
