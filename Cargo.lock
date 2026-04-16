@@ -9784,6 +9784,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-block-forwarder"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-commitments",
+ "pallet-permissions",
+ "pallet-tables",
+ "parity-scale-codec",
+ "parking_lot 0.12.3",
+ "prost 0.13.5",
+ "prost-build 0.13.5",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sxt-core",
+]
+
+[[package]]
 name = "pallet-bounties"
 version = "37.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10663,34 +10684,6 @@ dependencies = [
  "pallet-nomination-pools",
  "parity-scale-codec",
  "sp-api",
-]
-
-[[package]]
-name = "pallet-offchain-indexing"
-version = "0.1.0"
-dependencies = [
- "arrow 54.2.1",
- "commitment-sql",
- "frame-support",
- "frame-system",
- "log",
- "on-chain-table",
- "pallet-commitments",
- "pallet-permissions",
- "pallet-tables",
- "parity-scale-codec",
- "parking_lot 0.12.3",
- "postcard",
- "prost 0.13.5",
- "prost-build 0.13.5",
- "scale-info",
- "serde",
- "serde_json",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sqlparser",
- "sxt-core",
 ]
 
 [[package]]
@@ -18660,6 +18653,7 @@ dependencies = [
  "pallet-babe",
  "pallet-bags-list",
  "pallet-balances",
+ "pallet-block-forwarder",
  "pallet-commitments",
  "pallet-election-provider-multi-phase",
  "pallet-grandpa",
@@ -18668,7 +18662,6 @@ dependencies = [
  "pallet-indices",
  "pallet-keystore",
  "pallet-multisig",
- "pallet-offchain-indexing",
  "pallet-offences",
  "pallet-permissions",
  "pallet-session",

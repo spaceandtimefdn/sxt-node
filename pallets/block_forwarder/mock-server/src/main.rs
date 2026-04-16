@@ -70,12 +70,16 @@ async fn create_table(
             StatusCode::BAD_REQUEST
         })?;
 
+    // arrow_schema field carries raw DDL bytes (no host functions → no Arrow IPC).
+    // Server is responsible for Arrow conversion if needed.
+    let ddl_str = String::from_utf8_lossy(&req.arrow_schema);
     tracing::info!(
         seq = req.sequence_number,
         table = %req.table_name,
         key = %req.key,
-        schema_len = req.arrow_schema.len(),
-        "CreateTable",
+        ddl = %ddl_str,
+        ddl_len = req.arrow_schema.len(),
+        "CreateTable (raw DDL)",
     );
 
     let mut s = state.lock().unwrap();
@@ -110,12 +114,13 @@ async fn put_batches(body: Bytes) -> Result<(), StatusCode> {
     let req = proto::PutBatchesRequest::decode(body)
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
+    // record_batch field carries raw postcard OnChainTable bytes.
     for batch in &req.batches {
         tracing::info!(
             seq = req.sequence_number,
             table = %batch.table_name,
-            batch_len = batch.record_batch.len(),
-            "PutBatches",
+            postcard_len = batch.record_batch.len(),
+            "PutBatches (raw postcard OnChainTable)",
         );
     }
     Ok(())
@@ -129,13 +134,18 @@ async fn checkpoint(
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let mut s = state.lock().unwrap();
-    let expected = s.last_checkpoint.map_or(1, |n| n + 1);
 
     // Idempotent: accept if already at this checkpoint.
     if s.last_checkpoint == Some(req.sequence_number) {
         tracing::debug!(seq = req.sequence_number, "checkpoint idempotent — already at this seq");
         return Ok(());
     }
+
+    // Per proto: first checkpoint can be any value; subsequent must be prev+1.
+    let expected = match s.last_checkpoint {
+        None => req.sequence_number, // accept any
+        Some(n) => n + 1,
+    };
 
     if req.sequence_number != expected {
         tracing::error!(

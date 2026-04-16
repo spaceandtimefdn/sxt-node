@@ -1,14 +1,9 @@
 //! HTTP+protobuf client for the indexer service.
 //!
 //! Uses `sp_io::offchain::http` to POST protobuf-encoded request bodies to
-//! the indexer's HTTP endpoints. Each function maps to one RPC from the proto:
-//!
-//! - `POST /v1/create_table` — body: `CreateTableRequest`
-//! - `POST /v1/drop_table` — body: `DropTableRequest`
-//! - `POST /v1/put_batches` — body: `PutBatchesRequest`
-//! - `POST /v1/checkpoint` — body: `CheckpointRequest`
-//! - `POST /v1/get_last_checkpoint` — empty body, response: `GetLastCheckpointResponse`
+//! the indexer's HTTP endpoints. Works in both std and wasm (no_std) runtimes.
 
+use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -62,7 +57,7 @@ pub fn get_last_checkpoint(base_url: &str) -> Result<Option<u64>, Error> {
     Ok(resp.has_checkpoint.then_some(resp.sequence_number))
 }
 
-/// Register a new table with its Arrow IPC schema.
+/// Register a new table. v1 semantics: `arrow_schema` carries raw DDL bytes.
 pub fn create_table(
     base_url: &str,
     sequence_number: u64,
@@ -96,7 +91,7 @@ pub fn drop_table(
     Ok(())
 }
 
-/// Ingest Arrow RecordBatches for one or more tables.
+/// Ingest one or more table batches.
 pub fn put_batches(
     base_url: &str,
     sequence_number: u64,
@@ -122,10 +117,18 @@ pub fn checkpoint(base_url: &str, sequence_number: u64) -> Result<(), Error> {
 /// Low-level POST helper. Sends `body` to `url` with
 /// `Content-Type: application/x-protobuf` and returns the response body bytes.
 fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
-    let deadline =
-        sp_io::offchain::timestamp().add(Duration::from_millis(HTTP_TIMEOUT_MS));
+    let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(HTTP_TIMEOUT_MS));
 
-    let pending = Request::post(url, alloc::vec![body.to_vec()])
+    // Pass body chunks as `Vec<Vec<u8>>`. Empty body → no chunks (otherwise
+    // `Request::send` would write an empty chunk and then try to finalize
+    // again, which fails with "body sending already finished").
+    let chunks: Vec<Vec<u8>> = if body.is_empty() {
+        Vec::new()
+    } else {
+        alloc::vec![body.to_vec()]
+    };
+
+    let pending = Request::post(url, chunks)
         .add_header("Content-Type", "application/x-protobuf")
         .deadline(deadline)
         .send()

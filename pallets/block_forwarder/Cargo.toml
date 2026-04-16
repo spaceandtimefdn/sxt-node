@@ -1,5 +1,5 @@
 [package]
-name = "pallet-offchain-indexing"
+name = "pallet-block-forwarder"
 description = "Offchain worker that forwards table lifecycle and data events to an external HTTP indexer service."
 version = "0.1.0"
 license = "Unlicense"
@@ -21,25 +21,12 @@ sp-core = { workspace = true, default-features = false }
 sp-io = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 sxt-core.workspace = true
-on-chain-table = { workspace = true, default-features = false }
 pallet-tables.workspace = true
-commitment-sql.workspace = true
-postcard = { workspace = true, default-features = false }
 log = { workspace = true, default-features = false }
-serde = { workspace = true, default-features = false, features = ["derive"] }
-serde_json = { workspace = true, default-features = false, features = ["alloc"] }
-sqlparser.workspace = true
-
-# prost is std-only; used in the offchain worker (native) path to encode
-# protobuf messages for HTTP+protobuf transport.
-prost = { version = "0.13", optional = true }
-
-# Arrow is std-only; used for DDL→Arrow IPC schema and OnChainTable→Arrow IPC
-# conversion in the offchain worker path.
-arrow = { workspace = true, features = ["ipc"], optional = true }
+prost = { version = "0.13", default-features = false, features = ["prost-derive"] }
 
 [build-dependencies]
-prost-build = { version = "0.13", optional = true }
+prost-build = "0.13"
 
 [dev-dependencies]
 sp-io.workspace = true
@@ -48,11 +35,6 @@ sp-runtime = { workspace = true, features = ["std"] }
 pallet-permissions = { workspace = true, features = ["std"] }
 pallet-commitments = { workspace = true, features = ["std"] }
 pallet-tables = { workspace = true, features = ["std"] }
-on-chain-table = { workspace = true, features = ["std", "arrow"] }
-arrow = { workspace = true, features = ["ipc"] }
-sqlparser = { workspace = true, features = ["std"] }
-postcard = { workspace = true, features = ["use-std"] }
-prost = "0.13"
 parking_lot = "0.12"
 
 [features]
@@ -66,18 +48,9 @@ std = [
     "sp-io/std",
     "sp-runtime/std",
     "sxt-core/std",
-    "on-chain-table/std",
-    "on-chain-table/arrow",
     "pallet-tables/std",
-    "commitment-sql/std",
-    "postcard/use-std",
     "log/std",
-    "serde/std",
-    "serde_json/std",
-    "sqlparser/std",
-    "dep:prost",
-    "dep:prost-build",
-    "dep:arrow",
+    "prost/std",
 ]
 try-runtime = [
     "frame-support/try-runtime",

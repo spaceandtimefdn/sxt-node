@@ -59,7 +59,7 @@ pallet-attestation.workspace = true
 pallet-keystore.workspace = true
 pallet-smartcontracts.workspace = true
 
-pallet-offchain-indexing.workspace = true
+pallet-block-forwarder.workspace = true
 pallet-system-tables.workspace = true
 pallet-staking.workspace = true
 pallet-staking-runtime-api.workspace = true
@@ -97,7 +97,7 @@ std = [
 	"pallet-staking-runtime-api/std",
 	"pallet-attestation/std",
 	"pallet-indexing/std",
-	"pallet-offchain-indexing/std",
+	"pallet-block-forwarder/std",
 	"pallet-tables/std",
 	"pallet-permissions/std",
 	"pallet-session/std",

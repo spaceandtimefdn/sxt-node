@@ -5,7 +5,7 @@ use sp_core::H256;
 use sp_runtime::traits::IdentityLookup;
 use sp_runtime::BuildStorage;
 
-use crate as pallet_offchain_indexing;
+use crate as pallet_block_forwarder;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -15,7 +15,7 @@ frame_support::construct_runtime!(
         Permissions: pallet_permissions,
         Commitments: pallet_commitments,
         Tables: pallet_tables,
-        OffchainIndexing: pallet_offchain_indexing,
+        BlockForwarder: pallet_block_forwarder,
     }
 );
 
@@ -40,7 +40,7 @@ impl pallet_tables::Config for Test {
     type WeightInfo = ();
 }
 
-impl pallet_offchain_indexing::Config for Test {
+impl pallet_block_forwarder::Config for Test {
     type RuntimeEvent = RuntimeEvent;
 }
 
