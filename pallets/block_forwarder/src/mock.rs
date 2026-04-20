@@ -1,6 +1,7 @@
-//! Mock runtime for testing the offchain indexing pallet.
+//! Mock runtime for testing the block forwarder pallet.
 
 use frame_support::derive_impl;
+use frame_support::traits::ConstU8;
 use sp_core::H256;
 use sp_runtime::traits::IdentityLookup;
 use sp_runtime::BuildStorage;
@@ -42,6 +43,11 @@ impl pallet_tables::Config for Test {
 
 impl pallet_block_forwarder::Config for Test {
     type RuntimeEvent = RuntimeEvent;
+    // Tests don't exercise the indexing-event extraction path, so we stand
+    // in with any pallet that's already in the mock runtime. The variant
+    // index is arbitrary for the same reason.
+    type IndexingPallet = Tables;
+    type QuorumReachedVariantIndex = ConstU8<1>;
 }
 
 /// Build genesis storage for a test externalities.

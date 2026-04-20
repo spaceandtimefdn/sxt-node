@@ -1,5 +1,5 @@
 //! Mock HTTP server that mirrors the indexer gRPC service's proto, but over
-//! HTTP + protobuf. Used for local testing of the offchain indexing pallet.
+//! HTTP + protobuf. Used for local testing of the block forwarder pallet.
 //!
 //! Endpoints:
 //!   POST /v1/create_table        — body: CreateTableRequest (protobuf)
@@ -8,8 +8,10 @@
 //!   POST /v1/checkpoint          — body: CheckpointRequest (protobuf)
 //!   POST /v1/get_last_checkpoint — empty body, response: GetLastCheckpointResponse (protobuf)
 //!
-//! State is held in memory (not persisted). The server enforces the
-//! `sequence_number == last_checkpoint + 1` rule.
+//! State is held in memory (not persisted). Checkpoint rule: the first
+//! checkpoint accepts any sequence number; subsequent checkpoints must be
+//! `last_checkpoint + 1`. Re-posting the current checkpoint is accepted
+//! as an idempotent no-op.
 
 use std::sync::{Arc, Mutex};
 

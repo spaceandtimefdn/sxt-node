@@ -782,6 +782,10 @@ impl pallet_smartcontracts::Config for Runtime {
 
 impl pallet_block_forwarder::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    type IndexingPallet = Indexing;
+    // Variant index of `QuorumReached` in `pallet_indexing::Event`. If the
+    // enum is ever reordered, update this constant.
+    type QuorumReachedVariantIndex = frame_support::traits::ConstU8<1>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

@@ -1,4 +1,4 @@
-//! # Offchain Indexing Pallet
+//! # Block Forwarder Pallet
 //!
 //! Forwards table lifecycle and data events to an external HTTP indexer
 //! service using protobuf-over-HTTP.
@@ -74,6 +74,17 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>>
             + From<pallet_tables::Event<Self>>
             + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
+        /// The `pallet_indexing` pallet as wired in `construct_runtime!`.
+        /// Used to resolve its pallet index dynamically so we don't have
+        /// to hard-code the `construct_runtime!` ordering here.
+        type IndexingPallet: frame_support::traits::PalletInfoAccess;
+
+        /// Variant index of `QuorumReached` within `pallet_indexing::Event`.
+        /// The runtime may supply this as `ConstU8<N>` or compute it
+        /// dynamically by encoding a dummy event. Must stay in sync with
+        /// the order of variants in `pallet_indexing::Event`.
+        type QuorumReachedVariantIndex: Get<u8>;
     }
 
     #[pallet::event]
@@ -199,11 +210,15 @@ pub mod pallet {
             use codec::Decode;
             use sxt_core::indexing::DataQuorum;
 
+            use frame_support::traits::PalletInfoAccess;
+
             let encoded = codec::Encode::encode(event);
-            if encoded.len() < 2 || encoded[0] == Self::tables_pallet_index() {
+            if encoded.len() < 2 {
                 return;
             }
-            if encoded[1] != 1 {
+            let indexing_pallet_index = <T::IndexingPallet>::index() as u8;
+            let quorum_variant = T::QuorumReachedVariantIndex::get();
+            if encoded[0] != indexing_pallet_index || encoded[1] != quorum_variant {
                 return;
             }
             let mut input = &encoded[2..];
