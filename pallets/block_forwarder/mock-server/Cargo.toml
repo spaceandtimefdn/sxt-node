@@ -1,0 +1,17 @@
+[package]
+name = "mock-indexer-server"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+axum = { version = "0.8", features = ["tokio"] }
+prost = "0.13"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[build-dependencies]
+prost-build = "0.13"

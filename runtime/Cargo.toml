@@ -85,6 +85,7 @@ pallet-zkpay.workspace = true
 pallet-rewards.workspace = true
 pallet-system-tables.workspace = true
 pallet-system-contracts.workspace = true
+pallet-block-forwarder.workspace = true
 proof-of-sql-commitment-map.workspace = true
 sxt-core.workspace = true
 
@@ -101,6 +102,7 @@ std = [
 	"pallet-keystore/std",
 	"pallet-attestation/std",
 	"pallet-indexing/std",
+	"pallet-block-forwarder/std",
 	"pallet-tables/std",
 	"pallet-permissions/std",
 	"pallet-system-tables/std",

@@ -31,7 +31,7 @@ members = [
     "pallets/rewards",
     "pallets/keystore",
     "pallets/smartcontracts",
-    "event-forwarder", 
+    "event-forwarder",
     "chain-utils",
     "pallets/system-contracts",
     "canaries",
@@ -39,6 +39,8 @@ members = [
     "proof-of-sql/commitment-column-mapping",
     "eth-ecdsa",
     "arrow-ipc-no-std",
+    "pallets/block_forwarder",
+    "pallets/block_forwarder/mock-server",
 ]
 exclude = [
     "utoipa",  
@@ -79,6 +81,7 @@ pallet-smartcontracts = { path = "pallets/smartcontracts", default-features = fa
 sxt-core = { path = "sxt-core", default-features = false }
 pallet-tables = { path = "pallets/tables", default-features = false }
 pallet-indexing = { path = "pallets/indexing", default-features = false }
+pallet-block-forwarder = { path = "pallets/block_forwarder", default-features = false }
 native = { path = "native", default-features = false }
 native-api = { path = "native-api", default-features = false }
 num-bigint = { version = "0.4", default-features = false }

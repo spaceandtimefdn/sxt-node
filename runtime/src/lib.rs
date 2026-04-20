@@ -139,6 +139,7 @@ use proof_of_sql_commitment_map::PerCommitmentScheme;
 use sxt_core::system_tables::ClaimedUnstake;
 pub use {
     pallet_attestation,
+    pallet_block_forwarder,
     pallet_commitments,
     pallet_indexing,
     pallet_keystore,
@@ -891,6 +892,14 @@ impl pallet_rewards::Config for Runtime {
     type MaxPayoutsPerBlock = ConstU32<3>;
 }
 
+impl pallet_block_forwarder::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type IndexingPallet = Indexing;
+    // Variant index of `QuorumReached` in `pallet_indexing::Event`. If the
+    // enum is ever reordered, update this constant.
+    type QuorumReachedVariantIndex = ConstU8<1>;
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 impl frame_system_benchmarking::Config for Runtime {}
 
@@ -999,6 +1008,8 @@ mod runtime {
     pub type Rewards = pallet_rewards;
     #[runtime::pallet_index(110)]
     pub type ZkPay = pallet_zkpay;
+    #[runtime::pallet_index(111)]
+    pub type BlockForwarder = pallet_block_forwarder;
 }
 
 /// The address format for describing accounts.
