@@ -351,11 +351,32 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
         other: (rpc_builder, import_setup, rpc_setup, mut telemetry, statement_store),
     } = new_partial(&config)?;
 
-    // If `--indexer-url` was given, seed the block-forwarder OCW's local
-    // storage with it, so the OCW can immediately start forwarding without
-    // needing `configure-ocw.sh` to run against the RPC.
+    // The block-forwarder pallet's `on_finalize` calls
+    // `sp_io::offchain_index::set` to hand events to the OCW. That call is a
+    // silent no-op unless `--enable-offchain-indexing=true` was passed. We
+    // surface that loudly rather than letting operators discover it by
+    // watching zero rows arrive at their indexer.
     if let Some(url) = indexer_url.as_deref() {
+        if !config.offchain_worker.indexing_enabled {
+            return Err(ServiceError::Other(
+                "--indexer-url was set but --enable-offchain-indexing is not \
+                 true: block-forwarder's on_finalize writes would be silently \
+                 dropped. Restart with --enable-offchain-indexing=true, or \
+                 omit --indexer-url."
+                    .into(),
+            ));
+        }
         configure_indexer_url(backend.as_ref(), url)?;
+    } else if !config.offchain_worker.indexing_enabled {
+        // Block-forwarder is in the runtime but offchain indexing is off.
+        // Forwarding can't work even if someone later writes the URL via RPC.
+        // Loud eprintln! so it shows up even without log filter setup.
+        eprintln!(
+            "warning: --enable-offchain-indexing is not true; the \
+             block-forwarder OCW cannot forward events even if \
+             block_forwarder::indexer_url is set via RPC. Pass \
+             --enable-offchain-indexing=true to enable forwarding."
+        );
     }
 
     let metrics = N::register_notification_metrics(
