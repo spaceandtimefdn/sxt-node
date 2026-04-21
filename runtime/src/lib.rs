@@ -895,9 +895,44 @@ impl pallet_rewards::Config for Runtime {
 impl pallet_block_forwarder::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type IndexingPallet = Indexing;
-    // Variant index of `QuorumReached` in `pallet_indexing::Event`. If the
-    // enum is ever reordered, update this constant.
-    type QuorumReachedVariantIndex = ConstU8<1>;
+    type QuorumReachedVariantIndex = DynamicQuorumReachedIndex;
+}
+
+/// Resolves the variant index of `QuorumReached` in
+/// `pallet_indexing::Event` by name via `scale_info`, rather than
+/// hard-coding an integer that silently drifts if the enum is ever
+/// reordered. Panics at boot with a clear message if the variant goes
+/// missing or is renamed — loud failure is strictly better than the
+/// block-forwarder silently skipping every quorum event forever.
+pub struct DynamicQuorumReachedIndex;
+
+impl polkadot_sdk::frame_support::traits::Get<u8> for DynamicQuorumReachedIndex {
+    fn get() -> u8 {
+        find_event_variant_index::<
+            pallet_indexing::Event<Runtime, native_api::Api>,
+        >("QuorumReached")
+        .expect(
+            "pallet_indexing::Event must expose a QuorumReached variant; \
+             rename or removal is a breaking change to the block-forwarder \
+             integration and must be coordinated.",
+        )
+    }
+}
+
+/// Look up an event enum's variant index by name using the `scale_info`
+/// metadata FRAME derives on every pallet Event. Returns `None` if the
+/// type isn't a variant (non-enum) or the name isn't present.
+fn find_event_variant_index<E: scale_info::TypeInfo + 'static>(
+    variant_name: &str,
+) -> Option<u8> {
+    match E::type_info().type_def {
+        scale_info::TypeDef::Variant(ref v) => v
+            .variants
+            .iter()
+            .find(|variant| variant.name == variant_name)
+            .map(|variant| variant.index),
+        _ => None,
+    }
 }
 
 #[cfg(feature = "runtime-benchmarks")]
