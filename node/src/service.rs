@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use futures::prelude::*;
 use polkadot_sdk::sc_client_api::{Backend, BlockBackend};
+use polkadot_sdk::sp_core::offchain::{OffchainStorage, STORAGE_PREFIX};
 use polkadot_sdk::sc_consensus_babe::{self, SlotProportion};
 use polkadot_sdk::sc_network::event::Event;
 use polkadot_sdk::sc_network::{NetworkBackend, NetworkEventStream};
@@ -74,6 +75,33 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 /// The minimum period of blocks on which justifications will be
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
+
+/// Seed the block-forwarder OCW's persistent local storage with the
+/// indexer URL given on the command line. Mirrors the effect of running
+/// `scripts/configure-ocw.sh` via RPC, but without requiring
+/// `--rpc-methods=unsafe` or a separate second-step.
+///
+/// The storage key is
+/// `pallet_block_forwarder::INDEXER_URL_KEY = "block_forwarder::indexer_url"`;
+/// the value is a SCALE-encoded `Vec<u8>` of the URL bytes.
+fn configure_indexer_url(
+    backend: &FullBackend,
+    url: &str,
+) -> Result<(), ServiceError> {
+    use codec::Encode;
+    let Some(mut storage) = backend.offchain_storage() else {
+        return Err(ServiceError::Other(
+            "backend did not expose an offchain storage handle; \
+             cannot apply --indexer-url"
+                .into(),
+        ));
+    };
+    let key = sxt_runtime::pallet_block_forwarder::INDEXER_URL_KEY;
+    let encoded = url.as_bytes().to_vec().encode();
+    storage.set(STORAGE_PREFIX, key, &encoded);
+    eprintln!("block_forwarder: seeded OCW indexer_url = {}", url);
+    Ok(())
+}
 
 #[allow(clippy::type_complexity)]
 #[expect(
@@ -290,6 +318,7 @@ pub struct NewFullBase {
 )]
 pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
     config: Configuration,
+    indexer_url: Option<String>,
 ) -> Result<NewFullBase, ServiceError> {
     let role = config.role;
     let force_authoring = config.force_authoring;
@@ -321,6 +350,13 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
         transaction_pool,
         other: (rpc_builder, import_setup, rpc_setup, mut telemetry, statement_store),
     } = new_partial(&config)?;
+
+    // If `--indexer-url` was given, seed the block-forwarder OCW's local
+    // storage with it, so the OCW can immediately start forwarding without
+    // needing `configure-ocw.sh` to run against the RPC.
+    if let Some(url) = indexer_url.as_deref() {
+        configure_indexer_url(backend.as_ref(), url)?;
+    }
 
     let metrics = N::register_notification_metrics(
         config.prometheus_config.as_ref().map(|cfg| &cfg.registry),
@@ -603,13 +639,14 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
     futures::executor::block_on(initialize_from_config(&cli.proof_of_sql_public_setup_args))
         .map_err(|e| ServiceError::Other(e.to_string()))?;
 
+    let indexer_url = cli.indexer_url.clone();
     let task_manager = match config.network.network_backend {
         sc_network::config::NetworkBackendType::Libp2p => {
-            new_full_base::<sc_network::NetworkWorker<_, _>>(config)
+            new_full_base::<sc_network::NetworkWorker<_, _>>(config, indexer_url)
                 .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
         sc_network::config::NetworkBackendType::Litep2p => {
-            new_full_base::<sc_network::Litep2pNetworkBackend>(config)
+            new_full_base::<sc_network::Litep2pNetworkBackend>(config, indexer_url)
                 .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
     };

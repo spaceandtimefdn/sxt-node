@@ -19,6 +19,14 @@ pub struct Cli {
     #[clap(long)]
     pub event_forwarder_rpc: Option<String>,
 
+    /// If set, writes the URL into OCW persistent local storage under
+    /// `block_forwarder::indexer_url` at startup, telling the
+    /// block-forwarder OCW where to POST forwarded events. Equivalent
+    /// to running `scripts/configure-ocw.sh` via the RPC, but without
+    /// requiring `--rpc-methods=unsafe`.
+    #[clap(long)]
+    pub indexer_url: Option<String>,
+
     #[allow(missing_docs)]
     #[clap(flatten)]
     pub storage_monitor: sc_storage_monitor::StorageMonitorParams,
