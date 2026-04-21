@@ -22,8 +22,9 @@
 //!
 //! ## No new host functions
 //!
-//! Raw DDL bytes and raw postcard `OnChainTable` bytes are shipped as-is.
-//! The HTTP server is responsible for Arrow conversion if needed.
+//! Raw DDL bytes (for schemas) and Arrow IPC single-batch stream bytes
+//! (for row data, identical to what `pallet_indexing::submit_data.data`
+//! carries) are shipped as-is. The HTTP server decodes both.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 

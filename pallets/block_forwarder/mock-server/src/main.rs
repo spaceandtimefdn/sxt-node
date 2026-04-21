@@ -116,13 +116,15 @@ async fn put_batches(body: Bytes) -> Result<(), StatusCode> {
     let req = proto::PutBatchesRequest::decode(body)
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    // record_batch field carries raw postcard OnChainTable bytes.
+    // record_batch field carries Arrow IPC single-batch stream bytes —
+    // the same bytes the block-forwarder relays from
+    // pallet_indexing::QuorumReached.data.
     for batch in &req.batches {
         tracing::info!(
             seq = req.sequence_number,
             table = %batch.table_name,
-            postcard_len = batch.record_batch.len(),
-            "PutBatches (raw postcard OnChainTable)",
+            ipc_len = batch.record_batch.len(),
+            "PutBatches (arrow ipc stream)",
         );
     }
     Ok(())
