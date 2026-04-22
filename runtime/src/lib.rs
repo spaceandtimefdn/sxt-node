@@ -901,21 +901,30 @@ impl pallet_block_forwarder::Config for Runtime {
 /// Resolves the variant index of `QuorumReached` in
 /// `pallet_indexing::Event` by name via `scale_info`, rather than
 /// hard-coding an integer that silently drifts if the enum is ever
-/// reordered. Panics at boot with a clear message if the variant goes
-/// missing or is renamed — loud failure is strictly better than the
-/// block-forwarder silently skipping every quorum event forever.
+/// reordered. Panics on first access with a clear message if the
+/// variant goes missing or is renamed — loud failure is strictly better
+/// than the block-forwarder silently skipping every quorum event forever.
+///
+/// The resolved index is cached in a `lazy_static!` so repeated `get()`
+/// calls on the hot path (per-event filtering in block-forwarder) are a
+/// single atomic load rather than a fresh `scale_info::type_info()`
+/// traversal.
 pub struct DynamicQuorumReachedIndex;
+
+lazy_static::lazy_static! {
+    static ref QUORUM_REACHED_VARIANT_INDEX: u8 = find_event_variant_index::<
+        pallet_indexing::Event<Runtime, native_api::Api>,
+    >("QuorumReached")
+    .expect(
+        "pallet_indexing::Event must expose a QuorumReached variant; \
+         rename or removal is a breaking change to the block-forwarder \
+         integration and must be coordinated.",
+    );
+}
 
 impl polkadot_sdk::frame_support::traits::Get<u8> for DynamicQuorumReachedIndex {
     fn get() -> u8 {
-        find_event_variant_index::<
-            pallet_indexing::Event<Runtime, native_api::Api>,
-        >("QuorumReached")
-        .expect(
-            "pallet_indexing::Event must expose a QuorumReached variant; \
-             rename or removal is a breaking change to the block-forwarder \
-             integration and must be coordinated.",
-        )
+        *QUORUM_REACHED_VARIANT_INDEX
     }
 }
 

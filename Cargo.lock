@@ -21208,6 +21208,7 @@ name = "sxt-runtime"
 version = "0.1.0"
 dependencies = [
  "eth-ecdsa",
+ "lazy_static",
  "native-api",
  "pallet-attestation",
  "pallet-block-forwarder",
