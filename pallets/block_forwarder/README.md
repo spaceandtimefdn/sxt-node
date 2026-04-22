@@ -88,10 +88,12 @@ impl pallet_block_forwarder::Config for Runtime {
 
 - `CreateTable.arrow_schema`: raw `CREATE TABLE …` DDL bytes (UTF-8).
   The HTTP server parses them via `sqlparser` to derive the Arrow schema.
-- `PutBatches.record_batch`: Arrow IPC single-batch stream bytes,
-  identical to what `pallet_indexing::submit_data.data` validates and
-  what `QuorumReached` relays verbatim. The forwarder never decodes
-  this payload — it's an opaque pass-through.
+- `PutBatches.record_batch`: postcard-encoded `OnChainTable` bytes —
+  what `pallet_indexing::QuorumReached.data` carries. The chain builds
+  this in `finalize_quorum`: it converts the indexer's Arrow IPC
+  submission to an `OnChainTable`, appends commitment meta columns,
+  and postcard-serializes the result. The block-forwarder never
+  decodes this payload — it's an opaque pass-through to the server.
 
 The pallet does **not** introduce any new host functions; everything
 goes through already-in-stable `sp_io` APIs (`offchain_index::set`,

@@ -22,9 +22,11 @@
 //!
 //! ## No new host functions
 //!
-//! Raw DDL bytes (for schemas) and Arrow IPC single-batch stream bytes
-//! (for row data, identical to what `pallet_indexing::submit_data.data`
-//! carries) are shipped as-is. The HTTP server decodes both.
+//! Raw DDL bytes (for schemas) and postcard-encoded `OnChainTable` bytes
+//! (for row data — what `pallet_indexing::QuorumReached.data` carries,
+//! after the chain has converted the indexer's Arrow IPC submission to
+//! an augmented `OnChainTable` and postcard-serialized it in
+//! `finalize_quorum`) are shipped as-is. The HTTP server decodes both.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
