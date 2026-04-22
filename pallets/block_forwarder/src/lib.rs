@@ -63,7 +63,7 @@ pub mod pallet {
 
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_system::pallet_prelude::*;
-    use sxt_core::tables::{TableIdentifier, TableType};
+    use sxt_core::tables::TableIdentifier;
 
     use crate::offchain_index::{BlockEvent, BlockIndex, CreateEntry, DataEntry};
 
@@ -76,6 +76,11 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>>
             + From<pallet_tables::Event<Self>>
             + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
+
+        /// The `pallet_tables` pallet as wired in `construct_runtime!`.
+        /// Used to resolve its pallet index dynamically so we don't have
+        /// to hard-code the `construct_runtime!` ordering here.
+        type TablesPallet: polkadot_sdk::frame_support::traits::PalletInfoAccess;
 
         /// The `pallet_indexing` pallet as wired in `construct_runtime!`.
         /// Used to resolve its pallet index dynamically so we don't have
@@ -157,31 +162,15 @@ pub mod pallet {
             index
         }
 
-        fn tables_pallet_index() -> u8 {
-            let dummy_ident = TableIdentifier {
-                namespace: BoundedVec::try_from(Vec::new()).unwrap(),
-                name: BoundedVec::try_from(Vec::new()).unwrap(),
-            };
-            let dummy = pallet_tables::Event::<T>::TableDropped(
-                None,
-                TableType::Community,
-                dummy_ident,
-                sxt_core::tables::Source::default(),
-            );
-            let our_event: <T as Config>::RuntimeEvent = dummy.into();
-            let runtime_event = <<T as Config>::RuntimeEvent as IsType<
-                <T as polkadot_sdk::frame_system::Config>::RuntimeEvent,
-            >>::into_ref(&our_event);
-            codec::Encode::encode(runtime_event)[0]
-        }
-
         fn try_extract_table_event(
             event: &<T as polkadot_sdk::frame_system::Config>::RuntimeEvent,
             index: &mut BlockIndex,
         ) {
             use codec::Decode;
+            use polkadot_sdk::frame_support::traits::PalletInfoAccess;
+
             let encoded = codec::Encode::encode(event);
-            if encoded.is_empty() || encoded[0] != Self::tables_pallet_index() {
+            if encoded.is_empty() || encoded[0] != <T::TablesPallet>::index() as u8 {
                 return;
             }
             let inner = &encoded[1..];

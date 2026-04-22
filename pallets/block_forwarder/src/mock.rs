@@ -60,6 +60,7 @@ impl pallet_balances::Config for Test {
 
 impl pallet_block_forwarder::Config for Test {
     type RuntimeEvent = RuntimeEvent;
+    type TablesPallet = Tables;
     // Tests don't exercise the indexing-event extraction path, so we stand
     // in with any pallet that's already in the mock runtime. The variant
     // index is arbitrary for the same reason.

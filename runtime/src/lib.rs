@@ -894,6 +894,7 @@ impl pallet_rewards::Config for Runtime {
 
 impl pallet_block_forwarder::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    type TablesPallet = Tables;
     type IndexingPallet = Indexing;
     type QuorumReachedVariantIndex = DynamicQuorumReachedIndex;
 }
