@@ -43,16 +43,14 @@ to force them to run regardless of role.
 
 ### 3. `--indexer-url <URL>` — optional (but usually what you want)
 
-Tells the OCW where to POST forwarded events. Mirrors what
-`scripts/configure-ocw.sh` does via the `offchain_localStorageSet` RPC,
-but:
-- Applies before the first block, so no race with early events.
-- Doesn't require `--rpc-methods=unsafe` (the RPC is unsafe-gated).
-- Doesn't need a second process / second terminal.
+Tells the OCW where to POST forwarded events. The node writes the URL
+into the OCW's persistent local storage before the first block is
+authored, so no events are missed between node-up and URL-configured.
 
 If omitted, the OCW stays dormant until the URL is written some other
-way (RPC, a persistent base-path node with the URL already set from a
-previous run, etc.).
+way — e.g. the `offchain_localStorageSet` RPC (requires
+`--rpc-methods=unsafe`) or a persistent base-path node carrying the URL
+over from a previous run.
 
 ## Minimal one-command dev setup
 
@@ -64,9 +62,6 @@ previous run, etc.).
   --enable-offchain-indexing=true \
   --indexer-url http://127.0.0.1:9999
 ```
-
-`--rpc-methods=unsafe` is **not** needed any more for indexer setup —
-only include it if you still want the old `configure-ocw.sh` RPC path.
 
 ## Runtime wiring
 
@@ -113,11 +108,12 @@ patch the forwarder's `DEDUP_KEY_COLUMN` constant.
 
 ## Testing
 
-- `cargo test -p pallet-block-forwarder` — 7 unit/integration tests
-  covering skip/forward/delete/multi-block/resume.
-- `mock-server/` (separate workspace member) — axum-based local HTTP
-  stub that logs each call; point `--indexer-url` at it for quick local
-  iteration without a real indexer.
-- `scripts/run-local-demo.sh` — tmux orchestrator that brings up the
-  mock server + node + OCW configure in one go. Pre-`--indexer-url`
-  workflow; still works if you want to test the RPC path.
+- **Unit / integration.** `cargo test -p pallet-block-forwarder` — 7
+  tests using `sp_core::offchain::testing::TestOffchainExt` to exercise
+  skip/forward/delete/multi-block/resume paths without a real HTTP
+  server.
+- **End-to-end against a real indexer.** Build and run `prb-service`
+  with `--features indexer` (see the sxtdb repo), then launch
+  `sxt-node` with `--indexer-url http://<prb-service-host>:<port>`.
+  The harness at `spaceandtimefdn/sxt-int-harness` (standalone crate)
+  drives table/data actions against the node via a TOML file.

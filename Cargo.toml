@@ -40,7 +40,6 @@ members = [
     "eth-ecdsa",
     "arrow-ipc-no-std",
     "pallets/block_forwarder",
-    "pallets/block_forwarder/mock-server",
 ]
 exclude = [
     "utoipa",  

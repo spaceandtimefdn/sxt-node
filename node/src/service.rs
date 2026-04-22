@@ -77,9 +77,8 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
 /// Seed the block-forwarder OCW's persistent local storage with the
-/// indexer URL given on the command line. Mirrors the effect of running
-/// `scripts/configure-ocw.sh` via RPC, but without requiring
-/// `--rpc-methods=unsafe` or a separate second-step.
+/// indexer URL given on the command line, before the first block is
+/// authored.
 ///
 /// The storage key is
 /// `pallet_block_forwarder::INDEXER_URL_KEY = "block_forwarder::indexer_url"`;

@@ -21,9 +21,9 @@ pub struct Cli {
 
     /// If set, writes the URL into OCW persistent local storage under
     /// `block_forwarder::indexer_url` at startup, telling the
-    /// block-forwarder OCW where to POST forwarded events. Equivalent
-    /// to running `scripts/configure-ocw.sh` via the RPC, but without
-    /// requiring `--rpc-methods=unsafe`.
+    /// block-forwarder OCW where to POST forwarded events. Seeds the
+    /// storage before the first block is authored, so no events are
+    /// missed between node-up and URL-configured.
     #[clap(long)]
     pub indexer_url: Option<String>,
 
