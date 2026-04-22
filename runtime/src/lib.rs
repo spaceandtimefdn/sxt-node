@@ -932,9 +932,7 @@ impl polkadot_sdk::frame_support::traits::Get<u8> for DynamicQuorumReachedIndex 
 /// Look up an event enum's variant index by name using the `scale_info`
 /// metadata FRAME derives on every pallet Event. Returns `None` if the
 /// type isn't a variant (non-enum) or the name isn't present.
-fn find_event_variant_index<E: scale_info::TypeInfo + 'static>(
-    variant_name: &str,
-) -> Option<u8> {
+fn find_event_variant_index<E: scale_info::TypeInfo + 'static>(variant_name: &str) -> Option<u8> {
     match E::type_info().type_def {
         scale_info::TypeDef::Variant(ref v) => v
             .variants

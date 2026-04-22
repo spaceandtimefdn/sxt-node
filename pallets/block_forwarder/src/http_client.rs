@@ -7,9 +7,9 @@ use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use prost::Message;
 use polkadot_sdk::sp_runtime::offchain::http::Request;
 use polkadot_sdk::sp_runtime::offchain::Duration;
+use prost::Message;
 
 use crate::proto;
 
@@ -18,6 +18,7 @@ const HTTP_TIMEOUT_MS: u64 = 30_000;
 
 /// Errors from the HTTP client.
 #[derive(Debug)]
+#[allow(clippy::enum_variant_names)]
 pub enum Error {
     /// Failed to send the HTTP request.
     SendFailed,
@@ -77,11 +78,7 @@ pub fn create_table(
 }
 
 /// Soft-delete a table.
-pub fn drop_table(
-    base_url: &str,
-    sequence_number: u64,
-    table_name: String,
-) -> Result<(), Error> {
+pub fn drop_table(base_url: &str, sequence_number: u64, table_name: String) -> Result<(), Error> {
     let req = proto::DropTableRequest {
         sequence_number,
         table_name,
@@ -117,7 +114,8 @@ pub fn checkpoint(base_url: &str, sequence_number: u64) -> Result<(), Error> {
 /// Low-level POST helper. Sends `body` to `url` with
 /// `Content-Type: application/x-protobuf` and returns the response body bytes.
 fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
-    let deadline = polkadot_sdk::sp_io::offchain::timestamp().add(Duration::from_millis(HTTP_TIMEOUT_MS));
+    let deadline =
+        polkadot_sdk::sp_io::offchain::timestamp().add(Duration::from_millis(HTTP_TIMEOUT_MS));
 
     // Pass body chunks as `Vec<Vec<u8>>`. Empty body → no chunks (otherwise
     // `Request::send` would write an empty chunk and then try to finalize
@@ -138,7 +136,9 @@ fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
         .try_wait(deadline)
         .map_err(|_| Error::DeadlineReached)?
         .map_err(|e| match e {
-            polkadot_sdk::sp_runtime::offchain::http::Error::DeadlineReached => Error::DeadlineReached,
+            polkadot_sdk::sp_runtime::offchain::http::Error::DeadlineReached => {
+                Error::DeadlineReached
+            }
             polkadot_sdk::sp_runtime::offchain::http::Error::IoError => Error::IoError,
             polkadot_sdk::sp_runtime::offchain::http::Error::Unknown => Error::IoError,
         })?;

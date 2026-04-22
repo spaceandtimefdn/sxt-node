@@ -1,7 +1,7 @@
 //! Mock runtime for testing the block forwarder pallet.
 
 use polkadot_sdk::frame_support::derive_impl;
-use polkadot_sdk::frame_support::traits::{ConstU8, ConstU128};
+use polkadot_sdk::frame_support::traits::{ConstU128, ConstU8};
 use polkadot_sdk::sp_core::crypto::AccountId32;
 use polkadot_sdk::sp_runtime::traits::IdentityLookup;
 use polkadot_sdk::sp_runtime::BuildStorage;

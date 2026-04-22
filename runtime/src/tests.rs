@@ -28,5 +28,8 @@ fn dynamic_quorum_reached_index_resolves() {
     let idx = crate::DynamicQuorumReachedIndex::get();
     // The lookup must succeed (get() panics otherwise). We don't assert a
     // specific index — reordering the enum is fine, renaming it is not.
-    assert!(idx < u8::MAX, "sanity-check: variant index should be well-defined");
+    assert!(
+        idx < u8::MAX,
+        "sanity-check: variant index should be well-defined"
+    );
 }

@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use futures::prelude::*;
 use polkadot_sdk::sc_client_api::{Backend, BlockBackend};
-use polkadot_sdk::sp_core::offchain::{OffchainStorage, STORAGE_PREFIX};
 use polkadot_sdk::sc_consensus_babe::{self, SlotProportion};
 use polkadot_sdk::sc_network::event::Event;
 use polkadot_sdk::sc_network::{NetworkBackend, NetworkEventStream};
@@ -15,6 +14,7 @@ use polkadot_sdk::sc_service::error::Error as ServiceError;
 use polkadot_sdk::sc_service::TaskManager;
 use polkadot_sdk::sc_telemetry::{Telemetry, TelemetryWorker};
 use polkadot_sdk::sc_transaction_pool_api::OffchainTransactionPoolFactory;
+use polkadot_sdk::sp_core::offchain::{OffchainStorage, STORAGE_PREFIX};
 use polkadot_sdk::sp_runtime::traits::Block as BlockT;
 use polkadot_sdk::{
     sc_authority_discovery,
@@ -83,10 +83,11 @@ const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 /// The storage key is
 /// `pallet_block_forwarder::INDEXER_URL_KEY = "block_forwarder::indexer_url"`;
 /// the value is a SCALE-encoded `Vec<u8>` of the URL bytes.
-fn configure_indexer_url(
-    backend: &FullBackend,
-    url: &str,
-) -> Result<(), ServiceError> {
+#[expect(
+    clippy::result_large_err,
+    reason = "ServiceError is from substrate and cannot be modified"
+)]
+fn configure_indexer_url(backend: &FullBackend, url: &str) -> Result<(), ServiceError> {
     use codec::Encode;
     let Some(mut storage) = backend.offchain_storage() else {
         return Err(ServiceError::Other(

@@ -41,6 +41,8 @@ mod tests;
 mod http_client;
 mod offchain_index;
 
+/// Generated protobuf types for the indexer HTTP adapter wire format.
+#[allow(missing_docs, clippy::missing_docs_in_private_items)]
 mod proto {
     include!(concat!(env!("OUT_DIR"), "/io.spaceandtime.indexer.rs"));
 }
@@ -58,6 +60,7 @@ const DEDUP_KEY_COLUMN: &str = "META_ROW_NUMBER";
 const MAX_BLOCKS_PER_INVOCATION: u64 = 100;
 
 #[polkadot_sdk::frame_support::pallet]
+#[allow(missing_docs, clippy::missing_docs_in_private_items, dead_code)]
 pub mod pallet {
     use alloc::format;
     use alloc::string::String;
@@ -208,9 +211,8 @@ pub mod pallet {
             index: &mut BlockIndex,
         ) {
             use codec::Decode;
-            use sxt_core::indexing::DataQuorum;
-
             use polkadot_sdk::frame_support::traits::PalletInfoAccess;
+            use sxt_core::indexing::DataQuorum;
 
             let encoded = codec::Encode::encode(event);
             if encoded.len() < 2 {
@@ -256,8 +258,8 @@ pub mod pallet {
                 return Ok(());
             };
 
-            let url = core::str::from_utf8(&url_bytes)
-                .map_err(|_| "invalid UTF-8 in indexer URL")?;
+            let url =
+                core::str::from_utf8(&url_bytes).map_err(|_| "invalid UTF-8 in indexer URL")?;
 
             // 2. Current block number.
             let current_block: u64 = polkadot_sdk::frame_system::Pallet::<T>::block_number()
@@ -313,8 +315,7 @@ pub mod pallet {
                 }
 
                 // Checkpoint on the server (always, even for empty blocks).
-                crate::http_client::checkpoint(url, block_num)
-                    .map_err(|_| "checkpoint failed")?;
+                crate::http_client::checkpoint(url, block_num).map_err(|_| "checkpoint failed")?;
 
                 // Delete consumed entry from offchain DB.
                 if entry.is_some() {

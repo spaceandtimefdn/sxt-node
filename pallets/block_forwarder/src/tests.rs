@@ -6,18 +6,17 @@
 
 use codec::Encode;
 use polkadot_sdk::frame_support::traits::Hooks;
-use prost::Message;
 use polkadot_sdk::sp_core::offchain::testing::{PendingRequest, TestOffchainExt};
 use polkadot_sdk::sp_core::offchain::{OffchainDbExt, OffchainStorage, OffchainWorkerExt};
 use polkadot_sdk::sp_runtime::BoundedVec;
-use sxt_core::tables::{TableIdentifier, TableType};
+use prost::Message;
+use sxt_core::tables::TableIdentifier;
 
 use crate::mock::*;
-use crate::offchain_index;
-use crate::proto;
-use crate::INDEXER_URL_KEY;
+use crate::{offchain_index, proto, INDEXER_URL_KEY};
 
-type StateArc = std::sync::Arc<parking_lot::RwLock<polkadot_sdk::sp_core::offchain::testing::OffchainState>>;
+type StateArc =
+    std::sync::Arc<parking_lot::RwLock<polkadot_sdk::sp_core::offchain::testing::OffchainState>>;
 
 const MOCK_URL: &str = "http://127.0.0.1:9999";
 
@@ -180,11 +179,10 @@ fn ocw_resumes_from_server_checkpoint() {
     let index = offchain_index::BlockIndex {
         events: vec![offchain_index::BlockEvent::Drop(table_id("NS", "OLD"))],
     };
-    state.write().persistent_storage.set(
-        b"",
-        &offchain_index::key_for_block(6),
-        &index.encode(),
-    );
+    state
+        .write()
+        .persistent_storage
+        .set(b"", &offchain_index::key_for_block(6), &index.encode());
 
     {
         let mut s = state.write();
@@ -297,6 +295,12 @@ fn ocw_processes_multiple_blocks_in_order() {
 
     // Both consumed entries should be deleted.
     let s = state.read();
-    assert!(s.persistent_storage.get(&offchain_index::key_for_block(1)).is_none());
-    assert!(s.persistent_storage.get(&offchain_index::key_for_block(2)).is_none());
+    assert!(s
+        .persistent_storage
+        .get(&offchain_index::key_for_block(1))
+        .is_none());
+    assert!(s
+        .persistent_storage
+        .get(&offchain_index::key_for_block(2))
+        .is_none());
 }
