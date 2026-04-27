@@ -46,6 +46,7 @@ rand.workspace = true
 node-rpc.workspace = true
 serde.workspace = true
 codec = { workspace = true, default-features = true }
+url = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true

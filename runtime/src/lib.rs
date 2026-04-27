@@ -139,11 +139,11 @@ use proof_of_sql_commitment_map::PerCommitmentScheme;
 use sxt_core::system_tables::ClaimedUnstake;
 pub use {
     pallet_attestation,
-    pallet_block_forwarder,
     pallet_commitments,
     pallet_indexing,
     pallet_keystore,
     pallet_permissions,
+    pallet_prover_db_indexer,
     pallet_rewards,
     pallet_smartcontracts,
     pallet_system_contracts,
@@ -892,7 +892,7 @@ impl pallet_rewards::Config for Runtime {
     type MaxPayoutsPerBlock = ConstU32<3>;
 }
 
-impl pallet_block_forwarder::Config for Runtime {
+impl pallet_prover_db_indexer::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type TablesPallet = Tables;
     type IndexingPallet = Indexing;
@@ -904,10 +904,10 @@ impl pallet_block_forwarder::Config for Runtime {
 /// hard-coding an integer that silently drifts if the enum is ever
 /// reordered. Panics on first access with a clear message if the
 /// variant goes missing or is renamed — loud failure is strictly better
-/// than the block-forwarder silently skipping every quorum event forever.
+/// than the prover-db-indexer silently skipping every quorum event forever.
 ///
 /// The resolved index is cached in a `lazy_static!` so repeated `get()`
-/// calls on the hot path (per-event filtering in block-forwarder) are a
+/// calls on the hot path (per-event filtering in prover-db-indexer) are a
 /// single atomic load rather than a fresh `scale_info::type_info()`
 /// traversal.
 pub struct DynamicQuorumReachedIndex;
@@ -918,7 +918,7 @@ lazy_static::lazy_static! {
     >("QuorumReached")
     .expect(
         "pallet_indexing::Event must expose a QuorumReached variant; \
-         rename or removal is a breaking change to the block-forwarder \
+         rename or removal is a breaking change to the prover-db-indexer \
          integration and must be coordinated.",
     );
 }
@@ -1052,7 +1052,7 @@ mod runtime {
     #[runtime::pallet_index(110)]
     pub type ZkPay = pallet_zkpay;
     #[runtime::pallet_index(111)]
-    pub type BlockForwarder = pallet_block_forwarder;
+    pub type ProverDbIndexer = pallet_prover_db_indexer;
 }
 
 /// The address format for describing accounts.

@@ -76,30 +76,29 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
-/// Seed the block-forwarder OCW's persistent local storage with the
-/// indexer URL given on the command line, before the first block is
+/// Seed the prover-db-indexer OCW's persistent local storage with the
+/// prover-db URL given on the command line, before the first block is
 /// authored.
 ///
 /// The storage key is
-/// `pallet_block_forwarder::INDEXER_URL_KEY = "block_forwarder::indexer_url"`;
+/// `pallet_prover_db_indexer::PROVER_DB_URL_KEY = "prover_db_indexer::prover_db_url"`;
 /// the value is a SCALE-encoded `Vec<u8>` of the URL bytes.
 #[expect(
     clippy::result_large_err,
     reason = "ServiceError is from substrate and cannot be modified"
 )]
-fn configure_indexer_url(backend: &FullBackend, url: &str) -> Result<(), ServiceError> {
+fn configure_prover_db_url(backend: &FullBackend, url: &url::Url) -> Result<(), ServiceError> {
     use codec::Encode;
     let Some(mut storage) = backend.offchain_storage() else {
         return Err(ServiceError::Other(
             "backend did not expose an offchain storage handle; \
-             cannot apply --indexer-url"
+             cannot apply --prover-db-url"
                 .into(),
         ));
     };
-    let key = sxt_runtime::pallet_block_forwarder::INDEXER_URL_KEY;
-    let encoded = url.as_bytes().to_vec().encode();
+    let key = sxt_runtime::pallet_prover_db_indexer::PROVER_DB_URL_KEY;
+    let encoded = url.as_str().as_bytes().to_vec().encode();
     storage.set(STORAGE_PREFIX, key, &encoded);
-    eprintln!("block_forwarder: seeded OCW indexer_url = {}", url);
     Ok(())
 }
 
@@ -318,7 +317,7 @@ pub struct NewFullBase {
 )]
 pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
     config: Configuration,
-    indexer_url: Option<String>,
+    prover_db_url: Option<url::Url>,
 ) -> Result<NewFullBase, ServiceError> {
     let role = config.role;
     let force_authoring = config.force_authoring;
@@ -351,30 +350,30 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
         other: (rpc_builder, import_setup, rpc_setup, mut telemetry, statement_store),
     } = new_partial(&config)?;
 
-    // The block-forwarder pallet's `on_finalize` calls
+    // The prover-db-indexer pallet's `on_finalize` calls
     // `sp_io::offchain_index::set` to hand events to the OCW. That call is a
     // silent no-op unless `--enable-offchain-indexing=true` was passed. We
     // surface that loudly rather than letting operators discover it by
     // watching zero rows arrive at their indexer.
-    if let Some(url) = indexer_url.as_deref() {
+    if let Some(url) = prover_db_url.as_ref() {
         if !config.offchain_worker.indexing_enabled {
             return Err(ServiceError::Other(
-                "--indexer-url was set but --enable-offchain-indexing is not \
-                 true: block-forwarder's on_finalize writes would be silently \
+                "--prover-db-url was set but --enable-offchain-indexing is not \
+                 true: prover-db-indexer's on_finalize writes would be silently \
                  dropped. Restart with --enable-offchain-indexing=true, or \
-                 omit --indexer-url."
+                 omit --prover-db-url."
                     .into(),
             ));
         }
-        configure_indexer_url(backend.as_ref(), url)?;
+        configure_prover_db_url(backend.as_ref(), url)?;
     } else if !config.offchain_worker.indexing_enabled {
-        // Block-forwarder is in the runtime but offchain indexing is off.
+        // Prover-db-indexer is in the runtime but offchain indexing is off.
         // Forwarding can't work even if someone later writes the URL via RPC.
         // Loud eprintln! so it shows up even without log filter setup.
         eprintln!(
             "warning: --enable-offchain-indexing is not true; the \
-             block-forwarder OCW cannot forward events even if \
-             block_forwarder::indexer_url is set via RPC. Pass \
+             prover-db-indexer OCW cannot forward events even if \
+             prover_db_indexer::prover_db_url is set via RPC. Pass \
              --enable-offchain-indexing=true to enable forwarding."
         );
     }
@@ -660,14 +659,14 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
     futures::executor::block_on(initialize_from_config(&cli.proof_of_sql_public_setup_args))
         .map_err(|e| ServiceError::Other(e.to_string()))?;
 
-    let indexer_url = cli.indexer_url.clone();
+    let prover_db_url = cli.prover_db_url.clone();
     let task_manager = match config.network.network_backend {
         sc_network::config::NetworkBackendType::Libp2p => {
-            new_full_base::<sc_network::NetworkWorker<_, _>>(config, indexer_url)
+            new_full_base::<sc_network::NetworkWorker<_, _>>(config, prover_db_url)
                 .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
         sc_network::config::NetworkBackendType::Litep2p => {
-            new_full_base::<sc_network::Litep2pNetworkBackend>(config, indexer_url)
+            new_full_base::<sc_network::Litep2pNetworkBackend>(config, prover_db_url)
                 .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
     };

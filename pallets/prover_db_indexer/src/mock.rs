@@ -1,4 +1,4 @@
-//! Mock runtime for testing the block forwarder pallet.
+//! Mock runtime for testing the prover-db indexer pallet.
 
 use polkadot_sdk::frame_support::derive_impl;
 use polkadot_sdk::frame_support::traits::{ConstU128, ConstU8};
@@ -9,7 +9,7 @@ use polkadot_sdk::{frame_support, frame_system, pallet_balances, sp_io};
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
 use proof_of_sql_commitment_map::PerCommitmentScheme;
 
-use crate as pallet_block_forwarder;
+use crate as pallet_prover_db_indexer;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 type Balance = u128;
@@ -21,7 +21,7 @@ frame_support::construct_runtime!(
         Tables: pallet_tables,
         Commitments: pallet_commitments,
         Balances: pallet_balances,
-        BlockForwarder: pallet_block_forwarder,
+        ProverDbIndexer: pallet_prover_db_indexer,
     }
 );
 
@@ -58,7 +58,7 @@ impl pallet_balances::Config for Test {
     type ExistentialDeposit = ConstU128<1>;
 }
 
-impl pallet_block_forwarder::Config for Test {
+impl pallet_prover_db_indexer::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type TablesPallet = Tables;
     // Tests don't exercise the indexing-event extraction path, so we stand

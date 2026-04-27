@@ -24,7 +24,7 @@ fn dynamic_quorum_reached_index_resolves() {
     use polkadot_sdk::frame_support::traits::Get;
     // If `pallet_indexing::Event::QuorumReached` is ever renamed or removed,
     // this test panics at `cargo test` time instead of failing silently in
-    // the block-forwarder at runtime.
+    // the prover-db-indexer at runtime.
     let idx = crate::DynamicQuorumReachedIndex::get();
     // The lookup must succeed (get() panics otherwise). We don't assert a
     // specific index — reordering the enum is fine, renaming it is not.

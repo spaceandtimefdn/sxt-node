@@ -13,7 +13,7 @@ use prost::Message;
 use sxt_core::tables::TableIdentifier;
 
 use crate::mock::*;
-use crate::{offchain_index, proto, INDEXER_URL_KEY};
+use crate::{offchain_index, proto, PROVER_DB_URL_KEY};
 
 type StateArc =
     std::sync::Arc<parking_lot::RwLock<polkadot_sdk::sp_core::offchain::testing::OffchainState>>;
@@ -67,7 +67,7 @@ fn setup_with_url() -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
     state
         .write()
         .persistent_storage
-        .set(b"", INDEXER_URL_KEY, &encode_url());
+        .set(b"", PROVER_DB_URL_KEY, &encode_url());
     (ext, state)
 }
 
@@ -81,7 +81,7 @@ fn ocw_skips_when_not_configured() {
     ext.register_extension(OffchainDbExt::new(offchain));
     ext.execute_with(|| {
         System::set_block_number(1);
-        BlockForwarder::offchain_worker(1);
+        ProverDbIndexer::offchain_worker(1);
     });
 }
 
@@ -134,7 +134,7 @@ fn ocw_forwards_and_deletes_offchain_entry() {
 
     ext.execute_with(|| {
         System::set_block_number(1);
-        BlockForwarder::offchain_worker(1);
+        ProverDbIndexer::offchain_worker(1);
     });
 
     // Verify offchain entry was deleted.
@@ -167,7 +167,7 @@ fn ocw_checkpoints_empty_blocks() {
 
     ext.execute_with(|| {
         System::set_block_number(1);
-        BlockForwarder::offchain_worker(1);
+        ProverDbIndexer::offchain_worker(1);
     });
 }
 
@@ -209,7 +209,7 @@ fn ocw_resumes_from_server_checkpoint() {
 
     ext.execute_with(|| {
         System::set_block_number(6);
-        BlockForwarder::offchain_worker(6);
+        ProverDbIndexer::offchain_worker(6);
     });
 }
 
@@ -290,7 +290,7 @@ fn ocw_processes_multiple_blocks_in_order() {
 
     ext.execute_with(|| {
         System::set_block_number(3);
-        BlockForwarder::offchain_worker(3);
+        ProverDbIndexer::offchain_worker(3);
     });
 
     // Both consumed entries should be deleted.

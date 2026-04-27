@@ -10733,24 +10733,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-block-forwarder"
-version = "0.1.0"
-dependencies = [
- "log",
- "pallet-commitments",
- "pallet-permissions",
- "pallet-tables",
- "parity-scale-codec",
- "parking_lot 0.12.3",
- "polkadot-sdk 0.9.0",
- "proof-of-sql-commitment-map",
- "prost 0.13.5",
- "prost-build 0.13.5",
- "scale-info",
- "sxt-core",
-]
-
-[[package]]
 name = "pallet-bounties"
 version = "37.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11727,6 +11709,24 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+]
+
+[[package]]
+name = "pallet-prover-db-indexer"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "pallet-commitments",
+ "pallet-permissions",
+ "pallet-tables",
+ "parity-scale-codec",
+ "parking_lot 0.12.3",
+ "polkadot-sdk 0.9.0",
+ "proof-of-sql-commitment-map",
+ "prost 0.13.5",
+ "prost-build 0.13.5",
+ "scale-info",
+ "sxt-core",
 ]
 
 [[package]]
@@ -21201,6 +21201,7 @@ dependencies = [
  "substrate-build-script-utils",
  "sxt-core",
  "sxt-runtime",
+ "url",
 ]
 
 [[package]]
@@ -21211,11 +21212,11 @@ dependencies = [
  "lazy_static",
  "native-api",
  "pallet-attestation",
- "pallet-block-forwarder",
  "pallet-commitments",
  "pallet-indexing",
  "pallet-keystore",
  "pallet-permissions",
+ "pallet-prover-db-indexer",
  "pallet-rewards",
  "pallet-smartcontracts",
  "pallet-system-contracts",

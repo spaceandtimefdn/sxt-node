@@ -1,7 +1,7 @@
-//! # Block Forwarder Pallet
+//! # Prover-Db Indexer Pallet
 //!
-//! Forwards table lifecycle and data events to an external HTTP indexer
-//! service using protobuf-over-HTTP.
+//! Forwards table lifecycle and data events to an external prover-db
+//! indexer (HTTP) using protobuf-over-HTTP.
 //!
 //! ## Architecture
 //!
@@ -49,8 +49,8 @@ mod proto {
 
 pub use pallet::*;
 
-/// Offchain local-storage key for the indexer HTTP endpoint URL.
-pub const INDEXER_URL_KEY: &[u8] = b"block_forwarder::indexer_url";
+/// Offchain local-storage key for the prover-db indexer HTTP endpoint URL.
+pub const PROVER_DB_URL_KEY: &[u8] = b"prover_db_indexer::prover_db_url";
 
 /// Dedup key column name sent with every `CreateTable` request.
 const DEDUP_KEY_COLUMN: &str = "META_ROW_NUMBER";
@@ -128,7 +128,7 @@ pub mod pallet {
             }
 
             log::debug!(
-                target: "block_forwarder",
+                target: "prover_db_indexer",
                 "on_finalize({}): writing {} events to offchain DB",
                 block_number,
                 index.events.len(),
@@ -143,7 +143,7 @@ pub mod pallet {
         fn offchain_worker(_block_number: BlockNumberFor<T>) {
             if let Err(e) = Self::run_consumer() {
                 log::error!(
-                    target: "block_forwarder",
+                    target: "prover_db_indexer",
                     "offchain indexer error: {:?}",
                     e,
                 );
@@ -234,7 +234,7 @@ pub mod pallet {
                 u8,
                 polkadot_sdk::frame_support::traits::ConstU32<{ sxt_core::indexing::DATA_MAX_LEN }>,
             >>::decode(&mut input) else {
-                log::warn!(target: "block_forwarder", "failed to decode QuorumReached data");
+                log::warn!(target: "prover_db_indexer", "failed to decode QuorumReached data");
                 return;
             };
             index.events.push(BlockEvent::Data(DataEntry {
@@ -251,7 +251,7 @@ pub mod pallet {
             use polkadot_sdk::sp_runtime::offchain::storage::StorageValueRef;
 
             // 1. Check if this node is configured as an indexer.
-            let url_ref = StorageValueRef::persistent(crate::INDEXER_URL_KEY);
+            let url_ref = StorageValueRef::persistent(crate::PROVER_DB_URL_KEY);
             let url_bytes: Option<Vec<u8>> = url_ref.get::<Vec<u8>>().ok().flatten();
 
             let Some(url_bytes) = url_bytes else {
@@ -275,7 +275,7 @@ pub mod pallet {
                 Ok(None) => 0,
                 Err(e) => {
                     log::warn!(
-                        target: "block_forwarder",
+                        target: "prover_db_indexer",
                         "get_last_checkpoint failed: {}; skipping this round",
                         e,
                     );
@@ -292,7 +292,7 @@ pub mod pallet {
             }
 
             log::debug!(
-                target: "block_forwarder",
+                target: "prover_db_indexer",
                 "processing blocks {}..={} (server_checkpoint={}, tip={})",
                 start, end, cursor, current_block,
             );
@@ -304,7 +304,7 @@ pub mod pallet {
                 match &entry {
                     Some(idx) if !idx.is_empty() => {
                         log::info!(
-                            target: "block_forwarder",
+                            target: "prover_db_indexer",
                             "block {} — {} events to forward",
                             block_num,
                             idx.events.len(),

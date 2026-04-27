@@ -10,7 +10,7 @@ use codec::{Decode, Encode};
 use sxt_core::tables::TableIdentifier;
 
 /// Key prefix for block-indexed entries in the offchain DB.
-const PREFIX: &[u8] = b"block_forwarder::block::";
+const PREFIX: &[u8] = b"prover_db_indexer::block::";
 
 /// Compute the offchain DB key for a given block number.
 pub fn key_for_block(block: u64) -> Vec<u8> {

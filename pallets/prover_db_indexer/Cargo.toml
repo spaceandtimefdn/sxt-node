@@ -1,6 +1,6 @@
 [package]
-name = "pallet-block-forwarder"
-description = "Offchain worker that forwards table lifecycle and data events to an external HTTP indexer service."
+name = "pallet-prover-db-indexer"
+description = "Offchain worker that forwards table lifecycle and data events to an external prover-db indexer (HTTP)."
 version = "0.1.0"
 license = "Unlicense"
 authors.workspace = true

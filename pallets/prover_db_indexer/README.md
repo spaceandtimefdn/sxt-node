@@ -1,7 +1,7 @@
-# pallet-block-forwarder
+# pallet-prover-db-indexer
 
 Offchain worker that forwards table lifecycle and data events to an
-external HTTP indexer service using protobuf-over-HTTP.
+external prover-db indexer (HTTP) using protobuf-over-HTTP.
 
 Watches for these events from other pallets and relays them:
 - `pallet_tables::SchemaUpdated`
@@ -9,7 +9,7 @@ Watches for these events from other pallets and relays them:
 - `pallet_tables::TableDropped`
 - `pallet_indexing::QuorumReached`
 
-Wire contract is under `proto/indexer.proto`; five POST endpoints at
+Wire contract is under `proto/prover-db.proto`; five POST endpoints at
 `/v1/{create_table,drop_table,put_batches,checkpoint,get_last_checkpoint}`.
 
 ## Operational requirements
@@ -31,7 +31,7 @@ logs appear normally, but the OCW's `offchain_index::read(N)` returns
 `None` and no forwarding happens.
 
 As of commit `dd873ed`, the node boots with a loud `warning:` to stderr
-if this flag is not set; running with `--indexer-url` *without* the flag
+if this flag is not set; running with `--prover-db-url` *without* the flag
 is a hard startup error.
 
 ### 2. `--offchain-worker=always` — required on dev nodes
@@ -41,7 +41,7 @@ OCWs only fire on validator/collator nodes. For a dev `--dev --tmp`
 node, that means zero OCW invocations. Pass `--offchain-worker=always`
 to force them to run regardless of role.
 
-### 3. `--indexer-url <URL>` — optional (but usually what you want)
+### 3. `--prover-db-url <URL>` — optional (but usually what you want)
 
 Tells the OCW where to POST forwarded events. The node writes the URL
 into the OCW's persistent local storage before the first block is
@@ -60,7 +60,7 @@ over from a previous run.
   --rpc-cors=all \
   --offchain-worker=always \
   --enable-offchain-indexing=true \
-  --indexer-url http://127.0.0.1:9999
+  --prover-db-url http://127.0.0.1:9999
 ```
 
 ## Runtime wiring
@@ -68,7 +68,7 @@ over from a previous run.
 Three Config associated types; the runtime provides them:
 
 ```rust
-impl pallet_block_forwarder::Config for Runtime {
+impl pallet_prover_db_indexer::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 
     // Used to resolve pallet_indexing's pallet index dynamically via
@@ -92,7 +92,7 @@ impl pallet_block_forwarder::Config for Runtime {
   what `pallet_indexing::QuorumReached.data` carries. The chain builds
   this in `finalize_quorum`: it converts the indexer's Arrow IPC
   submission to an `OnChainTable`, appends commitment meta columns,
-  and postcard-serializes the result. The block-forwarder never
+  and postcard-serializes the result. The prover-db-indexer never
   decodes this payload — it's an opaque pass-through to the server.
 
 The pallet does **not** introduce any new host functions; everything
@@ -110,12 +110,12 @@ patch the forwarder's `DEDUP_KEY_COLUMN` constant.
 
 ## Testing
 
-- **Unit / integration.** `cargo test -p pallet-block-forwarder` — 7
+- **Unit / integration.** `cargo test -p pallet-prover-db-indexer` — 7
   tests using `sp_core::offchain::testing::TestOffchainExt` to exercise
   skip/forward/delete/multi-block/resume paths without a real HTTP
   server.
 - **End-to-end against a real indexer.** Build and run `prb-service`
   with `--features indexer` (see the sxtdb repo), then launch
-  `sxt-node` with `--indexer-url http://<prb-service-host>:<port>`.
+  `sxt-node` with `--prover-db-url http://<prb-service-host>:<port>`.
   The harness at `spaceandtimefdn/sxt-int-harness` (standalone crate)
   drives table/data actions against the node via a TOML file.
