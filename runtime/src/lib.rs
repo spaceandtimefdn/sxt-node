@@ -15,37 +15,22 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use polkadot_sdk::frame_election_provider_support::{
-    generate_solution_type,
-    onchain,
-    SequentialPhragmen,
+    generate_solution_type, onchain, SequentialPhragmen,
 };
 use polkadot_sdk::frame_support::dispatch::DispatchClass;
 use polkadot_sdk::frame_support::genesis_builder_helper::{build_state, get_preset};
 use polkadot_sdk::frame_support::traits::VariantCountOf;
 pub use polkadot_sdk::frame_support::traits::{
-    ConstBool,
-    ConstU128,
-    ConstU32,
-    ConstU64,
-    ConstU8,
-    Currency,
-    KeyOwnerProofSystem,
-    Randomness,
+    ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Currency, KeyOwnerProofSystem, Randomness,
     StorageInfo,
 };
 pub use polkadot_sdk::frame_support::weights::constants::{
-    BlockExecutionWeight,
-    ExtrinsicBaseWeight,
-    RocksDbWeight,
-    WEIGHT_REF_TIME_PER_MILLIS,
+    BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_MILLIS,
 };
 use polkadot_sdk::frame_support::weights::ConstantMultiplier;
 pub use polkadot_sdk::frame_support::weights::{IdentityFee, Weight};
 pub use polkadot_sdk::frame_support::{
-    construct_runtime,
-    derive_impl,
-    parameter_types,
-    StorageValue,
+    construct_runtime, derive_impl, parameter_types, StorageValue,
 };
 pub use polkadot_sdk::frame_system::Call as SystemCall;
 use polkadot_sdk::frame_system::EnsureRoot;
@@ -63,31 +48,17 @@ use polkadot_sdk::sp_consensus_babe::AuthorityId as BabeId;
 use polkadot_sdk::sp_core::crypto::KeyTypeId;
 use polkadot_sdk::sp_core::OpaqueMetadata;
 use polkadot_sdk::sp_runtime::traits::{
-    AccountIdLookup,
-    BlakeTwo256,
-    Block as BlockT,
-    Bounded,
-    IdentifyAccount,
-    NumberFor,
-    OpaqueKeys,
-    Verify,
-    Zero,
+    AccountIdLookup, BlakeTwo256, Block as BlockT, Bounded, IdentifyAccount, NumberFor, OpaqueKeys,
+    Verify, Zero,
 };
 use polkadot_sdk::sp_runtime::transaction_validity::{
-    TransactionPriority,
-    TransactionSource,
-    TransactionValidity,
+    TransactionPriority, TransactionSource, TransactionValidity,
 };
 #[cfg(any(feature = "std", test))]
 pub use polkadot_sdk::sp_runtime::BuildStorage;
 use polkadot_sdk::sp_runtime::{
-    create_runtime_str,
-    generic,
-    impl_opaque_keys,
-    ApplyExtrinsicResult,
-    FixedPointNumber,
-    FixedU128,
-    Perquintill,
+    create_runtime_str, generic, impl_opaque_keys, ApplyExtrinsicResult, FixedPointNumber,
+    FixedU128, Perquintill,
 };
 pub use polkadot_sdk::sp_runtime::{Perbill, Percent, Permill};
 use polkadot_sdk::sp_staking::SessionIndex;
@@ -95,60 +66,23 @@ use polkadot_sdk::sp_staking::SessionIndex;
 use polkadot_sdk::sp_version::NativeVersion;
 use polkadot_sdk::sp_version::RuntimeVersion;
 use polkadot_sdk::{
-    frame_support,
-    frame_system,
-    frame_system_rpc_runtime_api,
-    pallet_authority_discovery,
-    pallet_authorship,
-    pallet_babe,
-    pallet_bags_list,
-    pallet_balances,
-    pallet_election_provider_multi_phase,
-    pallet_grandpa,
-    pallet_im_online,
-    pallet_migrations,
-    pallet_multisig,
-    pallet_offences,
-    pallet_session,
-    pallet_staking,
-    pallet_staking_runtime_api,
-    pallet_statement,
-    pallet_sudo,
-    pallet_timestamp,
-    pallet_transaction_payment,
-    pallet_transaction_payment_rpc_runtime_api,
-    pallet_utility,
-    sp_api,
-    sp_authority_discovery,
-    sp_block_builder,
-    sp_consensus_babe,
-    sp_consensus_grandpa,
-    sp_core,
-    sp_genesis_builder,
-    sp_inherents,
-    sp_offchain,
-    sp_runtime,
-    sp_session,
-    sp_staking,
-    sp_statement_store,
-    sp_transaction_pool,
-    sp_version,
+    frame_support, frame_system, frame_system_rpc_runtime_api, pallet_authority_discovery,
+    pallet_authorship, pallet_babe, pallet_bags_list, pallet_balances,
+    pallet_election_provider_multi_phase, pallet_grandpa, pallet_im_online, pallet_migrations,
+    pallet_multisig, pallet_offences, pallet_session, pallet_staking, pallet_staking_runtime_api,
+    pallet_statement, pallet_sudo, pallet_timestamp, pallet_transaction_payment,
+    pallet_transaction_payment_rpc_runtime_api, pallet_utility, sp_api, sp_authority_discovery,
+    sp_block_builder, sp_consensus_babe, sp_consensus_grandpa, sp_core, sp_genesis_builder,
+    sp_inherents, sp_offchain, sp_runtime, sp_session, sp_staking, sp_statement_store,
+    sp_transaction_pool, sp_version,
 };
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
 use proof_of_sql_commitment_map::PerCommitmentScheme;
 use sxt_core::system_tables::ClaimedUnstake;
 pub use {
-    pallet_attestation,
-    pallet_commitments,
-    pallet_indexing,
-    pallet_keystore,
-    pallet_permissions,
-    pallet_prover_db_indexer,
-    pallet_rewards,
-    pallet_smartcontracts,
-    pallet_system_contracts,
-    pallet_system_tables,
-    pallet_tables,
+    pallet_attestation, pallet_commitments, pallet_indexing, pallet_keystore, pallet_permissions,
+    pallet_prover_db_indexer, pallet_rewards, pallet_smartcontracts, pallet_system_contracts,
+    pallet_system_tables, pallet_tables,
 };
 
 /// An index to a block.
@@ -892,55 +826,8 @@ impl pallet_rewards::Config for Runtime {
     type MaxPayoutsPerBlock = ConstU32<3>;
 }
 
-impl pallet_prover_db_indexer::Config for Runtime {
+impl pallet_prover_db_indexer::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type TablesPallet = Tables;
-    type IndexingPallet = Indexing;
-    type QuorumReachedVariantIndex = DynamicQuorumReachedIndex;
-}
-
-/// Resolves the variant index of `QuorumReached` in
-/// `pallet_indexing::Event` by name via `scale_info`, rather than
-/// hard-coding an integer that silently drifts if the enum is ever
-/// reordered. Panics on first access with a clear message if the
-/// variant goes missing or is renamed — loud failure is strictly better
-/// than the prover-db-indexer silently skipping every quorum event forever.
-///
-/// The resolved index is cached in a `lazy_static!` so repeated `get()`
-/// calls on the hot path (per-event filtering in prover-db-indexer) are a
-/// single atomic load rather than a fresh `scale_info::type_info()`
-/// traversal.
-pub struct DynamicQuorumReachedIndex;
-
-lazy_static::lazy_static! {
-    static ref QUORUM_REACHED_VARIANT_INDEX: u8 = find_event_variant_index::<
-        pallet_indexing::Event<Runtime, native_api::Api>,
-    >("QuorumReached")
-    .expect(
-        "pallet_indexing::Event must expose a QuorumReached variant; \
-         rename or removal is a breaking change to the prover-db-indexer \
-         integration and must be coordinated.",
-    );
-}
-
-impl polkadot_sdk::frame_support::traits::Get<u8> for DynamicQuorumReachedIndex {
-    fn get() -> u8 {
-        *QUORUM_REACHED_VARIANT_INDEX
-    }
-}
-
-/// Look up an event enum's variant index by name using the `scale_info`
-/// metadata FRAME derives on every pallet Event. Returns `None` if the
-/// type isn't a variant (non-enum) or the name isn't present.
-fn find_event_variant_index<E: scale_info::TypeInfo + 'static>(variant_name: &str) -> Option<u8> {
-    match E::type_info().type_def {
-        scale_info::TypeDef::Variant(ref v) => v
-            .variants
-            .iter()
-            .find(|variant| variant.name == variant_name)
-            .map(|variant| variant.index),
-        _ => None,
-    }
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -1052,7 +939,7 @@ mod runtime {
     #[runtime::pallet_index(110)]
     pub type ZkPay = pallet_zkpay;
     #[runtime::pallet_index(111)]
-    pub type ProverDbIndexer = pallet_prover_db_indexer;
+    pub type ProverDbIndexer = pallet_prover_db_indexer::native_pallet::Pallet<Runtime>;
 }
 
 /// The address format for describing accounts.

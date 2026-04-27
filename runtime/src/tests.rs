@@ -18,18 +18,3 @@ fn era_payout_calculation_works() {
     let single_era_payout = Balance::from(26557152635181379u128);
     assert_eq!(to_stakers, single_era_payout);
 }
-
-#[test]
-fn dynamic_quorum_reached_index_resolves() {
-    use polkadot_sdk::frame_support::traits::Get;
-    // If `pallet_indexing::Event::QuorumReached` is ever renamed or removed,
-    // this test panics at `cargo test` time instead of failing silently in
-    // the prover-db-indexer at runtime.
-    let idx = crate::DynamicQuorumReachedIndex::get();
-    // The lookup must succeed (get() panics otherwise). We don't assert a
-    // specific index — reordering the enum is fine, renaming it is not.
-    assert!(
-        idx < u8::MAX,
-        "sanity-check: variant index should be well-defined"
-    );
-}

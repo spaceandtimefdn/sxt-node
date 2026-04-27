@@ -11716,9 +11716,13 @@ name = "pallet-prover-db-indexer"
 version = "0.1.0"
 dependencies = [
  "log",
+ "native-api",
  "pallet-commitments",
+ "pallet-indexing",
  "pallet-permissions",
+ "pallet-system-tables",
  "pallet-tables",
+ "pallet-zkpay",
  "parity-scale-codec",
  "parking_lot 0.12.3",
  "polkadot-sdk 0.9.0",
@@ -21209,7 +21213,6 @@ name = "sxt-runtime"
 version = "0.1.0"
 dependencies = [
  "eth-ecdsa",
- "lazy_static",
  "native-api",
  "pallet-attestation",
  "pallet-commitments",
