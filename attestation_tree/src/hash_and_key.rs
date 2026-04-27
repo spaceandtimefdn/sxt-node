@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use codec::{Decode, Encode, FullCodec};
 use impl_trait_for_tuples::impl_for_tuples;
 use polkadot_sdk::frame_support::{ReversibleStorageHasher, StorageHasher};
@@ -86,7 +88,7 @@ mod tests {
             .iter()
             .cloned()
             .zip(key_values)
-            .flat_map(|(hash, value)| hash.into_iter().chain(std::iter::once(value)))
+            .flat_map(|(hash, value)| hash.into_iter().chain(core::iter::once(value)))
             .collect::<Vec<_>>();
 
         // no keys

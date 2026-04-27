@@ -1,4 +1,7 @@
-use std::marker::PhantomData;
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 use polkadot_sdk::frame_support::{Blake2_128Concat, WeakBoundedVec};
 use polkadot_sdk::pallet_balances;
@@ -33,7 +36,7 @@ where
             bytes
         };
 
-        std::iter::repeat(0)
+        core::iter::repeat(0)
             // first we pad with 15 0-bytes
             .take(15)
             // then we add the 16 bytes from the on-chain u128
@@ -54,7 +57,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use alloc::str::FromStr;
 
     use polkadot_sdk::pallet_balances::Reasons;
     use polkadot_sdk::sp_core::crypto::AccountId32;
@@ -97,9 +100,9 @@ mod tests {
         let actual =
             LocksStakingPrefixFoliate::<Runtime>::leaf_encode_value((locks, contract_info));
 
-        let expected_amount = std::iter::repeat(0).take(29).chain([1, 1]);
+        let expected_amount = core::iter::repeat(0).take(29).chain([1, 1]);
 
-        let expected_chain_id = std::iter::repeat(0).take(30).chain([4, 4]);
+        let expected_chain_id = core::iter::repeat(0).take(30).chain([4, 4]);
 
         let expected_address = 0u8..20;
 
@@ -131,7 +134,7 @@ mod tests {
 
         let expected_amount = [0u8; 31];
 
-        let expected_chain_id = std::iter::repeat(0).take(30).chain([4, 4]);
+        let expected_chain_id = core::iter::repeat(0).take(30).chain([4, 4]);
 
         let expected_address = 0u8..20;
 

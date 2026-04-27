@@ -14,11 +14,12 @@ polkadot-sdk = { workspace = true, features = [
 codec.workspace = true
 hex.workspace = true
 impl-trait-for-tuples.workspace = true
+
 eth_merkle_tree.workspace = true
 snafu.workspace = true
-sxt-core = { workspace = true, features = ["std"] }
-pallet-commitments = { workspace = true, features = ["std"] }
-proof-of-sql-commitment-map = { workspace = true, features = ["std"] }
+sxt-core = { workspace = true }
+pallet-commitments = { workspace = true }
+proof-of-sql-commitment-map = { workspace = true }
 
 [dev-dependencies]
 polkadot-sdk = { workspace = true, features = ["sp-core"] }

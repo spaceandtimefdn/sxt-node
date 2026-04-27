@@ -1,4 +1,7 @@
-use std::error::Error;
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::error::Error;
 
 use eth_merkle_tree::tree::MerkleTree;
 use eth_merkle_tree::utils::keccak::keccak256;
@@ -12,14 +15,20 @@ use crate::{CommitmentMapPrefixFoliate, DecodeStorageError, HashAndKeyTuple, Pre
 #[derive(Debug, Snafu)]
 pub enum AttestationTreeProofError {
     /// Failed to hash leaf.
-    #[snafu(display("failed to hash leaf: {source}"), context(false))]
+    #[snafu(display("failed to hash leaf: {error}"))]
     HashLeaf {
         /// The source hashing error.
-        source: eth_merkle_tree::utils::errors::BytesError,
+        error: eth_merkle_tree::utils::errors::BytesError,
     },
     /// Attempted to prove leaf that does not exist in attestation tree.
     #[snafu(display("attempted to prove leaf that does not exist in attestation tree"))]
     NoSuchLeaf,
+}
+
+impl From<eth_merkle_tree::utils::errors::BytesError> for AttestationTreeProofError {
+    fn from(error: eth_merkle_tree::utils::errors::BytesError) -> Self {
+        AttestationTreeProofError::HashLeaf { error }
+    }
 }
 
 /// Returns the merkle proof that the given attestation tree contains the given key-value pair.
@@ -51,10 +60,10 @@ pub enum AttestationTreeError {
         source: DecodeStorageError,
     },
     /// Failed to pre-hash leaf.
-    #[snafu(display("failed to pre-hash leaf: {source}"), context(false))]
+    #[snafu(display("failed to pre-hash leaf: {error}"))]
     PreHashLeaf {
         /// The source hashing error.
-        source: eth_merkle_tree::utils::errors::BytesError,
+        error: eth_merkle_tree::utils::errors::BytesError,
     },
     /// Failed to create merkle tree from leaves.
     #[snafu(display("failed to create merkle tree from leaves: {error}"))]
@@ -62,6 +71,12 @@ pub enum AttestationTreeError {
         /// The source error from `eth_merkle_tree`.
         error: Box<dyn Error>,
     },
+}
+
+impl From<eth_merkle_tree::utils::errors::BytesError> for AttestationTreeError {
+    fn from(error: eth_merkle_tree::utils::errors::BytesError) -> Self {
+        AttestationTreeError::PreHashLeaf { error }
+    }
 }
 
 /// Returns the attestation tree for all [`PrefixFoliate`]s, given raw storage key-value iters.
@@ -167,7 +182,7 @@ mod tests {
 
         dbg!(&proof_of_commitment);
 
-        let proven_root_hash = std::iter::once(commitment_leaf)
+        let proven_root_hash = core::iter::once(commitment_leaf)
             .chain(proof_of_commitment.into_iter().map(|h| h[2..].to_string()))
             .reduce(|left, right| hash_pair(&left, &right).unwrap())
             .unwrap();

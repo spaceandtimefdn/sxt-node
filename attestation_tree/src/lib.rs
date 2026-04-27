@@ -1,4 +1,7 @@
 #![doc = include_str!("../README.md")]
+#![no_std]
+
+extern crate alloc;
 
 /// Hash and key types for attestation tree nodes.
 mod hash_and_key;

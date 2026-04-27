@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use codec::{Decode, Encode, FullCodec};
 use polkadot_sdk::frame_support::traits::StorageInstance;
 use snafu::Snafu;
@@ -43,11 +45,17 @@ pub enum DecodeStorageError {
     #[snafu(display("storage value bytes longer than expected"))]
     UnexpectedValueBytes,
     /// Unable to decode storage bytes.
-    #[snafu(display("unable to decode storage bytes: {source}"), context(false))]
+    #[snafu(display("unable to decode storage bytes: {error}"))]
     Decode {
         /// The source scale codec error.
-        source: codec::Error,
+        error: codec::Error,
     },
+}
+
+impl From<codec::Error> for DecodeStorageError {
+    fn from(error: codec::Error) -> Self {
+        DecodeStorageError::Decode { error }
+    }
 }
 
 /// Decodes a [`PrefixFoliate`]'s key and value from raw storage bytes.
@@ -215,7 +223,7 @@ mod tests {
 
         let excessive_storage_key = storage_key
             .into_iter()
-            .chain(std::iter::once(0u8))
+            .chain(core::iter::once(0u8))
             .collect::<Vec<_>>();
 
         let result = decode_storage_key_and_value::<TestPrefixFoliate>(
@@ -235,7 +243,7 @@ mod tests {
 
         let excessive_storage_value = storage_value
             .into_iter()
-            .chain(std::iter::once(0u8))
+            .chain(core::iter::once(0u8))
             .collect::<Vec<_>>();
 
         let result = decode_storage_key_and_value::<TestPrefixFoliate>(
@@ -256,7 +264,7 @@ mod tests {
         let invalid_key = storage_key
             .into_iter()
             .take(32)
-            .chain(std::iter::once(2u8))
+            .chain(core::iter::once(2u8))
             .collect::<Vec<_>>();
 
         let result =

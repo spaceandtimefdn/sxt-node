@@ -10493,6 +10493,7 @@ dependencies = [
 name = "pallet-attestation"
 version = "0.1.0"
 dependencies = [
+ "attestation_tree",
  "eth_merkle_tree",
  "k256",
  "pallet-keystore",

@@ -1,4 +1,5 @@
-use std::marker::PhantomData;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 use codec::Encode;
 use polkadot_sdk::frame_support::Blake2_128Concat;
@@ -30,14 +31,14 @@ where
     ) -> Vec<u8> {
         let table_identifier_utf8: Vec<u8> = namespace
             .into_iter()
-            .chain(std::iter::once(ASCII_PERIOD))
+            .chain(core::iter::once(ASCII_PERIOD))
             .chain(name)
             .collect();
 
         // the table identifier length should never exceed one 127
         let table_identifier_length_prefix = table_identifier_utf8.len() as u8;
 
-        std::iter::once(table_identifier_length_prefix)
+        core::iter::once(table_identifier_length_prefix)
             .chain(table_identifier_utf8)
             .chain(commitment_scheme.encode())
             .collect()
