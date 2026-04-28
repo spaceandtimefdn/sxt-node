@@ -25,6 +25,26 @@ pallet-tables.workspace = true
 pallet-indexing.workspace = true
 native-api.workspace = true
 log = { workspace = true, default-features = false }
+prost = { version = "0.13", default-features = false, features = ["prost-derive"] }
+
+[build-dependencies]
+prost-build = "0.13"
+
+[dev-dependencies]
+polkadot-sdk = { workspace = true, features = [
+    "sp-core", "sp-io", "sp-runtime", "sp-staking",
+    "pallet-balances", "pallet-staking", "pallet-staking-reward-curve",
+    "pallet-session", "pallet-timestamp",
+    "frame-election-provider-support",
+]}
+pallet-permissions = { workspace = true, features = ["std"] }
+pallet-commitments = { workspace = true, features = ["std"] }
+pallet-tables = { workspace = true, features = ["std"] }
+pallet-indexing = { workspace = true, features = ["std"] }
+pallet-system-tables = { workspace = true, features = ["std"] }
+pallet-zkpay = { workspace = true, features = ["std"] }
+proof-of-sql-commitment-map.workspace = true
+parking_lot = "0.12"
 
 [features]
 default = ["std"]
@@ -37,6 +57,7 @@ std = [
     "pallet-indexing/std",
     "native-api/std",
     "log/std",
+    "prost/std",
 ]
 try-runtime = [
     "polkadot-sdk/try-runtime",

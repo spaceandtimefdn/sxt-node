@@ -9,9 +9,6 @@ use alloc::vec::Vec;
 use codec::{Decode, Encode};
 use sxt_core::tables::TableIdentifier;
 
-// `read` and `clear` are consumer-side helpers; they land in the
-// follow-up PR alongside the OCW HTTP forwarder.
-
 /// Key prefix for block-indexed entries in the offchain DB.
 const PREFIX: &[u8] = b"prover_db_indexer::block::";
 
@@ -64,4 +61,23 @@ impl BlockIndex {
 pub fn write(block: u64, index: &BlockIndex) {
     let key = key_for_block(block);
     polkadot_sdk::sp_io::offchain_index::set(&key, &index.encode());
+}
+
+/// Read a BlockIndex from the offchain DB. Called from the OCW.
+pub fn read(block: u64) -> Option<BlockIndex> {
+    let key = key_for_block(block);
+    let raw = polkadot_sdk::sp_io::offchain::local_storage_get(
+        polkadot_sdk::sp_core::offchain::StorageKind::PERSISTENT,
+        &key,
+    )?;
+    BlockIndex::decode(&mut &raw[..]).ok()
+}
+
+/// Delete a consumed entry. Called from the OCW after forwarding.
+pub fn clear(block: u64) {
+    let key = key_for_block(block);
+    polkadot_sdk::sp_io::offchain::local_storage_clear(
+        polkadot_sdk::sp_core::offchain::StorageKind::PERSISTENT,
+        &key,
+    );
 }
