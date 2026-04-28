@@ -1,0 +1,46 @@
+[package]
+name = "pallet-prover-db-indexer"
+description = "Offchain worker that forwards table lifecycle and data events to an external prover-db indexer (HTTP)."
+version = "0.1.0"
+license = "Unlicense"
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+publish = false
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+polkadot-sdk = { workspace = true, features = [
+    "frame-support", "frame-system", "sp-core", "sp-io", "sp-runtime",
+]}
+
+sxt-core.workspace = true
+pallet-tables.workspace = true
+pallet-indexing.workspace = true
+native-api.workspace = true
+log = { workspace = true, default-features = false }
+
+[features]
+default = ["std"]
+std = [
+    "polkadot-sdk/std",
+    "codec/std",
+    "scale-info/std",
+    "sxt-core/std",
+    "pallet-tables/std",
+    "pallet-indexing/std",
+    "native-api/std",
+    "log/std",
+]
+try-runtime = [
+    "polkadot-sdk/try-runtime",
+]
+
+[lints]
+workspace = true

@@ -11712,6 +11712,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-prover-db-indexer"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "native-api",
+ "pallet-indexing",
+ "pallet-tables",
+ "parity-scale-codec",
+ "polkadot-sdk 0.9.0",
+ "scale-info",
+ "sxt-core",
+]
+
+[[package]]
 name = "pallet-proxy"
 version = "38.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -21145,6 +21159,7 @@ dependencies = [
  "pallet-indexing",
  "pallet-keystore",
  "pallet-permissions",
+ "pallet-prover-db-indexer",
  "pallet-rewards",
  "pallet-smartcontracts",
  "pallet-system-contracts",
