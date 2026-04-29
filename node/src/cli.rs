@@ -19,9 +19,8 @@ pub struct Cli {
     #[clap(long)]
     pub event_forwarder_rpc: Option<String>,
 
-    /// Enables the prover-db-indexer offchain worker and configures it to
-    /// forward indexed events to this prover-db URL. May also be set via
-    /// the `PROVER_DB_URL` environment variable.
+    /// URL of the prover-db indexer to forward indexed events to. Also
+    /// configurable via the `PROVER_DB_URL` environment variable.
     #[clap(long, env)]
     pub prover_db_url: Option<url::Url>,
 

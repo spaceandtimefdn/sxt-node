@@ -77,12 +77,11 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
-/// Seed the prover-db-indexer OCW's persistent local storage with the
-/// prover-db URL given on the command line, before the first block is
-/// authored.
+/// Seed the prover-db indexer URL into offchain persistent local storage
+/// at startup, before the first block is authored.
 ///
-/// The storage key is `sxt_core::PROVER_DB_URL_KEY`; the value is a
-/// SCALE-encoded `Vec<u8>` of the URL bytes.
+/// Stored under `sxt_core::PROVER_DB_URL_KEY` as a SCALE-encoded
+/// `Vec<u8>` of the URL bytes.
 #[expect(
     clippy::result_large_err,
     reason = "ServiceError is from substrate and cannot be modified"
@@ -348,17 +347,17 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
         other: (rpc_builder, import_setup, rpc_setup, mut telemetry, statement_store),
     } = new_partial(&config)?;
 
-    // The prover-db-indexer pallet's `on_finalize` calls
-    // `sp_io::offchain_index::set` to hand events to the OCW. That call is a
-    // silent no-op unless `--enable-offchain-indexing=true` was passed. If
-    // the operator asked to forward to a URL but indexing is off, fail loud.
+    // `--prover-db-url` only takes effect when offchain indexing is
+    // enabled, since the prover-db-indexer OCW only runs in that case.
+    // Fail loud if the operator set the URL without enabling indexing,
+    // rather than silently ignoring it.
     if let Some(url) = cli.prover_db_url.as_ref() {
         if !config.offchain_worker.indexing_enabled {
             return Err(ServiceError::Other(
                 "--prover-db-url was set but --enable-offchain-indexing is not \
-                 true: prover-db-indexer's on_finalize writes would be silently \
-                 dropped. Restart with --enable-offchain-indexing=true, or \
-                 omit --prover-db-url."
+                 true; the prover-db-indexer offchain worker would be inactive. \
+                 Restart with --enable-offchain-indexing=true, or omit \
+                 --prover-db-url."
                     .into(),
             ));
         }
