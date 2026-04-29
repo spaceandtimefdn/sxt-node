@@ -26,8 +26,10 @@ pub enum Error {
     DeadlineReached,
     /// IO or unknown error during HTTP request.
     IoError,
-    /// Server returned a non-200 status code.
-    Status(u16),
+    /// Server returned a non-200 status code. Carries the response body
+    /// so the caller can surface whatever the server said about the failure
+    /// (often a JSON or plain-text error message for 4xx/5xx).
+    Status { code: u16, body: Vec<u8> },
     /// Failed to decode the response body.
     Decode(prost::DecodeError),
 }
@@ -44,15 +46,35 @@ impl core::fmt::Display for Error {
             Error::SendFailed => write!(f, "failed to send HTTP request"),
             Error::DeadlineReached => write!(f, "HTTP request deadline reached"),
             Error::IoError => write!(f, "HTTP IO error"),
-            Error::Status(code) => write!(f, "server returned status {}", code),
+            Error::Status { code, body } => {
+                // Show up to ~256 bytes of the body as UTF-8 lossy so the
+                // operator can read whatever the server actually said.
+                let snippet_len = core::cmp::min(body.len(), 256);
+                let snippet = core::str::from_utf8(&body[..snippet_len]).unwrap_or("<non-utf8>");
+                write!(
+                    f,
+                    "server returned status {} ({} body bytes): {}",
+                    code,
+                    body.len(),
+                    snippet,
+                )
+            }
             Error::Decode(e) => write!(f, "protobuf decode error: {}", e),
         }
     }
 }
 
+/// Build a request URL by joining `base_url` and `path`, trimming any
+/// trailing slash on the base so we don't end up POSTing to
+/// `host:port//v1/...` when callers pass a `url::Url` (which normalizes
+/// to include a trailing `/` on the path component).
+fn endpoint(base_url: &str, path: &str) -> String {
+    format!("{}{}", base_url.trim_end_matches('/'), path)
+}
+
 /// Fetch the last checkpoint from the server.
 pub fn get_last_checkpoint(base_url: &str) -> Result<Option<u64>, Error> {
-    let url = format!("{}/v1/get_last_checkpoint", base_url);
+    let url = endpoint(base_url, "/v1/get_last_checkpoint");
     let body = post(&url, &[])?;
     let resp = proto::GetLastCheckpointResponse::decode(body.as_slice())?;
     Ok(resp.has_checkpoint.then_some(resp.sequence_number))
@@ -72,7 +94,7 @@ pub fn create_table(
         arrow_schema,
         key,
     };
-    let url = format!("{}/v1/create_table", base_url);
+    let url = endpoint(base_url, "/v1/create_table");
     post(&url, &req.encode_to_vec())?;
     Ok(())
 }
@@ -83,7 +105,7 @@ pub fn drop_table(base_url: &str, sequence_number: u64, table_name: String) -> R
         sequence_number,
         table_name,
     };
-    let url = format!("{}/v1/drop_table", base_url);
+    let url = endpoint(base_url, "/v1/drop_table");
     post(&url, &req.encode_to_vec())?;
     Ok(())
 }
@@ -98,7 +120,7 @@ pub fn put_batches(
         sequence_number,
         batches,
     };
-    let url = format!("{}/v1/put_batches", base_url);
+    let url = endpoint(base_url, "/v1/put_batches");
     post(&url, &req.encode_to_vec())?;
     Ok(())
 }
@@ -106,7 +128,7 @@ pub fn put_batches(
 /// Record a checkpoint for the given sequence number (block number).
 pub fn checkpoint(base_url: &str, sequence_number: u64) -> Result<(), Error> {
     let req = proto::CheckpointRequest { sequence_number };
-    let url = format!("{}/v1/checkpoint", base_url);
+    let url = endpoint(base_url, "/v1/checkpoint");
     post(&url, &req.encode_to_vec())?;
     Ok(())
 }
@@ -114,6 +136,13 @@ pub fn checkpoint(base_url: &str, sequence_number: u64) -> Result<(), Error> {
 /// Low-level POST helper. Sends `body` to `url` with
 /// `Content-Type: application/x-protobuf` and returns the response body bytes.
 fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
+    log::debug!(
+        target: "prover_db_indexer",
+        "POST {} ({} body bytes)",
+        url,
+        body.len(),
+    );
+
     let deadline =
         polkadot_sdk::sp_io::offchain::timestamp().add(Duration::from_millis(HTTP_TIMEOUT_MS));
 
@@ -130,23 +159,65 @@ fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
         .add_header("Content-Type", "application/x-protobuf")
         .deadline(deadline)
         .send()
-        .map_err(|_| Error::SendFailed)?;
+        .map_err(|e| {
+            log::warn!(
+                target: "prover_db_indexer",
+                "POST {} send failed: {:?}",
+                url, e,
+            );
+            Error::SendFailed
+        })?;
 
     let response = pending
         .try_wait(deadline)
-        .map_err(|_| Error::DeadlineReached)?
-        .map_err(|e| match e {
-            polkadot_sdk::sp_runtime::offchain::http::Error::DeadlineReached => {
-                Error::DeadlineReached
+        .map_err(|e| {
+            log::warn!(
+                target: "prover_db_indexer",
+                "POST {} try_wait failed: {:?}",
+                url, e,
+            );
+            Error::DeadlineReached
+        })?
+        .map_err(|e| {
+            log::warn!(
+                target: "prover_db_indexer",
+                "POST {} response error: {:?}",
+                url, e,
+            );
+            match e {
+                polkadot_sdk::sp_runtime::offchain::http::Error::DeadlineReached => {
+                    Error::DeadlineReached
+                }
+                polkadot_sdk::sp_runtime::offchain::http::Error::IoError => Error::IoError,
+                polkadot_sdk::sp_runtime::offchain::http::Error::Unknown => Error::IoError,
             }
-            polkadot_sdk::sp_runtime::offchain::http::Error::IoError => Error::IoError,
-            polkadot_sdk::sp_runtime::offchain::http::Error::Unknown => Error::IoError,
         })?;
 
     let status = response.code;
+    let response_body: Vec<u8> = response.body().collect();
+
+    log::debug!(
+        target: "prover_db_indexer",
+        "POST {} -> status {} ({} body bytes)",
+        url, status, response_body.len(),
+    );
+
     if status != 200 {
-        return Err(Error::Status(status));
+        // Log the response body inline at warn so it shows up without
+        // needing debug filters — 4xx/5xx bodies usually carry the
+        // server's reason (route not registered, bad payload, etc.).
+        let snippet_len = core::cmp::min(response_body.len(), 256);
+        let snippet = core::str::from_utf8(&response_body[..snippet_len]).unwrap_or("<non-utf8>");
+        log::warn!(
+            target: "prover_db_indexer",
+            "POST {} -> status {}; body ({} bytes): {}",
+            url, status, response_body.len(), snippet,
+        );
+        return Err(Error::Status {
+            code: status,
+            body: response_body,
+        });
     }
 
-    Ok(response.body().collect())
+    Ok(response_body)
 }

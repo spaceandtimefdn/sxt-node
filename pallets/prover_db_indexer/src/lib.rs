@@ -237,6 +237,12 @@ pub mod pallet {
             let url =
                 core::str::from_utf8(&url_bytes).map_err(|_| "invalid UTF-8 in indexer URL")?;
 
+            log::debug!(
+                target: "prover_db_indexer",
+                "consumer round starting; indexer base URL = {:?}",
+                url,
+            );
+
             // 2. Current block number.
             let current_block: u64 = polkadot_sdk::frame_system::Pallet::<T>::block_number()
                 .try_into()
@@ -252,8 +258,8 @@ pub mod pallet {
                 Err(e) => {
                     log::warn!(
                         target: "prover_db_indexer",
-                        "get_last_checkpoint failed: {}; skipping this round",
-                        e,
+                        "get_last_checkpoint failed for {:?}: {}; skipping this round",
+                        url, e,
                     );
                     return Ok(());
                 }
