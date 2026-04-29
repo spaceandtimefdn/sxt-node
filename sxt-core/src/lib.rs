@@ -35,6 +35,13 @@ pub mod sxt_chain_runtime;
 /// The maximum length of Identifiers
 pub const IDENT_LENGTH: u32 = 64;
 
+/// Offchain local-storage key used by both the node service and the
+/// prover-db-indexer pallet to share the indexer's HTTP endpoint URL.
+///
+/// The node seeds this key from `--prover-db-url` (or the `PROVER_DB_URL`
+/// env var) at startup; the OCW reads it each round to know where to POST.
+pub const PROVER_DB_URL_KEY: &[u8] = b"prover_db_indexer/prover_db_url";
+
 /// The maximum length of u8 strings in the system
 pub type IdentLength = ConstU32<IDENT_LENGTH>;
 
