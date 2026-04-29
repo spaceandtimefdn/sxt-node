@@ -40,7 +40,12 @@ pub use pallet::*;
 pub use sxt_core::PROVER_DB_URL_KEY;
 
 #[polkadot_sdk::frame_support::pallet]
-#[allow(missing_docs, clippy::missing_docs_in_private_items, dead_code)]
+#[allow(
+    missing_docs,
+    clippy::missing_docs_in_private_items,
+    clippy::manual_inspect,
+    dead_code
+)]
 pub mod pallet {
     use alloc::vec::Vec;
 
