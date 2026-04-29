@@ -11,6 +11,9 @@ pub type Pallet<T> = crate::pallet::Pallet<T, Api>;
 pub type Event<T> = crate::pallet::Event<T, Api>;
 
 pub use crate::pallet::{
-    __substrate_call_check, __substrate_event_check, tt_default_parts, tt_default_parts_v2,
+    __substrate_call_check,
+    __substrate_event_check,
+    tt_default_parts,
+    tt_default_parts_v2,
     tt_error_token,
 };

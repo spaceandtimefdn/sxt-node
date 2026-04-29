@@ -8,7 +8,8 @@
 
 use native_api::Api;
 use polkadot_sdk::frame_election_provider_support::bounds::{
-    ElectionBounds, ElectionBoundsBuilder,
+    ElectionBounds,
+    ElectionBoundsBuilder,
 };
 use polkadot_sdk::frame_election_provider_support::{onchain, SequentialPhragmen};
 use polkadot_sdk::frame_support::pallet_prelude::ConstU32;
@@ -18,8 +19,17 @@ use polkadot_sdk::sp_core::{ConstU64, H256};
 use polkadot_sdk::sp_runtime::traits::{IdentityLookup, OpaqueKeys};
 use polkadot_sdk::sp_runtime::{BuildStorage, KeyTypeId};
 use polkadot_sdk::{
-    frame_support, frame_system, pallet_balances, pallet_session, pallet_staking,
-    pallet_staking_reward_curve, pallet_timestamp, sp_core, sp_io, sp_runtime, sp_staking,
+    frame_support,
+    frame_system,
+    pallet_balances,
+    pallet_session,
+    pallet_staking,
+    pallet_staking_reward_curve,
+    pallet_timestamp,
+    sp_core,
+    sp_io,
+    sp_runtime,
+    sp_staking,
 };
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
 use proof_of_sql_commitment_map::PerCommitmentScheme;
