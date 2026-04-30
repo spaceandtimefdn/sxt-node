@@ -37,7 +37,7 @@ pub use pallet::*;
 /// Re-export of the canonical offchain local-storage key (defined in `sxt-core`),
 /// kept here so existing call sites that reach for `pallet_prover_db_indexer::PROVER_DB_URL_KEY`
 /// keep working.
-pub use sxt_core::PROVER_DB_URL_KEY;
+pub use sxt_core::prover_db_indexer::PROVER_DB_URL_KEY;
 
 #[polkadot_sdk::frame_support::pallet]
 #[allow(
