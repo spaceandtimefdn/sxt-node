@@ -80,8 +80,8 @@ const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 /// Seed the prover-db indexer URL into offchain persistent local storage
 /// at startup, before the first block is authored.
 ///
-/// Stored under `sxt_core::PROVER_DB_URL_KEY` as a SCALE-encoded
-/// `Vec<u8>` of the URL bytes.
+/// Stored under `sxt_core::prover_db_indexer::PROVER_DB_URL_KEY` as a
+/// SCALE-encoded `Vec<u8>` of the URL bytes.
 #[expect(
     clippy::result_large_err,
     reason = "ServiceError is from substrate and cannot be modified"
@@ -95,7 +95,11 @@ fn configure_prover_db_url(backend: &FullBackend, url: &url::Url) -> Result<(), 
         ));
     };
     let encoded = url.as_str().as_bytes().to_vec().encode();
-    storage.set(STORAGE_PREFIX, sxt_core::PROVER_DB_URL_KEY, &encoded);
+    storage.set(
+        STORAGE_PREFIX,
+        sxt_core::prover_db_indexer::PROVER_DB_URL_KEY,
+        &encoded,
+    );
     Ok(())
 }
 
