@@ -28,6 +28,7 @@ pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"atst");
 /// We can use from supported crypto kinds (`sr25519`, `ed25519` and `ecdsa`) and augment
 /// the types with this pallet-specific identifier.
 pub mod crypto {
+    use polkadot_sdk::frame_support::storage::StorageDoubleMap;
     use polkadot_sdk::sp_core::sr25519::Signature as Sr25519Signature;
     use polkadot_sdk::sp_runtime::app_crypto::{app_crypto, sr25519, with_pair};
     use polkadot_sdk::sp_runtime::traits::Verify;
@@ -53,9 +54,15 @@ pub use weights::*;
 #[allow(clippy::manual_inspect)]
 #[polkadot_sdk::frame_support::pallet]
 pub mod pallet {
+    use alloc::vec::Vec;
+
+    use attestation_tree::attestation_tree_from_prefixes;
+    use pallet_commitments::CommitmentStorageMap;
     use polkadot_sdk::frame_support::dispatch::DispatchResult;
     use polkadot_sdk::frame_support::pallet_prelude::{OptionQuery, *};
     use polkadot_sdk::frame_support::sp_runtime::traits::UniqueSaturatedInto;
+    use polkadot_sdk::frame_support::storage::PrefixIterator;
+    use polkadot_sdk::frame_support::traits::StorageInstance;
     use polkadot_sdk::frame_support::Blake2_128Concat;
     use polkadot_sdk::frame_system::offchain::{
         AppCrypto,
@@ -64,6 +71,7 @@ pub mod pallet {
         Signer,
     };
     use polkadot_sdk::frame_system::pallet_prelude::*;
+    use polkadot_sdk::pallet_balances;
     use polkadot_sdk::sp_core::offchain::StorageKind;
     use sxt_core::attestation::{create_attestation_message, Attestation, AttestationKey};
     use sxt_core::keystore::EthereumKey;
@@ -85,6 +93,8 @@ pub mod pallet {
         + polkadot_sdk::frame_system::Config
         + pallet_permissions::Config
         + pallet_keystore::Config
+        + pallet_commitments::Config
+        + pallet_balances::Config<(), Balance = u128>
     {
         /// Associated event type.
         type RuntimeEvent: From<Event<Self>>
@@ -323,24 +333,26 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn offchain_worker(block_number: BlockNumberFor<T>) {
-            polkadot_sdk::sp_tracing::info!(name: "attestor ocw", "attestor ocw: block number: {block_number:?}");
-
-            let current_storage = polkadot_sdk::sp_io::offchain::local_storage_get(
-                StorageKind::PERSISTENT,
-                b"attestor ocw",
-            );
-
-            polkadot_sdk::sp_tracing::info!(name: "attestor ocw", "attestor ocw: test storage: {current_storage:?}");
-
             let signer_accounts = Signer::<T, T::AuthorityId>::keystore_accounts()
                 .map(|account| account.id)
                 .collect::<alloc::vec::Vec<_>>();
 
-            polkadot_sdk::sp_tracing::info!(name: "attestor ocw", "attestor ocw: keys: {signer_accounts:?}");
+            let commitment_prefix =
+                pallet_commitments::_GeneratedPrefixForStorageCommitmentStorageMap::<T>::prefix_hash();
+            let commitment_iterator = PrefixIterator::<(Vec<u8>, Vec<u8>)>::new(
+                commitment_prefix.to_vec(),
+                commitment_prefix.to_vec(),
+                |k, v| Ok((k.to_vec(), v.to_vec())),
+            );
+
+            let commitment_attestation_tree =
+                attestation_tree_from_prefixes::<_, T>(commitment_iterator);
 
             let signer = Signer::<T, T::AuthorityId>::all_accounts();
             if !signer.can_sign() {
                 polkadot_sdk::sp_tracing::info!(name: "attestor ocw", "No local accounts available. Consider adding one via `author_insertKey` RPC.");
+
+                return;
             }
 
             let result = signer.send_signed_transaction(|_x| Call::remark_test {

@@ -29,6 +29,8 @@ sxt-core.workspace = true
 pallet-permissions.workspace = true
 pallet-keystore.workspace = true
 eth_merkle_tree = { workspace = true }
+attestation_tree.workspace = true
+pallet-commitments.workspace = true
 
 [dev-dependencies]
 polkadot-sdk = { workspace = true, features = [

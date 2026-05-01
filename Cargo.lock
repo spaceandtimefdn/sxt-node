@@ -10496,6 +10496,7 @@ dependencies = [
  "attestation_tree",
  "eth_merkle_tree",
  "k256",
+ "pallet-commitments",
  "pallet-keystore",
  "pallet-permissions",
  "parity-scale-codec",
