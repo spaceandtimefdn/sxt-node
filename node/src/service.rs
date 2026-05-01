@@ -3,6 +3,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use codec::Encode;
 use futures::prelude::*;
 use polkadot_sdk::sc_client_api::{Backend, BlockBackend};
 use polkadot_sdk::sc_consensus_babe::{self, SlotProportion};
@@ -76,24 +77,17 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
-/// Offchain local-storage key for the prover-db indexer HTTP endpoint URL.
-///
-/// Must match `pallet_prover_db_indexer::PROVER_DB_URL_KEY` once that
-/// pallet is added to the runtime; kept as a local literal here so the
-/// node-side wiring can land before the pallet exists.
-const PROVER_DB_URL_KEY: &[u8] = b"prover_db_indexer::prover_db_url";
-
 /// Seed the prover-db-indexer OCW's persistent local storage with the
 /// prover-db URL given on the command line, before the first block is
 /// authored.
 ///
-/// The value is a SCALE-encoded `Vec<u8>` of the URL bytes.
+/// The storage key is `sxt_core::PROVER_DB_URL_KEY`; the value is a
+/// SCALE-encoded `Vec<u8>` of the URL bytes.
 #[expect(
     clippy::result_large_err,
     reason = "ServiceError is from substrate and cannot be modified"
 )]
 fn configure_prover_db_url(backend: &FullBackend, url: &url::Url) -> Result<(), ServiceError> {
-    use codec::Encode;
     let Some(mut storage) = backend.offchain_storage() else {
         return Err(ServiceError::Other(
             "backend did not expose an offchain storage handle; \
@@ -102,7 +96,7 @@ fn configure_prover_db_url(backend: &FullBackend, url: &url::Url) -> Result<(), 
         ));
     };
     let encoded = url.as_str().as_bytes().to_vec().encode();
-    storage.set(STORAGE_PREFIX, PROVER_DB_URL_KEY, &encoded);
+    storage.set(STORAGE_PREFIX, sxt_core::PROVER_DB_URL_KEY, &encoded);
     Ok(())
 }
 
@@ -321,7 +315,7 @@ pub struct NewFullBase {
 )]
 pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
     config: Configuration,
-    prover_db_url: Option<url::Url>,
+    cli: &Cli,
 ) -> Result<NewFullBase, ServiceError> {
     let role = config.role;
     let force_authoring = config.force_authoring;
@@ -356,10 +350,9 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 
     // The prover-db-indexer pallet's `on_finalize` calls
     // `sp_io::offchain_index::set` to hand events to the OCW. That call is a
-    // silent no-op unless `--enable-offchain-indexing=true` was passed. We
-    // surface that loudly rather than letting operators discover it by
-    // watching zero rows arrive at their indexer.
-    if let Some(url) = prover_db_url.as_ref() {
+    // silent no-op unless `--enable-offchain-indexing=true` was passed. If
+    // the operator asked to forward to a URL but indexing is off, fail loud.
+    if let Some(url) = cli.prover_db_url.as_ref() {
         if !config.offchain_worker.indexing_enabled {
             return Err(ServiceError::Other(
                 "--prover-db-url was set but --enable-offchain-indexing is not \
@@ -370,16 +363,6 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
             ));
         }
         configure_prover_db_url(backend.as_ref(), url)?;
-    } else if !config.offchain_worker.indexing_enabled {
-        // Prover-db-indexer is in the runtime but offchain indexing is off.
-        // Forwarding can't work even if someone later writes the URL via RPC.
-        // Loud eprintln! so it shows up even without log filter setup.
-        eprintln!(
-            "warning: --enable-offchain-indexing is not true; the \
-             prover-db-indexer OCW cannot forward events even if \
-             prover_db_indexer::prover_db_url is set via RPC. Pass \
-             --enable-offchain-indexing=true to enable forwarding."
-        );
     }
 
     let metrics = N::register_notification_metrics(
@@ -663,14 +646,13 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
     futures::executor::block_on(initialize_from_config(&cli.proof_of_sql_public_setup_args))
         .map_err(|e| ServiceError::Other(e.to_string()))?;
 
-    let prover_db_url = cli.prover_db_url.clone();
     let task_manager = match config.network.network_backend {
         sc_network::config::NetworkBackendType::Libp2p => {
-            new_full_base::<sc_network::NetworkWorker<_, _>>(config, prover_db_url)
+            new_full_base::<sc_network::NetworkWorker<_, _>>(config, &cli)
                 .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
         sc_network::config::NetworkBackendType::Litep2p => {
-            new_full_base::<sc_network::Litep2pNetworkBackend>(config, prover_db_url)
+            new_full_base::<sc_network::Litep2pNetworkBackend>(config, &cli)
                 .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
     };
