@@ -19,6 +19,11 @@ pub struct Cli {
     #[clap(long)]
     pub event_forwarder_rpc: Option<String>,
 
+    /// URL of the prover-db indexer to forward indexed events to. Also
+    /// configurable via the `PROVER_DB_URL` environment variable.
+    #[clap(long, env)]
+    pub prover_db_url: Option<url::Url>,
+
     #[allow(missing_docs)]
     #[clap(flatten)]
     pub storage_monitor: sc_storage_monitor::StorageMonitorParams,

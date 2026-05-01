@@ -15,7 +15,7 @@ build = "build.rs"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-clap = { features = ["derive"], workspace = true }
+clap = { features = ["derive", "env"], workspace = true }
 futures = { features = ["thread-pool"], workspace = true }
 serde_json = { workspace = true, default-features = true }
 jsonrpsee = { features = ["server"], workspace = true }
@@ -46,6 +46,7 @@ rand.workspace = true
 node-rpc.workspace = true
 serde.workspace = true
 codec = { workspace = true, default-features = true }
+url = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true
