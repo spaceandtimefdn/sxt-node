@@ -21,12 +21,6 @@ pub struct Cli {
 
     /// URL of the prover-db indexer to forward indexed events to. Also
     /// configurable via the `PROVER_DB_URL` environment variable.
-    ///
-    /// End-to-end forwarding additionally requires offchain indexing
-    /// (`--enable-offchain-indexing=true`) and offchain workers
-    /// scheduled to run (`--offchain-worker=always` on non-authority
-    /// nodes); without those, the producer side and OCW are silent
-    /// no-ops respectively.
     #[clap(long, env)]
     pub prover_db_url: Option<url::Url>,
 
