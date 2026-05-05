@@ -47,6 +47,7 @@ pub mod pallet {
     use polkadot_sdk::sp_runtime::BoundedVec;
     use proof_of_sql_commitment_map::CommitmentScheme;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
+    use sxt_core::prover_db_indexer::EventCapture;
     use sxt_core::record_batch::record_batch_bytes_dimensions;
     use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
@@ -74,6 +75,10 @@ pub mod pallet {
             + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         /// The weight info to be used with the extrinsics provided by the pallet
         type WeightInfo: WeightInfo;
+        /// Hook for capturing quorum-reached events at extrinsic time
+        /// (used by the prover-db indexer to forward them off-chain).
+        /// Use `()` for runtimes that do not run the indexer.
+        type EventCapture: sxt_core::prover_db_indexer::EventCapture;
     }
 
     /// Storage map of `BatchId` and data hash to submitters that have agreed to the batch/hash.
@@ -713,6 +718,15 @@ pub mod pallet {
                 quorum: quorum.clone(),
                 data: on_chain_table_bytes.clone(),
             });
+
+            <T as Config<I>>::EventCapture::capture_events(alloc::vec![
+                sxt_core::prover_db_indexer::BlockEvent::Data(
+                    sxt_core::prover_db_indexer::DataEntry {
+                        table: quorum.table.clone(),
+                        data: on_chain_table_bytes.to_vec(),
+                    },
+                ),
+            ]);
         }
 
         // If system table, propagate insert or error

@@ -1,11 +1,19 @@
 # pallet-prover-db-indexer
 
-Offchain worker that forwards table lifecycle and data events to an
-external prover-db indexer (HTTP) using protobuf-over-HTTP.
+Bridges in-runtime table lifecycle and data events to an external
+prover-db indexer (HTTP, protobuf wire format).
 
-Watches for these events from other pallets and relays them:
+The pallet has two halves:
+- **Producer (in-runtime, synchronous).** `pallet-tables` and
+  `pallet-indexing` call into this pallet via the `EventCapture` trait
+  at extrinsic time, immediately after depositing the relevant event.
+  The producer's cost is paid by the calling extrinsic's declared
+  weight, not by an `on_finalize` hook.
+- **Consumer (offchain worker).** An OCW drains the captured payloads
+  from the offchain DB and POSTs them to the indexer's HTTP endpoints.
+
+Captured events:
 - `pallet_tables::SchemaUpdated`
-- `pallet_tables::TablesCreatedWithCommitments`
 - `pallet_tables::TableDropped`
 - `pallet_indexing::QuorumReached`
 
@@ -14,108 +22,21 @@ Wire contract is under `proto/prover-db.proto`; five POST endpoints at
 
 ## Operational requirements
 
-The pallet has **two** node-side flags that must be correctly set for
-forwarding to work. Getting either wrong produces a silent no-op on the
-producer side — events look like they'd be forwarded but nothing arrives
-at the indexer.
+For end-to-end forwarding the host node must have all three of the
+following enabled. Any one missing is a silent no-op on the producer or
+OCW side — events never reach the indexer.
 
-### 1. `--enable-offchain-indexing=true` — **required**
+1. **Offchain indexing enabled.** Producer call sites write events via
+   `sp_io::offchain_index::set`, which is a no-op unless the host has
+   offchain indexing turned on. Substrate defaults this to off; the
+   embedding node is responsible for exposing a way to enable it.
+2. **Offchain workers scheduled to run.** Substrate's default
+   scheduling fires OCWs only on validator/collator roles. Non-authority
+   nodes (dev, RPC-only) need OCW scheduling forced on for forwarding to
+   happen.
+3. **Indexer URL set in OCW persistent local storage.** The OCW reads
+   the URL at the key exposed by `sxt_core::prover_db_indexer::PROVER_DB_URL_KEY`.
+   The embedding node typically writes this once at startup; alternatively
+   it can be set out-of-band (e.g. via `offchain_localStorageSet`).
 
-The producer (`on_finalize` hook) writes events into offchain local
-storage via `sp_io::offchain_index::set`. That host function is a
-**silent no-op unless `--enable-offchain-indexing=true` is passed on the
-command line**. Substrate defaults the flag to `false`.
-
-Symptom if missing: `on_finalize(N): writing K events to offchain DB`
-logs appear normally, but the OCW's `offchain_index::read(N)` returns
-`None` and no forwarding happens.
-
-As of commit `dd873ed`, the node boots with a loud `warning:` to stderr
-if this flag is not set; running with `--prover-db-url` *without* the flag
-is a hard startup error.
-
-### 2. `--offchain-worker=always` — required on dev nodes
-
-Substrate defaults offchain-worker scheduling to `when-authority` —
-OCWs only fire on validator/collator nodes. For a dev `--dev --tmp`
-node, that means zero OCW invocations. Pass `--offchain-worker=always`
-to force them to run regardless of role.
-
-### 3. `--prover-db-url <URL>` — optional (but usually what you want)
-
-Tells the OCW where to POST forwarded events. The node writes the URL
-into the OCW's persistent local storage before the first block is
-authored, so no events are missed between node-up and URL-configured.
-
-If omitted, the OCW stays dormant until the URL is written some other
-way — e.g. the `offchain_localStorageSet` RPC (requires
-`--rpc-methods=unsafe`) or a persistent base-path node carrying the URL
-over from a previous run.
-
-## Minimal one-command dev setup
-
-```
-./target/release/sxt-node \
-  --dev --tmp \
-  --rpc-cors=all \
-  --offchain-worker=always \
-  --enable-offchain-indexing=true \
-  --prover-db-url http://127.0.0.1:9999
-```
-
-## Runtime wiring
-
-Three Config associated types; the runtime provides them:
-
-```rust
-impl pallet_prover_db_indexer::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-
-    // Used to resolve pallet_indexing's pallet index dynamically via
-    // PalletInfoAccess::index(), so reordering construct_runtime! never
-    // breaks the filter silently.
-    type IndexingPallet = Indexing;
-
-    // Variant index of `QuorumReached` within pallet_indexing::Event.
-    // The runtime supplies a resolver that looks the variant up by name
-    // at startup via scale_info::TypeInfo. See
-    // `DynamicQuorumReachedIndex` in runtime/src/lib.rs.
-    type QuorumReachedVariantIndex = DynamicQuorumReachedIndex;
-}
-```
-
-## Data format
-
-- `CreateTable.arrow_schema`: raw `CREATE TABLE …` DDL bytes (UTF-8).
-  The HTTP server parses them via `sqlparser` to derive the Arrow schema.
-- `PutBatches.record_batch`: postcard-encoded `OnChainTable` bytes —
-  what `pallet_indexing::QuorumReached.data` carries. The chain builds
-  this in `finalize_quorum`: it converts the indexer's Arrow IPC
-  submission to an `OnChainTable`, appends commitment meta columns,
-  and postcard-serializes the result. The prover-db-indexer never
-  decodes this payload — it's an opaque pass-through to the server.
-
-The pallet does **not** introduce any new host functions; everything
-goes through already-in-stable `sp_io` APIs (`offchain_index::set`,
-`offchain::http::Request`, etc.).
-
-## Dedup key contract
-
-Every forwarded table is registered with the dedup key column
-`META_ROW_NUMBER`. The HTTP server rejects `CreateTable` requests whose
-Arrow schema lacks a `META_ROW_NUMBER BIGINT NOT NULL` column. If your
-on-chain table DDLs don't include this column, the first forward
-attempt will fail at the server. Either add the column to the DDL or
-patch the forwarder's `DEDUP_KEY_COLUMN` constant.
-
-## Testing
-
-- **Unit / integration.** `cargo test -p pallet-prover-db-indexer` — 7
-  tests using `sp_core::offchain::testing::TestOffchainExt` to exercise
-  skip/forward/delete/multi-block/resume paths without a real HTTP
-  server.
-- **End-to-end against a real indexer.** Build and run `prb-service`
-  with `--features indexer` (see the sxtdb repo), then launch
-  `sxt-node` with `--prover-db-url http://<prb-service-host>:<port>`.
-  The harness at `spaceandtimefdn/sxt-int-harness` (standalone crate)
-  drives table/data actions against the node via a TOML file.
+How each is enabled is a property of the node binary, not this pallet.

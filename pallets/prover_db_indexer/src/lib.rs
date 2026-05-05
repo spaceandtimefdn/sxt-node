@@ -5,31 +5,53 @@
 //!
 //! ## Architecture
 //!
-//! **Producer** (`on_finalize`, runs during block execution including sync):
-//!   Reads `polkadot_sdk::frame_system::Events`, extracts relevant variants, writes a
-//!   SCALE-encoded `BlockIndex` to the offchain DB keyed by block number.
+//! **Producer** (extrinsic-time, via the [`EventCapture`] trait):
+//!   `pallet-tables` and `pallet-indexing` call
+//!   `T::EventCapture::capture_events(...)` immediately after depositing
+//!   their schema/quorum events. The pallet writes the per-extrinsic
+//!   payload to the offchain DB at `key_for_event(block, ext_idx)` and
+//!   appends the extrinsic index to a small per-block manifest at
+//!   `key_for_manifest(block)`. The manifest is accumulated in on-chain
+//!   storage so we can mirror the cumulative list to the offchain DB on
+//!   every capture without reading the offchain DB mid-block.
 //!
 //! **Consumer** (`offchain_worker`, fires at chain tip only):
-//!   Walks the offchain DB from `cursor+1` to `current_block`, forwards each
-//!   entry via HTTP+protobuf, checkpoints on the server, deletes consumed
+//!   For each block in `cursor+1..=current`, reads the manifest, walks
+//!   the populated extrinsic indices, forwards each entry via
+//!   HTTP+protobuf, checkpoints on the server, deletes consumed
 //!   entries, advances cursor.
 //!
 //! This PR ships the producer half. The consumer (HTTP forwarding) is
 //! added in a follow-up PR; until that lands, `offchain_worker` is a
-//! no-op stub and any `BlockIndex` entries the producer writes simply
-//! sit in the offchain DB.
+//! no-op stub and any payload the producer writes simply sits in the
+//! offchain DB.
 //!
-//! ## Why two hooks?
+//! ## Why extrinsic-time capture, not `on_finalize`?
 //!
-//! `on_finalize` can read events (they exist during block execution) but
-//! cannot do HTTP. `offchain_worker` can do HTTP but cannot read past events
-//! (cleared at next block). The offchain DB bridges them.
+//! Any synchronous runtime work has to declare its weight up front, and
+//! `Hooks::on_finalize` declares its weight via the value `on_initialize`
+//! returns at the *start* of the block. We have no way to know at
+//! `on_initialize` how many table updates or quorum events the block
+//! will produce, so we can't bound `on_finalize`'s cost in advance.
+//! Capturing at the deposit-event call site instead lets the cost ride
+//! on the calling extrinsic's already-benchmarked weight: every byte of
+//! work is owned by an extrinsic that the chain has agreed to schedule.
+//!
+//! ## Why on-chain accumulation for the manifest only?
+//!
+//! Each capture call writes its own (potentially large) event payload
+//! directly to the offchain DB — those bytes never touch on-chain
+//! storage. Only the small list of extrinsic indices is accumulated
+//! on-chain so the OCW (which cannot enumerate offchain keys) knows
+//! which sub-keys to fetch. The manifest is bounded by
+//! [`MaxEventsPerBlock`] and reset each block in `on_initialize`.
+//!
+//! [`EventCapture`]: sxt_core::prover_db_indexer::EventCapture
+//! [`MaxEventsPerBlock`]: pallet::Config::MaxEventsPerBlock
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
-
-mod offchain_index;
 
 pub mod native_pallet;
 
@@ -49,25 +71,25 @@ pub use sxt_core::prover_db_indexer::PROVER_DB_URL_KEY;
 pub mod pallet {
     use alloc::vec::Vec;
 
+    use codec::Encode;
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_system::pallet_prelude::*;
-
-    use crate::offchain_index::{BlockEvent, BlockIndex, CreateEntry, DataEntry};
+    use sxt_core::prover_db_indexer::{key_for_event, key_for_manifest, BlockEvent, EventCapture};
 
     #[pallet::pallet]
     pub struct Pallet<T, I = ()>(_);
 
     #[pallet::config]
-    pub trait Config<I: 'static = ()>:
-        polkadot_sdk::frame_system::Config + pallet_tables::Config + pallet_indexing::Config<I>
-    {
-        /// The runtime's overarching event type. Bounds let us downcast
-        /// it back to the per-pallet typed events without re-encoding,
-        /// using `TryInto` impls that `construct_runtime!` generates.
+    pub trait Config<I: 'static = ()>: polkadot_sdk::frame_system::Config {
+        /// The runtime's overarching event type.
         type RuntimeEvent: From<Event<Self, I>>
-            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>
-            + TryInto<pallet_tables::Event<Self>>
-            + TryInto<pallet_indexing::Event<Self, I>>;
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
+
+        /// Upper bound on the number of distinct extrinsics per block
+        /// that may emit indexable events. Sized to comfortably exceed
+        /// realistic block compositions; if hit, additional events for
+        /// the same block are dropped (and a warning logged).
+        type MaxEventsPerBlock: Get<u32>;
     }
 
     #[pallet::event]
@@ -85,27 +107,22 @@ pub mod pallet {
         },
     }
 
+    /// Per-block accumulator of extrinsic indices that emitted indexable
+    /// events. Reset to empty in `on_initialize`. Mirrored to the
+    /// offchain DB at `key_for_manifest(block)` on every capture so the
+    /// OCW knows which sub-keys to fetch.
+    #[pallet::storage]
+    pub type CurrentBlockManifest<T: Config<I>, I: 'static = ()> =
+        StorageValue<_, BoundedVec<u32, <T as Config<I>>::MaxEventsPerBlock>, ValueQuery>;
+
     #[pallet::hooks]
     impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I> {
-        // ─── PRODUCER ───────────────────────────────────────────────────
-        // Runs during block execution (including sync). Captures events
-        // and persists them to the offchain DB for the OCW to consume.
-        fn on_finalize(n: BlockNumberFor<T>) {
-            let block_number: u64 = n.try_into().unwrap_or(0);
-            let index = Self::extract_block_index();
-
-            if index.is_empty() {
-                return;
-            }
-
-            log::debug!(
-                target: "prover_db_indexer",
-                "on_finalize({}): writing {} events to offchain DB",
-                block_number,
-                index.events.len(),
-            );
-
-            crate::offchain_index::write(block_number, &index);
+        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+            // Constant-cost reset: clear the manifest accumulator so each
+            // block starts fresh. The offchain blob written under the
+            // previous block's manifest key remains readable by the OCW.
+            CurrentBlockManifest::<T, I>::kill();
+            T::DbWeight::get().writes(1)
         }
 
         // ─── CONSUMER ───────────────────────────────────────────────────
@@ -113,75 +130,49 @@ pub mod pallet {
         fn offchain_worker(_block_number: BlockNumberFor<T>) {}
     }
 
-    impl<T: Config<I>, I: 'static> Pallet<T, I> {
-        // ═══════════════════════════════════════════════════════════════
-        //  PRODUCER: extract events → BlockIndex (called from on_finalize)
-        // ═══════════════════════════════════════════════════════════════
-
-        fn extract_block_index() -> BlockIndex {
-            // Each frame-system event may produce zero or more `BlockEvent`s
-            // (a `pallet_tables::SchemaUpdated` carries N updates, an
-            // indexing quorum yields one, anything else yields nothing).
-            // The extractors are pure: they take an event and return what
-            // would be appended, leaving accumulation to the caller.
-            let events = polkadot_sdk::frame_system::Pallet::<T>::read_events_no_consensus()
-                .flat_map(|record| {
-                    let from_tables = Self::try_extract_table_event(record.event.clone());
-                    let from_indexing = Self::try_extract_indexing_event(record.event);
-                    from_tables.into_iter().chain(from_indexing)
-                })
-                .collect();
-            BlockIndex { events }
-        }
-
-        fn try_extract_table_event(
-            event: <T as polkadot_sdk::frame_system::Config>::RuntimeEvent,
-        ) -> Vec<BlockEvent> {
-            // `event` is the frame-system RuntimeEvent. Bounce through our
-            // Config's RuntimeEvent (same type at runtime, bridged by `IsType`)
-            // so the `TryInto<pallet_tables::Event>` bound applies.
-            let our_event = <<T as Config<I>>::RuntimeEvent as From<_>>::from(event);
-            let Ok(table_event): Result<pallet_tables::Event<T>, _> = our_event.try_into() else {
-                return Vec::new();
-            };
-            match table_event {
-                pallet_tables::Event::SchemaUpdated(_who, update_list) => update_list
-                    .iter()
-                    .map(|update| {
-                        BlockEvent::Create(CreateEntry {
-                            ident: update.ident.clone(),
-                            ddl: update.create_statement.to_vec(),
-                        })
-                    })
-                    .collect(),
-                pallet_tables::Event::TablesCreatedWithCommitments { table_list, .. } => table_list
-                    .iter()
-                    .map(|req| {
-                        BlockEvent::Create(CreateEntry {
-                            ident: req.table_name.clone(),
-                            ddl: req.ddl.to_vec(),
-                        })
-                    })
-                    .collect(),
-                pallet_tables::Event::TableDropped(_who, _table_type, ident, _source) => {
-                    alloc::vec![BlockEvent::Drop(ident)]
-                }
-                _ => Vec::new(),
+    impl<T: Config<I>, I: 'static> EventCapture for Pallet<T, I> {
+        fn capture_events(events: Vec<BlockEvent>) {
+            if events.is_empty() {
+                return;
             }
-        }
 
-        fn try_extract_indexing_event(
-            event: <T as polkadot_sdk::frame_system::Config>::RuntimeEvent,
-        ) -> Option<BlockEvent> {
-            let our_event = <<T as Config<I>>::RuntimeEvent as From<_>>::from(event);
-            let indexing_event: pallet_indexing::Event<T, I> = our_event.try_into().ok()?;
-            let pallet_indexing::Event::QuorumReached { quorum, data } = indexing_event else {
-                return None;
-            };
-            Some(BlockEvent::Data(DataEntry {
-                table: quorum.table,
-                data: data.to_vec(),
-            }))
+            // `block_number()` always fits in u64 in our runtime (BlockNumber
+            // is u32); `extrinsic_index()` is always `Some` while we're inside
+            // an extrinsic, which is the only path that reaches `capture_events`.
+            // The `unwrap_or(0)` fallbacks are defensive, not load-bearing.
+            let block: u64 = polkadot_sdk::frame_system::Pallet::<T>::block_number()
+                .try_into()
+                .unwrap_or(0);
+            let ext_idx = polkadot_sdk::frame_system::Pallet::<T>::extrinsic_index().unwrap_or(0);
+
+            // Write the per-extrinsic event payload to the offchain DB.
+            polkadot_sdk::sp_io::offchain_index::set(
+                &key_for_event(block, ext_idx),
+                &events.encode(),
+            );
+
+            // Append this extrinsic index to the on-chain manifest, then
+            // mirror the manifest to the offchain DB so the OCW can read
+            // it. If the bounded vec is full we drop the new index; the
+            // event payload is still written, but the OCW won't discover
+            // it. In practice the bound is well above realistic block
+            // compositions; hitting it indicates a misconfigured runtime.
+            CurrentBlockManifest::<T, I>::mutate(|manifest| {
+                if manifest.try_push(ext_idx).is_err() {
+                    log::warn!(
+                        target: "prover_db_indexer",
+                        "manifest full at block {} (cap = {}); dropping extrinsic index {}",
+                        block,
+                        T::MaxEventsPerBlock::get(),
+                        ext_idx,
+                    );
+                    return;
+                }
+                polkadot_sdk::sp_io::offchain_index::set(
+                    &key_for_manifest(block),
+                    &manifest.to_vec().encode(),
+                );
+            });
         }
     }
 }

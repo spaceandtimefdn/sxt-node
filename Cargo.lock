@@ -11717,8 +11717,6 @@ version = "0.1.0"
 dependencies = [
  "log",
  "native-api",
- "pallet-indexing",
- "pallet-tables",
  "parity-scale-codec",
  "polkadot-sdk 0.9.0",
  "scale-info",

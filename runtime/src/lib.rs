@@ -842,6 +842,7 @@ impl pallet_permissions::Config for Runtime {
 impl pallet_tables::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
+    type EventCapture = pallet_prover_db_indexer::native_pallet::Pallet<Runtime>;
 }
 
 impl pallet_commitments::Config for Runtime {
@@ -856,6 +857,7 @@ impl pallet_commitments::Config for Runtime {
 impl pallet_indexing::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
+    type EventCapture = pallet_prover_db_indexer::native_pallet::Pallet<Runtime>;
 }
 
 impl pallet_attestation::Config for Runtime {
@@ -892,8 +894,16 @@ impl pallet_rewards::Config for Runtime {
     type MaxPayoutsPerBlock = ConstU32<3>;
 }
 
+parameter_types! {
+    /// Cap on distinct extrinsics per block that may emit indexable
+    /// events. Realistic block compositions stay well below this; if
+    /// hit, additional captures are dropped with a warning.
+    pub const MaxEventsPerBlock: u32 = 2048;
+}
+
 impl pallet_prover_db_indexer::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    type MaxEventsPerBlock = MaxEventsPerBlock;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
