@@ -22,7 +22,6 @@ polkadot-sdk = { workspace = true, features = [
 
 sxt-core.workspace = true
 native-api.workspace = true
-log = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]
@@ -32,7 +31,6 @@ std = [
     "scale-info/std",
     "sxt-core/std",
     "native-api/std",
-    "log/std",
 ]
 try-runtime = [
     "polkadot-sdk/try-runtime",

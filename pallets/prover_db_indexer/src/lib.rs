@@ -10,21 +10,22 @@
 //!   `T::EventCapture::capture_events(...)` immediately after depositing
 //!   their schema/quorum events. The pallet writes the per-extrinsic
 //!   payload to the offchain DB at `key_for_event(block, ext_idx)` and
-//!   appends the extrinsic index to a small per-block manifest at
-//!   `key_for_manifest(block)`. The manifest is accumulated in on-chain
-//!   storage so we can mirror the cumulative list to the offchain DB on
-//!   every capture without reading the offchain DB mid-block.
+//!   overwrites a per-block "high-water-mark" key at
+//!   `key_for_high_water(block)` carrying the largest `ext_idx` that
+//!   captured anything in this block. No on-chain state is needed —
+//!   `extrinsic_index` is already available to the runtime, and
+//!   absence of the high-water key means the block had no captures.
 //!
 //! **Consumer** (`offchain_worker`, fires at chain tip only):
-//!   For each block in `cursor+1..=current`, reads the manifest, walks
-//!   the populated extrinsic indices, forwards each entry via
-//!   HTTP+protobuf, checkpoints on the server, deletes consumed
-//!   entries, advances cursor.
+//!   For each block in `cursor+1..=current`, reads the high-water-mark.
+//!   If absent, the block had zero captures and is skipped. Otherwise
+//!   probes `key_for_event(block, 0..=hwm)`, forwards each present
+//!   entry via HTTP+protobuf, checkpoints on the server, deletes
+//!   consumed entries, advances cursor.
 //!
 //! This PR ships the producer half. The consumer (HTTP forwarding) is
-//! added in a follow-up PR; until that lands, `offchain_worker` is a
-//! no-op stub and any payload the producer writes simply sits in the
-//! offchain DB.
+//! added in a follow-up PR; until that lands, the OCW hook is absent
+//! and any payload the producer writes simply sits in the offchain DB.
 //!
 //! ## Why extrinsic-time capture, not `on_finalize`?
 //!
@@ -37,17 +38,7 @@
 //! on the calling extrinsic's already-benchmarked weight: every byte of
 //! work is owned by an extrinsic that the chain has agreed to schedule.
 //!
-//! ## Why on-chain accumulation for the manifest only?
-//!
-//! Each capture call writes its own (potentially large) event payload
-//! directly to the offchain DB — those bytes never touch on-chain
-//! storage. Only the small list of extrinsic indices is accumulated
-//! on-chain so the OCW (which cannot enumerate offchain keys) knows
-//! which sub-keys to fetch. The manifest is bounded by
-//! [`MaxEventsPerBlock`] and reset each block in `on_initialize`.
-//!
 //! [`EventCapture`]: sxt_core::prover_db_indexer::EventCapture
-//! [`MaxEventsPerBlock`]: pallet::Config::MaxEventsPerBlock
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -73,8 +64,12 @@ pub mod pallet {
 
     use codec::Encode;
     use polkadot_sdk::frame_support::pallet_prelude::*;
-    use polkadot_sdk::frame_system::pallet_prelude::*;
-    use sxt_core::prover_db_indexer::{key_for_event, key_for_manifest, BlockEvent, EventCapture};
+    use sxt_core::prover_db_indexer::{
+        key_for_event,
+        key_for_high_water,
+        BlockEvent,
+        EventCapture,
+    };
 
     #[pallet::pallet]
     pub struct Pallet<T, I = ()>(_);
@@ -84,12 +79,6 @@ pub mod pallet {
         /// The runtime's overarching event type.
         type RuntimeEvent: From<Event<Self, I>>
             + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
-
-        /// Upper bound on the number of distinct extrinsics per block
-        /// that may emit indexable events. Sized to comfortably exceed
-        /// realistic block compositions; if hit, additional events for
-        /// the same block are dropped (and a warning logged).
-        type MaxEventsPerBlock: Get<u32>;
     }
 
     #[pallet::event]
@@ -107,29 +96,6 @@ pub mod pallet {
         },
     }
 
-    /// Per-block accumulator of extrinsic indices that emitted indexable
-    /// events. Reset to empty in `on_initialize`. Mirrored to the
-    /// offchain DB at `key_for_manifest(block)` on every capture so the
-    /// OCW knows which sub-keys to fetch.
-    #[pallet::storage]
-    pub type CurrentBlockManifest<T: Config<I>, I: 'static = ()> =
-        StorageValue<_, BoundedVec<u32, <T as Config<I>>::MaxEventsPerBlock>, ValueQuery>;
-
-    #[pallet::hooks]
-    impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I> {
-        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            // Constant-cost reset: clear the manifest accumulator so each
-            // block starts fresh. The offchain blob written under the
-            // previous block's manifest key remains readable by the OCW.
-            CurrentBlockManifest::<T, I>::kill();
-            T::DbWeight::get().writes(1)
-        }
-
-        // ─── CONSUMER ───────────────────────────────────────────────────
-        // Stubbed in this PR; HTTP forwarding logic lands in the follow-up.
-        fn offchain_worker(_block_number: BlockNumberFor<T>) {}
-    }
-
     impl<T: Config<I>, I: 'static> EventCapture for Pallet<T, I> {
         fn capture_events(events: Vec<BlockEvent>) {
             if events.is_empty() {
@@ -145,34 +111,16 @@ pub mod pallet {
                 .unwrap_or(0);
             let ext_idx = polkadot_sdk::frame_system::Pallet::<T>::extrinsic_index().unwrap_or(0);
 
-            // Write the per-extrinsic event payload to the offchain DB.
+            // Per-extrinsic event payload.
             polkadot_sdk::sp_io::offchain_index::set(
                 &key_for_event(block, ext_idx),
                 &events.encode(),
             );
 
-            // Append this extrinsic index to the on-chain manifest, then
-            // mirror the manifest to the offchain DB so the OCW can read
-            // it. If the bounded vec is full we drop the new index; the
-            // event payload is still written, but the OCW won't discover
-            // it. In practice the bound is well above realistic block
-            // compositions; hitting it indicates a misconfigured runtime.
-            CurrentBlockManifest::<T, I>::mutate(|manifest| {
-                if manifest.try_push(ext_idx).is_err() {
-                    log::warn!(
-                        target: "prover_db_indexer",
-                        "manifest full at block {} (cap = {}); dropping extrinsic index {}",
-                        block,
-                        T::MaxEventsPerBlock::get(),
-                        ext_idx,
-                    );
-                    return;
-                }
-                polkadot_sdk::sp_io::offchain_index::set(
-                    &key_for_manifest(block),
-                    &manifest.to_vec().encode(),
-                );
-            });
+            // Per-block high-water-mark. Always overwrites; the OCW only
+            // cares about the final value, which is the largest ext_idx
+            // that fired this block.
+            polkadot_sdk::sp_io::offchain_index::set(&key_for_high_water(block), &ext_idx.encode());
         }
     }
 }

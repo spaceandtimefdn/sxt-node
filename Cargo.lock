@@ -11715,7 +11715,6 @@ dependencies = [
 name = "pallet-prover-db-indexer"
 version = "0.1.0"
 dependencies = [
- "log",
  "native-api",
  "parity-scale-codec",
  "polkadot-sdk 0.9.0",

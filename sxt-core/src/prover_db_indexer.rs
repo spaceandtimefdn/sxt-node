@@ -21,15 +21,17 @@ pub const PROVER_DB_URL_KEY: &[u8] = b"prover_db_indexer/prover_db_url";
 /// Offchain DB key prefix for per-extrinsic event payloads.
 const EVENT_KEY_PREFIX: &[u8] = b"prover_db_indexer::event::";
 
-/// Offchain DB key prefix for per-block manifests (the list of extrinsic
-/// indices in a block that produced events).
-const MANIFEST_KEY_PREFIX: &[u8] = b"prover_db_indexer::manifest::";
+/// Offchain DB key prefix for per-block high-water-marks (the largest
+/// extrinsic index in a block that produced events).
+const HIGH_WATER_KEY_PREFIX: &[u8] = b"prover_db_indexer::hwm::";
 
-/// Compute the offchain DB key for the per-block manifest. The manifest
-/// is a SCALE-encoded `Vec<u32>` of extrinsic indices in deposit order;
-/// the OCW reads it to know which event sub-keys to fetch.
-pub fn key_for_manifest(block: u64) -> Vec<u8> {
-    let mut k = MANIFEST_KEY_PREFIX.to_vec();
+/// Compute the offchain DB key for a block's high-water-mark. The value
+/// at this key is a SCALE-encoded `u32`: the largest `extrinsic_index`
+/// in the block that called `EventCapture::capture_events`. The OCW
+/// reads it to know how far to probe `key_for_event(block, 0..=hwm)`.
+/// Absence of this key means the block had zero captured events.
+pub fn key_for_high_water(block: u64) -> Vec<u8> {
+    let mut k = HIGH_WATER_KEY_PREFIX.to_vec();
     k.extend_from_slice(&block.to_be_bytes());
     k
 }
@@ -78,10 +80,14 @@ pub enum BlockEvent {
 /// indexable events at extrinsic time. The runtime wires this to
 /// `pallet-prover-db-indexer`; `()` is a no-op for runtimes that don't
 /// run the prover-db indexer.
+///
+/// Call at most once per extrinsic: the implementation keys the offchain
+/// blob by `extrinsic_index`, so a second call from the same extrinsic
+/// would overwrite the first.
 pub trait EventCapture {
     /// Capture the events emitted by the currently-executing extrinsic.
     /// Implementations must be cheap enough to count in the caller's
-    /// declared weight (no event iteration, no on-chain unbounded reads).
+    /// declared weight.
     fn capture_events(events: Vec<BlockEvent>);
 }
 
