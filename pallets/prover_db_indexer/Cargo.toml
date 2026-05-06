@@ -21,7 +21,6 @@ polkadot-sdk = { workspace = true, features = [
 ]}
 
 sxt-core.workspace = true
-native-api.workspace = true
 
 [features]
 default = ["std"]
@@ -30,7 +29,6 @@ std = [
     "codec/std",
     "scale-info/std",
     "sxt-core/std",
-    "native-api/std",
 ]
 try-runtime = [
     "polkadot-sdk/try-runtime",

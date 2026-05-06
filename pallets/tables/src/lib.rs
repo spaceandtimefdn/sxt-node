@@ -165,7 +165,6 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
         /// Hook for capturing schema-lifecycle events at extrinsic time
         /// (used by the prover-db indexer to forward them off-chain).
-        /// Use `()` for runtimes that do not run the indexer.
         type EventCapture: sxt_core::prover_db_indexer::EventCapture;
     }
 

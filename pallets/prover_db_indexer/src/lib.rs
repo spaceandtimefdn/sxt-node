@@ -23,10 +23,6 @@
 //!   entry via HTTP+protobuf, checkpoints on the server, deletes
 //!   consumed entries, advances cursor.
 //!
-//! This PR ships the producer half. The consumer (HTTP forwarding) is
-//! added in a follow-up PR; until that lands, the OCW hook is absent
-//! and any payload the producer writes simply sits in the offchain DB.
-//!
 //! ## Why extrinsic-time capture, not `on_finalize`?
 //!
 //! Any synchronous runtime work has to declare its weight up front, and
@@ -43,8 +39,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
-
-pub mod native_pallet;
 
 pub use pallet::*;
 /// Re-export of the canonical offchain local-storage key (defined in `sxt-core`),
@@ -72,18 +66,18 @@ pub mod pallet {
     };
 
     #[pallet::pallet]
-    pub struct Pallet<T, I = ()>(_);
+    pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config<I: 'static = ()>: polkadot_sdk::frame_system::Config {
+    pub trait Config: polkadot_sdk::frame_system::Config {
         /// The runtime's overarching event type.
-        type RuntimeEvent: From<Event<Self, I>>
+        type RuntimeEvent: From<Event<Self>>
             + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config<I>, I: 'static = ()> {
+    pub enum Event<T: Config> {
         /// The offchain indexer successfully forwarded a block.
         BlockForwarded {
             /// Block number that was successfully forwarded.
@@ -96,7 +90,7 @@ pub mod pallet {
         },
     }
 
-    impl<T: Config<I>, I: 'static> EventCapture for Pallet<T, I> {
+    impl<T: Config> EventCapture for Pallet<T> {
         fn capture_events(events: Vec<BlockEvent>) {
             if events.is_empty() {
                 return;
