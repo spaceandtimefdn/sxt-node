@@ -36,6 +36,7 @@ impl frame_system::Config for Test {
 impl pallet_tables::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
+    type EventCapture = ();
 }
 
 impl pallet_permissions::Config for Test {

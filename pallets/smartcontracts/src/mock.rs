@@ -195,6 +195,7 @@ impl pallet_permissions::Config for Test {
 impl pallet_tables::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
+    type EventCapture = ();
 }
 
 impl pallet_commitments::Config for Test {
@@ -207,6 +208,7 @@ impl pallet_commitments::Config for Test {
 impl pallet_indexing::pallet::Config<Api> for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Test>;
+    type EventCapture = ();
 }
 
 impl pallet_system_tables::Config for Test {

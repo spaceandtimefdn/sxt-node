@@ -21,9 +21,6 @@ polkadot-sdk = { workspace = true, features = [
 ]}
 
 sxt-core.workspace = true
-pallet-tables.workspace = true
-pallet-indexing.workspace = true
-native-api.workspace = true
 log = { workspace = true, default-features = false }
 prost = { version = "0.13", default-features = false, features = ["prost-derive"] }
 
@@ -53,9 +50,6 @@ std = [
     "codec/std",
     "scale-info/std",
     "sxt-core/std",
-    "pallet-tables/std",
-    "pallet-indexing/std",
-    "native-api/std",
     "log/std",
     "prost/std",
 ]

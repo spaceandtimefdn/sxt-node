@@ -5,28 +5,38 @@
 //!
 //! ## Architecture
 //!
-//! **Producer** (`on_finalize`, runs during block execution including sync):
-//!   Reads `polkadot_sdk::frame_system::Events`, extracts relevant variants, writes a
-//!   SCALE-encoded `BlockIndex` to the offchain DB keyed by block number.
+//! **Producer** (extrinsic-time, via the [`EventCapture`] trait):
+//!   `pallet-tables` and `pallet-indexing` call
+//!   `T::EventCapture::capture_events(...)` immediately after depositing
+//!   their schema/quorum events. The pallet writes the per-extrinsic
+//!   payload to the offchain DB at `key_for_event(block, ext_idx)` and
+//!   overwrites a per-block "high-water-mark" key at
+//!   `key_for_high_water(block)` carrying the largest `ext_idx` that
+//!   captured anything in this block. No on-chain state is needed —
+//!   `extrinsic_index` is already available to the runtime, and
+//!   absence of the high-water key means the block had no captures.
 //!
 //! **Consumer** (`offchain_worker`, fires at chain tip only):
-//!   Walks the offchain DB from `cursor+1` to `current_block`, forwards each
-//!   entry via HTTP+protobuf, checkpoints on the server, deletes consumed
-//!   entries, advances cursor.
+//!   Asks the indexer server for its last checkpoint sequence number,
+//!   walks blocks `cursor+1..=current` (capped at
+//!   [`MAX_BLOCKS_PER_INVOCATION`]). For each block, reads the
+//!   high-water-mark; if absent, the block had zero captures and is
+//!   skipped. Otherwise probes `key_for_event(block, 0..=hwm)`,
+//!   forwards each present payload via HTTP+protobuf, checkpoints on
+//!   the server, and deletes consumed entries from the offchain DB.
 //!
-//! ## Why two hooks?
+//! ## Why extrinsic-time capture, not `on_finalize`?
 //!
-//! `on_finalize` can read events (they exist during block execution) but
-//! cannot do HTTP. `offchain_worker` can do HTTP but cannot read past events
-//! (cleared at next block). The offchain DB bridges them.
+//! Any synchronous runtime work has to declare its weight up front, and
+//! `Hooks::on_finalize` declares its weight via the value `on_initialize`
+//! returns at the *start* of the block. We have no way to know at
+//! `on_initialize` how many table updates or quorum events the block
+//! will produce, so we can't bound `on_finalize`'s cost in advance.
+//! Capturing at the deposit-event call site instead lets the cost ride
+//! on the calling extrinsic's already-benchmarked weight: every byte of
+//! work is owned by an extrinsic that the chain has agreed to schedule.
 //!
-//! ## No new host functions
-//!
-//! Raw DDL bytes (for schemas) and postcard-encoded `OnChainTable` bytes
-//! (for row data — what `pallet_indexing::QuorumReached.data` carries,
-//! after the chain has converted the indexer's Arrow IPC submission to
-//! an augmented `OnChainTable` and postcard-serialized it in
-//! `finalize_quorum`) are shipped as-is. The HTTP server decodes both.
+//! [`EventCapture`]: sxt_core::prover_db_indexer::EventCapture
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -39,9 +49,7 @@ mod mock;
 mod tests;
 
 mod http_client;
-mod offchain_index;
-
-pub mod native_pallet;
+mod offchain_consumer;
 
 /// Generated protobuf types for the indexer HTTP adapter wire format.
 #[allow(missing_docs, clippy::missing_docs_in_private_items)]
@@ -74,31 +82,30 @@ pub mod pallet {
     use alloc::string::String;
     use alloc::vec::Vec;
 
+    use codec::Encode;
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_system::pallet_prelude::*;
+    use sxt_core::prover_db_indexer::{
+        key_for_event,
+        key_for_high_water,
+        BlockEvent,
+        EventCapture,
+    };
     use sxt_core::tables::TableIdentifier;
 
-    use crate::offchain_index::{BlockEvent, BlockIndex, CreateEntry, DataEntry};
-
     #[pallet::pallet]
-    pub struct Pallet<T, I = ()>(_);
+    pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config<I: 'static = ()>:
-        polkadot_sdk::frame_system::Config + pallet_tables::Config + pallet_indexing::Config<I>
-    {
-        /// The runtime's overarching event type. Bounds let us downcast
-        /// it back to the per-pallet typed events without re-encoding,
-        /// using `TryInto` impls that `construct_runtime!` generates.
-        type RuntimeEvent: From<Event<Self, I>>
-            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>
-            + TryInto<pallet_tables::Event<Self>>
-            + TryInto<pallet_indexing::Event<Self, I>>;
+    pub trait Config: polkadot_sdk::frame_system::Config {
+        /// The runtime's overarching event type.
+        type RuntimeEvent: From<Event<Self>>
+            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config<I>, I: 'static = ()> {
+    pub enum Event<T: Config> {
         /// The offchain indexer successfully forwarded a block.
         BlockForwarded {
             /// Block number that was successfully forwarded.
@@ -112,29 +119,7 @@ pub mod pallet {
     }
 
     #[pallet::hooks]
-    impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I> {
-        // ─── PRODUCER ───────────────────────────────────────────────────
-        // Runs during block execution (including sync). Captures events
-        // and persists them to the offchain DB for the OCW to consume.
-        fn on_finalize(n: BlockNumberFor<T>) {
-            let block_number: u64 = n.try_into().unwrap_or(0);
-            let index = Self::extract_block_index();
-
-            if index.is_empty() {
-                return;
-            }
-
-            log::debug!(
-                target: "prover_db_indexer",
-                "on_finalize({}): writing {} events to offchain DB",
-                block_number,
-                index.events.len(),
-            );
-
-            crate::offchain_index::write(block_number, &index);
-        }
-
-        // ─── CONSUMER ───────────────────────────────────────────────────
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         // Fires at chain tip only (not during sync). Drains the offchain
         // DB queue, forwards to the HTTP server, deletes consumed entries.
         fn offchain_worker(_block_number: BlockNumberFor<T>) {
@@ -148,77 +133,35 @@ pub mod pallet {
         }
     }
 
-    impl<T: Config<I>, I: 'static> Pallet<T, I> {
-        // ═══════════════════════════════════════════════════════════════
-        //  PRODUCER: extract events → BlockIndex (called from on_finalize)
-        // ═══════════════════════════════════════════════════════════════
-
-        fn extract_block_index() -> BlockIndex {
-            // Each frame-system event may produce zero or more `BlockEvent`s
-            // (a `pallet_tables::SchemaUpdated` carries N updates, an
-            // indexing quorum yields one, anything else yields nothing).
-            // The extractors are pure: they take an event and return what
-            // would be appended, leaving accumulation to the caller.
-            let events = polkadot_sdk::frame_system::Pallet::<T>::read_events_no_consensus()
-                .flat_map(|record| {
-                    let from_tables = Self::try_extract_table_event(record.event.clone());
-                    let from_indexing = Self::try_extract_indexing_event(record.event);
-                    from_tables.into_iter().chain(from_indexing)
-                })
-                .collect();
-            BlockIndex { events }
-        }
-
-        fn try_extract_table_event(
-            event: <T as polkadot_sdk::frame_system::Config>::RuntimeEvent,
-        ) -> Vec<BlockEvent> {
-            // `event` is the frame-system RuntimeEvent. Bounce through our
-            // Config's RuntimeEvent (same type at runtime, bridged by `IsType`)
-            // so the `TryInto<pallet_tables::Event>` bound applies.
-            let our_event = <<T as Config<I>>::RuntimeEvent as From<_>>::from(event);
-            let Ok(table_event): Result<pallet_tables::Event<T>, _> = our_event.try_into() else {
-                return Vec::new();
-            };
-            match table_event {
-                pallet_tables::Event::SchemaUpdated(_who, update_list) => update_list
-                    .iter()
-                    .map(|update| {
-                        BlockEvent::Create(CreateEntry {
-                            ident: update.ident.clone(),
-                            ddl: update.create_statement.to_vec(),
-                        })
-                    })
-                    .collect(),
-                pallet_tables::Event::TablesCreatedWithCommitments { table_list, .. } => table_list
-                    .iter()
-                    .map(|req| {
-                        BlockEvent::Create(CreateEntry {
-                            ident: req.table_name.clone(),
-                            ddl: req.ddl.to_vec(),
-                        })
-                    })
-                    .collect(),
-                pallet_tables::Event::TableDropped(_who, _table_type, ident, _source) => {
-                    alloc::vec![BlockEvent::Drop(ident)]
-                }
-                _ => Vec::new(),
+    impl<T: Config> EventCapture for Pallet<T> {
+        fn capture_events(events: Vec<BlockEvent>) {
+            if events.is_empty() {
+                return;
             }
-        }
 
-        fn try_extract_indexing_event(
-            event: <T as polkadot_sdk::frame_system::Config>::RuntimeEvent,
-        ) -> Option<BlockEvent> {
-            let our_event = <<T as Config<I>>::RuntimeEvent as From<_>>::from(event);
-            let indexing_event: pallet_indexing::Event<T, I> = our_event.try_into().ok()?;
-            let pallet_indexing::Event::QuorumReached { quorum, data } = indexing_event else {
-                return None;
-            };
-            Some(BlockEvent::Data(DataEntry {
-                table: quorum.table,
-                data: data.to_vec(),
-            }))
-        }
+            // `block_number()` always fits in u64 in our runtime (BlockNumber
+            // is u32); `extrinsic_index()` is always `Some` while we're inside
+            // an extrinsic, which is the only path that reaches `capture_events`.
+            // The `unwrap_or(0)` fallbacks are defensive, not load-bearing.
+            let block: u64 = polkadot_sdk::frame_system::Pallet::<T>::block_number()
+                .try_into()
+                .unwrap_or(0);
+            let ext_idx = polkadot_sdk::frame_system::Pallet::<T>::extrinsic_index().unwrap_or(0);
 
+            // Per-extrinsic event payload.
+            polkadot_sdk::sp_io::offchain_index::set(
+                &key_for_event(block, ext_idx),
+                &events.encode(),
+            );
+
+            // Per-block high-water-mark. Always overwrites; the OCW only
+            // cares about the final value, which is the largest ext_idx
+            // that fired this block.
+            polkadot_sdk::sp_io::offchain_index::set(&key_for_high_water(block), &ext_idx.encode());
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
         // ═══════════════════════════════════════════════════════════════
         //  CONSUMER: drain offchain DB → HTTP → delete (called from OCW)
         // ═══════════════════════════════════════════════════════════════
@@ -280,45 +223,51 @@ pub mod pallet {
             );
 
             for block_num in start..=end {
-                // Read from offchain DB.
-                let entry = crate::offchain_index::read(block_num);
-
-                match &entry {
-                    Some(idx) if !idx.is_empty() => {
-                        log::info!(
-                            target: "prover_db_indexer",
-                            "block {} — {} events to forward",
-                            block_num,
-                            idx.events.len(),
-                        );
-                        Self::forward_block(url, block_num, idx)?;
-                    }
-                    _ => {}
-                }
+                Self::forward_block(url, block_num)?;
 
                 // Checkpoint on the server (always, even for empty blocks).
                 crate::http_client::checkpoint(url, block_num).map_err(|_| "checkpoint failed")?;
-
-                // Delete consumed entry from offchain DB.
-                if entry.is_some() {
-                    crate::offchain_index::clear(block_num);
-                }
             }
 
             Ok(())
         }
 
-        /// Forward a single block's events in deposit order.
-        fn forward_block(
+        /// Forward a single block's events in extrinsic-index order, then
+        /// clear the offchain entries we consumed. If the block had no
+        /// captures (no high-water-mark key), this is a no-op.
+        fn forward_block(url: &str, block_num: u64) -> Result<(), &'static str> {
+            let Some(hwm) = crate::offchain_consumer::read_high_water(block_num) else {
+                return Ok(());
+            };
+
+            log::info!(
+                target: "prover_db_indexer",
+                "block {} — high-water-mark {}; probing for captured events",
+                block_num,
+                hwm,
+            );
+
+            for ext_idx in 0..=hwm {
+                let Some(events) = crate::offchain_consumer::read_events(block_num, ext_idx) else {
+                    continue;
+                };
+                Self::forward_events(url, block_num, &events)?;
+                crate::offchain_consumer::clear_events(block_num, ext_idx);
+            }
+
+            crate::offchain_consumer::clear_high_water(block_num);
+            Ok(())
+        }
+
+        /// POST one extrinsic's captured events to the indexer in deposit order.
+        fn forward_events(
             url: &str,
             block_num: u64,
-            index: &BlockIndex,
+            events: &[BlockEvent],
         ) -> Result<(), &'static str> {
-            use crate::offchain_index::BlockEvent;
-
             let seq = block_num;
 
-            for event in &index.events {
+            for event in events {
                 match event {
                     BlockEvent::Drop(ident) => {
                         let name = Self::fq_name(ident);

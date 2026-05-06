@@ -1,8 +1,11 @@
-//! Integration tests for the block forwarder pallet.
+//! Integration tests for the prover-db-indexer consumer (OCW).
 //!
-//! The OCW always asks the server for its last checkpoint (no local cursor).
-//! Tests pre-populate the offchain DB as if on_finalize had written entries,
-//! then verify the OCW reads, forwards in order, and deletes consumed entries.
+//! Tests pre-populate the offchain DB as if `EventCapture::capture_events`
+//! had run during block execution — that means writing the per-extrinsic
+//! event payload at `key_for_event(block, ext_idx)` and the per-block
+//! high-water-mark at `key_for_high_water(block)` — then drive
+//! `offchain_worker` and verify the OCW reads, forwards in order, and
+//! deletes consumed entries.
 
 use codec::Encode;
 use polkadot_sdk::frame_support::traits::Hooks;
@@ -10,10 +13,17 @@ use polkadot_sdk::sp_core::offchain::testing::{PendingRequest, TestOffchainExt};
 use polkadot_sdk::sp_core::offchain::{OffchainDbExt, OffchainStorage, OffchainWorkerExt};
 use polkadot_sdk::sp_runtime::BoundedVec;
 use prost::Message;
+use sxt_core::prover_db_indexer::{
+    key_for_event,
+    key_for_high_water,
+    BlockEvent,
+    CreateEntry,
+    DataEntry,
+};
 use sxt_core::tables::TableIdentifier;
 
 use crate::mock::*;
-use crate::{offchain_index, proto, PROVER_DB_URL_KEY};
+use crate::{proto, PROVER_DB_URL_KEY};
 
 type StateArc =
     std::sync::Arc<parking_lot::RwLock<polkadot_sdk::sp_core::offchain::testing::OffchainState>>;
@@ -71,6 +81,16 @@ fn setup_with_url() -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
     (ext, state)
 }
 
+/// Mirror what the producer would write for a block: one event payload
+/// at `(block, ext_idx)` and the matching high-water-mark.
+fn seed_block_events(state: &StateArc, block: u64, ext_idx: u32, events: Vec<BlockEvent>) {
+    let mut s = state.write();
+    s.persistent_storage
+        .set(b"", &key_for_event(block, ext_idx), &events.encode());
+    s.persistent_storage
+        .set(b"", &key_for_high_water(block), &Encode::encode(&ext_idx));
+}
+
 // ─── Tests ──────────────────────────────────────────────────────────────
 
 #[test]
@@ -90,29 +110,23 @@ fn ocw_forwards_and_deletes_offchain_entry() {
     let (mut ext, state) = setup_with_url();
 
     let ddl = b"CREATE TABLE PUBLIC.USERS (ID BIGINT NOT NULL)";
-    let index = offchain_index::BlockIndex {
-        events: vec![offchain_index::BlockEvent::Create(
-            offchain_index::CreateEntry {
-                ident: table_id("PUBLIC", "USERS"),
-                ddl: ddl.to_vec(),
-            },
-        )],
-    };
-    let key = offchain_index::key_for_block(1);
-    state
-        .write()
-        .persistent_storage
-        .set(b"", &key, &index.encode());
+    seed_block_events(
+        &state,
+        1,
+        0,
+        vec![BlockEvent::Create(CreateEntry {
+            ident: table_id("PUBLIC", "USERS"),
+            ddl: ddl.to_vec(),
+        })],
+    );
 
     {
         let mut s = state.write();
-        // 1. get_last_checkpoint → server at block 0
         s.expect_request(expected_request(
             "/v1/get_last_checkpoint",
             vec![],
             no_checkpoint_response(),
         ));
-        // 2. create_table for block 1
         s.expect_request(expected_request(
             "/v1/create_table",
             proto::CreateTableRequest {
@@ -124,7 +138,6 @@ fn ocw_forwards_and_deletes_offchain_entry() {
             .encode_to_vec(),
             vec![],
         ));
-        // 3. checkpoint(1)
         s.expect_request(expected_request(
             "/v1/checkpoint",
             proto::CheckpointRequest { sequence_number: 1 }.encode_to_vec(),
@@ -137,11 +150,14 @@ fn ocw_forwards_and_deletes_offchain_entry() {
         ProverDbIndexer::offchain_worker(1);
     });
 
-    // Verify offchain entry was deleted.
     let s = state.read();
     assert!(
-        s.persistent_storage.get(&key).is_none(),
-        "consumed entry should be deleted"
+        s.persistent_storage.get(&key_for_event(1, 0)).is_none(),
+        "consumed event payload should be deleted"
+    );
+    assert!(
+        s.persistent_storage.get(&key_for_high_water(1)).is_none(),
+        "high-water-mark should be deleted"
     );
 }
 
@@ -151,13 +167,11 @@ fn ocw_checkpoints_empty_blocks() {
 
     {
         let mut s = state.write();
-        // Server at block 0.
         s.expect_request(expected_request(
             "/v1/get_last_checkpoint",
             vec![],
             no_checkpoint_response(),
         ));
-        // Empty block 1 → just checkpoint.
         s.expect_request(expected_request(
             "/v1/checkpoint",
             proto::CheckpointRequest { sequence_number: 1 }.encode_to_vec(),
@@ -175,14 +189,7 @@ fn ocw_checkpoints_empty_blocks() {
 fn ocw_resumes_from_server_checkpoint() {
     let (mut ext, state) = setup_with_url();
 
-    // Server already at block 5. Block 6 has a drop event.
-    let index = offchain_index::BlockIndex {
-        events: vec![offchain_index::BlockEvent::Drop(table_id("NS", "OLD"))],
-    };
-    state
-        .write()
-        .persistent_storage
-        .set(b"", &offchain_index::key_for_block(6), &index.encode());
+    seed_block_events(&state, 6, 0, vec![BlockEvent::Drop(table_id("NS", "OLD"))]);
 
     {
         let mut s = state.write();
@@ -217,38 +224,24 @@ fn ocw_resumes_from_server_checkpoint() {
 fn ocw_processes_multiple_blocks_in_order() {
     let (mut ext, state) = setup_with_url();
 
-    // Block 1: drop T1. Block 2: create T2. Block 3: empty.
-    state.write().persistent_storage.set(
-        b"",
-        &offchain_index::key_for_block(1),
-        &offchain_index::BlockIndex {
-            events: vec![offchain_index::BlockEvent::Drop(table_id("NS", "T1"))],
-        }
-        .encode(),
-    );
-    state.write().persistent_storage.set(
-        b"",
-        &offchain_index::key_for_block(2),
-        &offchain_index::BlockIndex {
-            events: vec![offchain_index::BlockEvent::Create(
-                offchain_index::CreateEntry {
-                    ident: table_id("NS", "T2"),
-                    ddl: b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec(),
-                },
-            )],
-        }
-        .encode(),
+    seed_block_events(&state, 1, 0, vec![BlockEvent::Drop(table_id("NS", "T1"))]);
+    seed_block_events(
+        &state,
+        2,
+        0,
+        vec![BlockEvent::Create(CreateEntry {
+            ident: table_id("NS", "T2"),
+            ddl: b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec(),
+        })],
     );
 
     {
         let mut s = state.write();
-        // get_last_checkpoint → server at 0
         s.expect_request(expected_request(
             "/v1/get_last_checkpoint",
             vec![],
             no_checkpoint_response(),
         ));
-        // Block 1: drop + checkpoint
         s.expect_request(expected_request(
             "/v1/drop_table",
             proto::DropTableRequest {
@@ -263,7 +256,6 @@ fn ocw_processes_multiple_blocks_in_order() {
             proto::CheckpointRequest { sequence_number: 1 }.encode_to_vec(),
             vec![],
         ));
-        // Block 2: create + checkpoint
         s.expect_request(expected_request(
             "/v1/create_table",
             proto::CreateTableRequest {
@@ -280,7 +272,6 @@ fn ocw_processes_multiple_blocks_in_order() {
             proto::CheckpointRequest { sequence_number: 2 }.encode_to_vec(),
             vec![],
         ));
-        // Block 3: empty, just checkpoint
         s.expect_request(expected_request(
             "/v1/checkpoint",
             proto::CheckpointRequest { sequence_number: 3 }.encode_to_vec(),
@@ -293,14 +284,81 @@ fn ocw_processes_multiple_blocks_in_order() {
         ProverDbIndexer::offchain_worker(3);
     });
 
-    // Both consumed entries should be deleted.
     let s = state.read();
-    assert!(s
-        .persistent_storage
-        .get(&offchain_index::key_for_block(1))
-        .is_none());
-    assert!(s
-        .persistent_storage
-        .get(&offchain_index::key_for_block(2))
-        .is_none());
+    assert!(s.persistent_storage.get(&key_for_event(1, 0)).is_none());
+    assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
+    assert!(s.persistent_storage.get(&key_for_event(2, 0)).is_none());
+    assert!(s.persistent_storage.get(&key_for_high_water(2)).is_none());
+}
+
+#[test]
+fn ocw_walks_multiple_extrinsics_in_one_block() {
+    let (mut ext, state) = setup_with_url();
+
+    // Two extrinsics in block 1 fire captures: ext 1 and ext 3. Ext 2
+    // didn't (a sparse block). hwm should be 3; the OCW probes 0..=3
+    // and finds payloads at 1 and 3.
+    let mut s = state.write();
+    s.persistent_storage.set(
+        b"",
+        &key_for_event(1, 1),
+        &vec![BlockEvent::Drop(table_id("NS", "T1"))].encode(),
+    );
+    s.persistent_storage.set(
+        b"",
+        &key_for_event(1, 3),
+        &vec![BlockEvent::Data(DataEntry {
+            table: table_id("NS", "T2"),
+            data: b"row-data".to_vec(),
+        })]
+        .encode(),
+    );
+    s.persistent_storage
+        .set(b"", &key_for_high_water(1), &Encode::encode(&3u32));
+    drop(s);
+
+    {
+        let mut s = state.write();
+        s.expect_request(expected_request(
+            "/v1/get_last_checkpoint",
+            vec![],
+            no_checkpoint_response(),
+        ));
+        s.expect_request(expected_request(
+            "/v1/drop_table",
+            proto::DropTableRequest {
+                sequence_number: 1,
+                table_name: "NS.T1".into(),
+            }
+            .encode_to_vec(),
+            vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/put_batches",
+            proto::PutBatchesRequest {
+                sequence_number: 1,
+                batches: vec![proto::TableBatch {
+                    table_name: "NS.T2".into(),
+                    record_batch: b"row-data".to_vec(),
+                }],
+            }
+            .encode_to_vec(),
+            vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/checkpoint",
+            proto::CheckpointRequest { sequence_number: 1 }.encode_to_vec(),
+            vec![],
+        ));
+    }
+
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        ProverDbIndexer::offchain_worker(1);
+    });
+
+    let s = state.read();
+    assert!(s.persistent_storage.get(&key_for_event(1, 1)).is_none());
+    assert!(s.persistent_storage.get(&key_for_event(1, 3)).is_none());
+    assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
 }

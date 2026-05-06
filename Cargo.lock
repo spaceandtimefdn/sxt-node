@@ -11716,7 +11716,6 @@ name = "pallet-prover-db-indexer"
 version = "0.1.0"
 dependencies = [
  "log",
- "native-api",
  "pallet-commitments",
  "pallet-indexing",
  "pallet-permissions",
