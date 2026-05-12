@@ -7,14 +7,15 @@
 //!
 //! **Producer** (extrinsic-time, via the [`EventCapture`] trait):
 //!   `pallet-tables` and `pallet-indexing` call
-//!   `T::EventCapture::capture_events(...)` immediately after depositing
-//!   their schema/quorum events. The pallet writes the per-extrinsic
-//!   payload to the offchain DB at `key_for_event(block, ext_idx)` and
-//!   overwrites a per-block "high-water-mark" key at
-//!   `key_for_high_water(block)` carrying the largest `ext_idx` that
-//!   captured anything in this block. No on-chain state is needed —
-//!   `extrinsic_index` is already available to the runtime, and
-//!   absence of the high-water key means the block had no captures.
+//!   `T::EventCapture::capture_events(...)` at the same call site that
+//!   deposits their schema/quorum events. The pallet writes the
+//!   per-extrinsic payload to the offchain DB at
+//!   `key_for_event(block, ext_idx)` and overwrites a per-block
+//!   "high-water-mark" key at `key_for_high_water(block)` carrying the
+//!   largest `ext_idx` that captured anything in this block. No on-chain
+//!   state is needed — `extrinsic_index` is already available to the
+//!   runtime, and absence of the high-water key means the block had no
+//!   captures.
 //!
 //! **Consumer** (`offchain_worker`, fires at chain tip only):
 //!   For each block in `cursor+1..=current`, reads the high-water-mark.
@@ -91,7 +92,7 @@ pub mod pallet {
     }
 
     impl<T: Config> EventCapture for Pallet<T> {
-        fn capture_events(events: Vec<BlockEvent>) {
+        fn capture_events(events: Vec<BlockEvent<'_>>) {
             if events.is_empty() {
                 return;
             }

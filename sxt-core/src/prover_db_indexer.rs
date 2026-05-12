@@ -4,6 +4,7 @@
 
 extern crate alloc;
 
+use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
 use codec::{Decode, Encode};
@@ -19,11 +20,11 @@ use crate::tables::TableIdentifier;
 pub const PROVER_DB_URL_KEY: &[u8] = b"prover_db_indexer/prover_db_url";
 
 /// Offchain DB key prefix for per-extrinsic event payloads.
-const EVENT_KEY_PREFIX: &[u8] = b"prover_db_indexer::event::";
+const EVENT_KEY_PREFIX: &[u8] = b"prover_db_indexer/event/";
 
 /// Offchain DB key prefix for per-block high-water-marks (the largest
 /// extrinsic index in a block that produced events).
-const HIGH_WATER_KEY_PREFIX: &[u8] = b"prover_db_indexer::hwm::";
+const HIGH_WATER_KEY_PREFIX: &[u8] = b"prover_db_indexer/hwm/";
 
 /// Compute the offchain DB key for a block's high-water-mark. The value
 /// at this key is a SCALE-encoded `u32`: the largest `extrinsic_index`
@@ -31,49 +32,51 @@ const HIGH_WATER_KEY_PREFIX: &[u8] = b"prover_db_indexer::hwm::";
 /// reads it to know how far to probe `key_for_event(block, 0..=hwm)`.
 /// Absence of this key means the block had zero captured events.
 pub fn key_for_high_water(block: u64) -> Vec<u8> {
-    let mut k = HIGH_WATER_KEY_PREFIX.to_vec();
-    k.extend_from_slice(&block.to_be_bytes());
-    k
+    (HIGH_WATER_KEY_PREFIX, block).encode()
 }
 
 /// Compute the offchain DB key for the events emitted by a single
 /// extrinsic in a given block. The value at this key is a SCALE-encoded
 /// `Vec<BlockEvent>` (one extrinsic may emit several `BlockEvent`s).
 pub fn key_for_event(block: u64, extrinsic_index: u32) -> Vec<u8> {
-    let mut k = EVENT_KEY_PREFIX.to_vec();
-    k.extend_from_slice(&block.to_be_bytes());
-    k.extend_from_slice(&extrinsic_index.to_be_bytes());
-    k
+    (EVENT_KEY_PREFIX, block, extrinsic_index).encode()
 }
 
 /// A table-creation event.
+///
+/// Fields are `Cow` so producer call sites can pass borrowed references
+/// (the captured event is encoded immediately and never outlives the
+/// caller's stack frame) while the OCW consumer decodes into `Cow::Owned`
+/// transparently — SCALE encodes `Cow<'_, T>` identically to `T`.
 #[derive(Encode, Decode, Debug, Clone)]
-pub struct CreateEntry {
+pub struct CreateEntry<'a> {
     /// Identifier of the table being created or updated.
-    pub ident: TableIdentifier,
+    pub ident: Cow<'a, TableIdentifier>,
     /// DDL bytes describing the schema; forwarded to the indexer as-is.
-    pub ddl: Vec<u8>,
+    pub ddl: Cow<'a, [u8]>,
 }
 
-/// A data-quorum event.
+/// A row-insert event triggered by a data quorum. See [`CreateEntry`]
+/// for the `Cow` rationale.
 #[derive(Encode, Decode, Debug, Clone)]
-pub struct DataEntry {
-    /// Identifier of the table the data belongs to.
-    pub table: TableIdentifier,
+pub struct InsertEntry<'a> {
+    /// Identifier of the table the rows belong to.
+    pub table: Cow<'a, TableIdentifier>,
     /// Postcard-encoded `OnChainTable` bytes; forwarded to the indexer as-is.
-    pub data: Vec<u8>,
+    pub data: Cow<'a, [u8]>,
 }
 
 /// A single event captured during block execution. Stored in the order
 /// events were deposited so the OCW replays them in the correct sequence.
+/// Variant names mirror the corresponding indexer DB operations.
 #[derive(Encode, Decode, Debug, Clone)]
-pub enum BlockEvent {
+pub enum BlockEvent<'a> {
     /// Table created or schema updated.
-    Create(CreateEntry),
+    Create(CreateEntry<'a>),
     /// Table dropped.
-    Drop(TableIdentifier),
-    /// Data quorum reached (finalized row data).
-    Data(DataEntry),
+    Drop(Cow<'a, TableIdentifier>),
+    /// Rows inserted (data quorum reached).
+    Insert(InsertEntry<'a>),
 }
 
 /// Hook through which `pallet-tables` and `pallet-indexing` hand off
@@ -88,9 +91,9 @@ pub trait EventCapture {
     /// Capture the events emitted by the currently-executing extrinsic.
     /// Implementations must be cheap enough to count in the caller's
     /// declared weight.
-    fn capture_events(events: Vec<BlockEvent>);
+    fn capture_events(events: Vec<BlockEvent<'_>>);
 }
 
 impl EventCapture for () {
-    fn capture_events(_events: Vec<BlockEvent>) {}
+    fn capture_events(_events: Vec<BlockEvent<'_>>) {}
 }

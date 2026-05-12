@@ -670,7 +670,7 @@ pub mod pallet {
             Self::drop_single_table(table_type.clone(), ident.clone())?;
 
             <T as Config>::EventCapture::capture_events(alloc::vec![
-                sxt_core::prover_db_indexer::BlockEvent::Drop(ident.clone()),
+                sxt_core::prover_db_indexer::BlockEvent::Drop(alloc::borrow::Cow::Borrowed(&ident)),
             ]);
 
             Self::deposit_event(Event::<T>::TableDropped(owner, table_type, ident, source));
@@ -1369,16 +1369,16 @@ pub mod pallet {
                 .map(|update| {
                     sxt_core::prover_db_indexer::BlockEvent::Create(
                         sxt_core::prover_db_indexer::CreateEntry {
-                            ident: update.ident.clone(),
-                            ddl: update.create_statement.to_vec(),
+                            ident: alloc::borrow::Cow::Borrowed(&update.ident),
+                            ddl: alloc::borrow::Cow::Borrowed(update.create_statement.as_slice()),
                         },
                     )
                 })
                 .collect();
 
-            Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
-
             <T as Config>::EventCapture::capture_events(captured);
+
+            Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
 
             Ok(())
         }
