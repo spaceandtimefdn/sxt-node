@@ -7,6 +7,8 @@
 //! `offchain_worker` and verify the OCW reads, forwards in order, and
 //! deletes consumed entries.
 
+use std::borrow::Cow;
+
 use codec::Encode;
 use polkadot_sdk::frame_support::traits::Hooks;
 use polkadot_sdk::sp_core::offchain::testing::{PendingRequest, TestOffchainExt};
@@ -18,7 +20,7 @@ use sxt_core::prover_db_indexer::{
     key_for_high_water,
     BlockEvent,
     CreateEntry,
-    DataEntry,
+    InsertEntry,
 };
 use sxt_core::tables::TableIdentifier;
 
@@ -83,7 +85,7 @@ fn setup_with_url() -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
 
 /// Mirror what the producer would write for a block: one event payload
 /// at `(block, ext_idx)` and the matching high-water-mark.
-fn seed_block_events(state: &StateArc, block: u64, ext_idx: u32, events: Vec<BlockEvent>) {
+fn seed_block_events(state: &StateArc, block: u64, ext_idx: u32, events: Vec<BlockEvent<'static>>) {
     let mut s = state.write();
     s.persistent_storage
         .set(b"", &key_for_event(block, ext_idx), &events.encode());
@@ -115,8 +117,8 @@ fn ocw_forwards_and_deletes_offchain_entry() {
         1,
         0,
         vec![BlockEvent::Create(CreateEntry {
-            ident: table_id("PUBLIC", "USERS"),
-            ddl: ddl.to_vec(),
+            ident: Cow::Owned(table_id("PUBLIC", "USERS")),
+            ddl: ddl.to_vec().into(),
         })],
     );
 
@@ -189,7 +191,12 @@ fn ocw_checkpoints_empty_blocks() {
 fn ocw_resumes_from_server_checkpoint() {
     let (mut ext, state) = setup_with_url();
 
-    seed_block_events(&state, 6, 0, vec![BlockEvent::Drop(table_id("NS", "OLD"))]);
+    seed_block_events(
+        &state,
+        6,
+        0,
+        vec![BlockEvent::Drop(Cow::Owned(table_id("NS", "OLD")))],
+    );
 
     {
         let mut s = state.write();
@@ -224,14 +231,19 @@ fn ocw_resumes_from_server_checkpoint() {
 fn ocw_processes_multiple_blocks_in_order() {
     let (mut ext, state) = setup_with_url();
 
-    seed_block_events(&state, 1, 0, vec![BlockEvent::Drop(table_id("NS", "T1"))]);
+    seed_block_events(
+        &state,
+        1,
+        0,
+        vec![BlockEvent::Drop(Cow::Owned(table_id("NS", "T1")))],
+    );
     seed_block_events(
         &state,
         2,
         0,
         vec![BlockEvent::Create(CreateEntry {
-            ident: table_id("NS", "T2"),
-            ddl: b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec(),
+            ident: Cow::Owned(table_id("NS", "T2")),
+            ddl: b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec().into(),
         })],
     );
 
@@ -302,14 +314,14 @@ fn ocw_walks_multiple_extrinsics_in_one_block() {
     s.persistent_storage.set(
         b"",
         &key_for_event(1, 1),
-        &vec![BlockEvent::Drop(table_id("NS", "T1"))].encode(),
+        &vec![BlockEvent::Drop(Cow::Owned(table_id("NS", "T1")))].encode(),
     );
     s.persistent_storage.set(
         b"",
         &key_for_event(1, 3),
-        &vec![BlockEvent::Data(DataEntry {
-            table: table_id("NS", "T2"),
-            data: b"row-data".to_vec(),
+        &vec![BlockEvent::Insert(InsertEntry {
+            table: Cow::Owned(table_id("NS", "T2")),
+            data: b"row-data".to_vec().into(),
         })]
         .encode(),
     );

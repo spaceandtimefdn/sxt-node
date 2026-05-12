@@ -264,7 +264,7 @@ pub mod pallet {
         fn forward_events(
             url: &str,
             block_num: u64,
-            events: &[BlockEvent],
+            events: &[BlockEvent<'_>],
         ) -> Result<(), &'static str> {
             let seq = block_num;
 
@@ -281,19 +281,19 @@ pub mod pallet {
                             url,
                             seq,
                             name,
-                            entry.ddl.clone(),
+                            entry.ddl.to_vec(),
                             crate::DEDUP_KEY_COLUMN.into(),
                         )
                         .map_err(|_| "create_table failed")?;
                     }
-                    BlockEvent::Data(entry) => {
+                    BlockEvent::Insert(entry) => {
                         let name = Self::fq_name(&entry.table);
                         crate::http_client::put_batches(
                             url,
                             seq,
                             alloc::vec![crate::proto::TableBatch {
                                 table_name: name,
-                                record_batch: entry.data.clone(),
+                                record_batch: entry.data.to_vec(),
                             }],
                         )
                         .map_err(|_| "put_batches failed")?;

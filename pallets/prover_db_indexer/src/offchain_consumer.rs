@@ -22,12 +22,14 @@ pub fn read_high_water(block: u64) -> Option<u32> {
 
 /// Read the events emitted by a single extrinsic in a given block.
 /// `None` means that extrinsic did not call `EventCapture::capture_events`.
-pub fn read_events(block: u64, extrinsic_index: u32) -> Option<Vec<BlockEvent>> {
+/// The returned `BlockEvent<'static>` decodes into `Cow::Owned` for every
+/// field, so the lifetime is purely a type-level annotation.
+pub fn read_events(block: u64, extrinsic_index: u32) -> Option<Vec<BlockEvent<'static>>> {
     let raw = polkadot_sdk::sp_io::offchain::local_storage_get(
         StorageKind::PERSISTENT,
         &key_for_event(block, extrinsic_index),
     )?;
-    Vec::<BlockEvent>::decode(&mut &raw[..]).ok()
+    Vec::<BlockEvent<'static>>::decode(&mut &raw[..]).ok()
 }
 
 /// Delete the per-block high-water-mark.
