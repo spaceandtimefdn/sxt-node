@@ -719,10 +719,10 @@ pub mod pallet {
             });
 
             <T as Config<I>>::EventCapture::capture_events(alloc::vec![
-                sxt_core::prover_db_indexer::BlockEvent::Data(
-                    sxt_core::prover_db_indexer::DataEntry {
-                        table: quorum.table.clone(),
-                        data: on_chain_table_bytes.to_vec(),
+                sxt_core::prover_db_indexer::BlockEvent::Insert(
+                    sxt_core::prover_db_indexer::InsertEntry {
+                        table: alloc::borrow::Cow::Borrowed(&quorum.table),
+                        data: alloc::borrow::Cow::Borrowed(on_chain_table_bytes.as_slice()),
                     },
                 ),
             ]);
