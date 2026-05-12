@@ -3,78 +3,85 @@
 //! Uses `polkadot_sdk::sp_io::offchain::http` to POST protobuf-encoded request bodies to
 //! the indexer's HTTP endpoints. Works in both std and wasm (no_std) runtimes.
 
-use alloc::format;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use polkadot_sdk::sp_runtime::offchain::http::Request;
 use polkadot_sdk::sp_runtime::offchain::Duration;
 use prost::Message;
+use snafu::Snafu;
+use url::Url;
 
 use crate::proto;
 
 /// Default HTTP request deadline (30 seconds).
 const HTTP_TIMEOUT_MS: u64 = 30_000;
 
+// Relative path components for the indexer's v1 HTTP API. Kept relative
+// (no leading `/`) so `Url::join` appends them rather than replacing the
+// base URL's path; see `endpoint` for details.
+const PATH_GET_LAST_CHECKPOINT: &str = "v1/get_last_checkpoint";
+const PATH_CREATE_TABLE: &str = "v1/create_table";
+const PATH_DROP_TABLE: &str = "v1/drop_table";
+const PATH_PUT_BATCHES: &str = "v1/put_batches";
+const PATH_CHECKPOINT: &str = "v1/checkpoint";
+
 /// Errors from the HTTP client.
-#[derive(Debug)]
+///
+/// The `Status` variant's display formats up to ~256 bytes of the response
+/// body as UTF-8 lossy so the operator can read whatever the server said
+/// (often a plain-text reason for 4xx/5xx).
+#[derive(Debug, Snafu)]
 #[allow(clippy::enum_variant_names)]
 pub enum Error {
     /// Failed to send the HTTP request.
+    #[snafu(display("failed to send HTTP request"))]
     SendFailed,
     /// HTTP request timed out.
+    #[snafu(display("HTTP request deadline reached"))]
     DeadlineReached,
     /// IO or unknown error during HTTP request.
+    #[snafu(display("HTTP IO error"))]
     IoError,
     /// Server returned a non-200 status code. Carries the response body
-    /// so the caller can surface whatever the server said about the failure
-    /// (often a JSON or plain-text error message for 4xx/5xx).
+    /// so the caller can surface whatever the server said about the failure.
+    #[snafu(display(
+        "server returned status {} ({} body bytes): {}",
+        code,
+        body.len(),
+        core::str::from_utf8(&body[..core::cmp::min(body.len(), 256)]).unwrap_or("<non-utf8>"),
+    ))]
     Status { code: u16, body: Vec<u8> },
     /// Failed to decode the response body.
-    Decode(prost::DecodeError),
+    #[snafu(display("protobuf decode error: {error}"))]
+    Decode {
+        /// Not named `source` because `prost::DecodeError` doesn't implement
+        /// `core::error::Error` in no_std mode, which would break Snafu's
+        /// derived source-chain wiring in the wasm runtime build.
+        error: prost::DecodeError,
+    },
 }
 
 impl From<prost::DecodeError> for Error {
-    fn from(e: prost::DecodeError) -> Self {
-        Error::Decode(e)
+    fn from(error: prost::DecodeError) -> Self {
+        Error::Decode { error }
     }
 }
 
-impl core::fmt::Display for Error {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Error::SendFailed => write!(f, "failed to send HTTP request"),
-            Error::DeadlineReached => write!(f, "HTTP request deadline reached"),
-            Error::IoError => write!(f, "HTTP IO error"),
-            Error::Status { code, body } => {
-                // Show up to ~256 bytes of the body as UTF-8 lossy so the
-                // operator can read whatever the server actually said.
-                let snippet_len = core::cmp::min(body.len(), 256);
-                let snippet = core::str::from_utf8(&body[..snippet_len]).unwrap_or("<non-utf8>");
-                write!(
-                    f,
-                    "server returned status {} ({} body bytes): {}",
-                    code,
-                    body.len(),
-                    snippet,
-                )
-            }
-            Error::Decode(e) => write!(f, "protobuf decode error: {}", e),
-        }
-    }
-}
-
-/// Build a request URL by joining `base_url` and `path`, trimming any
-/// trailing slash on the base so we don't end up POSTing to
-/// `host:port//v1/...` when callers pass a `url::Url` (which normalizes
-/// to include a trailing `/` on the path component).
-fn endpoint(base_url: &str, path: &str) -> String {
-    format!("{}{}", base_url.trim_end_matches('/'), path)
+/// Resolve `path` against `base_url` per RFC 3986. The path constants
+/// below are all relative ("v1/..."), so this always appends them; if an
+/// operator configures a base with a subpath, make sure it ends in `/`
+/// or `Url::join` will replace that last segment.
+fn endpoint(base_url: &Url, path: &str) -> String {
+    base_url
+        .join(path)
+        .expect("constant relative path always joins against a valid base URL")
+        .to_string()
 }
 
 /// Fetch the last checkpoint from the server.
-pub fn get_last_checkpoint(base_url: &str) -> Result<Option<u64>, Error> {
-    let url = endpoint(base_url, "/v1/get_last_checkpoint");
+pub fn get_last_checkpoint(base_url: &Url) -> Result<Option<u64>, Error> {
+    let url = endpoint(base_url, PATH_GET_LAST_CHECKPOINT);
     let body = post(&url, &[])?;
     let resp = proto::GetLastCheckpointResponse::decode(body.as_slice())?;
     Ok(resp.has_checkpoint.then_some(resp.sequence_number))
@@ -82,7 +89,7 @@ pub fn get_last_checkpoint(base_url: &str) -> Result<Option<u64>, Error> {
 
 /// Register a new table. v1 semantics: `arrow_schema` carries raw DDL bytes.
 pub fn create_table(
-    base_url: &str,
+    base_url: &Url,
     sequence_number: u64,
     table_name: String,
     arrow_schema: Vec<u8>,
@@ -94,25 +101,25 @@ pub fn create_table(
         arrow_schema,
         key,
     };
-    let url = endpoint(base_url, "/v1/create_table");
+    let url = endpoint(base_url, PATH_CREATE_TABLE);
     post(&url, &req.encode_to_vec())?;
     Ok(())
 }
 
 /// Soft-delete a table.
-pub fn drop_table(base_url: &str, sequence_number: u64, table_name: String) -> Result<(), Error> {
+pub fn drop_table(base_url: &Url, sequence_number: u64, table_name: String) -> Result<(), Error> {
     let req = proto::DropTableRequest {
         sequence_number,
         table_name,
     };
-    let url = endpoint(base_url, "/v1/drop_table");
+    let url = endpoint(base_url, PATH_DROP_TABLE);
     post(&url, &req.encode_to_vec())?;
     Ok(())
 }
 
 /// Ingest one or more table batches.
 pub fn put_batches(
-    base_url: &str,
+    base_url: &Url,
     sequence_number: u64,
     batches: Vec<proto::TableBatch>,
 ) -> Result<(), Error> {
@@ -120,15 +127,15 @@ pub fn put_batches(
         sequence_number,
         batches,
     };
-    let url = endpoint(base_url, "/v1/put_batches");
+    let url = endpoint(base_url, PATH_PUT_BATCHES);
     post(&url, &req.encode_to_vec())?;
     Ok(())
 }
 
 /// Record a checkpoint for the given sequence number (block number).
-pub fn checkpoint(base_url: &str, sequence_number: u64) -> Result<(), Error> {
+pub fn checkpoint(base_url: &Url, sequence_number: u64) -> Result<(), Error> {
     let req = proto::CheckpointRequest { sequence_number };
-    let url = endpoint(base_url, "/v1/checkpoint");
+    let url = endpoint(base_url, PATH_CHECKPOINT);
     post(&url, &req.encode_to_vec())?;
     Ok(())
 }

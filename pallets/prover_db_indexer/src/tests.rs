@@ -107,6 +107,29 @@ fn ocw_skips_when_not_configured() {
     });
 }
 
+/// If another OCW round is in progress (lock held), this invocation
+/// must do nothing — no HTTP traffic, no state reads beyond the lock
+/// itself. `TestOffchainExt` would panic on an unexpected request, so
+/// the absence of queued expectations is the assertion.
+#[test]
+fn ocw_skips_when_lock_is_held() {
+    let (mut ext, _state) = setup_with_url();
+
+    ext.execute_with(|| {
+        use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
+        use polkadot_sdk::sp_runtime::offchain::Duration;
+
+        let mut lock = StorageLock::<Time>::with_deadline(
+            b"prover_db_indexer/ocw_lock",
+            Duration::from_millis(120_000),
+        );
+        let _guard = lock.try_lock().expect("first acquisition must succeed");
+
+        System::set_block_number(1);
+        ProverDbIndexer::offchain_worker(1);
+    });
+}
+
 #[test]
 fn ocw_forwards_and_deletes_offchain_entry() {
     let (mut ext, state) = setup_with_url();

@@ -11729,7 +11729,9 @@ dependencies = [
  "prost 0.13.5",
  "prost-build 0.13.5",
  "scale-info",
+ "snafu 0.8.5",
  "sxt-core",
+ "url",
 ]
 
 [[package]]

@@ -71,6 +71,15 @@ const DEDUP_KEY_COLUMN: &str = "META_ROW_NUMBER";
 /// At 100 blocks/invocation and 6s block time, catch-up is ~100x realtime.
 const MAX_BLOCKS_PER_INVOCATION: u64 = 100;
 
+/// Offchain DB key for the lock that serializes OCW consumer rounds.
+const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
+
+/// How long a held OCW lock stays valid before being treated as
+/// abandoned (e.g. node crashed mid-round). Sized to comfortably cover
+/// one full consumer round under normal conditions while still letting
+/// the chain recover quickly from a crashed validator.
+const OCW_LOCK_DEADLINE_MS: u64 = 120_000;
+
 #[polkadot_sdk::frame_support::pallet]
 #[allow(
     missing_docs,
@@ -80,7 +89,7 @@ const MAX_BLOCKS_PER_INVOCATION: u64 = 100;
 )]
 pub mod pallet {
     use alloc::format;
-    use alloc::string::String;
+    use alloc::string::{String, ToString};
     use alloc::vec::Vec;
 
     use codec::Encode;
@@ -123,11 +132,11 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         // Fires at chain tip only (not during sync). Drains the offchain
         // DB queue, forwards to the HTTP server, deletes consumed entries.
-        fn offchain_worker(_block_number: BlockNumberFor<T>) {
-            if let Err(e) = Self::run_consumer() {
+        fn offchain_worker(block_number: BlockNumberFor<T>) {
+            if let Err(e) = Self::run_consumer(block_number) {
                 log::error!(
                     target: "prover_db_indexer",
-                    "offchain indexer error: {:?}",
+                    "offchain indexer error: {}",
                     e,
                 );
             }
@@ -167,8 +176,33 @@ pub mod pallet {
         //  CONSUMER: drain offchain DB → HTTP → delete (called from OCW)
         // ═══════════════════════════════════════════════════════════════
 
-        fn run_consumer() -> Result<(), &'static str> {
+        fn run_consumer(block_number: BlockNumberFor<T>) -> Result<(), String> {
             use polkadot_sdk::sp_runtime::offchain::storage::StorageValueRef;
+            use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
+            use polkadot_sdk::sp_runtime::offchain::Duration;
+
+            // Serialize concurrent OCW invocations. Substrate spawns
+            // `offchain_worker` for every imported block, and rounds can
+            // overlap if one runs longer than block time. Without a lock,
+            // both rounds would read the same server checkpoint and
+            // submit duplicate `put_batches`/`create_table`/`drop_table`
+            // calls; the second one's `checkpoint()` would then fail with
+            // `failed_precondition`. Holding this lock for the full round
+            // makes overlapping invocations no-ops.
+            let mut lock = StorageLock::<Time>::with_deadline(
+                crate::OCW_LOCK_KEY,
+                Duration::from_millis(crate::OCW_LOCK_DEADLINE_MS),
+            );
+            let _guard = match lock.try_lock() {
+                Ok(g) => g,
+                Err(_deadline) => {
+                    log::debug!(
+                        target: "prover_db_indexer",
+                        "another OCW round is already in progress; skipping",
+                    );
+                    return Ok(());
+                }
+            };
 
             // 1. Check if this node is configured as an indexer.
             let url_ref = StorageValueRef::persistent(crate::PROVER_DB_URL_KEY);
@@ -178,31 +212,33 @@ pub mod pallet {
                 return Ok(());
             };
 
+            let url_str = core::str::from_utf8(&url_bytes)
+                .map_err(|_| "invalid UTF-8 in indexer URL".to_string())?;
             let url =
-                core::str::from_utf8(&url_bytes).map_err(|_| "invalid UTF-8 in indexer URL")?;
+                url::Url::parse(url_str).map_err(|e| format!("invalid indexer URL: {}", e))?;
 
             log::debug!(
                 target: "prover_db_indexer",
-                "consumer round starting; indexer base URL = {:?}",
+                "consumer round starting; indexer base URL = {}",
                 url,
             );
 
-            // 2. Current block number.
-            let current_block: u64 = polkadot_sdk::frame_system::Pallet::<T>::block_number()
+            // 2. Current block number — passed in by `offchain_worker`.
+            let current_block: u64 = block_number
                 .try_into()
-                .map_err(|_| "block number conversion failed")?;
+                .map_err(|_| "block number conversion failed".to_string())?;
 
             // 3. Ask the server for its last checkpoint. The server is the
             //    sole source of truth — no local cursor. This costs one HTTP
             //    round-trip per OCW invocation but guarantees we never
             //    diverge from what the server has actually committed.
-            let cursor: u64 = match crate::http_client::get_last_checkpoint(url) {
+            let cursor: u64 = match crate::http_client::get_last_checkpoint(&url) {
                 Ok(Some(seq)) => seq,
                 Ok(None) => 0,
                 Err(e) => {
                     log::warn!(
                         target: "prover_db_indexer",
-                        "get_last_checkpoint failed for {:?}: {}; skipping this round",
+                        "get_last_checkpoint failed for {}: {}; skipping this round",
                         url, e,
                     );
                     return Ok(());
@@ -224,10 +260,11 @@ pub mod pallet {
             );
 
             for block_num in start..=end {
-                Self::forward_block(url, block_num)?;
+                Self::forward_block(&url, block_num)?;
 
                 // Checkpoint on the server (always, even for empty blocks).
-                crate::http_client::checkpoint(url, block_num).map_err(|_| "checkpoint failed")?;
+                crate::http_client::checkpoint(&url, block_num)
+                    .map_err(|e| format!("checkpoint failed: {}", e))?;
             }
 
             Ok(())
@@ -236,7 +273,7 @@ pub mod pallet {
         /// Forward a single block's events in extrinsic-index order, then
         /// clear the offchain entries we consumed. If the block had no
         /// captures (no high-water-mark key), this is a no-op.
-        fn forward_block(url: &str, block_num: u64) -> Result<(), &'static str> {
+        fn forward_block(url: &url::Url, block_num: u64) -> Result<(), String> {
             let Some(hwm) = crate::offchain_consumer::read_high_water(block_num) else {
                 return Ok(());
             };
@@ -262,10 +299,10 @@ pub mod pallet {
 
         /// POST one extrinsic's captured events to the indexer in deposit order.
         fn forward_events(
-            url: &str,
+            url: &url::Url,
             block_num: u64,
             events: &[BlockEvent<'_>],
-        ) -> Result<(), &'static str> {
+        ) -> Result<(), String> {
             let seq = block_num;
 
             for event in events {
@@ -273,7 +310,7 @@ pub mod pallet {
                     BlockEvent::Drop(ident) => {
                         let name = Self::fq_name(ident);
                         crate::http_client::drop_table(url, seq, name)
-                            .map_err(|_| "drop_table failed")?;
+                            .map_err(|e| format!("drop_table failed: {}", e))?;
                     }
                     BlockEvent::Create(entry) => {
                         let name = Self::fq_name(&entry.ident);
@@ -284,7 +321,7 @@ pub mod pallet {
                             entry.ddl.to_vec(),
                             crate::DEDUP_KEY_COLUMN.into(),
                         )
-                        .map_err(|_| "create_table failed")?;
+                        .map_err(|e| format!("create_table failed: {}", e))?;
                     }
                     BlockEvent::Insert(entry) => {
                         let name = Self::fq_name(&entry.table);
@@ -296,7 +333,7 @@ pub mod pallet {
                                 record_batch: entry.data.to_vec(),
                             }],
                         )
-                        .map_err(|_| "put_batches failed")?;
+                        .map_err(|e| format!("put_batches failed: {}", e))?;
                     }
                 }
             }
