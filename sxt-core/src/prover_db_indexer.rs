@@ -2,8 +2,6 @@
 //! that seeds its configuration, and the producer call sites in
 //! `pallet-tables` and `pallet-indexing`.
 
-extern crate alloc;
-
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
@@ -19,12 +17,15 @@ use crate::tables::TableIdentifier;
 /// forward events. If the key is unset the OCW stays dormant.
 pub const PROVER_DB_URL_KEY: &[u8] = b"prover_db_indexer/prover_db_url";
 
-/// Offchain DB key prefix for per-extrinsic event payloads.
-const EVENT_KEY_PREFIX: &[u8] = b"prover_db_indexer/event/";
+/// Offchain DB key prefix for per-extrinsic event payloads. SCALE-encoded
+/// as part of a `(prefix, block, ext_idx)` tuple, so the tuple structure
+/// (not any trailing separator) provides the boundary between fields.
+const EVENT_KEY_PREFIX: &[u8] = b"prover_db_indexer/event";
 
 /// Offchain DB key prefix for per-block high-water-marks (the largest
-/// extrinsic index in a block that produced events).
-const HIGH_WATER_KEY_PREFIX: &[u8] = b"prover_db_indexer/hwm/";
+/// extrinsic index in a block that produced events). See [`EVENT_KEY_PREFIX`]
+/// for why there's no trailing separator.
+const HIGH_WATER_KEY_PREFIX: &[u8] = b"prover_db_indexer/hwm";
 
 /// Compute the offchain DB key for a block's high-water-mark. The value
 /// at this key is a SCALE-encoded `u32`: the largest `extrinsic_index`
