@@ -1194,6 +1194,20 @@ fn table_removal_cleans_up_all_collections() {
 
         assert_ok!(Tables::create_tables(RuntimeOrigin::root(), tables));
 
+        // Producer hook for the prover-db indexer: create_tables should emit one
+        // Create event carrying the (post-normalization) DDL bytes. The pallet
+        // rewrites the user-supplied DDL — adds a META_ROW_NUMBER column,
+        // squashes whitespace — so we check shape, not exact bytes.
+        let captured = drain_captured_events();
+        assert_eq!(captured.len(), 1);
+        match &captured[0] {
+            sxt_core::prover_db_indexer::BlockEvent::Create(entry) => {
+                assert_eq!(entry.ident.as_ref(), &test_identifier);
+                assert!(!entry.ddl.is_empty());
+            }
+            other => panic!("expected Create event, got {:?}", other),
+        }
+
         // Verify the table exists in all collections before removal
         assert!(Identifiers::<Test>::get(&table_type).contains(&test_identifier));
         assert!(Schemas::<Test>::contains_key(
@@ -1211,6 +1225,17 @@ fn table_removal_cleans_up_all_collections() {
             test_identifier.clone(),
             source
         ));
+
+        // Producer hook: drop_table should emit one Drop event carrying the
+        // identifier of the dropped table.
+        let captured = drain_captured_events();
+        assert_eq!(captured.len(), 1);
+        match &captured[0] {
+            sxt_core::prover_db_indexer::BlockEvent::Drop(ident) => {
+                assert_eq!(ident.as_ref(), &test_identifier);
+            }
+            other => panic!("expected Drop event, got {:?}", other),
+        }
 
         // Verify the table has been removed from all collections
         assert!(!Identifiers::<Test>::get(&table_type).contains(&test_identifier));

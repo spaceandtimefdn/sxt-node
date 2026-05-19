@@ -143,6 +143,7 @@ pub use {
     pallet_indexing,
     pallet_keystore,
     pallet_permissions,
+    pallet_prover_db_indexer,
     pallet_rewards,
     pallet_smartcontracts,
     pallet_system_contracts,
@@ -841,6 +842,7 @@ impl pallet_permissions::Config for Runtime {
 impl pallet_tables::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
+    type EventCapture = pallet_prover_db_indexer::Pallet<Runtime>;
 }
 
 impl pallet_commitments::Config for Runtime {
@@ -855,6 +857,7 @@ impl pallet_commitments::Config for Runtime {
 impl pallet_indexing::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
+    type EventCapture = pallet_prover_db_indexer::Pallet<Runtime>;
 }
 
 impl pallet_attestation::Config for Runtime {
@@ -889,6 +892,10 @@ impl pallet_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     // Payout up to 3 pages per block
     type MaxPayoutsPerBlock = ConstU32<3>;
+}
+
+impl pallet_prover_db_indexer::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -999,6 +1006,8 @@ mod runtime {
     pub type Rewards = pallet_rewards;
     #[runtime::pallet_index(110)]
     pub type ZkPay = pallet_zkpay;
+    #[runtime::pallet_index(111)]
+    pub type ProverDbIndexer = pallet_prover_db_indexer::Pallet<Runtime>;
 }
 
 /// The address format for describing accounts.

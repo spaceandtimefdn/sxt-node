@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+
+use codec::{Decode, Encode};
 use native_api::Api;
 use polkadot_sdk::frame_election_provider_support::bounds::{
     ElectionBounds,
@@ -26,6 +29,7 @@ use polkadot_sdk::{
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
 use proof_of_sql_commitment_map::PerCommitmentScheme;
 use proof_of_sql_static_setups::io::get_or_init_from_files_with_four_points_unchecked;
+use sxt_core::prover_db_indexer::{BlockEvent, EventCapture};
 
 use crate as pallet_indexing;
 
@@ -137,6 +141,7 @@ impl pallet_staking::Config for Test {
 impl pallet_indexing::pallet::Config<Api> for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Test>;
+    type EventCapture = RecordingEventCapture;
 }
 pub type BlockNumber = u64;
 
@@ -194,6 +199,7 @@ impl pallet_system_tables::Config for Test {
 impl pallet_tables::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
+    type EventCapture = RecordingEventCapture;
 }
 
 impl pallet_permissions::Config for Test {
@@ -208,6 +214,9 @@ impl pallet_commitments::Config for Test {
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
+    // Clear any captures from a previous test that may have run on this
+    // thread before us (cargo test reuses worker threads).
+    CAPTURED_EVENTS.with(|c| c.borrow_mut().clear());
     let _ = get_or_init_from_files_with_four_points_unchecked();
     let mut storage = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
@@ -218,4 +227,31 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     storage.into()
+}
+
+thread_local! {
+    static CAPTURED_EVENTS: RefCell<Vec<BlockEvent<'static>>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Test-only `EventCapture` impl that records every call into a thread-local
+/// buffer so tests can assert which `BlockEvent`s the pallets emitted. Wired
+/// for both `pallet_tables` (Create/Drop) and `pallet_indexing` (Insert), so a
+/// single drain reports captures from either source in call order. Roundtrips
+/// the input through SCALE so stored events own their fields.
+pub struct RecordingEventCapture;
+
+impl EventCapture for RecordingEventCapture {
+    fn capture_events(events: Vec<BlockEvent<'_>>) {
+        let bytes = events.encode();
+        let owned = Vec::<BlockEvent<'static>>::decode(&mut &bytes[..])
+            .expect("encode/decode roundtrip is infallible");
+        CAPTURED_EVENTS.with(|c| c.borrow_mut().extend(owned));
+    }
+}
+
+/// Drain and return every event captured since the last call (or test start).
+/// Tests should call this *after* the action under test, often immediately
+/// after a setup step (`Tables::create_tables`) to discard setup-time captures.
+pub fn drain_captured_events() -> Vec<BlockEvent<'static>> {
+    CAPTURED_EVENTS.with(|c| std::mem::take(&mut *c.borrow_mut()))
 }

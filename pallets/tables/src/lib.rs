@@ -50,6 +50,7 @@ pub mod pallet {
     };
     use scale_info::prelude::vec;
     use sxt_core::permissions::*;
+    use sxt_core::prover_db_indexer::EventCapture;
     use sxt_core::tables::{
         create_statement_to_sqlparser,
         create_statement_to_sqlparser_remove_with,
@@ -162,6 +163,9 @@ pub mod pallet {
             + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         /// The weight info to be used for calls
         type WeightInfo: WeightInfo;
+        /// Hook for capturing schema-lifecycle events at extrinsic time
+        /// (used by the prover-db indexer to forward them off-chain).
+        type EventCapture: sxt_core::prover_db_indexer::EventCapture;
     }
 
     #[pallet::event]
@@ -664,6 +668,11 @@ pub mod pallet {
             )?;
 
             Self::drop_single_table(table_type.clone(), ident.clone())?;
+
+            <T as Config>::EventCapture::capture_events(alloc::vec![
+                sxt_core::prover_db_indexer::BlockEvent::Drop(alloc::borrow::Cow::Borrowed(&ident)),
+            ]);
+
             Self::deposit_event(Event::<T>::TableDropped(owner, table_type, ident, source));
 
             Ok(())
@@ -1165,7 +1174,7 @@ pub mod pallet {
                 }
             };
 
-            let tables_with_meta_columns = tables
+            let tables_with_meta_columns: UpdateTableList = tables
                 .into_iter()
                 .zip(
                     metadata_iter
@@ -1355,7 +1364,22 @@ pub mod pallet {
                 .try_into()
                 .expect("iterator should still have < MAX_TABLES_PER_SCHEMA elements");
 
+            let captured = tables_with_meta_columns
+                .iter()
+                .map(|update| {
+                    sxt_core::prover_db_indexer::BlockEvent::Create(
+                        sxt_core::prover_db_indexer::CreateEntry {
+                            ident: alloc::borrow::Cow::Borrowed(&update.ident),
+                            ddl: alloc::borrow::Cow::Borrowed(update.create_statement.as_slice()),
+                        },
+                    )
+                })
+                .collect();
+
+            <T as Config>::EventCapture::capture_events(captured);
+
             Self::deposit_event(Event::<T>::SchemaUpdated(owner, tables_with_meta_columns));
+
             Ok(())
         }
 
