@@ -6,8 +6,10 @@ use snafu::Snafu;
 use sqlparser::ast::helpers::stmt_create_table::CreateTableBuilder;
 use sqlparser::ast::{ColumnDef, ColumnOption, ColumnOptionDef, DataType, Ident, TableConstraint};
 
-/// Row number column name.
-const ROW_NUMBER_COLUMN_NAME: &str = "META_ROW_NUMBER";
+/// Row number column name. Public because the prover-db indexer pallet
+/// passes the same string as the dedup `key` on every `CreateTable` request
+/// to the indexer service.
+pub const ROW_NUMBER_COLUMN_NAME: &str = "META_ROW_NUMBER";
 
 /// Returns a sqlparser `ColumnDef` for the row number column.
 pub fn row_number_column_def() -> ColumnDef {

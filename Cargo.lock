@@ -11715,7 +11715,7 @@ dependencies = [
 name = "pallet-prover-db-indexer"
 version = "0.1.0"
 dependencies = [
- "log",
+ "commitment-sql",
  "pallet-commitments",
  "pallet-indexing",
  "pallet-permissions",

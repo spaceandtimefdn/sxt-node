@@ -64,9 +64,6 @@ pub use pallet::*;
 /// keep working.
 pub use sxt_core::prover_db_indexer::PROVER_DB_URL_KEY;
 
-/// Dedup key column name sent with every `CreateTable` request.
-const DEDUP_KEY_COLUMN: &str = "META_ROW_NUMBER";
-
 /// Maximum blocks to process per OCW invocation. Controls catch-up speed.
 /// At 100 blocks/invocation and 6s block time, catch-up is ~100x realtime.
 const MAX_BLOCKS_PER_INVOCATION: u64 = 100;
@@ -80,6 +77,56 @@ const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
 /// the chain recover quickly from a crashed validator.
 const OCW_LOCK_DEADLINE_MS: u64 = 120_000;
 
+/// Typed errors from the OCW consumer round. Each variant carries the
+/// underlying `http_client::Error` (when applicable) so the operator's
+/// log line names both the failing operation and the wire-level reason.
+///
+/// `source` fields aren't named `source` because `url::ParseError`
+/// doesn't implement `core::error::Error` in this crate's no_std build,
+/// which would break Snafu's source-chain wiring. `http_client::Error`
+/// could use the wired name, but we keep the convention uniform so
+/// every variant looks the same.
+#[derive(Debug, snafu::Snafu)]
+pub enum ConsumerError {
+    /// The configured indexer URL was not valid UTF-8.
+    #[snafu(display("indexer URL was not valid UTF-8"))]
+    InvalidUrlEncoding,
+    /// The configured indexer URL couldn't be parsed.
+    #[snafu(display("indexer URL is not a valid URL: {error}"))]
+    InvalidUrl {
+        /// Underlying parse error from the `url` crate.
+        error: url::ParseError,
+    },
+    /// The runtime's `BlockNumber` didn't fit in `u64` (defensive — in
+    /// practice `BlockNumber` is `u32` so this is unreachable).
+    #[snafu(display("block number does not fit in u64"))]
+    BlockNumberOverflow,
+    /// `create_table` HTTP call failed.
+    #[snafu(display("create_table failed: {error}"))]
+    CreateTable {
+        /// Underlying error from the HTTP client.
+        error: http_client::Error,
+    },
+    /// `drop_table` HTTP call failed.
+    #[snafu(display("drop_table failed: {error}"))]
+    DropTable {
+        /// Underlying error from the HTTP client.
+        error: http_client::Error,
+    },
+    /// `put_batches` HTTP call failed.
+    #[snafu(display("put_batches failed: {error}"))]
+    PutBatches {
+        /// Underlying error from the HTTP client.
+        error: http_client::Error,
+    },
+    /// `checkpoint` HTTP call failed.
+    #[snafu(display("checkpoint failed: {error}"))]
+    Checkpoint {
+        /// Underlying error from the HTTP client.
+        error: http_client::Error,
+    },
+}
+
 #[polkadot_sdk::frame_support::pallet]
 #[allow(
     missing_docs,
@@ -88,8 +135,6 @@ const OCW_LOCK_DEADLINE_MS: u64 = 120_000;
     dead_code
 )]
 pub mod pallet {
-    use alloc::format;
-    use alloc::string::{String, ToString};
     use alloc::vec::Vec;
 
     use codec::Encode;
@@ -101,7 +146,8 @@ pub mod pallet {
         BlockEvent,
         EventCapture,
     };
-    use sxt_core::tables::TableIdentifier;
+
+    use crate::ConsumerError;
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -134,7 +180,7 @@ pub mod pallet {
         // DB queue, forwards to the HTTP server, deletes consumed entries.
         fn offchain_worker(block_number: BlockNumberFor<T>) {
             if let Err(e) = Self::run_consumer(block_number) {
-                log::error!(
+                polkadot_sdk::sp_tracing::error!(
                     target: "prover_db_indexer",
                     "offchain indexer error: {}",
                     e,
@@ -176,7 +222,7 @@ pub mod pallet {
         //  CONSUMER: drain offchain DB → HTTP → delete (called from OCW)
         // ═══════════════════════════════════════════════════════════════
 
-        fn run_consumer(block_number: BlockNumberFor<T>) -> Result<(), String> {
+        fn run_consumer(block_number: BlockNumberFor<T>) -> Result<(), ConsumerError> {
             use polkadot_sdk::sp_runtime::offchain::storage::StorageValueRef;
             use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
             use polkadot_sdk::sp_runtime::offchain::Duration;
@@ -196,7 +242,7 @@ pub mod pallet {
             let _guard = match lock.try_lock() {
                 Ok(g) => g,
                 Err(_deadline) => {
-                    log::debug!(
+                    polkadot_sdk::sp_tracing::debug!(
                         target: "prover_db_indexer",
                         "another OCW round is already in progress; skipping",
                     );
@@ -212,12 +258,12 @@ pub mod pallet {
                 return Ok(());
             };
 
-            let url_str = core::str::from_utf8(&url_bytes)
-                .map_err(|_| "invalid UTF-8 in indexer URL".to_string())?;
+            let url_str =
+                core::str::from_utf8(&url_bytes).map_err(|_| ConsumerError::InvalidUrlEncoding)?;
             let url =
-                url::Url::parse(url_str).map_err(|e| format!("invalid indexer URL: {}", e))?;
+                url::Url::parse(url_str).map_err(|error| ConsumerError::InvalidUrl { error })?;
 
-            log::debug!(
+            polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
                 "consumer round starting; indexer base URL = {}",
                 url,
@@ -226,17 +272,19 @@ pub mod pallet {
             // 2. Current block number — passed in by `offchain_worker`.
             let current_block: u64 = block_number
                 .try_into()
-                .map_err(|_| "block number conversion failed".to_string())?;
+                .map_err(|_| ConsumerError::BlockNumberOverflow)?;
 
             // 3. Ask the server for its last checkpoint. The server is the
             //    sole source of truth — no local cursor. This costs one HTTP
             //    round-trip per OCW invocation but guarantees we never
             //    diverge from what the server has actually committed.
+            //    A failure here is treated as transient: log and skip this
+            //    round; the next OCW will retry.
             let cursor: u64 = match crate::http_client::get_last_checkpoint(&url) {
                 Ok(Some(seq)) => seq,
                 Ok(None) => 0,
                 Err(e) => {
-                    log::warn!(
+                    polkadot_sdk::sp_tracing::warn!(
                         target: "prover_db_indexer",
                         "get_last_checkpoint failed for {}: {}; skipping this round",
                         url, e,
@@ -253,7 +301,7 @@ pub mod pallet {
                 return Ok(());
             }
 
-            log::debug!(
+            polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
                 "processing blocks {}..={} (server_checkpoint={}, tip={})",
                 start, end, cursor, current_block,
@@ -264,7 +312,7 @@ pub mod pallet {
 
                 // Checkpoint on the server (always, even for empty blocks).
                 crate::http_client::checkpoint(&url, block_num)
-                    .map_err(|e| format!("checkpoint failed: {}", e))?;
+                    .map_err(|error| ConsumerError::Checkpoint { error })?;
             }
 
             Ok(())
@@ -273,12 +321,12 @@ pub mod pallet {
         /// Forward a single block's events in extrinsic-index order, then
         /// clear the offchain entries we consumed. If the block had no
         /// captures (no high-water-mark key), this is a no-op.
-        fn forward_block(url: &url::Url, block_num: u64) -> Result<(), String> {
+        fn forward_block(url: &url::Url, block_num: u64) -> Result<(), ConsumerError> {
             let Some(hwm) = crate::offchain_consumer::read_high_water(block_num) else {
                 return Ok(());
             };
 
-            log::info!(
+            polkadot_sdk::sp_tracing::info!(
                 target: "prover_db_indexer",
                 "block {} — high-water-mark {}; probing for captured events",
                 block_num,
@@ -302,49 +350,37 @@ pub mod pallet {
             url: &url::Url,
             block_num: u64,
             events: &[BlockEvent<'_>],
-        ) -> Result<(), String> {
+        ) -> Result<(), ConsumerError> {
             let seq = block_num;
 
             for event in events {
                 match event {
                     BlockEvent::Drop(ident) => {
-                        let name = Self::fq_name(ident);
-                        crate::http_client::drop_table(url, seq, name)
-                            .map_err(|e| format!("drop_table failed: {}", e))?;
+                        crate::http_client::drop_table(url, seq, ident)
+                            .map_err(|error| ConsumerError::DropTable { error })?;
                     }
                     BlockEvent::Create(entry) => {
-                        let name = Self::fq_name(&entry.ident);
                         crate::http_client::create_table(
                             url,
                             seq,
-                            name,
+                            &entry.ident,
                             entry.ddl.to_vec(),
-                            crate::DEDUP_KEY_COLUMN.into(),
+                            commitment_sql::ROW_NUMBER_COLUMN_NAME.into(),
                         )
-                        .map_err(|e| format!("create_table failed: {}", e))?;
+                        .map_err(|error| ConsumerError::CreateTable { error })?;
                     }
                     BlockEvent::Insert(entry) => {
-                        let name = Self::fq_name(&entry.table);
                         crate::http_client::put_batches(
                             url,
                             seq,
-                            alloc::vec![crate::proto::TableBatch {
-                                table_name: name,
-                                record_batch: entry.data.to_vec(),
-                            }],
+                            alloc::vec![(entry.table.as_ref(), entry.data.to_vec())],
                         )
-                        .map_err(|e| format!("put_batches failed: {}", e))?;
+                        .map_err(|error| ConsumerError::PutBatches { error })?;
                     }
                 }
             }
 
             Ok(())
-        }
-
-        fn fq_name(id: &TableIdentifier) -> String {
-            let ns = core::str::from_utf8(&id.namespace).unwrap_or("?");
-            let name = core::str::from_utf8(&id.name).unwrap_or("?");
-            format!("{}.{}", ns, name)
         }
     }
 }

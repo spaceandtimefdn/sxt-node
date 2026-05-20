@@ -10,6 +10,7 @@ use polkadot_sdk::sp_runtime::offchain::http::Request;
 use polkadot_sdk::sp_runtime::offchain::Duration;
 use prost::Message;
 use snafu::Snafu;
+use sxt_core::tables::TableIdentifier;
 use url::Url;
 
 use crate::proto;
@@ -91,13 +92,13 @@ pub fn get_last_checkpoint(base_url: &Url) -> Result<Option<u64>, Error> {
 pub fn create_table(
     base_url: &Url,
     sequence_number: u64,
-    table_name: String,
+    table: &TableIdentifier,
     arrow_schema: Vec<u8>,
     key: String,
 ) -> Result<(), Error> {
     let req = proto::CreateTableRequest {
         sequence_number,
-        table_name,
+        table_name: table.to_string(),
         arrow_schema,
         key,
     };
@@ -107,25 +108,37 @@ pub fn create_table(
 }
 
 /// Soft-delete a table.
-pub fn drop_table(base_url: &Url, sequence_number: u64, table_name: String) -> Result<(), Error> {
+pub fn drop_table(
+    base_url: &Url,
+    sequence_number: u64,
+    table: &TableIdentifier,
+) -> Result<(), Error> {
     let req = proto::DropTableRequest {
         sequence_number,
-        table_name,
+        table_name: table.to_string(),
     };
     let url = endpoint(base_url, PATH_DROP_TABLE);
     post(&url, &req.encode_to_vec())?;
     Ok(())
 }
 
-/// Ingest one or more table batches.
+/// Ingest one or more table batches. Each `(table, record_batch)` pair
+/// is wrapped in a `proto::TableBatch` and sent under the given
+/// `sequence_number`.
 pub fn put_batches(
     base_url: &Url,
     sequence_number: u64,
-    batches: Vec<proto::TableBatch>,
+    batches: Vec<(&TableIdentifier, Vec<u8>)>,
 ) -> Result<(), Error> {
     let req = proto::PutBatchesRequest {
         sequence_number,
-        batches,
+        batches: batches
+            .into_iter()
+            .map(|(table, record_batch)| proto::TableBatch {
+                table_name: table.to_string(),
+                record_batch,
+            })
+            .collect(),
     };
     let url = endpoint(base_url, PATH_PUT_BATCHES);
     post(&url, &req.encode_to_vec())?;
@@ -143,7 +156,7 @@ pub fn checkpoint(base_url: &Url, sequence_number: u64) -> Result<(), Error> {
 /// Low-level POST helper. Sends `body` to `url` with
 /// `Content-Type: application/x-protobuf` and returns the response body bytes.
 fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
-    log::debug!(
+    polkadot_sdk::sp_tracing::debug!(
         target: "prover_db_indexer",
         "POST {} ({} body bytes)",
         url,
@@ -167,7 +180,7 @@ fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
         .deadline(deadline)
         .send()
         .map_err(|e| {
-            log::warn!(
+            polkadot_sdk::sp_tracing::warn!(
                 target: "prover_db_indexer",
                 "POST {} send failed: {:?}",
                 url, e,
@@ -178,7 +191,7 @@ fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
     let response = pending
         .try_wait(deadline)
         .map_err(|e| {
-            log::warn!(
+            polkadot_sdk::sp_tracing::warn!(
                 target: "prover_db_indexer",
                 "POST {} try_wait failed: {:?}",
                 url, e,
@@ -186,7 +199,7 @@ fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
             Error::DeadlineReached
         })?
         .map_err(|e| {
-            log::warn!(
+            polkadot_sdk::sp_tracing::warn!(
                 target: "prover_db_indexer",
                 "POST {} response error: {:?}",
                 url, e,
@@ -203,7 +216,7 @@ fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
     let status = response.code;
     let response_body: Vec<u8> = response.body().collect();
 
-    log::debug!(
+    polkadot_sdk::sp_tracing::debug!(
         target: "prover_db_indexer",
         "POST {} -> status {} ({} body bytes)",
         url, status, response_body.len(),
@@ -215,7 +228,7 @@ fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
         // server's reason (route not registered, bad payload, etc.).
         let snippet_len = core::cmp::min(response_body.len(), 256);
         let snippet = core::str::from_utf8(&response_body[..snippet_len]).unwrap_or("<non-utf8>");
-        log::warn!(
+        polkadot_sdk::sp_tracing::warn!(
             target: "prover_db_indexer",
             "POST {} -> status {}; body ({} bytes): {}",
             url, status, response_body.len(), snippet,
