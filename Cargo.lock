@@ -11715,8 +11715,17 @@ dependencies = [
 name = "pallet-prover-db-indexer"
 version = "0.1.0"
 dependencies = [
+ "commitment-sql",
+ "pallet-commitments",
+ "pallet-indexing",
+ "pallet-permissions",
+ "pallet-system-tables",
+ "pallet-tables",
+ "pallet-zkpay",
  "parity-scale-codec",
+ "parking_lot 0.12.3",
  "polkadot-sdk 0.9.0",
+ "proof-of-sql-commitment-map",
  "prost 0.13.5",
  "prost-build 0.13.5",
  "scale-info",

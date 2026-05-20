@@ -21,7 +21,7 @@ pub use column_type_conversion::{
 
 /// Row number column definition utilities.
 mod row_number_column;
-pub use row_number_column::row_number_column_def;
+pub use row_number_column::{row_number_column_def, ROW_NUMBER_COLUMN_NAME};
 
 /// Create table statement validation.
 mod validated_create_table;
