@@ -41,6 +41,18 @@
 
 extern crate alloc;
 
+// Wire-level HTTP+protobuf client for the indexer service. Unused until
+// the OCW consumer (next PR) calls into it; allow dead_code so the build
+// stays clean in the meantime.
+#[allow(dead_code)]
+mod http_client;
+
+/// Generated protobuf types for the indexer HTTP adapter wire format.
+#[allow(missing_docs, clippy::missing_docs_in_private_items)]
+mod proto {
+    include!(concat!(env!("OUT_DIR"), "/io.spaceandtime.indexer.rs"));
+}
+
 pub use pallet::*;
 /// Re-export of the canonical offchain local-storage key (defined in `sxt-core`),
 /// kept here so existing call sites that reach for `pallet_prover_db_indexer::PROVER_DB_URL_KEY`

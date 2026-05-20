@@ -17,10 +17,16 @@ codec = { features = ["derive"], workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 
 polkadot-sdk = { workspace = true, features = [
-    "frame-support", "frame-system", "sp-core", "sp-io", "sp-runtime",
+    "frame-support", "frame-system", "sp-core", "sp-io", "sp-runtime", "sp-tracing",
 ]}
 
 sxt-core.workspace = true
+prost = { version = "0.13", default-features = false, features = ["prost-derive"] }
+snafu = { workspace = true }
+url = { workspace = true }
+
+[build-dependencies]
+prost-build = "0.13"
 
 [features]
 default = ["std"]
@@ -29,6 +35,9 @@ std = [
     "codec/std",
     "scale-info/std",
     "sxt-core/std",
+    "prost/std",
+    "snafu/std",
+    "url/std",
 ]
 try-runtime = [
     "polkadot-sdk/try-runtime",
