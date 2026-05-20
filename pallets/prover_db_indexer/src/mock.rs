@@ -5,6 +5,7 @@
 //! pre-populate the offchain DB with payload+high-water keys directly,
 //! then drive `offchain_worker` and assert on outbound HTTP traffic.
 
+use polkadot_sdk::frame_support::traits::ConstU64;
 use polkadot_sdk::frame_support::{construct_runtime, derive_impl};
 use polkadot_sdk::sp_core::H256;
 use polkadot_sdk::sp_runtime::traits::IdentityLookup;
@@ -36,6 +37,9 @@ impl frame_system::Config for Test {
 
 impl pallet_prover_db_indexer::Config for Test {
     type RuntimeEvent = RuntimeEvent;
+    // Match runtime defaults so tests exercise the production limits.
+    type MaxBlocksPerInvocation = ConstU64<100>;
+    type OcwLockDeadlineMs = ConstU64<120_000>;
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {

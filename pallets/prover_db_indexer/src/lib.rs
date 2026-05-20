@@ -64,18 +64,8 @@ pub use pallet::*;
 /// keep working.
 pub use sxt_core::prover_db_indexer::PROVER_DB_URL_KEY;
 
-/// Maximum blocks to process per OCW invocation. Controls catch-up speed.
-/// At 100 blocks/invocation and 6s block time, catch-up is ~100x realtime.
-const MAX_BLOCKS_PER_INVOCATION: u64 = 100;
-
 /// Offchain DB key for the lock that serializes OCW consumer rounds.
 const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
-
-/// How long a held OCW lock stays valid before being treated as
-/// abandoned (e.g. node crashed mid-round). Sized to comfortably cover
-/// one full consumer round under normal conditions while still letting
-/// the chain recover quickly from a crashed validator.
-const OCW_LOCK_DEADLINE_MS: u64 = 120_000;
 
 /// Typed errors from the OCW consumer round. Each variant carries the
 /// underlying `http_client::Error` (when applicable) so the operator's
@@ -157,6 +147,22 @@ pub mod pallet {
         /// The runtime's overarching event type.
         type RuntimeEvent: From<Event<Self>>
             + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
+
+        /// Maximum number of blocks the OCW will walk in a single
+        /// invocation. Controls catch-up speed: with 6s block time and
+        /// the default of 100, catch-up is ~100x realtime. Lower values
+        /// keep the per-round cost bounded; higher values close a wider
+        /// gap faster after downtime.
+        #[pallet::constant]
+        type MaxBlocksPerInvocation: Get<u64>;
+
+        /// How long (in milliseconds) a held OCW lock stays valid before
+        /// being treated as abandoned (e.g. node crashed mid-round). Must
+        /// comfortably cover one full consumer round under normal
+        /// conditions while still letting the chain recover quickly from
+        /// a crashed validator.
+        #[pallet::constant]
+        type OcwLockDeadlineMs: Get<u64>;
     }
 
     #[pallet::event]
@@ -237,7 +243,7 @@ pub mod pallet {
             // makes overlapping invocations no-ops.
             let mut lock = StorageLock::<Time>::with_deadline(
                 crate::OCW_LOCK_KEY,
-                Duration::from_millis(crate::OCW_LOCK_DEADLINE_MS),
+                Duration::from_millis(T::OcwLockDeadlineMs::get()),
             );
             let _guard = match lock.try_lock() {
                 Ok(g) => g,
@@ -295,7 +301,7 @@ pub mod pallet {
 
             // 4. Walk blocks from cursor+1 to tip, capped.
             let start = cursor + 1;
-            let end = core::cmp::min(current_block, start + crate::MAX_BLOCKS_PER_INVOCATION - 1);
+            let end = core::cmp::min(current_block, start + T::MaxBlocksPerInvocation::get() - 1);
 
             if start > current_block {
                 return Ok(());
