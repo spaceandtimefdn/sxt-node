@@ -130,6 +130,9 @@ pub mod pallet {
     use codec::Encode;
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_system::pallet_prelude::*;
+    use polkadot_sdk::sp_runtime::offchain::storage::StorageValueRef;
+    use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
+    use polkadot_sdk::sp_runtime::offchain::Duration;
     use sxt_core::prover_db_indexer::{
         key_for_event,
         key_for_high_water,
@@ -229,10 +232,6 @@ pub mod pallet {
         // ═══════════════════════════════════════════════════════════════
 
         fn run_consumer(block_number: BlockNumberFor<T>) -> Result<(), ConsumerError> {
-            use polkadot_sdk::sp_runtime::offchain::storage::StorageValueRef;
-            use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
-            use polkadot_sdk::sp_runtime::offchain::Duration;
-
             // Serialize concurrent OCW invocations. Substrate spawns
             // `offchain_worker` for every imported block, and rounds can
             // overlap if one runs longer than block time. Without a lock,

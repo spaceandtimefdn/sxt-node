@@ -13,7 +13,8 @@ use codec::Encode;
 use polkadot_sdk::frame_support::traits::Hooks;
 use polkadot_sdk::sp_core::offchain::testing::{PendingRequest, TestOffchainExt};
 use polkadot_sdk::sp_core::offchain::{OffchainDbExt, OffchainStorage, OffchainWorkerExt};
-use polkadot_sdk::sp_runtime::BoundedVec;
+use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
+use polkadot_sdk::sp_runtime::offchain::Duration;
 use prost::Message;
 use sxt_core::prover_db_indexer::{
     key_for_event,
@@ -34,13 +35,6 @@ const MOCK_URL: &str = "http://127.0.0.1:9999";
 
 fn encode_url() -> Vec<u8> {
     codec::Encode::encode(&MOCK_URL.as_bytes().to_vec())
-}
-
-fn table_id(namespace: &str, name: &str) -> TableIdentifier {
-    TableIdentifier {
-        namespace: BoundedVec::try_from(namespace.as_bytes().to_vec()).unwrap(),
-        name: BoundedVec::try_from(name.as_bytes().to_vec()).unwrap(),
-    }
 }
 
 fn expected_request(path: &str, body: Vec<u8>, response: Vec<u8>) -> PendingRequest {
@@ -116,9 +110,6 @@ fn ocw_skips_when_lock_is_held() {
     let (mut ext, _state) = setup_with_url();
 
     ext.execute_with(|| {
-        use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
-        use polkadot_sdk::sp_runtime::offchain::Duration;
-
         let mut lock = StorageLock::<Time>::with_deadline(
             b"prover_db_indexer/ocw_lock",
             Duration::from_millis(120_000),
@@ -140,7 +131,7 @@ fn ocw_forwards_and_deletes_offchain_entry() {
         1,
         0,
         vec![BlockEvent::Create(CreateEntry {
-            ident: Cow::Owned(table_id("PUBLIC", "USERS")),
+            ident: Cow::Owned(TableIdentifier::from_str_unchecked("USERS", "PUBLIC")),
             ddl: ddl.to_vec().into(),
         })],
     );
@@ -218,7 +209,9 @@ fn ocw_resumes_from_server_checkpoint() {
         &state,
         6,
         0,
-        vec![BlockEvent::Drop(Cow::Owned(table_id("NS", "OLD")))],
+        vec![BlockEvent::Drop(Cow::Owned(
+            TableIdentifier::from_str_unchecked("OLD", "NS"),
+        ))],
     );
 
     {
@@ -258,14 +251,16 @@ fn ocw_processes_multiple_blocks_in_order() {
         &state,
         1,
         0,
-        vec![BlockEvent::Drop(Cow::Owned(table_id("NS", "T1")))],
+        vec![BlockEvent::Drop(Cow::Owned(
+            TableIdentifier::from_str_unchecked("T1", "NS"),
+        ))],
     );
     seed_block_events(
         &state,
         2,
         0,
         vec![BlockEvent::Create(CreateEntry {
-            ident: Cow::Owned(table_id("NS", "T2")),
+            ident: Cow::Owned(TableIdentifier::from_str_unchecked("T2", "NS")),
             ddl: b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec().into(),
         })],
     );
@@ -337,13 +332,16 @@ fn ocw_walks_multiple_extrinsics_in_one_block() {
     s.persistent_storage.set(
         b"",
         &key_for_event(1, 1),
-        &vec![BlockEvent::Drop(Cow::Owned(table_id("NS", "T1")))].encode(),
+        &vec![BlockEvent::Drop(Cow::Owned(
+            TableIdentifier::from_str_unchecked("T1", "NS"),
+        ))]
+        .encode(),
     );
     s.persistent_storage.set(
         b"",
         &key_for_event(1, 3),
         &vec![BlockEvent::Insert(InsertEntry {
-            table: Cow::Owned(table_id("NS", "T2")),
+            table: Cow::Owned(TableIdentifier::from_str_unchecked("T2", "NS")),
             data: b"row-data".to_vec().into(),
         })]
         .encode(),
