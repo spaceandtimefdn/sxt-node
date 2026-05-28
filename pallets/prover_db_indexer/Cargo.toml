@@ -21,12 +21,19 @@ polkadot-sdk = { workspace = true, features = [
 ]}
 
 sxt-core.workspace = true
+commitment-sql.workspace = true
 prost = { version = "0.13", default-features = false, features = ["prost-derive"] }
 snafu = { workspace = true }
 url = { workspace = true }
 
 [build-dependencies]
 prost-build = "0.13"
+
+[dev-dependencies]
+# Only direct test deps. `polkadot-sdk` already comes through `[dependencies]`
+# with `std` enabled in test builds, so we don't re-declare it here, and the
+# mock+tests don't reference any of pallet-tables / pallet-indexing / etc.
+parking_lot = "0.12"
 
 [features]
 default = ["std"]
@@ -35,6 +42,7 @@ std = [
     "codec/std",
     "scale-info/std",
     "sxt-core/std",
+    "commitment-sql/std",
     "prost/std",
     "snafu/std",
     "url/std",

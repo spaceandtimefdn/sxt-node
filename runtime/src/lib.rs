@@ -896,6 +896,8 @@ impl pallet_rewards::Config for Runtime {
 
 impl pallet_prover_db_indexer::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    type MaxBlocksPerInvocation = ConstU64<100>;
+    type OcwLockDeadlineMs = ConstU64<120_000>;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
