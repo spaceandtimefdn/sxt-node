@@ -136,8 +136,10 @@ pub mod pallet {
     use sxt_core::prover_db_indexer::{
         key_for_event,
         key_for_high_water,
+        table_matches_rules,
         BlockEvent,
         EventCapture,
+        IncludeRules,
     };
 
     use crate::ConsumerError;
@@ -181,7 +183,21 @@ pub mod pallet {
             /// Block number that the forwarder failed on.
             block_number: u64,
         },
+        /// The set of namespace/table rules that gate which captured
+        /// events get forwarded to the indexer has been replaced.
+        IncludeRulesSet {
+            /// New number of rules in the include set. Zero means
+            /// "index everything".
+            count: u32,
+        },
     }
+
+    /// Include-set: which tables the producer should capture events for.
+    /// An empty value (the default) means "capture every table". A
+    /// non-empty value gates `capture_events` so only events whose table
+    /// matches at least one rule reach the offchain DB.
+    #[pallet::storage]
+    pub type IncludeSet<T: Config> = StorageValue<_, IncludeRules, ValueQuery>;
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -198,9 +214,46 @@ pub mod pallet {
         }
     }
 
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {
+        /// Replace the include set used by `capture_events` to gate which
+        /// tables' events get forwarded to the indexer. An empty list
+        /// means "index every table" (the default). Root-only.
+        #[pallet::call_index(0)]
+        #[pallet::weight(polkadot_sdk::frame_support::weights::Weight::from_parts(10_000, 0))]
+        pub fn set_include_rules(origin: OriginFor<T>, rules: IncludeRules) -> DispatchResult {
+            polkadot_sdk::frame_system::ensure_root(origin)?;
+            let count = rules.len() as u32;
+            IncludeSet::<T>::put(rules);
+            Self::deposit_event(Event::IncludeRulesSet { count });
+            Ok(())
+        }
+    }
+
     impl<T: Config> EventCapture for Pallet<T> {
         fn capture_events(events: Vec<BlockEvent<'_>>) {
             if events.is_empty() {
+                return;
+            }
+
+            // Filter against the configured include set. Empty set means
+            // "match all", so this is a cheap pass-through in the default
+            // config. We read storage once per `capture_events` call
+            // (i.e. once per extrinsic that produces events).
+            let rules = IncludeSet::<T>::get();
+            let filtered: Vec<BlockEvent<'_>> = events
+                .into_iter()
+                .filter(|e| {
+                    let table = match e {
+                        BlockEvent::Create(entry) => entry.ident.as_ref(),
+                        BlockEvent::Drop(ident) => ident.as_ref(),
+                        BlockEvent::Insert(entry) => entry.table.as_ref(),
+                    };
+                    table_matches_rules(table, &rules)
+                })
+                .collect();
+
+            if filtered.is_empty() {
                 return;
             }
 
@@ -216,7 +269,7 @@ pub mod pallet {
             // Per-extrinsic event payload.
             polkadot_sdk::sp_io::offchain_index::set(
                 &key_for_event(block, ext_idx),
-                &events.encode(),
+                &filtered.encode(),
             );
 
             // Per-block high-water-mark. Always overwrites; the OCW only

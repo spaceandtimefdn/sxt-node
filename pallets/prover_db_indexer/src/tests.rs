@@ -21,12 +21,15 @@ use sxt_core::prover_db_indexer::{
     key_for_high_water,
     BlockEvent,
     CreateEntry,
+    EventCapture,
+    IncludeRule,
+    IncludeRules,
     InsertEntry,
 };
-use sxt_core::tables::TableIdentifier;
+use sxt_core::tables::{TableIdentifier, TableNamespace};
 
 use crate::mock::*;
-use crate::{proto, PROVER_DB_URL_KEY};
+use crate::{proto, IncludeSet, PROVER_DB_URL_KEY};
 
 type StateArc =
     std::sync::Arc<parking_lot::RwLock<polkadot_sdk::sp_core::offchain::testing::OffchainState>>;
@@ -394,4 +397,179 @@ fn ocw_walks_multiple_extrinsics_in_one_block() {
     assert!(s.persistent_storage.get(&key_for_event(1, 1)).is_none());
     assert!(s.persistent_storage.get(&key_for_event(1, 3)).is_none());
     assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
+}
+
+// ─── Include-set tests ──────────────────────────────────────────────────
+
+/// Helper: build a Drop event for `(name, namespace)`.
+fn drop_event(name: &str, namespace: &str) -> BlockEvent<'static> {
+    BlockEvent::Drop(Cow::Owned(TableIdentifier::from_str_unchecked(
+        name, namespace,
+    )))
+}
+
+/// Helper: build a Create event for `(name, namespace)` with arbitrary DDL.
+fn create_event(name: &str, namespace: &str) -> BlockEvent<'static> {
+    BlockEvent::Create(CreateEntry {
+        ident: Cow::Owned(TableIdentifier::from_str_unchecked(name, namespace)),
+        ddl: Cow::Owned(b"CREATE TABLE ...".to_vec()),
+    })
+}
+
+/// Helper: build an Insert event for `(name, namespace)` with arbitrary data.
+fn insert_event(name: &str, namespace: &str) -> BlockEvent<'static> {
+    BlockEvent::Insert(InsertEntry {
+        table: Cow::Owned(TableIdentifier::from_str_unchecked(name, namespace)),
+        data: Cow::Owned(b"rows".to_vec()),
+    })
+}
+
+/// Set up an externalities for exercising the producer side
+/// (`capture_events`). No `TestOffchainExt` needed — `offchain_index::set`
+/// goes through the runtime overlay into `ext.offchain_db()`, which the
+/// tests inspect after calling `persist_offchain_overlay`.
+fn capture_ext() -> polkadot_sdk::sp_io::TestExternalities {
+    new_test_ext()
+}
+
+#[test]
+fn set_include_rules_works_for_root_and_emits_event() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let rules = vec![
+            IncludeRule::Namespace(TableNamespace::try_from(b"PUBLIC".to_vec()).unwrap()),
+            IncludeRule::Table(TableIdentifier::from_str_unchecked("BAR", "FOO")),
+        ]
+        .try_into()
+        .unwrap();
+
+        assert!(ProverDbIndexer::set_include_rules(RuntimeOrigin::root(), rules).is_ok());
+
+        // Storage now holds two rules.
+        assert_eq!(IncludeSet::<Test>::get().len(), 2);
+
+        // And an event was deposited.
+        let events = System::events();
+        assert!(events.iter().any(|er| matches!(
+            er.event,
+            RuntimeEvent::ProverDbIndexer(crate::Event::IncludeRulesSet { count: 2 }),
+        )));
+    });
+}
+
+#[test]
+fn set_include_rules_rejects_non_root() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let signed = RuntimeOrigin::signed(polkadot_sdk::sp_runtime::AccountId32::new([1; 32]));
+        let rules = vec![IncludeRule::Namespace(
+            TableNamespace::try_from(b"PUBLIC".to_vec()).unwrap(),
+        )]
+        .try_into()
+        .unwrap();
+        assert!(ProverDbIndexer::set_include_rules(signed, rules).is_err());
+        // Storage unchanged.
+        assert!(IncludeSet::<Test>::get().is_empty());
+    });
+}
+
+#[test]
+fn capture_events_writes_everything_when_include_set_is_empty() {
+    let mut ext = capture_ext();
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
+
+        let events = vec![
+            create_event("A", "ALPHA"),
+            insert_event("B", "BETA"),
+            drop_event("C", "GAMMA"),
+        ];
+        <ProverDbIndexer as EventCapture>::capture_events(events);
+    });
+    ext.persist_offchain_overlay();
+    let db = ext.offchain_db();
+    let stored = db.get(&key_for_event(1, 0)).unwrap();
+    let decoded: Vec<BlockEvent<'static>> = codec::Decode::decode(&mut &stored[..]).unwrap();
+    assert_eq!(decoded.len(), 3);
+}
+
+#[test]
+fn capture_events_keeps_only_namespace_matches() {
+    let mut ext = capture_ext();
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
+
+        IncludeSet::<Test>::put(
+            IncludeRules::try_from(vec![IncludeRule::Namespace(
+                TableNamespace::try_from(b"ALPHA".to_vec()).unwrap(),
+            )])
+            .unwrap(),
+        );
+
+        let events = vec![
+            create_event("A", "ALPHA"), // pass
+            insert_event("B", "BETA"),  // filter out
+            drop_event("C", "ALPHA"),   // pass
+        ];
+        <ProverDbIndexer as EventCapture>::capture_events(events);
+    });
+    ext.persist_offchain_overlay();
+    let db = ext.offchain_db();
+    let stored = db.get(&key_for_event(1, 0)).unwrap();
+    let decoded: Vec<BlockEvent<'static>> = codec::Decode::decode(&mut &stored[..]).unwrap();
+    assert_eq!(decoded.len(), 2);
+}
+
+#[test]
+fn capture_events_keeps_only_specific_table_matches() {
+    let mut ext = capture_ext();
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
+
+        IncludeSet::<Test>::put(
+            IncludeRules::try_from(vec![IncludeRule::Table(
+                TableIdentifier::from_str_unchecked("B", "BETA"),
+            )])
+            .unwrap(),
+        );
+
+        let events = vec![
+            create_event("A", "ALPHA"), // filter out
+            insert_event("B", "BETA"),  // pass
+            drop_event("C", "BETA"),    // filter out: namespace match but rule is table-scoped
+        ];
+        <ProverDbIndexer as EventCapture>::capture_events(events);
+    });
+    ext.persist_offchain_overlay();
+    let db = ext.offchain_db();
+    let stored = db.get(&key_for_event(1, 0)).unwrap();
+    let decoded: Vec<BlockEvent<'static>> = codec::Decode::decode(&mut &stored[..]).unwrap();
+    assert_eq!(decoded.len(), 1);
+    assert!(matches!(decoded[0], BlockEvent::Insert(_)));
+}
+
+#[test]
+fn capture_events_writes_nothing_when_no_event_matches() {
+    let mut ext = capture_ext();
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
+
+        IncludeSet::<Test>::put(
+            IncludeRules::try_from(vec![IncludeRule::Namespace(
+                TableNamespace::try_from(b"NOT_PRESENT".to_vec()).unwrap(),
+            )])
+            .unwrap(),
+        );
+
+        let events = vec![create_event("A", "ALPHA"), insert_event("B", "BETA")];
+        <ProverDbIndexer as EventCapture>::capture_events(events);
+    });
+    ext.persist_offchain_overlay();
+    let db = ext.offchain_db();
+    assert!(db.get(&key_for_event(1, 0)).is_none());
+    assert!(db.get(&key_for_high_water(1)).is_none());
 }

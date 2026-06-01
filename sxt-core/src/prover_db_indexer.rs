@@ -5,9 +5,12 @@
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
+use polkadot_sdk::sp_core::ConstU32;
+use polkadot_sdk::sp_runtime::BoundedVec;
+use scale_info::TypeInfo;
 
-use crate::tables::TableIdentifier;
+use crate::tables::{TableIdentifier, TableNamespace};
 
 /// Offchain local-storage key holding the prover-db indexer URL.
 ///
@@ -97,4 +100,39 @@ pub trait EventCapture {
 
 impl EventCapture for () {
     fn capture_events(_events: Vec<BlockEvent<'_>>) {}
+}
+
+/// Maximum number of include-set rules the chain accepts. Bounds the
+/// storage footprint and the per-extrinsic match cost in `capture_events`.
+pub const MAX_INCLUDE_RULES: u32 = 256;
+
+/// A single entry in the prover-db indexer's include set. An empty list
+/// of these means "index everything"; a non-empty list means "index only
+/// events whose table matches at least one rule".
+///
+/// Matches are byte-exact against the on-chain identifiers, so callers
+/// that need case-insensitive matching should normalize their inputs
+/// (e.g. via [`TableIdentifier::from_str_unchecked`] which uppercases)
+/// before submitting the rule.
+#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Debug, Clone, Eq, PartialEq)]
+pub enum IncludeRule {
+    /// Match every table within the given namespace.
+    Namespace(TableNamespace),
+    /// Match exactly one fully-qualified table identifier.
+    Table(TableIdentifier),
+}
+
+/// Bounded list of include rules suitable for on-chain storage.
+pub type IncludeRules = BoundedVec<IncludeRule, ConstU32<MAX_INCLUDE_RULES>>;
+
+/// Returns true if `table` matches at least one rule in `rules`. An
+/// empty rule set is treated as "match all".
+pub fn table_matches_rules(table: &TableIdentifier, rules: &[IncludeRule]) -> bool {
+    if rules.is_empty() {
+        return true;
+    }
+    rules.iter().any(|rule| match rule {
+        IncludeRule::Namespace(ns) => &table.namespace == ns,
+        IncludeRule::Table(t) => t == table,
+    })
 }
