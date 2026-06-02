@@ -24,6 +24,24 @@ pub struct Cli {
     #[clap(long, env)]
     pub prover_db_url: Option<url::Url>,
 
+    /// Path to a JSON file listing which tables/namespaces this node
+    /// should forward to its prover-db indexer. Schema:
+    ///
+    /// ```json
+    /// [
+    ///   { "kind": "namespace", "value": "ETHEREUM_MT" },
+    ///   { "kind": "table",     "namespace": "OTHER_NS", "name": "SPECIAL" }
+    /// ]
+    /// ```
+    ///
+    /// An empty array (or omitting this flag) means "forward every
+    /// captured event" — the on-chain capture itself is unfiltered, so
+    /// the choice is purely per-node. Identifiers are uppercased before
+    /// being written to offchain storage, to match how the chain stores
+    /// them.
+    #[clap(long, env)]
+    pub prover_db_include_file: Option<std::path::PathBuf>,
+
     #[allow(missing_docs)]
     #[clap(flatten)]
     pub storage_monitor: sc_storage_monitor::StorageMonitorParams,

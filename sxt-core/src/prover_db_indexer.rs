@@ -5,10 +5,7 @@
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
-use codec::{Decode, Encode, MaxEncodedLen};
-use polkadot_sdk::sp_core::ConstU32;
-use polkadot_sdk::sp_runtime::BoundedVec;
-use scale_info::TypeInfo;
+use codec::{Decode, Encode};
 
 use crate::tables::{TableIdentifier, TableNamespace};
 
@@ -19,6 +16,19 @@ use crate::tables::{TableIdentifier, TableNamespace};
 /// prover-db-indexer pallet's offchain worker reads it to know where to
 /// forward events. If the key is unset the OCW stays dormant.
 pub const PROVER_DB_URL_KEY: &[u8] = b"prover_db_indexer/prover_db_url";
+
+/// Offchain local-storage key holding this node's per-node include set.
+///
+/// Stored as a SCALE-encoded `Vec<IncludeRule>`. Set by the node service
+/// at startup from a CLI-supplied config file. The OCW consumer reads
+/// this once per round and only forwards events whose table matches one
+/// of the configured rules. An empty list (the default if the key is
+/// unset) means "forward every captured event" — the on-chain capture
+/// side is unfiltered, so every node still maintains the same offchain
+/// queue regardless of what this filter is set to. Two indexer nodes
+/// can therefore subscribe to different subsets without affecting each
+/// other or the chain.
+pub const PROVER_DB_INCLUDE_KEY: &[u8] = b"prover_db_indexer/include_rules";
 
 /// Offchain DB key prefix for per-extrinsic event payloads. SCALE-encoded
 /// as part of a `(prefix, block, ext_idx)` tuple, so the tuple structure
@@ -102,28 +112,23 @@ impl EventCapture for () {
     fn capture_events(_events: Vec<BlockEvent<'_>>) {}
 }
 
-/// Maximum number of include-set rules the chain accepts. Bounds the
-/// storage footprint and the per-extrinsic match cost in `capture_events`.
-pub const MAX_INCLUDE_RULES: u32 = 256;
-
-/// A single entry in the prover-db indexer's include set. An empty list
-/// of these means "index everything"; a non-empty list means "index only
-/// events whose table matches at least one rule".
+/// A single entry in the prover-db indexer's include set. Stored only
+/// in the indexer node's offchain local storage (under
+/// [`PROVER_DB_INCLUDE_KEY`]); not part of on-chain state. An empty list
+/// of these means "forward every event"; a non-empty list means "only
+/// forward events whose table matches at least one rule".
 ///
 /// Matches are byte-exact against the on-chain identifiers, so callers
 /// that need case-insensitive matching should normalize their inputs
 /// (e.g. via [`TableIdentifier::from_str_unchecked`] which uppercases)
-/// before submitting the rule.
-#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Debug, Clone, Eq, PartialEq)]
+/// before writing the rule to offchain storage.
+#[derive(Encode, Decode, Debug, Clone, Eq, PartialEq)]
 pub enum IncludeRule {
     /// Match every table within the given namespace.
     Namespace(TableNamespace),
     /// Match exactly one fully-qualified table identifier.
     Table(TableIdentifier),
 }
-
-/// Bounded list of include rules suitable for on-chain storage.
-pub type IncludeRules = BoundedVec<IncludeRule, ConstU32<MAX_INCLUDE_RULES>>;
 
 /// Returns true if `table` matches at least one rule in `rules`. An
 /// empty rule set is treated as "match all".

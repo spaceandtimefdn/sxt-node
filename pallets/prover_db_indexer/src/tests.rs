@@ -23,13 +23,12 @@ use sxt_core::prover_db_indexer::{
     CreateEntry,
     EventCapture,
     IncludeRule,
-    IncludeRules,
     InsertEntry,
 };
 use sxt_core::tables::{TableIdentifier, TableNamespace};
 
 use crate::mock::*;
-use crate::{proto, IncludeSet, PROVER_DB_URL_KEY};
+use crate::{proto, PROVER_DB_INCLUDE_KEY, PROVER_DB_URL_KEY};
 
 type StateArc =
     std::sync::Arc<parking_lot::RwLock<polkadot_sdk::sp_core::offchain::testing::OffchainState>>;
@@ -399,7 +398,7 @@ fn ocw_walks_multiple_extrinsics_in_one_block() {
     assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
 }
 
-// ─── Include-set tests ──────────────────────────────────────────────────
+// ─── Include-set tests (consumer-side filter) ──────────────────────────
 
 /// Helper: build a Drop event for `(name, namespace)`.
 fn drop_event(name: &str, namespace: &str) -> BlockEvent<'static> {
@@ -408,7 +407,7 @@ fn drop_event(name: &str, namespace: &str) -> BlockEvent<'static> {
     )))
 }
 
-/// Helper: build a Create event for `(name, namespace)` with arbitrary DDL.
+/// Helper: build a Create event for `(name, namespace)`.
 fn create_event(name: &str, namespace: &str) -> BlockEvent<'static> {
     BlockEvent::Create(CreateEntry {
         ident: Cow::Owned(TableIdentifier::from_str_unchecked(name, namespace)),
@@ -416,7 +415,7 @@ fn create_event(name: &str, namespace: &str) -> BlockEvent<'static> {
     })
 }
 
-/// Helper: build an Insert event for `(name, namespace)` with arbitrary data.
+/// Helper: build an Insert event for `(name, namespace)`.
 fn insert_event(name: &str, namespace: &str) -> BlockEvent<'static> {
     BlockEvent::Insert(InsertEntry {
         table: Cow::Owned(TableIdentifier::from_str_unchecked(name, namespace)),
@@ -424,58 +423,12 @@ fn insert_event(name: &str, namespace: &str) -> BlockEvent<'static> {
     })
 }
 
-/// Set up an externalities for exercising the producer side
-/// (`capture_events`). No `TestOffchainExt` needed — `offchain_index::set`
-/// goes through the runtime overlay into `ext.offchain_db()`, which the
-/// tests inspect after calling `persist_offchain_overlay`.
-fn capture_ext() -> polkadot_sdk::sp_io::TestExternalities {
-    new_test_ext()
-}
-
+/// `capture_events` is now unconditional — every event reaches the
+/// offchain queue regardless of any per-node configuration. This test
+/// is the single producer-side regression check.
 #[test]
-fn set_include_rules_works_for_root_and_emits_event() {
-    new_test_ext().execute_with(|| {
-        System::set_block_number(1);
-        let rules = vec![
-            IncludeRule::Namespace(TableNamespace::try_from(b"PUBLIC".to_vec()).unwrap()),
-            IncludeRule::Table(TableIdentifier::from_str_unchecked("BAR", "FOO")),
-        ]
-        .try_into()
-        .unwrap();
-
-        assert!(ProverDbIndexer::set_include_rules(RuntimeOrigin::root(), rules).is_ok());
-
-        // Storage now holds two rules.
-        assert_eq!(IncludeSet::<Test>::get().len(), 2);
-
-        // And an event was deposited.
-        let events = System::events();
-        assert!(events.iter().any(|er| matches!(
-            er.event,
-            RuntimeEvent::ProverDbIndexer(crate::Event::IncludeRulesSet { count: 2 }),
-        )));
-    });
-}
-
-#[test]
-fn set_include_rules_rejects_non_root() {
-    new_test_ext().execute_with(|| {
-        System::set_block_number(1);
-        let signed = RuntimeOrigin::signed(polkadot_sdk::sp_runtime::AccountId32::new([1; 32]));
-        let rules = vec![IncludeRule::Namespace(
-            TableNamespace::try_from(b"PUBLIC".to_vec()).unwrap(),
-        )]
-        .try_into()
-        .unwrap();
-        assert!(ProverDbIndexer::set_include_rules(signed, rules).is_err());
-        // Storage unchanged.
-        assert!(IncludeSet::<Test>::get().is_empty());
-    });
-}
-
-#[test]
-fn capture_events_writes_everything_when_include_set_is_empty() {
-    let mut ext = capture_ext();
+fn capture_events_writes_all_events_unconditionally() {
+    let mut ext = new_test_ext();
     ext.execute_with(|| {
         System::set_block_number(1);
         polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
@@ -494,82 +447,144 @@ fn capture_events_writes_everything_when_include_set_is_empty() {
     assert_eq!(decoded.len(), 3);
 }
 
+/// End-to-end consumer test: seed the node's include set into offchain
+/// local storage (where the OCW reads it), seed a multi-event block,
+/// and confirm only the matching events are POSTed to the indexer.
 #[test]
-fn capture_events_keeps_only_namespace_matches() {
-    let mut ext = capture_ext();
+fn ocw_forwards_only_events_matching_include_set() {
+    let (mut ext, state) = setup_with_url();
+
+    // Seed the node-local include set: namespace = "ALPHA", and a
+    // specific table B.BETA. Encoded as SCALE Vec<IncludeRule>, exactly
+    // as the node service would write it from the CLI config file.
+    let rules = vec![
+        IncludeRule::Namespace(TableNamespace::try_from(b"ALPHA".to_vec()).unwrap()),
+        IncludeRule::Table(TableIdentifier::from_str_unchecked("BETA_T", "BETA_NS")),
+    ];
+    state
+        .write()
+        .persistent_storage
+        .set(b"", PROVER_DB_INCLUDE_KEY, &rules.encode());
+
+    // Block 1, extrinsic 0: a mix of matching and non-matching events.
+    seed_block_events(
+        &state,
+        1,
+        0,
+        vec![
+            create_event("A", "ALPHA"),        // match (namespace)
+            insert_event("BETA_T", "BETA_NS"), // match (table)
+            drop_event("OTHER", "GAMMA"),      // skip
+            create_event("X", "GAMMA"),        // skip
+            insert_event("Y", "ALPHA"),        // match (namespace)
+        ],
+    );
+
+    // Only the three matching events should reach the indexer. Drops
+    // for the skipped GAMMA namespace get filtered too — uniform.
+    {
+        let mut s = state.write();
+        s.expect_request(expected_request(
+            "/v1/get_last_checkpoint",
+            vec![],
+            no_checkpoint_response(),
+        ));
+        s.expect_request(expected_request(
+            "/v1/create_table",
+            proto::CreateTableRequest {
+                sequence_number: 1,
+                table_name: "ALPHA.A".into(),
+                arrow_schema: b"CREATE TABLE ...".to_vec(),
+                key: "META_ROW_NUMBER".into(),
+            }
+            .encode_to_vec(),
+            vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/put_batches",
+            proto::PutBatchesRequest {
+                sequence_number: 1,
+                batches: vec![proto::TableBatch {
+                    table_name: "BETA_NS.BETA_T".into(),
+                    record_batch: b"rows".to_vec(),
+                }],
+            }
+            .encode_to_vec(),
+            vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/put_batches",
+            proto::PutBatchesRequest {
+                sequence_number: 1,
+                batches: vec![proto::TableBatch {
+                    table_name: "ALPHA.Y".into(),
+                    record_batch: b"rows".to_vec(),
+                }],
+            }
+            .encode_to_vec(),
+            vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/checkpoint",
+            proto::CheckpointRequest { sequence_number: 1 }.encode_to_vec(),
+            vec![],
+        ));
+    }
+
     ext.execute_with(|| {
         System::set_block_number(1);
-        polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
-
-        IncludeSet::<Test>::put(
-            IncludeRules::try_from(vec![IncludeRule::Namespace(
-                TableNamespace::try_from(b"ALPHA".to_vec()).unwrap(),
-            )])
-            .unwrap(),
-        );
-
-        let events = vec![
-            create_event("A", "ALPHA"), // pass
-            insert_event("B", "BETA"),  // filter out
-            drop_event("C", "ALPHA"),   // pass
-        ];
-        <ProverDbIndexer as EventCapture>::capture_events(events);
+        ProverDbIndexer::offchain_worker(1);
     });
-    ext.persist_offchain_overlay();
-    let db = ext.offchain_db();
-    let stored = db.get(&key_for_event(1, 0)).unwrap();
-    let decoded: Vec<BlockEvent<'static>> = codec::Decode::decode(&mut &stored[..]).unwrap();
-    assert_eq!(decoded.len(), 2);
+
+    let s = state.read();
+    assert!(s.persistent_storage.get(&key_for_event(1, 0)).is_none());
+    assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
 }
 
+/// Empty include set in offchain storage ⇒ forward every event (default).
 #[test]
-fn capture_events_keeps_only_specific_table_matches() {
-    let mut ext = capture_ext();
+fn ocw_with_empty_include_set_forwards_everything() {
+    let (mut ext, state) = setup_with_url();
+
+    // No PROVER_DB_INCLUDE_KEY written — absence ⇒ empty rules ⇒ match all.
+    let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
+    seed_block_events(
+        &state,
+        1,
+        0,
+        vec![BlockEvent::Create(CreateEntry {
+            ident: Cow::Owned(TableIdentifier::from_str_unchecked("ANY", "ANY")),
+            ddl: ddl.to_vec().into(),
+        })],
+    );
+
+    {
+        let mut s = state.write();
+        s.expect_request(expected_request(
+            "/v1/get_last_checkpoint",
+            vec![],
+            no_checkpoint_response(),
+        ));
+        s.expect_request(expected_request(
+            "/v1/create_table",
+            proto::CreateTableRequest {
+                sequence_number: 1,
+                table_name: "ANY.ANY".into(),
+                arrow_schema: ddl.to_vec(),
+                key: "META_ROW_NUMBER".into(),
+            }
+            .encode_to_vec(),
+            vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/checkpoint",
+            proto::CheckpointRequest { sequence_number: 1 }.encode_to_vec(),
+            vec![],
+        ));
+    }
+
     ext.execute_with(|| {
         System::set_block_number(1);
-        polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
-
-        IncludeSet::<Test>::put(
-            IncludeRules::try_from(vec![IncludeRule::Table(
-                TableIdentifier::from_str_unchecked("B", "BETA"),
-            )])
-            .unwrap(),
-        );
-
-        let events = vec![
-            create_event("A", "ALPHA"), // filter out
-            insert_event("B", "BETA"),  // pass
-            drop_event("C", "BETA"),    // filter out: namespace match but rule is table-scoped
-        ];
-        <ProverDbIndexer as EventCapture>::capture_events(events);
+        ProverDbIndexer::offchain_worker(1);
     });
-    ext.persist_offchain_overlay();
-    let db = ext.offchain_db();
-    let stored = db.get(&key_for_event(1, 0)).unwrap();
-    let decoded: Vec<BlockEvent<'static>> = codec::Decode::decode(&mut &stored[..]).unwrap();
-    assert_eq!(decoded.len(), 1);
-    assert!(matches!(decoded[0], BlockEvent::Insert(_)));
-}
-
-#[test]
-fn capture_events_writes_nothing_when_no_event_matches() {
-    let mut ext = capture_ext();
-    ext.execute_with(|| {
-        System::set_block_number(1);
-        polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
-
-        IncludeSet::<Test>::put(
-            IncludeRules::try_from(vec![IncludeRule::Namespace(
-                TableNamespace::try_from(b"NOT_PRESENT".to_vec()).unwrap(),
-            )])
-            .unwrap(),
-        );
-
-        let events = vec![create_event("A", "ALPHA"), insert_event("B", "BETA")];
-        <ProverDbIndexer as EventCapture>::capture_events(events);
-    });
-    ext.persist_offchain_overlay();
-    let db = ext.offchain_db();
-    assert!(db.get(&key_for_event(1, 0)).is_none());
-    assert!(db.get(&key_for_high_water(1)).is_none());
 }

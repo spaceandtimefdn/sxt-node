@@ -103,6 +103,83 @@ fn configure_prover_db_url(backend: &FullBackend, url: &url::Url) -> Result<(), 
     Ok(())
 }
 
+/// JSON rule type as it appears in the user-supplied `--prover-db-include-file`.
+/// Decoupled from the runtime [`sxt_core::prover_db_indexer::IncludeRule`]
+/// so the on-disk format can use natural string fields while the wire
+/// type uses byte-bounded `TableNamespace` / `TableIdentifier`.
+#[derive(serde::Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum IncludeRuleJson {
+    Namespace { value: String },
+    Table { namespace: String, name: String },
+}
+
+/// Parse the include-file JSON and seed the rule set into offchain
+/// persistent local storage at startup, before the first block is
+/// authored.
+///
+/// Stored under `sxt_core::prover_db_indexer::PROVER_DB_INCLUDE_KEY` as
+/// a SCALE-encoded `Vec<IncludeRule>`. Identifiers are uppercased on
+/// the way in via `TableIdentifier::from_str_unchecked`, so the matches
+/// the OCW does later are byte-exact against the on-chain canonical
+/// form.
+#[expect(
+    clippy::result_large_err,
+    reason = "ServiceError is from substrate and cannot be modified"
+)]
+fn configure_prover_db_include(backend: &FullBackend, path: &Path) -> Result<(), ServiceError> {
+    let raw = std::fs::read_to_string(path).map_err(|e| {
+        ServiceError::Other(format!(
+            "failed to read --prover-db-include-file {}: {}",
+            path.display(),
+            e
+        ))
+    })?;
+    let json_rules: Vec<IncludeRuleJson> = serde_json::from_str(&raw).map_err(|e| {
+        ServiceError::Other(format!(
+            "failed to parse --prover-db-include-file {} as JSON: {}",
+            path.display(),
+            e
+        ))
+    })?;
+
+    let rules: Vec<sxt_core::prover_db_indexer::IncludeRule> = json_rules
+        .into_iter()
+        .map(|r| match r {
+            IncludeRuleJson::Namespace { value } => {
+                let bytes = value.to_uppercase().into_bytes();
+                let ns = sxt_core::tables::TableNamespace::try_from(bytes).map_err(|_| {
+                    ServiceError::Other(format!(
+                        "namespace '{}' in {} exceeds the maximum identifier length",
+                        value,
+                        path.display(),
+                    ))
+                })?;
+                Ok(sxt_core::prover_db_indexer::IncludeRule::Namespace(ns))
+            }
+            IncludeRuleJson::Table { namespace, name } => {
+                let ident =
+                    sxt_core::tables::TableIdentifier::from_str_unchecked(&name, &namespace);
+                Ok(sxt_core::prover_db_indexer::IncludeRule::Table(ident))
+            }
+        })
+        .collect::<Result<_, ServiceError>>()?;
+
+    let Some(mut storage) = backend.offchain_storage() else {
+        return Err(ServiceError::Other(
+            "backend did not expose an offchain storage handle; \
+             cannot apply --prover-db-include-file"
+                .into(),
+        ));
+    };
+    storage.set(
+        STORAGE_PREFIX,
+        sxt_core::prover_db_indexer::PROVER_DB_INCLUDE_KEY,
+        &rules.encode(),
+    );
+    Ok(())
+}
+
 #[allow(clippy::type_complexity)]
 #[expect(
     clippy::result_large_err,
@@ -366,6 +443,21 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
             ));
         }
         configure_prover_db_url(backend.as_ref(), url)?;
+    }
+
+    // `--prover-db-include-file` is only meaningful when the OCW will
+    // actually forward something, i.e. when the URL is set. Reject the
+    // common misconfiguration up front.
+    if let Some(path) = cli.prover_db_include_file.as_ref() {
+        if cli.prover_db_url.is_none() {
+            return Err(ServiceError::Other(
+                "--prover-db-include-file was set but --prover-db-url is not; \
+                 the include set would have no effect because the OCW only \
+                 runs when an indexer URL is configured."
+                    .into(),
+            ));
+        }
+        configure_prover_db_include(backend.as_ref(), path)?;
     }
 
     let metrics = N::register_notification_metrics(
