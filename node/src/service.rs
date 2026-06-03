@@ -81,13 +81,17 @@ const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 /// one dot, two non-empty segments):
 ///
 /// - `"*.*"`            → no rule emitted (degenerate; equivalent to
-///                        passing no patterns at all).
+///   passing no patterns at all).
 /// - `"NAMESPACE.*"`    → `IncludeRule::Namespace(NAMESPACE)`.
 /// - `"NAMESPACE.NAME"` → `IncludeRule::Table(NAMESPACE.NAME)`.
 ///
 /// `*.NAME` (left wildcard) is rejected — the runtime rule type can't
 /// express "any namespace, this name". Identifiers are uppercased so
 /// matches against the on-chain canonical form are byte-exact.
+#[expect(
+    clippy::result_large_err,
+    reason = "ServiceError is from substrate and cannot be modified"
+)]
 fn parse_include_pattern(
     pattern: &str,
 ) -> Result<Option<sxt_core::prover_db_indexer::IncludeRule>, ServiceError> {

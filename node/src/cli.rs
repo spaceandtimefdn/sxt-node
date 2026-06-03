@@ -64,6 +64,7 @@ pub struct ProverDbConsumerCli {
     ///   - `*.*`             — every captured event (default if omitted).
     ///   - `NAMESPACE.*`     — every table in NAMESPACE.
     ///   - `NAMESPACE.NAME`  — exactly that one table.
+    ///
     /// `*.NAME` is rejected: the runtime rule type can't express
     /// "any namespace, this name".
     ///
