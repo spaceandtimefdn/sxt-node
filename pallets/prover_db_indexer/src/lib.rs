@@ -59,11 +59,9 @@ mod proto {
 }
 
 pub use pallet::*;
-/// Re-export of the canonical offchain local-storage keys (defined in `sxt-core`),
-/// kept here so existing call sites that reach for
-/// `pallet_prover_db_indexer::PROVER_DB_URL_KEY` keep working and so the node
-/// service has a single import for both.
-pub use sxt_core::prover_db_indexer::{PROVER_DB_INCLUDE_KEY, PROVER_DB_URL_KEY};
+/// Re-export of the canonical offchain local-storage key (defined in `sxt-core`),
+/// so the node service and any external tooling have a single import.
+pub use sxt_core::prover_db_indexer::PROVER_DB_CONFIG_KEY;
 
 /// Offchain DB key for the lock that serializes OCW consumer rounds.
 const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
@@ -79,9 +77,6 @@ const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
 /// every variant looks the same.
 #[derive(Debug, snafu::Snafu)]
 pub enum ConsumerError {
-    /// The configured indexer URL was not valid UTF-8.
-    #[snafu(display("indexer URL was not valid UTF-8"))]
-    InvalidUrlEncoding,
     /// The configured indexer URL couldn't be parsed.
     #[snafu(display("indexer URL is not a valid URL: {error}"))]
     InvalidUrl {
@@ -141,6 +136,7 @@ pub mod pallet {
         BlockEvent,
         EventCapture,
         IncludeRule,
+        ProverDbConsumerConfig,
     };
 
     use crate::ConsumerError;
@@ -264,29 +260,17 @@ pub mod pallet {
                 }
             };
 
-            // 1. Check if this node is configured as an indexer.
-            let url_ref = StorageValueRef::persistent(crate::PROVER_DB_URL_KEY);
-            let url_bytes: Option<Vec<u8>> = url_ref.get::<Vec<u8>>().ok().flatten();
-
-            let Some(url_bytes) = url_bytes else {
+            // 1. Read the single offchain config. Absence ⇒ this node
+            //    isn't an indexer; OCW is dormant. The node service
+            //    writes the encoded `ProverDbConsumerConfig` at startup
+            //    iff `--prover-db-url` was provided.
+            let cfg_ref = StorageValueRef::persistent(crate::PROVER_DB_CONFIG_KEY);
+            let Some(cfg) = cfg_ref.get::<ProverDbConsumerConfig>().ok().flatten() else {
                 return Ok(());
             };
-
-            let url_str =
-                core::str::from_utf8(&url_bytes).map_err(|_| ConsumerError::InvalidUrlEncoding)?;
             let url =
-                url::Url::parse(url_str).map_err(|error| ConsumerError::InvalidUrl { error })?;
-
-            // 1b. Load this node's include set from offchain local storage.
-            //     Absent or empty ⇒ "forward every event". The rules are
-            //     written by the node service at startup from a CLI config
-            //     file; see `sxt_core::prover_db_indexer::PROVER_DB_INCLUDE_KEY`.
-            let include_ref = StorageValueRef::persistent(crate::PROVER_DB_INCLUDE_KEY);
-            let include_rules: Vec<IncludeRule> = include_ref
-                .get::<Vec<IncludeRule>>()
-                .ok()
-                .flatten()
-                .unwrap_or_default();
+                url::Url::parse(&cfg.url).map_err(|error| ConsumerError::InvalidUrl { error })?;
+            let include_rules: Vec<IncludeRule> = cfg.include;
 
             polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",

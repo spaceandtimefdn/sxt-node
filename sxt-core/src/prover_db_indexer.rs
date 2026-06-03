@@ -3,32 +3,42 @@
 //! `pallet-tables` and `pallet-indexing`.
 
 use alloc::borrow::Cow;
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use codec::{Decode, Encode};
 
 use crate::tables::{TableIdentifier, TableNamespace};
 
-/// Offchain local-storage key holding the prover-db indexer URL.
+/// Offchain local-storage key holding the prover-db indexer consumer's
+/// configuration. The embedding node writes a SCALE-encoded
+/// [`ProverDbConsumerConfig`] under this key at startup; the OCW reads
+/// it once per round. Absence of the key means "OCW is dormant".
 ///
-/// The embedding node is expected to write the configured URL to this
-/// key in OCW persistent storage before block authoring begins; the
-/// prover-db-indexer pallet's offchain worker reads it to know where to
-/// forward events. If the key is unset the OCW stays dormant.
-pub const PROVER_DB_URL_KEY: &[u8] = b"prover_db_indexer/prover_db_url";
+/// One key for the whole consumer rather than one-per-field so the
+/// "consumer is enabled" and "consumer is disabled with stale filter
+/// settings" states are unrepresentable.
+pub const PROVER_DB_CONFIG_KEY: &[u8] = b"prover_db_indexer/consumer_config";
 
-/// Offchain local-storage key holding this node's per-node include set.
+/// Per-node configuration that turns this node into a prover-db
+/// indexer: the upstream URL to POST forwarded events to, plus the
+/// optional include set that gates which events get forwarded.
 ///
-/// Stored as a SCALE-encoded `Vec<IncludeRule>`. Set by the node service
-/// at startup from a CLI-supplied config file. The OCW consumer reads
-/// this once per round and only forwards events whose table matches one
-/// of the configured rules. An empty list (the default if the key is
-/// unset) means "forward every captured event" — the on-chain capture
-/// side is unfiltered, so every node still maintains the same offchain
-/// queue regardless of what this filter is set to. Two indexer nodes
-/// can therefore subscribe to different subsets without affecting each
-/// other or the chain.
-pub const PROVER_DB_INCLUDE_KEY: &[u8] = b"prover_db_indexer/include_rules";
+/// Lives in offchain local storage under [`PROVER_DB_CONFIG_KEY`].
+/// `url` is non-optional: writing the config _is_ the act of enabling
+/// the consumer, and there's no enabled-without-URL state to express.
+/// `include` may be empty, which the OCW treats as "match every table"
+/// (same default as if the operator hadn't passed any include patterns
+/// at all).
+#[derive(Encode, Decode, Debug, Clone, Eq, PartialEq)]
+pub struct ProverDbConsumerConfig {
+    /// HTTP base URL of the upstream prover-db indexer. Validated at
+    /// node start; stored as raw bytes so the pallet doesn't need to
+    /// pull in the `url` crate's full parsing surface.
+    pub url: String,
+    /// Per-node include set. Empty ⇒ forward every captured event.
+    pub include: Vec<IncludeRule>,
+}
 
 /// Offchain DB key prefix for per-extrinsic event payloads. SCALE-encoded
 /// as part of a `(prefix, block, ext_idx)` tuple, so the tuple structure
@@ -113,8 +123,8 @@ impl EventCapture for () {
 }
 
 /// A single entry in the prover-db indexer's include set. Stored only
-/// in the indexer node's offchain local storage (under
-/// [`PROVER_DB_INCLUDE_KEY`]); not part of on-chain state. An empty list
+/// in the indexer node's offchain local storage (as part of
+/// [`ProverDbConsumerConfig`]); not part of on-chain state. An empty list
 /// of these means "forward every event"; a non-empty list means "only
 /// forward events whose table matches at least one rule".
 ///

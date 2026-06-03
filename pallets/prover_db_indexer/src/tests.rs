@@ -24,19 +24,25 @@ use sxt_core::prover_db_indexer::{
     EventCapture,
     IncludeRule,
     InsertEntry,
+    ProverDbConsumerConfig,
 };
 use sxt_core::tables::{TableIdentifier, TableNamespace};
 
 use crate::mock::*;
-use crate::{proto, PROVER_DB_INCLUDE_KEY, PROVER_DB_URL_KEY};
+use crate::{proto, PROVER_DB_CONFIG_KEY};
 
 type StateArc =
     std::sync::Arc<parking_lot::RwLock<polkadot_sdk::sp_core::offchain::testing::OffchainState>>;
 
 const MOCK_URL: &str = "http://127.0.0.1:9999";
 
-fn encode_url() -> Vec<u8> {
-    codec::Encode::encode(&MOCK_URL.as_bytes().to_vec())
+/// SCALE-encode the unified consumer config the same way the node
+/// service does at startup.
+fn encode_config(include: Vec<IncludeRule>) -> Vec<u8> {
+    codec::Encode::encode(&ProverDbConsumerConfig {
+        url: MOCK_URL.to_string(),
+        include,
+    })
 }
 
 fn expected_request(path: &str, body: Vec<u8>, response: Vec<u8>) -> PendingRequest {
@@ -67,7 +73,18 @@ fn no_checkpoint_response() -> Vec<u8> {
     .encode_to_vec()
 }
 
+/// Seed an empty include set — equivalent to the operator running
+/// without `--prover-db-include`, which is what every existing test
+/// expects.
 fn setup_with_url() -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
+    setup_with_config(Vec::new())
+}
+
+/// Seed a non-empty include set under the unified config key. Used by
+/// the consumer-side filter tests.
+fn setup_with_config(
+    include: Vec<IncludeRule>,
+) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
     let mut ext = new_test_ext();
     let (offchain, state) = TestOffchainExt::new();
     ext.register_extension(OffchainWorkerExt::new(offchain.clone()));
@@ -75,7 +92,7 @@ fn setup_with_url() -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
     state
         .write()
         .persistent_storage
-        .set(b"", PROVER_DB_URL_KEY, &encode_url());
+        .set(b"", PROVER_DB_CONFIG_KEY, &encode_config(include));
     (ext, state)
 }
 
@@ -452,19 +469,15 @@ fn capture_events_writes_all_events_unconditionally() {
 /// and confirm only the matching events are POSTed to the indexer.
 #[test]
 fn ocw_forwards_only_events_matching_include_set() {
-    let (mut ext, state) = setup_with_url();
-
-    // Seed the node-local include set: namespace = "ALPHA", and a
-    // specific table B.BETA. Encoded as SCALE Vec<IncludeRule>, exactly
-    // as the node service would write it from the CLI config file.
-    let rules = vec![
+    // Seed the node-local config with two include rules: any table in
+    // namespace ALPHA, plus the specific table BETA_NS.BETA_T. The
+    // service writes both URL + include atomically via a single
+    // SCALE-encoded `ProverDbConsumerConfig` — same shape this test
+    // mirrors.
+    let (mut ext, state) = setup_with_config(vec![
         IncludeRule::Namespace(TableNamespace::try_from(b"ALPHA".to_vec()).unwrap()),
         IncludeRule::Table(TableIdentifier::from_str_unchecked("BETA_T", "BETA_NS")),
-    ];
-    state
-        .write()
-        .persistent_storage
-        .set(b"", PROVER_DB_INCLUDE_KEY, &rules.encode());
+    ]);
 
     // Block 1, extrinsic 0: a mix of matching and non-matching events.
     seed_block_events(
@@ -546,7 +559,8 @@ fn ocw_forwards_only_events_matching_include_set() {
 fn ocw_with_empty_include_set_forwards_everything() {
     let (mut ext, state) = setup_with_url();
 
-    // No PROVER_DB_INCLUDE_KEY written — absence ⇒ empty rules ⇒ match all.
+    // `setup_with_url` writes a config whose `include` is empty —
+    // same effect as the operator not passing `--prover-db-include`.
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
     seed_block_events(
         &state,

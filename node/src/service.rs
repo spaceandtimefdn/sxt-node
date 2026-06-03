@@ -77,105 +77,116 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
-/// Seed the prover-db indexer URL into offchain persistent local storage
-/// at startup, before the first block is authored.
+/// Parse one entry from `--prover-db-include`. Grammar (always exactly
+/// one dot, two non-empty segments):
 ///
-/// Stored under `sxt_core::prover_db_indexer::PROVER_DB_URL_KEY` as a
-/// SCALE-encoded `Vec<u8>` of the URL bytes.
+/// - `"*.*"`            → no rule emitted (degenerate; equivalent to
+///                        passing no patterns at all).
+/// - `"NAMESPACE.*"`    → `IncludeRule::Namespace(NAMESPACE)`.
+/// - `"NAMESPACE.NAME"` → `IncludeRule::Table(NAMESPACE.NAME)`.
+///
+/// `*.NAME` (left wildcard) is rejected — the runtime rule type can't
+/// express "any namespace, this name". Identifiers are uppercased so
+/// matches against the on-chain canonical form are byte-exact.
+fn parse_include_pattern(
+    pattern: &str,
+) -> Result<Option<sxt_core::prover_db_indexer::IncludeRule>, ServiceError> {
+    let Some((ns, name)) = pattern.split_once('.') else {
+        return Err(ServiceError::Other(format!(
+            "include pattern '{}' must be of the form \
+             'NAMESPACE.NAME', 'NAMESPACE.*', or '*.*'",
+            pattern,
+        )));
+    };
+    if ns.is_empty() || name.is_empty() {
+        return Err(ServiceError::Other(format!(
+            "include pattern '{}' has an empty segment",
+            pattern,
+        )));
+    }
+    match (ns, name) {
+        ("*", "*") => Ok(None),
+        ("*", _) => Err(ServiceError::Other(format!(
+            "include pattern '{}': left wildcard ('*.NAME') is not \
+             supported; use 'NAMESPACE.*' or 'NAMESPACE.NAME'",
+            pattern,
+        ))),
+        (ns, "*") => {
+            let bytes = ns.to_uppercase().into_bytes();
+            let ns_bv = sxt_core::tables::TableNamespace::try_from(bytes).map_err(|_| {
+                ServiceError::Other(format!(
+                    "namespace '{}' exceeds the maximum identifier length",
+                    ns,
+                ))
+            })?;
+            Ok(Some(sxt_core::prover_db_indexer::IncludeRule::Namespace(
+                ns_bv,
+            )))
+        }
+        (ns, name) => {
+            let ident = sxt_core::tables::TableIdentifier::from_str_unchecked(name, ns);
+            Ok(Some(sxt_core::prover_db_indexer::IncludeRule::Table(ident)))
+        }
+    }
+}
+
+/// Validate the consumer CLI group into a concrete
+/// `ProverDbConsumerConfig` (URL non-optional) and seed it under
+/// `PROVER_DB_CONFIG_KEY` in offchain persistent local storage. Atomic
+/// shape: one offchain key per consumer, so half-states like "include
+/// patterns set but URL missing" are caught up front instead of becoming
+/// stale data in the OCW DB.
+///
+/// Returns:
+/// - `Ok(())` and writes the key when `--prover-db-url` is set.
+/// - `Ok(())` and **does not** write when nothing is set (this node
+///   isn't an indexer; OCW stays dormant).
+/// - `Err(_)` if the operator tried to set patterns without a URL, or
+///   if any pattern is malformed.
 #[expect(
     clippy::result_large_err,
     reason = "ServiceError is from substrate and cannot be modified"
 )]
-fn configure_prover_db_url(backend: &FullBackend, url: &url::Url) -> Result<(), ServiceError> {
-    let Some(mut storage) = backend.offchain_storage() else {
-        return Err(ServiceError::Other(
-            "backend did not expose an offchain storage handle; \
-             cannot apply --prover-db-url"
-                .into(),
-        ));
+fn configure_prover_db_consumer(
+    backend: &FullBackend,
+    cli: &crate::cli::ProverDbConsumerCli,
+) -> Result<(), ServiceError> {
+    let Some(url) = cli.prover_db_url.as_ref() else {
+        if !cli.prover_db_include.is_empty() {
+            return Err(ServiceError::Other(
+                "--prover-db-include was set but --prover-db-url is not; \
+                 the include set would have no effect because the OCW \
+                 only runs when the indexer URL is configured."
+                    .into(),
+            ));
+        }
+        return Ok(());
     };
-    let encoded = url.as_str().as_bytes().to_vec().encode();
-    storage.set(
-        STORAGE_PREFIX,
-        sxt_core::prover_db_indexer::PROVER_DB_URL_KEY,
-        &encoded,
-    );
-    Ok(())
-}
 
-/// JSON rule type as it appears in the user-supplied `--prover-db-include-file`.
-/// Decoupled from the runtime [`sxt_core::prover_db_indexer::IncludeRule`]
-/// so the on-disk format can use natural string fields while the wire
-/// type uses byte-bounded `TableNamespace` / `TableIdentifier`.
-#[derive(serde::Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-enum IncludeRuleJson {
-    Namespace { value: String },
-    Table { namespace: String, name: String },
-}
+    let mut rules: Vec<sxt_core::prover_db_indexer::IncludeRule> =
+        Vec::with_capacity(cli.prover_db_include.len());
+    for pat in &cli.prover_db_include {
+        if let Some(rule) = parse_include_pattern(pat)? {
+            rules.push(rule);
+        }
+    }
 
-/// Parse the include-file JSON and seed the rule set into offchain
-/// persistent local storage at startup, before the first block is
-/// authored.
-///
-/// Stored under `sxt_core::prover_db_indexer::PROVER_DB_INCLUDE_KEY` as
-/// a SCALE-encoded `Vec<IncludeRule>`. Identifiers are uppercased on
-/// the way in via `TableIdentifier::from_str_unchecked`, so the matches
-/// the OCW does later are byte-exact against the on-chain canonical
-/// form.
-#[expect(
-    clippy::result_large_err,
-    reason = "ServiceError is from substrate and cannot be modified"
-)]
-fn configure_prover_db_include(backend: &FullBackend, path: &Path) -> Result<(), ServiceError> {
-    let raw = std::fs::read_to_string(path).map_err(|e| {
-        ServiceError::Other(format!(
-            "failed to read --prover-db-include-file {}: {}",
-            path.display(),
-            e
-        ))
-    })?;
-    let json_rules: Vec<IncludeRuleJson> = serde_json::from_str(&raw).map_err(|e| {
-        ServiceError::Other(format!(
-            "failed to parse --prover-db-include-file {} as JSON: {}",
-            path.display(),
-            e
-        ))
-    })?;
-
-    let rules: Vec<sxt_core::prover_db_indexer::IncludeRule> = json_rules
-        .into_iter()
-        .map(|r| match r {
-            IncludeRuleJson::Namespace { value } => {
-                let bytes = value.to_uppercase().into_bytes();
-                let ns = sxt_core::tables::TableNamespace::try_from(bytes).map_err(|_| {
-                    ServiceError::Other(format!(
-                        "namespace '{}' in {} exceeds the maximum identifier length",
-                        value,
-                        path.display(),
-                    ))
-                })?;
-                Ok(sxt_core::prover_db_indexer::IncludeRule::Namespace(ns))
-            }
-            IncludeRuleJson::Table { namespace, name } => {
-                let ident =
-                    sxt_core::tables::TableIdentifier::from_str_unchecked(&name, &namespace);
-                Ok(sxt_core::prover_db_indexer::IncludeRule::Table(ident))
-            }
-        })
-        .collect::<Result<_, ServiceError>>()?;
+    let cfg = sxt_core::prover_db_indexer::ProverDbConsumerConfig {
+        url: url.as_str().to_string(),
+        include: rules,
+    };
 
     let Some(mut storage) = backend.offchain_storage() else {
         return Err(ServiceError::Other(
             "backend did not expose an offchain storage handle; \
-             cannot apply --prover-db-include-file"
+             cannot apply --prover-db-url / --prover-db-include"
                 .into(),
         ));
     };
     storage.set(
         STORAGE_PREFIX,
-        sxt_core::prover_db_indexer::PROVER_DB_INCLUDE_KEY,
-        &rules.encode(),
+        sxt_core::prover_db_indexer::PROVER_DB_CONFIG_KEY,
+        &cfg.encode(),
     );
     Ok(())
 }
@@ -428,37 +439,20 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
         other: (rpc_builder, import_setup, rpc_setup, mut telemetry, statement_store),
     } = new_partial(&config)?;
 
-    // `--prover-db-url` only takes effect when offchain indexing is
-    // enabled, since the prover-db-indexer OCW only runs in that case.
-    // Fail loud if the operator set the URL without enabling indexing,
-    // rather than silently ignoring it.
-    if let Some(url) = cli.prover_db_url.as_ref() {
-        if !config.offchain_worker.indexing_enabled {
-            return Err(ServiceError::Other(
-                "--prover-db-url was set but --enable-offchain-indexing is not \
-                 true; the prover-db-indexer offchain worker would be inactive. \
-                 Restart with --enable-offchain-indexing=true, or omit \
-                 --prover-db-url."
-                    .into(),
-            ));
-        }
-        configure_prover_db_url(backend.as_ref(), url)?;
+    // The prover-db consumer (URL + include set) only takes effect when
+    // offchain indexing is enabled, since the OCW only runs in that
+    // case. Fail loud if the operator set --prover-db-url without
+    // enabling indexing, rather than silently ignoring it.
+    if cli.prover_db.prover_db_url.is_some() && !config.offchain_worker.indexing_enabled {
+        return Err(ServiceError::Other(
+            "--prover-db-url was set but --enable-offchain-indexing is not \
+             true; the prover-db-indexer offchain worker would be inactive. \
+             Restart with --enable-offchain-indexing=true, or omit \
+             --prover-db-url."
+                .into(),
+        ));
     }
-
-    // `--prover-db-include-file` is only meaningful when the OCW will
-    // actually forward something, i.e. when the URL is set. Reject the
-    // common misconfiguration up front.
-    if let Some(path) = cli.prover_db_include_file.as_ref() {
-        if cli.prover_db_url.is_none() {
-            return Err(ServiceError::Other(
-                "--prover-db-include-file was set but --prover-db-url is not; \
-                 the include set would have no effect because the OCW only \
-                 runs when an indexer URL is configured."
-                    .into(),
-            ));
-        }
-        configure_prover_db_include(backend.as_ref(), path)?;
-    }
+    configure_prover_db_consumer(backend.as_ref(), &cli.prover_db)?;
 
     let metrics = N::register_notification_metrics(
         config.prometheus_config.as_ref().map(|cfg| &cfg.registry),
