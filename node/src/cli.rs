@@ -73,7 +73,7 @@ pub struct ProverDbConsumerCli {
     /// works without per-operator vigilance.
     ///
     /// [`TableIdentifierFilter`]: sxt_core::prover_db_indexer::TableIdentifierFilter
-    #[clap(long, env, value_delimiter = ',')]
+    #[clap(long, env, value_delimiter = ',', default_value = "*.*")]
     pub prover_db_include: Vec<sxt_core::prover_db_indexer::TableIdentifierFilter>,
 }
 

@@ -79,21 +79,13 @@ const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
 /// Validate the consumer CLI group into a concrete
 /// `ProverDbConsumerConfig` (URL non-optional) and seed it under
-/// `PROVER_DB_CONFIG_KEY` in offchain persistent local storage. Atomic
-/// shape: one offchain key per consumer, so half-states like "include
-/// patterns set but URL missing" are caught up front instead of becoming
-/// stale data in the OCW DB.
+/// `PROVER_DB_CONFIG_KEY` in offchain persistent local storage.
 ///
-/// Each `--prover-db-include` value has already been parsed into a
-/// `TableIdentifierFilter` by clap (via the type's `FromStr` impl), so
-/// this function only enforces the URL/include consistency rule and
-/// writes the encoded config.
-///
-/// Returns:
-/// - `Ok(())` and writes the key when `--prover-db-url` is set.
-/// - `Ok(())` and **does not** write when nothing is set (this node
-///   isn't an indexer; OCW stays dormant).
-/// - `Err(_)` if the operator tried to set patterns without a URL.
+/// `--prover-db-url` is the single switch that enables the consumer:
+/// present ⇒ write the config; absent ⇒ the OCW stays dormant and we
+/// don't write anything. `--prover-db-include` is allowed (with its
+/// `*.*` default) regardless of whether the URL is set; without a URL
+/// it just has nothing to filter.
 #[expect(
     clippy::result_large_err,
     reason = "ServiceError is from substrate and cannot be modified"
@@ -103,14 +95,6 @@ fn configure_prover_db_consumer(
     cli: &crate::cli::ProverDbConsumerCli,
 ) -> Result<(), ServiceError> {
     let Some(url) = cli.prover_db_url.as_ref() else {
-        if !cli.prover_db_include.is_empty() {
-            return Err(ServiceError::Other(
-                "--prover-db-include was set but --prover-db-url is not; \
-                 the include set would have no effect because the OCW \
-                 only runs when the indexer URL is configured."
-                    .into(),
-            ));
-        }
         return Ok(());
     };
 
