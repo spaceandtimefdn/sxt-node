@@ -22,11 +22,11 @@ use sxt_core::prover_db_indexer::{
     BlockEvent,
     CreateEntry,
     EventCapture,
-    IncludeRule,
     InsertEntry,
     ProverDbConsumerConfig,
+    TableIdentifierFilter,
 };
-use sxt_core::tables::{TableIdentifier, TableNamespace};
+use sxt_core::tables::TableIdentifier;
 
 use crate::mock::*;
 use crate::{proto, PROVER_DB_CONFIG_KEY};
@@ -38,7 +38,7 @@ const MOCK_URL: &str = "http://127.0.0.1:9999";
 
 /// SCALE-encode the unified consumer config the same way the node
 /// service does at startup.
-fn encode_config(include: Vec<IncludeRule>) -> Vec<u8> {
+fn encode_config(include: Vec<TableIdentifierFilter>) -> Vec<u8> {
     codec::Encode::encode(&ProverDbConsumerConfig {
         url: MOCK_URL.to_string(),
         include,
@@ -83,7 +83,7 @@ fn setup_with_url() -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
 /// Seed a non-empty include set under the unified config key. Used by
 /// the consumer-side filter tests.
 fn setup_with_config(
-    include: Vec<IncludeRule>,
+    include: Vec<TableIdentifierFilter>,
 ) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
     let mut ext = new_test_ext();
     let (offchain, state) = TestOffchainExt::new();
@@ -475,8 +475,8 @@ fn ocw_forwards_only_events_matching_include_set() {
     // SCALE-encoded `ProverDbConsumerConfig` — same shape this test
     // mirrors.
     let (mut ext, state) = setup_with_config(vec![
-        IncludeRule::Namespace(TableNamespace::try_from(b"ALPHA".to_vec()).unwrap()),
-        IncludeRule::Table(TableIdentifier::from_str_unchecked("BETA_T", "BETA_NS")),
+        "ALPHA.*".parse().unwrap(),
+        "BETA_NS.BETA_T".parse().unwrap(),
     ]);
 
     // Block 1, extrinsic 0: a mix of matching and non-matching events.

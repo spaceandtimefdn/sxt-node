@@ -132,11 +132,11 @@ pub mod pallet {
     use sxt_core::prover_db_indexer::{
         key_for_event,
         key_for_high_water,
-        table_matches_rules,
+        table_matches_filters,
         BlockEvent,
         EventCapture,
-        IncludeRule,
         ProverDbConsumerConfig,
+        TableIdentifierFilter,
     };
 
     use crate::ConsumerError;
@@ -270,12 +270,12 @@ pub mod pallet {
             };
             let url =
                 url::Url::parse(&cfg.url).map_err(|error| ConsumerError::InvalidUrl { error })?;
-            let include_rules: Vec<IncludeRule> = cfg.include;
+            let include_filters: Vec<TableIdentifierFilter> = cfg.include;
 
             polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
-                "consumer round starting; indexer base URL = {}; {} include rules",
-                url, include_rules.len(),
+                "consumer round starting; indexer base URL = {}; {} include filters",
+                url, include_filters.len(),
             );
 
             // 2. Current block number — passed in by `offchain_worker`.
@@ -317,7 +317,7 @@ pub mod pallet {
             );
 
             for block_num in start..=end {
-                Self::forward_block(&url, block_num, &include_rules)?;
+                Self::forward_block(&url, block_num, &include_filters)?;
 
                 // Checkpoint on the server (always, even for empty blocks).
                 crate::http_client::checkpoint(&url, block_num)
@@ -333,7 +333,7 @@ pub mod pallet {
         fn forward_block(
             url: &url::Url,
             block_num: u64,
-            include_rules: &[IncludeRule],
+            include_filters: &[TableIdentifierFilter],
         ) -> Result<(), ConsumerError> {
             let Some(hwm) = crate::offchain_consumer::read_high_water(block_num) else {
                 return Ok(());
@@ -350,7 +350,7 @@ pub mod pallet {
                 let Some(events) = crate::offchain_consumer::read_events(block_num, ext_idx) else {
                     continue;
                 };
-                Self::forward_events(url, block_num, &events, include_rules)?;
+                Self::forward_events(url, block_num, &events, include_filters)?;
                 crate::offchain_consumer::clear_events(block_num, ext_idx);
             }
 
@@ -367,7 +367,7 @@ pub mod pallet {
             url: &url::Url,
             block_num: u64,
             events: &[BlockEvent<'_>],
-            include_rules: &[IncludeRule],
+            include_filters: &[TableIdentifierFilter],
         ) -> Result<(), ConsumerError> {
             let seq = block_num;
 
@@ -377,7 +377,7 @@ pub mod pallet {
                     BlockEvent::Drop(ident) => ident.as_ref(),
                     BlockEvent::Insert(entry) => entry.table.as_ref(),
                 };
-                if !table_matches_rules(table, include_rules) {
+                if !table_matches_filters(table, include_filters) {
                     continue;
                 }
 

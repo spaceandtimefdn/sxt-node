@@ -3,12 +3,15 @@
 //! `pallet-tables` and `pallet-indexing`.
 
 use alloc::borrow::Cow;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use core::str::FromStr;
 
 use codec::{Decode, Encode};
+use snafu::Snafu;
 
-use crate::tables::{TableIdentifier, TableNamespace};
+use crate::tables::TableIdentifier;
+use crate::IDENT_LENGTH;
 
 /// Offchain local-storage key holding the prover-db indexer consumer's
 /// configuration. The embedding node writes a SCALE-encoded
@@ -37,7 +40,7 @@ pub struct ProverDbConsumerConfig {
     /// pull in the `url` crate's full parsing surface.
     pub url: String,
     /// Per-node include set. Empty ⇒ forward every captured event.
-    pub include: Vec<IncludeRule>,
+    pub include: Vec<TableIdentifierFilter>,
 }
 
 /// Offchain DB key prefix for per-extrinsic event payloads. SCALE-encoded
@@ -122,32 +125,138 @@ impl EventCapture for () {
     fn capture_events(_events: Vec<BlockEvent<'_>>) {}
 }
 
-/// A single entry in the prover-db indexer's include set. Stored only
-/// in the indexer node's offchain local storage (as part of
-/// [`ProverDbConsumerConfig`]); not part of on-chain state. An empty list
-/// of these means "forward every event"; a non-empty list means "only
-/// forward events whose table matches at least one rule".
-///
-/// Matches are byte-exact against the on-chain identifiers, so callers
-/// that need case-insensitive matching should normalize their inputs
-/// (e.g. via [`TableIdentifier::from_str_unchecked`] which uppercases)
-/// before writing the rule to offchain storage.
+/// Filter for one side (namespace or name) of a `TableIdentifier`.
+/// Either matches every identifier (`Wildcard`) or matches exactly one
+/// byte sequence (`Ident`). `Ident` values are stored uppercased so
+/// matches against the on-chain canonical form are byte-exact without
+/// per-callsite vigilance.
 #[derive(Encode, Decode, Debug, Clone, Eq, PartialEq)]
-pub enum IncludeRule {
-    /// Match every table within the given namespace.
-    Namespace(TableNamespace),
-    /// Match exactly one fully-qualified table identifier.
-    Table(TableIdentifier),
+pub enum IdentFilter {
+    /// Matches any identifier on this side of the dot.
+    Wildcard,
+    /// Matches an identifier whose bytes equal these.
+    Ident(String),
 }
 
-/// Returns true if `table` matches at least one rule in `rules`. An
-/// empty rule set is treated as "match all".
-pub fn table_matches_rules(table: &TableIdentifier, rules: &[IncludeRule]) -> bool {
-    if rules.is_empty() {
-        return true;
+impl IdentFilter {
+    /// Returns true if `bytes` (the on-chain canonical, uppercased form)
+    /// matches this filter.
+    pub fn matches(&self, bytes: &[u8]) -> bool {
+        match self {
+            Self::Wildcard => true,
+            Self::Ident(s) => s.as_bytes() == bytes,
+        }
     }
-    rules.iter().any(|rule| match rule {
-        IncludeRule::Namespace(ns) => &table.namespace == ns,
-        IncludeRule::Table(t) => t == table,
-    })
+}
+
+/// `FromStr` parse error for [`IdentFilter`].
+#[derive(Debug, Snafu)]
+pub enum IdentFilterParseError {
+    /// The input was empty (neither `*` nor a non-empty identifier).
+    #[snafu(display("identifier filter is empty"))]
+    Empty,
+    /// The identifier exceeded the on-chain identifier length cap and so
+    /// could never match a captured table identifier.
+    #[snafu(display("identifier filter exceeds the {max}-byte on-chain length cap"))]
+    TooLong {
+        /// The cap, in bytes (`IDENT_LENGTH`).
+        max: u32,
+    },
+}
+
+impl FromStr for IdentFilter {
+    type Err = IdentFilterParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "*" {
+            return Ok(Self::Wildcard);
+        }
+        if s.is_empty() {
+            return Err(IdentFilterParseError::Empty);
+        }
+        let upper = s.to_uppercase();
+        if upper.len() as u32 > IDENT_LENGTH {
+            return Err(IdentFilterParseError::TooLong { max: IDENT_LENGTH });
+        }
+        Ok(Self::Ident(upper))
+    }
+}
+
+/// Filter against a fully-qualified [`TableIdentifier`]. Matches when
+/// both sides match — so `*.*` is "everything", `NS.*` is "every table
+/// in NS", `NS.NAME` is exact, and `*.NAME` is "any namespace, this
+/// name".
+///
+/// Stored only in the indexer node's offchain local storage (as the
+/// `include` field of [`ProverDbConsumerConfig`]); not part of on-chain
+/// state. An empty list is treated as "forward every event".
+#[derive(Encode, Decode, Debug, Clone, Eq, PartialEq)]
+pub struct TableIdentifierFilter {
+    /// Filter applied to `ident.namespace`.
+    pub namespace_filter: IdentFilter,
+    /// Filter applied to `ident.name`.
+    pub name_filter: IdentFilter,
+}
+
+impl TableIdentifierFilter {
+    /// Returns true if `ident` passes both sides of this filter.
+    pub fn matches(&self, ident: &TableIdentifier) -> bool {
+        self.namespace_filter.matches(&ident.namespace) && self.name_filter.matches(&ident.name)
+    }
+}
+
+/// `FromStr` parse error for [`TableIdentifierFilter`].
+#[derive(Debug, Snafu)]
+pub enum TableIdentifierFilterParseError {
+    /// The input didn't contain exactly one `.` separator.
+    #[snafu(display("expected 'NAMESPACE.NAME' form with exactly one dot, got '{input}'"))]
+    MalformedShape {
+        /// The original input string.
+        input: String,
+    },
+    /// The namespace side failed to parse as an [`IdentFilter`].
+    #[snafu(display("invalid namespace filter: {source}"))]
+    Namespace {
+        /// Underlying [`IdentFilter`] parse error.
+        source: IdentFilterParseError,
+    },
+    /// The name side failed to parse as an [`IdentFilter`].
+    #[snafu(display("invalid name filter: {source}"))]
+    Name {
+        /// Underlying [`IdentFilter`] parse error.
+        source: IdentFilterParseError,
+    },
+}
+
+impl FromStr for TableIdentifierFilter {
+    type Err = TableIdentifierFilterParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let Some((ns, name)) = s.split_once('.') else {
+            return Err(TableIdentifierFilterParseError::MalformedShape {
+                input: s.to_string(),
+            });
+        };
+        if s.matches('.').count() != 1 {
+            return Err(TableIdentifierFilterParseError::MalformedShape {
+                input: s.to_string(),
+            });
+        }
+        let namespace_filter = ns
+            .parse()
+            .map_err(|source| TableIdentifierFilterParseError::Namespace { source })?;
+        let name_filter = name
+            .parse()
+            .map_err(|source| TableIdentifierFilterParseError::Name { source })?;
+        Ok(Self {
+            namespace_filter,
+            name_filter,
+        })
+    }
+}
+
+/// Returns true if `table` matches at least one filter in `filters`. An
+/// empty filter set is treated as "match all".
+pub fn table_matches_filters(table: &TableIdentifier, filters: &[TableIdentifierFilter]) -> bool {
+    filters.is_empty() || filters.iter().any(|f| f.matches(table))
 }

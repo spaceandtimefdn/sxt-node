@@ -60,19 +60,21 @@ pub struct ProverDbConsumerCli {
     /// to the indexer. Repeat the flag, or pass a single comma-
     /// separated value, or set `PROVER_DB_INCLUDE`.
     ///
-    /// Grammar (always exactly one dot, two segments):
+    /// Each entry parses as a [`TableIdentifierFilter`]: two
+    /// dot-separated sides, each either a literal identifier or `*`.
+    /// Both sides match independently, so:
     ///   - `*.*`             — every captured event (default if omitted).
     ///   - `NAMESPACE.*`     — every table in NAMESPACE.
+    ///   - `*.NAME`          — every table called NAME, regardless of namespace.
     ///   - `NAMESPACE.NAME`  — exactly that one table.
-    ///
-    /// `*.NAME` is rejected: the runtime rule type can't express
-    /// "any namespace, this name".
     ///
     /// Identifiers are uppercased before being written to offchain
     /// storage so the byte-match against the on-chain canonical form
     /// works without per-operator vigilance.
+    ///
+    /// [`TableIdentifierFilter`]: sxt_core::prover_db_indexer::TableIdentifierFilter
     #[clap(long, env, value_delimiter = ',')]
-    pub prover_db_include: Vec<String>,
+    pub prover_db_include: Vec<sxt_core::prover_db_indexer::TableIdentifierFilter>,
 }
 
 #[derive(Debug, clap::Subcommand)]

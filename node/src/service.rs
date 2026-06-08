@@ -77,63 +77,6 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
-/// Parse one entry from `--prover-db-include`. Grammar (always exactly
-/// one dot, two non-empty segments):
-///
-/// - `"*.*"`            → no rule emitted (degenerate; equivalent to
-///   passing no patterns at all).
-/// - `"NAMESPACE.*"`    → `IncludeRule::Namespace(NAMESPACE)`.
-/// - `"NAMESPACE.NAME"` → `IncludeRule::Table(NAMESPACE.NAME)`.
-///
-/// `*.NAME` (left wildcard) is rejected — the runtime rule type can't
-/// express "any namespace, this name". Identifiers are uppercased so
-/// matches against the on-chain canonical form are byte-exact.
-#[expect(
-    clippy::result_large_err,
-    reason = "ServiceError is from substrate and cannot be modified"
-)]
-fn parse_include_pattern(
-    pattern: &str,
-) -> Result<Option<sxt_core::prover_db_indexer::IncludeRule>, ServiceError> {
-    let Some((ns, name)) = pattern.split_once('.') else {
-        return Err(ServiceError::Other(format!(
-            "include pattern '{}' must be of the form \
-             'NAMESPACE.NAME', 'NAMESPACE.*', or '*.*'",
-            pattern,
-        )));
-    };
-    if ns.is_empty() || name.is_empty() {
-        return Err(ServiceError::Other(format!(
-            "include pattern '{}' has an empty segment",
-            pattern,
-        )));
-    }
-    match (ns, name) {
-        ("*", "*") => Ok(None),
-        ("*", _) => Err(ServiceError::Other(format!(
-            "include pattern '{}': left wildcard ('*.NAME') is not \
-             supported; use 'NAMESPACE.*' or 'NAMESPACE.NAME'",
-            pattern,
-        ))),
-        (ns, "*") => {
-            let bytes = ns.to_uppercase().into_bytes();
-            let ns_bv = sxt_core::tables::TableNamespace::try_from(bytes).map_err(|_| {
-                ServiceError::Other(format!(
-                    "namespace '{}' exceeds the maximum identifier length",
-                    ns,
-                ))
-            })?;
-            Ok(Some(sxt_core::prover_db_indexer::IncludeRule::Namespace(
-                ns_bv,
-            )))
-        }
-        (ns, name) => {
-            let ident = sxt_core::tables::TableIdentifier::from_str_unchecked(name, ns);
-            Ok(Some(sxt_core::prover_db_indexer::IncludeRule::Table(ident)))
-        }
-    }
-}
-
 /// Validate the consumer CLI group into a concrete
 /// `ProverDbConsumerConfig` (URL non-optional) and seed it under
 /// `PROVER_DB_CONFIG_KEY` in offchain persistent local storage. Atomic
@@ -141,12 +84,16 @@ fn parse_include_pattern(
 /// patterns set but URL missing" are caught up front instead of becoming
 /// stale data in the OCW DB.
 ///
+/// Each `--prover-db-include` value has already been parsed into a
+/// `TableIdentifierFilter` by clap (via the type's `FromStr` impl), so
+/// this function only enforces the URL/include consistency rule and
+/// writes the encoded config.
+///
 /// Returns:
 /// - `Ok(())` and writes the key when `--prover-db-url` is set.
 /// - `Ok(())` and **does not** write when nothing is set (this node
 ///   isn't an indexer; OCW stays dormant).
-/// - `Err(_)` if the operator tried to set patterns without a URL, or
-///   if any pattern is malformed.
+/// - `Err(_)` if the operator tried to set patterns without a URL.
 #[expect(
     clippy::result_large_err,
     reason = "ServiceError is from substrate and cannot be modified"
@@ -167,17 +114,9 @@ fn configure_prover_db_consumer(
         return Ok(());
     };
 
-    let mut rules: Vec<sxt_core::prover_db_indexer::IncludeRule> =
-        Vec::with_capacity(cli.prover_db_include.len());
-    for pat in &cli.prover_db_include {
-        if let Some(rule) = parse_include_pattern(pat)? {
-            rules.push(rule);
-        }
-    }
-
     let cfg = sxt_core::prover_db_indexer::ProverDbConsumerConfig {
         url: url.as_str().to_string(),
-        include: rules,
+        include: cli.prover_db_include.clone(),
     };
 
     let Some(mut storage) = backend.offchain_storage() else {
