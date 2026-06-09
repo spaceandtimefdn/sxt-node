@@ -39,7 +39,10 @@ pub struct ProverDbConsumerConfig {
     /// node start; stored as raw bytes so the pallet doesn't need to
     /// pull in the `url` crate's full parsing surface.
     pub url: String,
-    /// Per-node include set. Empty ⇒ forward every captured event.
+    /// Per-node include set. An event is forwarded iff its
+    /// `TableIdentifier` matches at least one filter. Empty ⇒ forward
+    /// nothing; callers that want "forward everything" must include an
+    /// explicit `*.*` filter.
     pub include: Vec<TableIdentifierFilter>,
 }
 
@@ -189,7 +192,7 @@ impl FromStr for IdentFilter {
 ///
 /// Stored only in the indexer node's offchain local storage (as the
 /// `include` field of [`ProverDbConsumerConfig`]); not part of on-chain
-/// state. An empty list is treated as "forward every event".
+/// state. An empty list matches nothing — see [`table_matches_filters`].
 #[derive(Encode, Decode, Debug, Clone, Eq, PartialEq)]
 pub struct TableIdentifierFilter {
     /// Filter applied to `ident.namespace`.
@@ -256,9 +259,11 @@ impl FromStr for TableIdentifierFilter {
 }
 
 /// Returns true if `table` matches at least one filter in `filters`. An
-/// empty filter set is treated as "match all".
+/// empty filter set matches nothing — callers that want "match all"
+/// must pass an explicit `*.*` filter. This makes "no filters
+/// configured" and "match-all configured" distinct, addressable states.
 pub fn table_matches_filters(table: &TableIdentifier, filters: &[TableIdentifierFilter]) -> bool {
-    filters.is_empty() || filters.iter().any(|f| f.matches(table))
+    filters.iter().any(|f| f.matches(table))
 }
 
 #[cfg(test)]
@@ -405,9 +410,16 @@ mod tests {
     // ── table_matches_filters ────────────────────────────────────────
 
     #[test]
-    fn empty_filter_set_matches_everything() {
+    fn empty_filter_set_matches_nothing() {
         let table = ident("T1", "ALPHA");
-        assert!(table_matches_filters(&table, &[]));
+        assert!(!table_matches_filters(&table, &[]));
+    }
+
+    #[test]
+    fn explicit_wildcard_filter_matches_everything() {
+        let table = ident("T1", "ALPHA");
+        let star: TableIdentifierFilter = "*.*".parse().unwrap();
+        assert!(table_matches_filters(&table, core::slice::from_ref(&star)));
     }
 
     #[test]

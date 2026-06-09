@@ -73,11 +73,11 @@ fn no_checkpoint_response() -> Vec<u8> {
     .encode_to_vec()
 }
 
-/// Seed an empty include set — equivalent to the operator running
-/// without `--prover-db-include`, which is what every existing test
-/// expects.
+/// Seed a `*.*` filter — what the operator gets when omitting
+/// `--prover-db-include` (clap default). Every captured event should
+/// reach the indexer.
 fn setup_with_url() -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
-    setup_with_config(Vec::new())
+    setup_with_config(vec!["*.*".parse().unwrap()])
 }
 
 /// Seed a non-empty include set under the unified config key. Used by
@@ -554,13 +554,13 @@ fn ocw_forwards_only_events_matching_include_set() {
     assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
 }
 
-/// Empty include set in offchain storage ⇒ forward every event (default).
+/// Explicit `*.*` filter in offchain storage ⇒ forward every event —
+/// this is what the operator gets when omitting `--prover-db-include`
+/// because the CLI default is `*.*`.
 #[test]
-fn ocw_with_empty_include_set_forwards_everything() {
+fn ocw_with_wildcard_filter_forwards_everything() {
     let (mut ext, state) = setup_with_url();
 
-    // `setup_with_url` writes a config whose `include` is empty —
-    // same effect as the operator not passing `--prover-db-include`.
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
     seed_block_events(
         &state,
@@ -589,6 +589,47 @@ fn ocw_with_empty_include_set_forwards_everything() {
             }
             .encode_to_vec(),
             vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/checkpoint",
+            proto::CheckpointRequest { sequence_number: 1 }.encode_to_vec(),
+            vec![],
+        ));
+    }
+
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        ProverDbIndexer::offchain_worker(1);
+    });
+}
+
+/// Empty include set in offchain storage ⇒ forward nothing. The
+/// checkpoint still advances (so the OCW makes server-side progress
+/// past empty-as-far-as-this-node-is-concerned blocks), but no
+/// `/v1/create_table` request is emitted. `TestOffchainExt` would
+/// panic on an unexpected request, so the absence of that expectation
+/// is the assertion.
+#[test]
+fn ocw_with_empty_include_set_forwards_nothing() {
+    let (mut ext, state) = setup_with_config(Vec::new());
+
+    let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
+    seed_block_events(
+        &state,
+        1,
+        0,
+        vec![BlockEvent::Create(CreateEntry {
+            ident: Cow::Owned(TableIdentifier::from_str_unchecked("ANY", "ANY")),
+            ddl: ddl.to_vec().into(),
+        })],
+    );
+
+    {
+        let mut s = state.write();
+        s.expect_request(expected_request(
+            "/v1/get_last_checkpoint",
+            vec![],
+            no_checkpoint_response(),
         ));
         s.expect_request(expected_request(
             "/v1/checkpoint",
