@@ -432,10 +432,7 @@ mod tests {
         ];
         assert!(table_matches_filters(&table, &filters));
 
-        let no_match = vec![
-            "BETA.*".parse().unwrap(),
-            "GAMMA.T1".parse().unwrap(),
-        ];
+        let no_match = vec!["BETA.*".parse().unwrap(), "GAMMA.T1".parse().unwrap()];
         assert!(!table_matches_filters(&table, &no_match));
     }
 }
