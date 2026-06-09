@@ -260,3 +260,170 @@ impl FromStr for TableIdentifierFilter {
 pub fn table_matches_filters(table: &TableIdentifier, filters: &[TableIdentifierFilter]) -> bool {
     filters.is_empty() || filters.iter().any(|f| f.matches(table))
 }
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec;
+
+    use super::*;
+
+    fn ident(name: &str, namespace: &str) -> TableIdentifier {
+        TableIdentifier::from_str_unchecked(name, namespace)
+    }
+
+    // ── IdentFilter::matches ─────────────────────────────────────────
+
+    #[test]
+    fn ident_filter_wildcard_matches_anything() {
+        assert!(IdentFilter::Wildcard.matches(b""));
+        assert!(IdentFilter::Wildcard.matches(b"ANYTHING"));
+    }
+
+    #[test]
+    fn ident_filter_ident_matches_exact_bytes_only() {
+        let f = IdentFilter::Ident("FOO".into());
+        assert!(f.matches(b"FOO"));
+        assert!(!f.matches(b"foo")); // case-sensitive at match time
+        assert!(!f.matches(b"FOOBAR"));
+        assert!(!f.matches(b"FO"));
+        assert!(!f.matches(b""));
+    }
+
+    // ── IdentFilter::FromStr ─────────────────────────────────────────
+
+    #[test]
+    fn ident_filter_parses_star_as_wildcard() {
+        assert_eq!("*".parse::<IdentFilter>().unwrap(), IdentFilter::Wildcard);
+    }
+
+    #[test]
+    fn ident_filter_parses_ident_uppercased() {
+        assert_eq!(
+            "foo".parse::<IdentFilter>().unwrap(),
+            IdentFilter::Ident("FOO".into()),
+        );
+        assert_eq!(
+            "MIXEDcase".parse::<IdentFilter>().unwrap(),
+            IdentFilter::Ident("MIXEDCASE".into()),
+        );
+    }
+
+    #[test]
+    fn ident_filter_rejects_empty_string() {
+        assert!(matches!(
+            "".parse::<IdentFilter>(),
+            Err(IdentFilterParseError::Empty),
+        ));
+    }
+
+    #[test]
+    fn ident_filter_rejects_over_length_input() {
+        // IDENT_LENGTH + 1 ASCII bytes — uppercase is a no-op so the
+        // post-uppercase length is also IDENT_LENGTH + 1.
+        let too_long: alloc::string::String =
+            core::iter::repeat_n('A', IDENT_LENGTH as usize + 1).collect();
+        assert!(matches!(
+            too_long.parse::<IdentFilter>(),
+            Err(IdentFilterParseError::TooLong { max }) if max == IDENT_LENGTH,
+        ));
+    }
+
+    // ── TableIdentifierFilter::matches ───────────────────────────────
+
+    #[test]
+    fn table_filter_matches_only_when_both_sides_match() {
+        let table = ident("T1", "ALPHA");
+
+        let alpha_t1: TableIdentifierFilter = "ALPHA.T1".parse().unwrap();
+        let alpha_star: TableIdentifierFilter = "ALPHA.*".parse().unwrap();
+        let star_t1: TableIdentifierFilter = "*.T1".parse().unwrap();
+        let star_star: TableIdentifierFilter = "*.*".parse().unwrap();
+        let beta_t1: TableIdentifierFilter = "BETA.T1".parse().unwrap();
+        let alpha_other: TableIdentifierFilter = "ALPHA.OTHER".parse().unwrap();
+
+        assert!(alpha_t1.matches(&table));
+        assert!(alpha_star.matches(&table));
+        assert!(star_t1.matches(&table));
+        assert!(star_star.matches(&table));
+        assert!(!beta_t1.matches(&table));
+        assert!(!alpha_other.matches(&table));
+    }
+
+    // ── TableIdentifierFilter::FromStr ───────────────────────────────
+
+    #[test]
+    fn table_filter_parses_all_four_shapes() {
+        let full: TableIdentifierFilter = "ns.name".parse().unwrap();
+        assert!(matches!(full.namespace_filter, IdentFilter::Ident(ref s) if s == "NS"));
+        assert!(matches!(full.name_filter, IdentFilter::Ident(ref s) if s == "NAME"));
+
+        let ns_star: TableIdentifierFilter = "ns.*".parse().unwrap();
+        assert!(matches!(ns_star.namespace_filter, IdentFilter::Ident(ref s) if s == "NS"));
+        assert!(matches!(ns_star.name_filter, IdentFilter::Wildcard));
+
+        let star_name: TableIdentifierFilter = "*.name".parse().unwrap();
+        assert!(matches!(star_name.namespace_filter, IdentFilter::Wildcard));
+        assert!(matches!(star_name.name_filter, IdentFilter::Ident(ref s) if s == "NAME"));
+
+        let star_star: TableIdentifierFilter = "*.*".parse().unwrap();
+        assert!(matches!(star_star.namespace_filter, IdentFilter::Wildcard));
+        assert!(matches!(star_star.name_filter, IdentFilter::Wildcard));
+    }
+
+    #[test]
+    fn table_filter_rejects_missing_dot() {
+        assert!(matches!(
+            "namename".parse::<TableIdentifierFilter>(),
+            Err(TableIdentifierFilterParseError::MalformedShape { .. }),
+        ));
+    }
+
+    #[test]
+    fn table_filter_rejects_more_than_one_dot() {
+        assert!(matches!(
+            "a.b.c".parse::<TableIdentifierFilter>(),
+            Err(TableIdentifierFilterParseError::MalformedShape { .. }),
+        ));
+    }
+
+    #[test]
+    fn table_filter_propagates_empty_side_error() {
+        assert!(matches!(
+            ".name".parse::<TableIdentifierFilter>(),
+            Err(TableIdentifierFilterParseError::Namespace {
+                source: IdentFilterParseError::Empty,
+            }),
+        ));
+        assert!(matches!(
+            "ns.".parse::<TableIdentifierFilter>(),
+            Err(TableIdentifierFilterParseError::Name {
+                source: IdentFilterParseError::Empty,
+            }),
+        ));
+    }
+
+    // ── table_matches_filters ────────────────────────────────────────
+
+    #[test]
+    fn empty_filter_set_matches_everything() {
+        let table = ident("T1", "ALPHA");
+        assert!(table_matches_filters(&table, &[]));
+    }
+
+    #[test]
+    fn non_empty_filter_set_requires_at_least_one_match() {
+        let table = ident("T1", "ALPHA");
+        let filters = vec![
+            "BETA.*".parse().unwrap(),
+            "GAMMA.T1".parse().unwrap(),
+            "ALPHA.T1".parse().unwrap(), // this one matches
+        ];
+        assert!(table_matches_filters(&table, &filters));
+
+        let no_match = vec![
+            "BETA.*".parse().unwrap(),
+            "GAMMA.T1".parse().unwrap(),
+        ];
+        assert!(!table_matches_filters(&table, &no_match));
+    }
+}
