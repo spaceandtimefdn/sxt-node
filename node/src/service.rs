@@ -77,28 +77,43 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
-/// Seed the prover-db indexer URL into offchain persistent local storage
-/// at startup, before the first block is authored.
+/// Validate the consumer CLI group into a concrete
+/// `ProverDbConsumerConfig` (URL non-optional) and seed it under
+/// `PROVER_DB_CONFIG_KEY` in offchain persistent local storage.
 ///
-/// Stored under `sxt_core::prover_db_indexer::PROVER_DB_URL_KEY` as a
-/// SCALE-encoded `Vec<u8>` of the URL bytes.
+/// `--prover-db-url` is the single switch that enables the consumer:
+/// present ⇒ write the config; absent ⇒ the OCW stays dormant and we
+/// don't write anything. `--prover-db-include` is allowed (with its
+/// `*.*` default) regardless of whether the URL is set; without a URL
+/// it just has nothing to filter.
 #[expect(
     clippy::result_large_err,
     reason = "ServiceError is from substrate and cannot be modified"
 )]
-fn configure_prover_db_url(backend: &FullBackend, url: &url::Url) -> Result<(), ServiceError> {
+fn configure_prover_db_consumer(
+    backend: &FullBackend,
+    cli: &crate::cli::ProverDbConsumerCli,
+) -> Result<(), ServiceError> {
+    let Some(url) = cli.prover_db_url.as_ref() else {
+        return Ok(());
+    };
+
+    let cfg = sxt_core::prover_db_indexer::ProverDbConsumerConfig {
+        url: url.as_str().to_string(),
+        include: cli.prover_db_include.clone(),
+    };
+
     let Some(mut storage) = backend.offchain_storage() else {
         return Err(ServiceError::Other(
             "backend did not expose an offchain storage handle; \
-             cannot apply --prover-db-url"
+             cannot apply --prover-db-url / --prover-db-include"
                 .into(),
         ));
     };
-    let encoded = url.as_str().as_bytes().to_vec().encode();
     storage.set(
         STORAGE_PREFIX,
-        sxt_core::prover_db_indexer::PROVER_DB_URL_KEY,
-        &encoded,
+        sxt_core::prover_db_indexer::PROVER_DB_CONFIG_KEY,
+        &cfg.encode(),
     );
     Ok(())
 }
@@ -351,22 +366,20 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
         other: (rpc_builder, import_setup, rpc_setup, mut telemetry, statement_store),
     } = new_partial(&config)?;
 
-    // `--prover-db-url` only takes effect when offchain indexing is
-    // enabled, since the prover-db-indexer OCW only runs in that case.
-    // Fail loud if the operator set the URL without enabling indexing,
-    // rather than silently ignoring it.
-    if let Some(url) = cli.prover_db_url.as_ref() {
-        if !config.offchain_worker.indexing_enabled {
-            return Err(ServiceError::Other(
-                "--prover-db-url was set but --enable-offchain-indexing is not \
-                 true; the prover-db-indexer offchain worker would be inactive. \
-                 Restart with --enable-offchain-indexing=true, or omit \
-                 --prover-db-url."
-                    .into(),
-            ));
-        }
-        configure_prover_db_url(backend.as_ref(), url)?;
+    // The prover-db consumer (URL + include set) only takes effect when
+    // offchain indexing is enabled, since the OCW only runs in that
+    // case. Fail loud if the operator set --prover-db-url without
+    // enabling indexing, rather than silently ignoring it.
+    if cli.prover_db.prover_db_url.is_some() && !config.offchain_worker.indexing_enabled {
+        return Err(ServiceError::Other(
+            "--prover-db-url was set but --enable-offchain-indexing is not \
+             true; the prover-db-indexer offchain worker would be inactive. \
+             Restart with --enable-offchain-indexing=true, or omit \
+             --prover-db-url."
+                .into(),
+        ));
     }
+    configure_prover_db_consumer(backend.as_ref(), &cli.prover_db)?;
 
     let metrics = N::register_notification_metrics(
         config.prometheus_config.as_ref().map(|cfg| &cfg.registry),

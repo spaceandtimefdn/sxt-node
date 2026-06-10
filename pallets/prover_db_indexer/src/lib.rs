@@ -60,9 +60,8 @@ mod proto {
 
 pub use pallet::*;
 /// Re-export of the canonical offchain local-storage key (defined in `sxt-core`),
-/// kept here so existing call sites that reach for `pallet_prover_db_indexer::PROVER_DB_URL_KEY`
-/// keep working.
-pub use sxt_core::prover_db_indexer::PROVER_DB_URL_KEY;
+/// so the node service and any external tooling have a single import.
+pub use sxt_core::prover_db_indexer::PROVER_DB_CONFIG_KEY;
 
 /// Offchain DB key for the lock that serializes OCW consumer rounds.
 const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
@@ -78,9 +77,6 @@ const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
 /// every variant looks the same.
 #[derive(Debug, snafu::Snafu)]
 pub enum ConsumerError {
-    /// The configured indexer URL was not valid UTF-8.
-    #[snafu(display("indexer URL was not valid UTF-8"))]
-    InvalidUrlEncoding,
     /// The configured indexer URL couldn't be parsed.
     #[snafu(display("indexer URL is not a valid URL: {error}"))]
     InvalidUrl {
@@ -136,8 +132,11 @@ pub mod pallet {
     use sxt_core::prover_db_indexer::{
         key_for_event,
         key_for_high_water,
+        table_matches_filters,
         BlockEvent,
         EventCapture,
+        ProverDbConsumerConfig,
+        TableIdentifierFilter,
     };
 
     use crate::ConsumerError;
@@ -204,6 +203,12 @@ pub mod pallet {
                 return;
             }
 
+            // Capture every event unconditionally. Per-node filtering is
+            // applied later by the OCW consumer when forwarding to the
+            // indexer; the offchain queue mirrors the full block so every
+            // validator carries the same data, regardless of which subset
+            // each indexer cares about.
+
             // `block_number()` always fits in u64 in our runtime (BlockNumber
             // is u32); `extrinsic_index()` is always `Some` while we're inside
             // an extrinsic, which is the only path that reaches `capture_events`.
@@ -255,23 +260,22 @@ pub mod pallet {
                 }
             };
 
-            // 1. Check if this node is configured as an indexer.
-            let url_ref = StorageValueRef::persistent(crate::PROVER_DB_URL_KEY);
-            let url_bytes: Option<Vec<u8>> = url_ref.get::<Vec<u8>>().ok().flatten();
-
-            let Some(url_bytes) = url_bytes else {
+            // 1. Read the single offchain config. Absence ⇒ this node
+            //    isn't an indexer; OCW is dormant. The node service
+            //    writes the encoded `ProverDbConsumerConfig` at startup
+            //    iff `--prover-db-url` was provided.
+            let cfg_ref = StorageValueRef::persistent(crate::PROVER_DB_CONFIG_KEY);
+            let Some(cfg) = cfg_ref.get::<ProverDbConsumerConfig>().ok().flatten() else {
                 return Ok(());
             };
-
-            let url_str =
-                core::str::from_utf8(&url_bytes).map_err(|_| ConsumerError::InvalidUrlEncoding)?;
             let url =
-                url::Url::parse(url_str).map_err(|error| ConsumerError::InvalidUrl { error })?;
+                url::Url::parse(&cfg.url).map_err(|error| ConsumerError::InvalidUrl { error })?;
+            let include_filters: Vec<TableIdentifierFilter> = cfg.include;
 
             polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
-                "consumer round starting; indexer base URL = {}",
-                url,
+                "consumer round starting; indexer base URL = {}; {} include filters",
+                url, include_filters.len(),
             );
 
             // 2. Current block number — passed in by `offchain_worker`.
@@ -313,7 +317,7 @@ pub mod pallet {
             );
 
             for block_num in start..=end {
-                Self::forward_block(&url, block_num)?;
+                Self::forward_block(&url, block_num, &include_filters)?;
 
                 // Checkpoint on the server (always, even for empty blocks).
                 crate::http_client::checkpoint(&url, block_num)
@@ -326,7 +330,11 @@ pub mod pallet {
         /// Forward a single block's events in extrinsic-index order, then
         /// clear the offchain entries we consumed. If the block had no
         /// captures (no high-water-mark key), this is a no-op.
-        fn forward_block(url: &url::Url, block_num: u64) -> Result<(), ConsumerError> {
+        fn forward_block(
+            url: &url::Url,
+            block_num: u64,
+            include_filters: &[TableIdentifierFilter],
+        ) -> Result<(), ConsumerError> {
             let Some(hwm) = crate::offchain_consumer::read_high_water(block_num) else {
                 return Ok(());
             };
@@ -342,7 +350,7 @@ pub mod pallet {
                 let Some(events) = crate::offchain_consumer::read_events(block_num, ext_idx) else {
                     continue;
                 };
-                Self::forward_events(url, block_num, &events)?;
+                Self::forward_events(url, block_num, &events, include_filters)?;
                 crate::offchain_consumer::clear_events(block_num, ext_idx);
             }
 
@@ -350,15 +358,29 @@ pub mod pallet {
             Ok(())
         }
 
-        /// POST one extrinsic's captured events to the indexer in deposit order.
+        /// POST one extrinsic's captured events to the indexer in deposit
+        /// order, skipping any whose table doesn't match this node's
+        /// include set. The capture queue is unfiltered (every validator
+        /// records the full block), so the filter applies only to the
+        /// HTTP forwarding done by this node's OCW.
         fn forward_events(
             url: &url::Url,
             block_num: u64,
             events: &[BlockEvent<'_>],
+            include_filters: &[TableIdentifierFilter],
         ) -> Result<(), ConsumerError> {
             let seq = block_num;
 
             for event in events {
+                let table = match event {
+                    BlockEvent::Create(entry) => entry.ident.as_ref(),
+                    BlockEvent::Drop(ident) => ident.as_ref(),
+                    BlockEvent::Insert(entry) => entry.table.as_ref(),
+                };
+                if !table_matches_filters(table, include_filters) {
+                    continue;
+                }
+
                 match event {
                     BlockEvent::Drop(ident) => {
                         crate::http_client::drop_table(url, seq, ident)

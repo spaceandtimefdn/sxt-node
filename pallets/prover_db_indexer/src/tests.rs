@@ -21,20 +21,28 @@ use sxt_core::prover_db_indexer::{
     key_for_high_water,
     BlockEvent,
     CreateEntry,
+    EventCapture,
     InsertEntry,
+    ProverDbConsumerConfig,
+    TableIdentifierFilter,
 };
 use sxt_core::tables::TableIdentifier;
 
 use crate::mock::*;
-use crate::{proto, PROVER_DB_URL_KEY};
+use crate::{proto, PROVER_DB_CONFIG_KEY};
 
 type StateArc =
     std::sync::Arc<parking_lot::RwLock<polkadot_sdk::sp_core::offchain::testing::OffchainState>>;
 
 const MOCK_URL: &str = "http://127.0.0.1:9999";
 
-fn encode_url() -> Vec<u8> {
-    codec::Encode::encode(&MOCK_URL.as_bytes().to_vec())
+/// SCALE-encode the unified consumer config the same way the node
+/// service does at startup.
+fn encode_config(include: Vec<TableIdentifierFilter>) -> Vec<u8> {
+    codec::Encode::encode(&ProverDbConsumerConfig {
+        url: MOCK_URL.to_string(),
+        include,
+    })
 }
 
 fn expected_request(path: &str, body: Vec<u8>, response: Vec<u8>) -> PendingRequest {
@@ -65,7 +73,18 @@ fn no_checkpoint_response() -> Vec<u8> {
     .encode_to_vec()
 }
 
+/// Seed a `*.*` filter — what the operator gets when omitting
+/// `--prover-db-include` (clap default). Every captured event should
+/// reach the indexer.
 fn setup_with_url() -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
+    setup_with_config(vec!["*.*".parse().unwrap()])
+}
+
+/// Seed a non-empty include set under the unified config key. Used by
+/// the consumer-side filter tests.
+fn setup_with_config(
+    include: Vec<TableIdentifierFilter>,
+) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
     let mut ext = new_test_ext();
     let (offchain, state) = TestOffchainExt::new();
     ext.register_extension(OffchainWorkerExt::new(offchain.clone()));
@@ -73,7 +92,7 @@ fn setup_with_url() -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
     state
         .write()
         .persistent_storage
-        .set(b"", PROVER_DB_URL_KEY, &encode_url());
+        .set(b"", PROVER_DB_CONFIG_KEY, &encode_config(include));
     (ext, state)
 }
 
@@ -394,4 +413,233 @@ fn ocw_walks_multiple_extrinsics_in_one_block() {
     assert!(s.persistent_storage.get(&key_for_event(1, 1)).is_none());
     assert!(s.persistent_storage.get(&key_for_event(1, 3)).is_none());
     assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
+}
+
+// ─── Include-set tests (consumer-side filter) ──────────────────────────
+
+/// Helper: build a Drop event for `(name, namespace)`.
+fn drop_event(name: &str, namespace: &str) -> BlockEvent<'static> {
+    BlockEvent::Drop(Cow::Owned(TableIdentifier::from_str_unchecked(
+        name, namespace,
+    )))
+}
+
+/// Helper: build a Create event for `(name, namespace)`.
+fn create_event(name: &str, namespace: &str) -> BlockEvent<'static> {
+    BlockEvent::Create(CreateEntry {
+        ident: Cow::Owned(TableIdentifier::from_str_unchecked(name, namespace)),
+        ddl: Cow::Owned(b"CREATE TABLE ...".to_vec()),
+    })
+}
+
+/// Helper: build an Insert event for `(name, namespace)`.
+fn insert_event(name: &str, namespace: &str) -> BlockEvent<'static> {
+    BlockEvent::Insert(InsertEntry {
+        table: Cow::Owned(TableIdentifier::from_str_unchecked(name, namespace)),
+        data: Cow::Owned(b"rows".to_vec()),
+    })
+}
+
+/// `capture_events` is now unconditional — every event reaches the
+/// offchain queue regardless of any per-node configuration. This test
+/// is the single producer-side regression check.
+#[test]
+fn capture_events_writes_all_events_unconditionally() {
+    let mut ext = new_test_ext();
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
+
+        let events = vec![
+            create_event("A", "ALPHA"),
+            insert_event("B", "BETA"),
+            drop_event("C", "GAMMA"),
+        ];
+        <ProverDbIndexer as EventCapture>::capture_events(events);
+    });
+    ext.persist_offchain_overlay();
+    let db = ext.offchain_db();
+    let stored = db.get(&key_for_event(1, 0)).unwrap();
+    let decoded: Vec<BlockEvent<'static>> = codec::Decode::decode(&mut &stored[..]).unwrap();
+    assert_eq!(decoded.len(), 3);
+}
+
+/// End-to-end consumer test: seed the node's include set into offchain
+/// local storage (where the OCW reads it), seed a multi-event block,
+/// and confirm only the matching events are POSTed to the indexer.
+#[test]
+fn ocw_forwards_only_events_matching_include_set() {
+    // Seed the node-local config with two include rules: any table in
+    // namespace ALPHA, plus the specific table BETA_NS.BETA_T. The
+    // service writes both URL + include atomically via a single
+    // SCALE-encoded `ProverDbConsumerConfig` — same shape this test
+    // mirrors.
+    let (mut ext, state) = setup_with_config(vec![
+        "ALPHA.*".parse().unwrap(),
+        "BETA_NS.BETA_T".parse().unwrap(),
+    ]);
+
+    // Block 1, extrinsic 0: a mix of matching and non-matching events.
+    seed_block_events(
+        &state,
+        1,
+        0,
+        vec![
+            create_event("A", "ALPHA"),        // match (namespace)
+            insert_event("BETA_T", "BETA_NS"), // match (table)
+            drop_event("OTHER", "GAMMA"),      // skip
+            create_event("X", "GAMMA"),        // skip
+            insert_event("Y", "ALPHA"),        // match (namespace)
+        ],
+    );
+
+    // Only the three matching events should reach the indexer. Drops
+    // for the skipped GAMMA namespace get filtered too — uniform.
+    {
+        let mut s = state.write();
+        s.expect_request(expected_request(
+            "/v1/get_last_checkpoint",
+            vec![],
+            no_checkpoint_response(),
+        ));
+        s.expect_request(expected_request(
+            "/v1/create_table",
+            proto::CreateTableRequest {
+                sequence_number: 1,
+                table_name: "ALPHA.A".into(),
+                arrow_schema: b"CREATE TABLE ...".to_vec(),
+                key: "META_ROW_NUMBER".into(),
+            }
+            .encode_to_vec(),
+            vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/put_batches",
+            proto::PutBatchesRequest {
+                sequence_number: 1,
+                batches: vec![proto::TableBatch {
+                    table_name: "BETA_NS.BETA_T".into(),
+                    record_batch: b"rows".to_vec(),
+                }],
+            }
+            .encode_to_vec(),
+            vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/put_batches",
+            proto::PutBatchesRequest {
+                sequence_number: 1,
+                batches: vec![proto::TableBatch {
+                    table_name: "ALPHA.Y".into(),
+                    record_batch: b"rows".to_vec(),
+                }],
+            }
+            .encode_to_vec(),
+            vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/checkpoint",
+            proto::CheckpointRequest { sequence_number: 1 }.encode_to_vec(),
+            vec![],
+        ));
+    }
+
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        ProverDbIndexer::offchain_worker(1);
+    });
+
+    let s = state.read();
+    assert!(s.persistent_storage.get(&key_for_event(1, 0)).is_none());
+    assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
+}
+
+/// Explicit `*.*` filter in offchain storage ⇒ forward every event —
+/// this is what the operator gets when omitting `--prover-db-include`
+/// because the CLI default is `*.*`.
+#[test]
+fn ocw_with_wildcard_filter_forwards_everything() {
+    let (mut ext, state) = setup_with_url();
+
+    let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
+    seed_block_events(
+        &state,
+        1,
+        0,
+        vec![BlockEvent::Create(CreateEntry {
+            ident: Cow::Owned(TableIdentifier::from_str_unchecked("ANY", "ANY")),
+            ddl: ddl.to_vec().into(),
+        })],
+    );
+
+    {
+        let mut s = state.write();
+        s.expect_request(expected_request(
+            "/v1/get_last_checkpoint",
+            vec![],
+            no_checkpoint_response(),
+        ));
+        s.expect_request(expected_request(
+            "/v1/create_table",
+            proto::CreateTableRequest {
+                sequence_number: 1,
+                table_name: "ANY.ANY".into(),
+                arrow_schema: ddl.to_vec(),
+                key: "META_ROW_NUMBER".into(),
+            }
+            .encode_to_vec(),
+            vec![],
+        ));
+        s.expect_request(expected_request(
+            "/v1/checkpoint",
+            proto::CheckpointRequest { sequence_number: 1 }.encode_to_vec(),
+            vec![],
+        ));
+    }
+
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        ProverDbIndexer::offchain_worker(1);
+    });
+}
+
+/// Empty include set in offchain storage ⇒ forward nothing. The
+/// checkpoint still advances (so the OCW makes server-side progress
+/// past empty-as-far-as-this-node-is-concerned blocks), but no
+/// `/v1/create_table` request is emitted. `TestOffchainExt` would
+/// panic on an unexpected request, so the absence of that expectation
+/// is the assertion.
+#[test]
+fn ocw_with_empty_include_set_forwards_nothing() {
+    let (mut ext, state) = setup_with_config(Vec::new());
+
+    let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
+    seed_block_events(
+        &state,
+        1,
+        0,
+        vec![BlockEvent::Create(CreateEntry {
+            ident: Cow::Owned(TableIdentifier::from_str_unchecked("ANY", "ANY")),
+            ddl: ddl.to_vec().into(),
+        })],
+    );
+
+    {
+        let mut s = state.write();
+        s.expect_request(expected_request(
+            "/v1/get_last_checkpoint",
+            vec![],
+            no_checkpoint_response(),
+        ));
+        s.expect_request(expected_request(
+            "/v1/checkpoint",
+            proto::CheckpointRequest { sequence_number: 1 }.encode_to_vec(),
+            vec![],
+        ));
+    }
+
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        ProverDbIndexer::offchain_worker(1);
+    });
 }
