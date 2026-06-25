@@ -1,3 +1,12 @@
+## [1.69.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.69.0...v1.69.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* update weight constant for fee calculation ([5fc710a](https://github.com/spaceandtimefdn/sxt-node/commit/5fc710a77839104fd1d61d33ed3d8f7e122c27f3))
+
+
+
 # [1.69.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.68.0...v1.69.0) (2026-06-22)
 
 
@@ -99,21 +108,6 @@
 ### Features
 
 * allow SCI table creation without special permissions ([c9631de](https://github.com/spaceandtimefdn/sxt-node/commit/c9631de06084396aa92e370fbe74895f5c7d4e0e))
-
-
-
-# [1.65.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.64.3...v1.65.0) (2026-03-19)
-
-
-### Bug Fixes
-
-* remeasure pallet-indexing weights with n parameter ([4dde534](https://github.com/spaceandtimefdn/sxt-node/commit/4dde5340fbc10fc01275e296f6356b7963247dfb))
-
-
-### Features
-
-* base benchmarks on num_cols and total number of elements ([e3304a1](https://github.com/spaceandtimefdn/sxt-node/commit/e3304a1eb171d560ffe357a2375a9fd465efd762))
-* update spec version to 247 ([856d7d2](https://github.com/spaceandtimefdn/sxt-node/commit/856d7d23414b24484e971a7d47524f1f189caa1d))
 
 
 
