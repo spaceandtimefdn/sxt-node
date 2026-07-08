@@ -1,7 +1,7 @@
 # Build SxT Node Image
-# Ubuntu 24.10 provides glibc 2.40, matching the Nix toolchain that
-# builds sxt-node in CI. See PR #198 for the interpreter/glibc story.
-FROM docker.io/library/ubuntu:24.10
+# Ubuntu 24.04 LTS provides glibc 2.39, which covers all GLIBC symbol
+# versions referenced by the Nix-built binary. See PR #198.
+FROM docker.io/library/ubuntu:24.04
 
 # Switch to root user to make system-wide changes
 USER root
