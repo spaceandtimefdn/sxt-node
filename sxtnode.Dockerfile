@@ -1,4 +1,11 @@
 # Build SxT Node Image
+FROM nixos/nix as builder
+
+WORKDIR /sxt-node
+COPY . /sxt-node
+
+RUN nix develop --experimental-features "nix-command flakes" --command cargo build --locked --release
+
 FROM docker.io/parity/base-bin:latest
 
 # Switch to root user to make system-wide changes
@@ -23,13 +30,13 @@ ENV AZURE_CONTAINER_NAME="ops-publicblocks-sandbox-stdl-wus2"
 ENV AZURE_BASE_PATH="/v0/ETHEREUM"
 ENV RUST_LOG="info"
 
-
 # Copy the built application from workspace
-COPY --chmod=755 target/release/sxt-node /usr/local/bin
+COPY --from=builder --chmod=755 /sxt-node/target/release/sxt-node /usr/local/bin
+COPY --from=builder /nix/store /nix/store
 
 # Chainspecs
 RUN mkdir -p /opt/chainspecs
-COPY --chmod=644 chainspecs/raw/*-spec.json /opt/chainspecs/
+COPY --from=builder --chmod=644 sxt-node/chainspecs/raw/*-spec.json /opt/chainspecs/
 
 # Switch to sxtuser
 USER sxtuser
