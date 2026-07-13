@@ -164,11 +164,11 @@ services:
       --keystore-path /key
       --node-key-file /node-key/subkey.key
       --bootnodes "/dns/validator0.mainnet.sxt.network/tcp/30333/p2p/12D3KooWK4MUYTiz8H6gG98JwN3bT11keivvFLYjtwEv5sqhwkAt"
-      --bootnodes "/dns/validator.mainnet-sxt.ethernodes.io/tcp/30333/p2p/12D3KooWMEq9xSwmr8uTthCb6KM86av1T7AYe44kDPxWovEqzq1w" \
-      --bootnodes "/dns/bootnode1.sxt.blockhunters.services/tcp/30333/p2p/12D3KooWN8ZsZDNVr1ooMWJtsqMNHCVaQ4cvxvB8kELqrZeqct79" \
-      --bootnodes "/dns/bootnode2.sxt.blockhunters.services/tcp/30333/p2p/12D3KooWSvSQNVHGmK965dKcCDGaxtyeY1XPCMwFUSLC8opguG1T" \
-      --bootnodes "/ip4/51.210.3.173/tcp/30333/p2p/12D3KooWRUd3BqRyiGfhxVb2BSyUDLK5nHHNXTddZpqzqvQ73C9u" \
-      --bootnodes "/ip4/141.95.65.179/tcp/30683/p2p/12D3KooWQ8xPXuBww4qSumnjycjjKDThFUj4nDgGS3UPoLyRBvqJ" \
+      --bootnodes "/dns/validator.mainnet-sxt.ethernodes.io/tcp/30333/p2p/12D3KooWMEq9xSwmr8uTthCb6KM86av1T7AYe44kDPxWovEqzq1w"
+      --bootnodes "/dns/bootnode1.sxt.blockhunters.services/tcp/30333/p2p/12D3KooWN8ZsZDNVr1ooMWJtsqMNHCVaQ4cvxvB8kELqrZeqct79"
+      --bootnodes "/dns/bootnode2.sxt.blockhunters.services/tcp/30333/p2p/12D3KooWSvSQNVHGmK965dKcCDGaxtyeY1XPCMwFUSLC8opguG1T"
+      --bootnodes "/ip4/51.210.3.173/tcp/30333/p2p/12D3KooWRUd3BqRyiGfhxVb2BSyUDLK5nHHNXTddZpqzqvQ73C9u"
+      --bootnodes "/ip4/141.95.65.179/tcp/30683/p2p/12D3KooWQ8xPXuBww4qSumnjycjjKDThFUj4nDgGS3UPoLyRBvqJ"
       --validator
       --port 30333
       --log info
