@@ -33,7 +33,6 @@ const PATH_CHECKPOINT: &str = "v1/checkpoint";
 /// body as UTF-8 lossy so the operator can read whatever the server said
 /// (often a plain-text reason for 4xx/5xx).
 #[derive(Debug, Snafu)]
-#[allow(clippy::enum_variant_names)]
 pub enum Error {
     /// Failed to send the HTTP request.
     #[snafu(display("failed to send HTTP request"))]
@@ -43,7 +42,7 @@ pub enum Error {
     DeadlineReached,
     /// IO or unknown error during HTTP request.
     #[snafu(display("HTTP IO error"))]
-    IoError,
+    Io,
     /// Server returned a non-200 status code. Carries the response body
     /// so the caller can surface whatever the server said about the failure.
     #[snafu(display(
@@ -208,8 +207,8 @@ fn post(url: &str, body: &[u8]) -> Result<Vec<u8>, Error> {
                 polkadot_sdk::sp_runtime::offchain::http::Error::DeadlineReached => {
                     Error::DeadlineReached
                 }
-                polkadot_sdk::sp_runtime::offchain::http::Error::IoError => Error::IoError,
-                polkadot_sdk::sp_runtime::offchain::http::Error::Unknown => Error::IoError,
+                polkadot_sdk::sp_runtime::offchain::http::Error::IoError => Error::Io,
+                polkadot_sdk::sp_runtime::offchain::http::Error::Unknown => Error::Io,
             }
         })?;
 
