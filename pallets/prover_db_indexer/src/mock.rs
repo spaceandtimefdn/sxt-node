@@ -36,7 +36,6 @@ impl frame_system::Config for Test {
 }
 
 impl pallet_prover_db_indexer::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     // Match runtime defaults so tests exercise the production limits.
     type MaxBlocksPerInvocation = ConstU64<100>;
     type OcwLockDeadlineMs = ConstU64<120_000>;
