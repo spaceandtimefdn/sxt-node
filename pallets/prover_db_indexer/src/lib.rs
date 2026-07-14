@@ -53,7 +53,6 @@ mod http_client;
 mod offchain_consumer;
 
 /// Generated protobuf types for the indexer HTTP adapter wire format.
-#[allow(missing_docs, clippy::missing_docs_in_private_items)]
 mod proto {
     include!(concat!(env!("OUT_DIR"), "/io.spaceandtime.indexer.rs"));
 }
