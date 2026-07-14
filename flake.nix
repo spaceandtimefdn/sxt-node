@@ -19,20 +19,33 @@
         pkgs = import nixpkgs {
           inherit system overlays;
         };
+      in let
+        buildInputs = with pkgs; [
+          openssl
+          perl # secretly a dependency of openssl
+        ];
+
+        nativeBuildInputs = with pkgs; [
+          (rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
+          protobuf
+          pkg-config
+          rustPlatform.bindgenHook
+          # for compiling arrow-ipc-no-std
+          flatbuffers
+        ];
       in {
         devShells.default = with pkgs;
           (mkShell.override {stdenv = gcc13Stdenv;}) {
-            buildInputs = [
-              openssl
-              perl # secretly a dependency of openssl
-              (rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
-              protobuf
-              pkg-config
-              rustPlatform.bindgenHook
-              # for compiling arrow-ipc-no-std
-              flatbuffers
-            ];
+            buildInputs = buildInputs;
+
+            nativeBuildInputs = nativeBuildInputs;
           };
+
+        packages.dummy = pkgs.runCommandWith {
+          name = "dummy";
+          derivationArgs.buildInputs = buildInputs;
+          derivationArgs.nativeBuildInputs = nativeBuildInputs;
+        } "mkdir $out";
       }
     );
 }
