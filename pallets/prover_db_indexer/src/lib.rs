@@ -53,7 +53,6 @@ mod http_client;
 mod offchain_consumer;
 
 /// Generated protobuf types for the indexer HTTP adapter wire format.
-#[allow(missing_docs, clippy::missing_docs_in_private_items)]
 mod proto {
     include!(concat!(env!("OUT_DIR"), "/io.spaceandtime.indexer.rs"));
 }
@@ -114,12 +113,7 @@ pub enum ConsumerError {
 }
 
 #[polkadot_sdk::frame_support::pallet]
-#[allow(
-    missing_docs,
-    clippy::missing_docs_in_private_items,
-    clippy::manual_inspect,
-    dead_code
-)]
+#[allow(clippy::manual_inspect)]
 pub mod pallet {
     use alloc::vec::Vec;
 
@@ -146,10 +140,6 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: polkadot_sdk::frame_system::Config {
-        /// The runtime's overarching event type.
-        type RuntimeEvent: From<Event<Self>>
-            + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
-
         /// Maximum number of blocks the OCW will walk in a single
         /// invocation. Controls catch-up speed: with 6s block time and
         /// the default of 100, catch-up is ~100x realtime. Lower values
@@ -165,21 +155,6 @@ pub mod pallet {
         /// a crashed validator.
         #[pallet::constant]
         type OcwLockDeadlineMs: Get<u64>;
-    }
-
-    #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config> {
-        /// The offchain indexer successfully forwarded a block.
-        BlockForwarded {
-            /// Block number that was successfully forwarded.
-            block_number: u64,
-        },
-        /// The offchain indexer encountered an error.
-        ForwardingError {
-            /// Block number that the forwarder failed on.
-            block_number: u64,
-        },
     }
 
     #[pallet::hooks]
