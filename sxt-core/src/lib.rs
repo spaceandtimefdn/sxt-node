@@ -26,6 +26,9 @@ pub mod indexing;
 /// Types consumed by the native code interface
 pub mod native;
 
+/// Constants and calculations related to on-chain fees and weights
+pub mod fees;
+
 pub mod attestation;
 
 /// Shared items for the prover-db-indexer pallet, its producer call
