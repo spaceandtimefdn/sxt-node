@@ -515,7 +515,7 @@ pub mod pallet {
             &table_insert_quorum,
             &quorum_scope,
         )? {
-            finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
+            finalize_quorum::<T, I>(&data_quorum, data, block_number, who)?;
         }
 
         Ok(())
@@ -647,7 +647,7 @@ pub mod pallet {
     /// - emitting `QuorumReached` event
     /// - cleaning up submissions
     fn finalize_quorum<T, I>(
-        quorum: DataQuorum<T::AccountId, T::Hash>,
+        quorum: &DataQuorum<T::AccountId, T::Hash>,
         row_data: RowData,
         block_number: Option<u64>,
         submitter: T::AccountId,
@@ -656,7 +656,7 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
-        clean_up_and_record_quorum::<T, I>(&quorum);
+        clean_up_and_record_quorum::<T, I>(quorum);
 
         // Deserialize into Arrow-compatible OnChainTable
         let table_bytes = I::record_batch_to_onchain(sxt_core::native::RowData { row_data })
