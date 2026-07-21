@@ -17,8 +17,8 @@ use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
 use polkadot_sdk::sp_runtime::offchain::Duration;
 use prost::Message;
 use sxt_core::prover_db_indexer::{
-    key_for_event,
-    key_for_high_water,
+    key_for_event as key_for_event_generic,
+    key_for_high_water as key_for_high_water_generic,
     BlockEvent,
     CreateEntry,
     EventCapture,
@@ -30,6 +30,18 @@ use sxt_core::tables::TableIdentifier;
 
 use crate::mock::*;
 use crate::{proto, PROVER_DB_CONFIG_KEY};
+
+// `MockBlock` uses `u64` for `BlockNumber` (see `frame_system::mocking`),
+// so tests must SCALE-encode the block coordinate as `u64` to match what
+// the pallet writes at capture time. These wrappers pin the block type
+// so bare integer literals at call sites don't default to `i32` and
+// silently mismatch the keys.
+fn key_for_event(block: u64, extrinsic_index: u32) -> Vec<u8> {
+    key_for_event_generic(block, extrinsic_index)
+}
+fn key_for_high_water(block: u64) -> Vec<u8> {
+    key_for_high_water_generic(block)
+}
 
 type StateArc =
     std::sync::Arc<parking_lot::RwLock<polkadot_sdk::sp_core::offchain::testing::OffchainState>>;

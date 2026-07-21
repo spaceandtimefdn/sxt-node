@@ -82,10 +82,6 @@ pub enum ConsumerError {
         /// Underlying parse error from the `url` crate.
         error: url::ParseError,
     },
-    /// The runtime's `BlockNumber` didn't fit in `u64` (defensive — in
-    /// practice `BlockNumber` is `u32` so this is unreachable).
-    #[snafu(display("block number does not fit in u64"))]
-    BlockNumberOverflow,
     /// `create_table` HTTP call failed.
     #[snafu(display("create_table failed: {error}"))]
     CreateTable {
@@ -123,6 +119,13 @@ pub mod pallet {
     use polkadot_sdk::sp_runtime::offchain::storage::StorageValueRef;
     use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
     use polkadot_sdk::sp_runtime::offchain::Duration;
+    use polkadot_sdk::sp_runtime::traits::{
+        One,
+        Saturating,
+        UniqueSaturatedFrom,
+        UniqueSaturatedInto,
+    };
+    use polkadot_sdk::sp_runtime::SaturatedConversion;
     use sxt_core::prover_db_indexer::{
         key_for_event,
         key_for_high_water,
@@ -174,23 +177,17 @@ pub mod pallet {
 
     impl<T: Config> EventCapture for Pallet<T> {
         fn capture_events(events: Vec<BlockEvent<'_>>) {
-            if events.is_empty() {
-                return;
-            }
-
             // Capture every event unconditionally. Per-node filtering is
             // applied later by the OCW consumer when forwarding to the
             // indexer; the offchain queue mirrors the full block so every
             // validator carries the same data, regardless of which subset
             // each indexer cares about.
 
-            // `block_number()` always fits in u64 in our runtime (BlockNumber
-            // is u32); `extrinsic_index()` is always `Some` while we're inside
-            // an extrinsic, which is the only path that reaches `capture_events`.
-            // The `unwrap_or(0)` fallbacks are defensive, not load-bearing.
-            let block: u64 = polkadot_sdk::frame_system::Pallet::<T>::block_number()
-                .try_into()
-                .unwrap_or(0);
+            // `extrinsic_index()` is always `Some` while we're inside an
+            // extrinsic, which is the only path that reaches
+            // `capture_events`. The `unwrap_or(0)` fallback is defensive,
+            // not load-bearing.
+            let block = polkadot_sdk::frame_system::Pallet::<T>::block_number();
             let ext_idx = polkadot_sdk::frame_system::Pallet::<T>::extrinsic_index().unwrap_or(0);
 
             // Per-extrinsic event payload.
@@ -254,9 +251,7 @@ pub mod pallet {
             );
 
             // 2. Current block number — passed in by `offchain_worker`.
-            let current_block: u64 = block_number
-                .try_into()
-                .map_err(|_| ConsumerError::BlockNumberOverflow)?;
+            let current_block = block_number;
 
             // 3. Ask the server for its last checkpoint. The server is the
             //    sole source of truth — no local cursor. This costs one HTTP
@@ -264,7 +259,7 @@ pub mod pallet {
             //    diverge from what the server has actually committed.
             //    A failure here is treated as transient: log and skip this
             //    round; the next OCW will retry.
-            let cursor: u64 = match crate::http_client::get_last_checkpoint(&url) {
+            let cursor_seq: u64 = match crate::http_client::get_last_checkpoint(&url) {
                 Ok(Some(seq)) => seq,
                 Ok(None) => 0,
                 Err(e) => {
@@ -276,27 +271,48 @@ pub mod pallet {
                     return Ok(());
                 }
             };
+            // Server sequence numbers are always block numbers our own
+            // producer wrote, so the u64 round-trips losslessly into
+            // `BlockNumberFor<T>`. `unique_saturated_from` clamps at
+            // `BlockNumberFor<T>::MAX` if the server ever returns an
+            // impossibly-large sequence — in that case the `start > current_block`
+            // check below turns the round into a no-op instead of overflowing.
+            let cursor: BlockNumberFor<T> = <BlockNumberFor<T>>::unique_saturated_from(cursor_seq);
 
             // 4. Walk blocks from cursor+1 to tip, capped.
-            let start = cursor + 1;
-            let end = core::cmp::min(current_block, start + T::MaxBlocksPerInvocation::get() - 1);
-
+            let one: BlockNumberFor<T> = One::one();
+            let start = cursor.saturating_add(one);
             if start > current_block {
                 return Ok(());
             }
+            let max_blocks: BlockNumberFor<T> =
+                <BlockNumberFor<T>>::unique_saturated_from(T::MaxBlocksPerInvocation::get());
+            let end = core::cmp::min(
+                current_block,
+                start.saturating_add(max_blocks).saturating_sub(one),
+            );
 
             polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
                 "processing blocks {}..={} (server_checkpoint={}, tip={})",
-                start, end, cursor, current_block,
+                start.saturated_into::<u64>(),
+                end.saturated_into::<u64>(),
+                cursor_seq,
+                current_block.saturated_into::<u64>(),
             );
 
-            for block_num in start..=end {
+            let mut block_num = start;
+            loop {
                 Self::forward_block(&url, block_num, &include_filters)?;
 
                 // Checkpoint on the server (always, even for empty blocks).
-                crate::http_client::checkpoint(&url, block_num)
+                crate::http_client::checkpoint(&url, block_num.unique_saturated_into())
                     .map_err(|error| ConsumerError::Checkpoint { error })?;
+
+                if block_num >= end {
+                    break;
+                }
+                block_num = block_num.saturating_add(one);
             }
 
             Ok(())
@@ -307,7 +323,7 @@ pub mod pallet {
         /// captures (no high-water-mark key), this is a no-op.
         fn forward_block(
             url: &url::Url,
-            block_num: u64,
+            block_num: BlockNumberFor<T>,
             include_filters: &[TableIdentifierFilter],
         ) -> Result<(), ConsumerError> {
             let Some(hwm) = crate::offchain_consumer::read_high_water(block_num) else {
@@ -317,7 +333,7 @@ pub mod pallet {
             polkadot_sdk::sp_tracing::info!(
                 target: "prover_db_indexer",
                 "block {} — high-water-mark {}; probing for captured events",
-                block_num,
+                block_num.saturated_into::<u64>(),
                 hwm,
             );
 
@@ -340,11 +356,11 @@ pub mod pallet {
         /// HTTP forwarding done by this node's OCW.
         fn forward_events(
             url: &url::Url,
-            block_num: u64,
+            block_num: BlockNumberFor<T>,
             events: &[BlockEvent<'_>],
             include_filters: &[TableIdentifierFilter],
         ) -> Result<(), ConsumerError> {
-            let seq = block_num;
+            let seq: u64 = block_num.unique_saturated_into();
 
             for event in events {
                 let table = match event {

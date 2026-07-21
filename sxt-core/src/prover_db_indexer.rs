@@ -61,14 +61,20 @@ const HIGH_WATER_KEY_PREFIX: &[u8] = b"prover_db_indexer/hwm";
 /// in the block that called `EventCapture::capture_events`. The OCW
 /// reads it to know how far to probe `key_for_event(block, 0..=hwm)`.
 /// Absence of this key means the block had zero captured events.
-pub fn key_for_high_water(block: u64) -> Vec<u8> {
+///
+/// Generic in `B` so producer and consumer can pass their native
+/// `BlockNumberFor<T>` type directly; SCALE-encoding both sides with the
+/// same block type is the invariant that keeps writes and reads aligned.
+pub fn key_for_high_water<B: Encode>(block: B) -> Vec<u8> {
     (HIGH_WATER_KEY_PREFIX, block).encode()
 }
 
 /// Compute the offchain DB key for the events emitted by a single
 /// extrinsic in a given block. The value at this key is a SCALE-encoded
 /// `Vec<BlockEvent>` (one extrinsic may emit several `BlockEvent`s).
-pub fn key_for_event(block: u64, extrinsic_index: u32) -> Vec<u8> {
+///
+/// See [`key_for_high_water`] for the generic block-type rationale.
+pub fn key_for_event<B: Encode>(block: B, extrinsic_index: u32) -> Vec<u8> {
     (EVENT_KEY_PREFIX, block, extrinsic_index).encode()
 }
 
