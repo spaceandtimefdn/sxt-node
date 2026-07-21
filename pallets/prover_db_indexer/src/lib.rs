@@ -267,20 +267,17 @@ pub mod pallet {
                 .unwrap_or(0);
 
             // 4. Walk blocks from cursor+1 to tip, capped.
-            let start = cursor + 1;
-            let end = core::cmp::min(current_block, start + T::MaxBlocksPerInvocation::get() - 1);
-
-            if start > current_block {
-                return Ok(());
-            }
 
             polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
-                "processing blocks {}..={} (server_checkpoint={}, tip={})",
-                start, end, cursor, current_block,
+                "processing blocks (server_checkpoint={}, tip={})",
+                cursor, current_block,
             );
 
-            for block_num in start..=end {
+            for block_num in (cursor..=current_block)
+                .skip(1)
+                .take(T::MaxBlocksPerInvocation::get().saturated_into())
+            {
                 Self::forward_block(&url, block_num, &include_filters)?;
 
                 // Checkpoint on the server (always, even for empty blocks).
