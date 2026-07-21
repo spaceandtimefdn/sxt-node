@@ -335,16 +335,10 @@ pub mod pallet {
         ) -> Result<(), ConsumerError> {
             let seq = block_num;
 
-            for event in events {
-                let table = match event {
-                    BlockEvent::Create(entry) => entry.ident.as_ref(),
-                    BlockEvent::Drop(ident) => ident.as_ref(),
-                    BlockEvent::Insert(entry) => entry.table.as_ref(),
-                };
-                if !table_matches_filters(table, include_filters) {
-                    continue;
-                }
-
+            let filtered_events = events
+                .iter()
+                .filter(|event| table_matches_filters(event.table(), include_filters));
+            for event in filtered_events {
                 match event {
                     BlockEvent::Drop(ident) => {
                         crate::http_client::drop_table(url, seq, ident)

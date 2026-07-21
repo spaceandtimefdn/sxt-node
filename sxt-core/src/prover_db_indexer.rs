@@ -109,6 +109,17 @@ pub enum BlockEvent<'a> {
     Insert(InsertEntry<'a>),
 }
 
+impl BlockEvent<'_> {
+    /// Returns the table identifier associated with this event.
+    pub fn table(&self) -> &TableIdentifier {
+        match self {
+            Self::Create(entry) => entry.ident.as_ref(),
+            Self::Drop(ident) => ident.as_ref(),
+            Self::Insert(entry) => entry.table.as_ref(),
+        }
+    }
+}
+
 /// Hook through which `pallet-tables` and `pallet-indexing` hand off
 /// indexable events at extrinsic time. The runtime wires this to
 /// `pallet-prover-db-indexer`; `()` is a no-op for runtimes that don't
