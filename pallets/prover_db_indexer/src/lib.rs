@@ -110,6 +110,15 @@ pub enum ConsumerError {
         /// Underlying error from the HTTP client.
         error: http_client::Error,
     },
+    /// `get_last_checkpoint` HTTP call failed.
+    #[snafu(display("get_last_checkpoint failed: {error}"))]
+    GetLastCheckpoint {
+        /// Underlying error from the HTTP client.
+        error: http_client::Error,
+    },
+    /// Another OCW round is already in progress (lock held by another thread).
+    #[snafu(display("another OCW round is already in progress"))]
+    ConsumerInProgress,
 }
 
 #[polkadot_sdk::frame_support::pallet]
@@ -220,16 +229,9 @@ pub mod pallet {
                 crate::OCW_LOCK_KEY,
                 Duration::from_millis(T::OcwLockDeadlineMs::get()),
             );
-            let _guard = match lock.try_lock() {
-                Ok(g) => g,
-                Err(_deadline) => {
-                    polkadot_sdk::sp_tracing::debug!(
-                        target: "prover_db_indexer",
-                        "another OCW round is already in progress; skipping",
-                    );
-                    return Ok(());
-                }
-            };
+            let _guard = lock
+                .try_lock()
+                .map_err(|_| ConsumerError::ConsumerInProgress)?;
 
             // 1. Read the single offchain config. Absence ⇒ this node
             //    isn't an indexer; OCW is dormant. The node service
@@ -260,18 +262,9 @@ pub mod pallet {
             //    diverge from what the server has actually committed.
             //    A failure here is treated as transient: log and skip this
             //    round; the next OCW will retry.
-            let cursor: u64 = match crate::http_client::get_last_checkpoint(&url) {
-                Ok(Some(seq)) => seq,
-                Ok(None) => 0,
-                Err(e) => {
-                    polkadot_sdk::sp_tracing::warn!(
-                        target: "prover_db_indexer",
-                        "get_last_checkpoint failed for {}: {}; skipping this round",
-                        url, e,
-                    );
-                    return Ok(());
-                }
-            };
+            let cursor: u64 = crate::http_client::get_last_checkpoint(&url)
+                .map_err(|error| ConsumerError::GetLastCheckpoint { error })?
+                .unwrap_or(0);
 
             // 4. Walk blocks from cursor+1 to tip, capped.
             let start = cursor + 1;
