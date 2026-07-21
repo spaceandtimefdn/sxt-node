@@ -175,10 +175,6 @@ pub mod pallet {
 
     impl<T: Config> EventCapture for Pallet<T> {
         fn capture_events(events: Vec<BlockEvent<'_>>) {
-            if events.is_empty() {
-                return;
-            }
-
             // Capture every event unconditionally. Per-node filtering is
             // applied later by the OCW consumer when forwarding to the
             // indexer; the offchain queue mirrors the full block so every
