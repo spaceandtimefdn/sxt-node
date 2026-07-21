@@ -54,12 +54,12 @@ const EVENT_KEY_PREFIX: &[u8] = b"prover_db_indexer/event";
 /// Offchain DB key prefix for per-block high-water-marks (the largest
 /// extrinsic index in a block that produced events). See [`EVENT_KEY_PREFIX`]
 /// for why there's no trailing separator.
-const HIGH_WATER_KEY_PREFIX: &[u8] = b"prover_db_indexer/hwm";
+const HIGH_WATER_KEY_PREFIX: &[u8] = b"prover_db_indexer/high_water_mark";
 
 /// Compute the offchain DB key for a block's high-water-mark. The value
 /// at this key is a SCALE-encoded `u32`: the largest `extrinsic_index`
 /// in the block that called `EventCapture::capture_events`. The OCW
-/// reads it to know how far to probe `key_for_event(block, 0..=hwm)`.
+/// reads it to know how far to probe `key_for_event(block, 0..=high_water_mark)`.
 /// Absence of this key means the block had zero captured events.
 pub fn key_for_high_water(block: u64) -> Vec<u8> {
     (HIGH_WATER_KEY_PREFIX, block).encode()

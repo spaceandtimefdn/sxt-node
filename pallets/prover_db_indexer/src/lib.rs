@@ -22,7 +22,7 @@
 //!   walks blocks `cursor+1..=current` (capped at
 //!   [`MAX_BLOCKS_PER_INVOCATION`]). For each block, reads the
 //!   high-water-mark; if absent, the block had zero captures and is
-//!   skipped. Otherwise probes `key_for_event(block, 0..=hwm)`,
+//!   skipped. Otherwise probes `key_for_event(block, 0..=high_water_mark)`,
 //!   forwards each present payload via HTTP+protobuf, checkpoints on
 //!   the server, and deletes consumed entries from the offchain DB.
 //!
@@ -296,7 +296,7 @@ pub mod pallet {
             block_num: u64,
             include_filters: &[TableIdentifierFilter],
         ) -> Result<(), ConsumerError> {
-            let Some(hwm) = crate::offchain_consumer::read_high_water(block_num) else {
+            let Some(high_water_mark) = crate::offchain_consumer::read_high_water(block_num) else {
                 return Ok(());
             };
 
@@ -304,10 +304,10 @@ pub mod pallet {
                 target: "prover_db_indexer",
                 "block {} — high-water-mark {}; probing for captured events",
                 block_num,
-                hwm,
+                high_water_mark,
             );
 
-            for ext_idx in 0..=hwm {
+            for ext_idx in 0..=high_water_mark {
                 let Some(events) = crate::offchain_consumer::read_events(block_num, ext_idx) else {
                     continue;
                 };
@@ -330,21 +330,19 @@ pub mod pallet {
             events: &[BlockEvent<'_>],
             include_filters: &[TableIdentifierFilter],
         ) -> Result<(), ConsumerError> {
-            let seq = block_num;
-
             let filtered_events = events
                 .iter()
                 .filter(|event| table_matches_filters(event.table(), include_filters));
             for event in filtered_events {
                 match event {
                     BlockEvent::Drop(ident) => {
-                        crate::http_client::drop_table(url, seq, ident)
+                        crate::http_client::drop_table(url, block_num, ident)
                             .map_err(|error| ConsumerError::DropTable { error })?;
                     }
                     BlockEvent::Create(entry) => {
                         crate::http_client::create_table(
                             url,
-                            seq,
+                            block_num,
                             &entry.ident,
                             entry.ddl.to_vec(),
                             commitment_sql::ROW_NUMBER_COLUMN_NAME.into(),
@@ -354,7 +352,7 @@ pub mod pallet {
                     BlockEvent::Insert(entry) => {
                         crate::http_client::put_batches(
                             url,
-                            seq,
+                            block_num,
                             alloc::vec![(entry.table.as_ref(), entry.data.to_vec())],
                         )
                         .map_err(|error| ConsumerError::PutBatches { error })?;
