@@ -180,6 +180,7 @@ fn ocw_forwards_and_deletes_offchain_entry() {
         ));
     }
 
+    ext.register_extension(native::FinalizedNumberExt(1));
     ext.execute_with(|| {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
@@ -214,6 +215,7 @@ fn ocw_checkpoints_empty_blocks() {
         ));
     }
 
+    ext.register_extension(native::FinalizedNumberExt(1));
     ext.execute_with(|| {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
@@ -256,6 +258,7 @@ fn ocw_resumes_from_server_checkpoint() {
         ));
     }
 
+    ext.register_extension(native::FinalizedNumberExt(6));
     ext.execute_with(|| {
         System::set_block_number(6);
         ProverDbIndexer::offchain_worker(6);
@@ -328,6 +331,7 @@ fn ocw_processes_multiple_blocks_in_order() {
         ));
     }
 
+    ext.register_extension(native::FinalizedNumberExt(3));
     ext.execute_with(|| {
         System::set_block_number(3);
         ProverDbIndexer::offchain_worker(3);
@@ -404,6 +408,7 @@ fn ocw_walks_multiple_extrinsics_in_one_block() {
         ));
     }
 
+    ext.register_extension(native::FinalizedNumberExt(1));
     ext.execute_with(|| {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
@@ -544,6 +549,7 @@ fn ocw_forwards_only_events_matching_include_set() {
         ));
     }
 
+    ext.register_extension(native::FinalizedNumberExt(1));
     ext.execute_with(|| {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
@@ -597,6 +603,7 @@ fn ocw_with_wildcard_filter_forwards_everything() {
         ));
     }
 
+    ext.register_extension(native::FinalizedNumberExt(1));
     ext.execute_with(|| {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
@@ -638,6 +645,7 @@ fn ocw_with_empty_include_set_forwards_nothing() {
         ));
     }
 
+    ext.register_extension(native::FinalizedNumberExt(1));
     ext.execute_with(|| {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);

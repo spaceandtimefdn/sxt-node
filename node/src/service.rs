@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use codec::Encode;
 use futures::prelude::*;
-use polkadot_sdk::sc_client_api::{Backend, BlockBackend};
+use polkadot_sdk::sc_client_api::{Backend, BlockBackend, HeaderBackend};
 use polkadot_sdk::sc_consensus_babe::{self, SlotProportion};
 use polkadot_sdk::sc_network::event::Event;
 use polkadot_sdk::sc_network::{NetworkBackend, NetworkEventStream};
@@ -631,8 +631,15 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
                 network_provider: Arc::new(network.clone()),
                 is_validator: role.is_authority(),
                 enable_http_requests: true,
-                custom_extensions: move |_| {
-                    vec![Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>]
+                custom_extensions: {
+                    let client = client.clone();
+                    move |_| {
+                        vec![
+                            Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>,
+                            Box::new(native::FinalizedNumberExt(client.info().finalized_number))
+                                as Box<_>,
+                        ]
+                    }
                 },
             })
             .run(client.clone(), task_manager.spawn_handle())

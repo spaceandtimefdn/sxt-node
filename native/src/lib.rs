@@ -1,6 +1,12 @@
 //! Space and Time's crate for no_std code that is needed in the runtime and is made available through generated WASM bindings
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "std")]
+polkadot_sdk::sp_externalities::decl_extension! {
+    /// Externalities extension exposing the node's finalized block number to offchain workers.
+    pub struct FinalizedNumberExt(u32);
+}
+
 /// The space and time native code interface
 mod sxt;
 

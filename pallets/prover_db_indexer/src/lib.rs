@@ -82,10 +82,9 @@ pub enum ConsumerError {
         /// Underlying parse error from the `url` crate.
         error: url::ParseError,
     },
-    /// The runtime's `BlockNumber` didn't fit in `u64` (defensive — in
-    /// practice `BlockNumber` is `u32` so this is unreachable).
-    #[snafu(display("block number does not fit in u64"))]
-    BlockNumberOverflow,
+    /// The node's client didn't provide a finalized block number.
+    #[snafu(display("no finalized block number provided by the node's client"))]
+    NoFinalizedBlockNumberProvided,
     /// `create_table` HTTP call failed.
     #[snafu(display("create_table failed: {error}"))]
     CreateTable {
@@ -171,8 +170,8 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         // Fires at chain tip only (not during sync). Drains the offchain
         // DB queue, forwards to the HTTP server, deletes consumed entries.
-        fn offchain_worker(block_number: BlockNumberFor<T>) {
-            if let Err(e) = Self::run_consumer(block_number) {
+        fn offchain_worker(_block_number: BlockNumberFor<T>) {
+            if let Err(e) = Self::run_consumer() {
                 polkadot_sdk::sp_tracing::error!(
                     target: "prover_db_indexer",
                     "offchain indexer error: {}",
@@ -216,7 +215,7 @@ pub mod pallet {
         //  CONSUMER: drain offchain DB → HTTP → delete (called from OCW)
         // ═══════════════════════════════════════════════════════════════
 
-        fn run_consumer(block_number: BlockNumberFor<T>) -> Result<(), ConsumerError> {
+        fn run_consumer() -> Result<(), ConsumerError> {
             // Serialize concurrent OCW invocations. Substrate spawns
             // `offchain_worker` for every imported block, and rounds can
             // overlap if one runs longer than block time. Without a lock,
@@ -251,10 +250,10 @@ pub mod pallet {
                 url, include_filters.len(),
             );
 
-            // 2. Current block number — passed in by `offchain_worker`.
-            let current_block: u64 = block_number
-                .try_into()
-                .map_err(|_| ConsumerError::BlockNumberOverflow)?;
+            // 2. Finalized block number, read from the node's client.
+            let finalized_block: u64 = native::interface::finalized_number()
+                .ok_or(ConsumerError::NoFinalizedBlockNumberProvided)?
+                .into();
 
             // 3. Ask the server for its last checkpoint. The server is the
             //    sole source of truth — no local cursor. This costs one HTTP
@@ -271,10 +270,10 @@ pub mod pallet {
             polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
                 "processing blocks (server_checkpoint={}, tip={})",
-                cursor, current_block,
+                cursor, finalized_block,
             );
 
-            for block_num in (cursor..=current_block)
+            for block_num in (cursor..=finalized_block)
                 .skip(1)
                 .take(T::MaxBlocksPerInvocation::get().saturated_into())
             {

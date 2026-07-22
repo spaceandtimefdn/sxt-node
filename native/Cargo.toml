@@ -13,8 +13,8 @@ commitment-sql = { workspace = true, optional = true, features = ["cpu-perf"] }
 log = "0.4.11"
 
 polkadot-sdk = { workspace = true, features = [
-	"sp-runtime-interface", "sp-runtime", "frame-support", 
-	"frame-benchmarking", "frame-system", "sp-core",
+	"sp-runtime-interface", "sp-runtime", "frame-support",
+	"frame-benchmarking", "frame-system", "sp-core", "sp-externalities",
 ]}
 
 # Required for the Native runtime_interface macro to work
