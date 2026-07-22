@@ -131,6 +131,16 @@ pub trait Interface {
         Ok((table_bytes, new_commitments_bytes))
     }
 
+    /// Returns the current finalized block's number and hash, as reported by the node's
+    /// [`ClientExt`], if one is registered.
+    fn finalized_block(&mut self) -> Option<(u32, [u8; 32])> {
+        polkadot_sdk::sp_externalities::ExternalitiesExt::extension(self).map(
+            |crate::client_ext::ClientExt(provider)| {
+                (provider.finalized_number(), provider.finalized_hash())
+            },
+        )
+    }
+
     /// Convert OnChainTable bytes into an Arrow IPC RecordBatch.
     #[cfg(feature = "runtime-benchmarks")]
     fn on_chain_table_to_record_batch(

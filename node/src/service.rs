@@ -631,8 +631,14 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
                 network_provider: Arc::new(network.clone()),
                 is_validator: role.is_authority(),
                 enable_http_requests: true,
-                custom_extensions: move |_| {
-                    vec![Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>]
+                custom_extensions: {
+                    let provider = Arc::new(crate::client::FullClientHandle(client.clone()));
+                    move |_| {
+                        vec![
+                            Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>,
+                            Box::new(native::client_ext::ClientExt(provider.clone())) as Box<_>,
+                        ]
+                    }
                 },
             })
             .run(client.clone(), task_manager.spawn_handle())
