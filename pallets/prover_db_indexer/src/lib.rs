@@ -22,7 +22,7 @@
 //!   walks blocks `cursor+1..=current` (capped at
 //!   [`MAX_BLOCKS_PER_INVOCATION`]). For each block, reads the
 //!   high-water-mark; if absent, the block had zero captures and is
-//!   skipped. Otherwise probes `key_for_event(block, 0..=hwm)`,
+//!   skipped. Otherwise probes `key_for_event(block, 0..=high_water_mark)`,
 //!   forwards each present payload via HTTP+protobuf, checkpoints on
 //!   the server, and deletes consumed entries from the offchain DB.
 //!
@@ -110,6 +110,15 @@ pub enum ConsumerError {
         /// Underlying error from the HTTP client.
         error: http_client::Error,
     },
+    /// `get_last_checkpoint` HTTP call failed.
+    #[snafu(display("get_last_checkpoint failed: {error}"))]
+    GetLastCheckpoint {
+        /// Underlying error from the HTTP client.
+        error: http_client::Error,
+    },
+    /// Another OCW round is already in progress (lock held by another thread).
+    #[snafu(display("another OCW round is already in progress"))]
+    ConsumerInProgress,
 }
 
 #[polkadot_sdk::frame_support::pallet]
@@ -175,10 +184,6 @@ pub mod pallet {
 
     impl<T: Config> EventCapture for Pallet<T> {
         fn capture_events(events: Vec<BlockEvent<'_>>) {
-            if events.is_empty() {
-                return;
-            }
-
             // Capture every event unconditionally. Per-node filtering is
             // applied later by the OCW consumer when forwarding to the
             // indexer; the offchain queue mirrors the full block so every
@@ -224,16 +229,9 @@ pub mod pallet {
                 crate::OCW_LOCK_KEY,
                 Duration::from_millis(T::OcwLockDeadlineMs::get()),
             );
-            let _guard = match lock.try_lock() {
-                Ok(g) => g,
-                Err(_deadline) => {
-                    polkadot_sdk::sp_tracing::debug!(
-                        target: "prover_db_indexer",
-                        "another OCW round is already in progress; skipping",
-                    );
-                    return Ok(());
-                }
-            };
+            let _guard = lock
+                .try_lock()
+                .map_err(|_| ConsumerError::ConsumerInProgress)?;
 
             // 1. Read the single offchain config. Absence ⇒ this node
             //    isn't an indexer; OCW is dormant. The node service
@@ -264,34 +262,22 @@ pub mod pallet {
             //    diverge from what the server has actually committed.
             //    A failure here is treated as transient: log and skip this
             //    round; the next OCW will retry.
-            let cursor: u64 = match crate::http_client::get_last_checkpoint(&url) {
-                Ok(Some(seq)) => seq,
-                Ok(None) => 0,
-                Err(e) => {
-                    polkadot_sdk::sp_tracing::warn!(
-                        target: "prover_db_indexer",
-                        "get_last_checkpoint failed for {}: {}; skipping this round",
-                        url, e,
-                    );
-                    return Ok(());
-                }
-            };
+            let cursor: u64 = crate::http_client::get_last_checkpoint(&url)
+                .map_err(|error| ConsumerError::GetLastCheckpoint { error })?
+                .unwrap_or(0);
 
             // 4. Walk blocks from cursor+1 to tip, capped.
-            let start = cursor + 1;
-            let end = core::cmp::min(current_block, start + T::MaxBlocksPerInvocation::get() - 1);
-
-            if start > current_block {
-                return Ok(());
-            }
 
             polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
-                "processing blocks {}..={} (server_checkpoint={}, tip={})",
-                start, end, cursor, current_block,
+                "processing blocks (server_checkpoint={}, tip={})",
+                cursor, current_block,
             );
 
-            for block_num in start..=end {
+            for block_num in (cursor..=current_block)
+                .skip(1)
+                .take(T::MaxBlocksPerInvocation::get().saturated_into())
+            {
                 Self::forward_block(&url, block_num, &include_filters)?;
 
                 // Checkpoint on the server (always, even for empty blocks).
@@ -310,7 +296,7 @@ pub mod pallet {
             block_num: u64,
             include_filters: &[TableIdentifierFilter],
         ) -> Result<(), ConsumerError> {
-            let Some(hwm) = crate::offchain_consumer::read_high_water(block_num) else {
+            let Some(high_water_mark) = crate::offchain_consumer::read_high_water(block_num) else {
                 return Ok(());
             };
 
@@ -318,10 +304,10 @@ pub mod pallet {
                 target: "prover_db_indexer",
                 "block {} — high-water-mark {}; probing for captured events",
                 block_num,
-                hwm,
+                high_water_mark,
             );
 
-            for ext_idx in 0..=hwm {
+            for ext_idx in 0..=high_water_mark {
                 let Some(events) = crate::offchain_consumer::read_events(block_num, ext_idx) else {
                     continue;
                 };
@@ -344,27 +330,19 @@ pub mod pallet {
             events: &[BlockEvent<'_>],
             include_filters: &[TableIdentifierFilter],
         ) -> Result<(), ConsumerError> {
-            let seq = block_num;
-
-            for event in events {
-                let table = match event {
-                    BlockEvent::Create(entry) => entry.ident.as_ref(),
-                    BlockEvent::Drop(ident) => ident.as_ref(),
-                    BlockEvent::Insert(entry) => entry.table.as_ref(),
-                };
-                if !table_matches_filters(table, include_filters) {
-                    continue;
-                }
-
+            let filtered_events = events
+                .iter()
+                .filter(|event| table_matches_filters(event.table(), include_filters));
+            for event in filtered_events {
                 match event {
                     BlockEvent::Drop(ident) => {
-                        crate::http_client::drop_table(url, seq, ident)
+                        crate::http_client::drop_table(url, block_num, ident)
                             .map_err(|error| ConsumerError::DropTable { error })?;
                     }
                     BlockEvent::Create(entry) => {
                         crate::http_client::create_table(
                             url,
-                            seq,
+                            block_num,
                             &entry.ident,
                             entry.ddl.to_vec(),
                             commitment_sql::ROW_NUMBER_COLUMN_NAME.into(),
@@ -374,7 +352,7 @@ pub mod pallet {
                     BlockEvent::Insert(entry) => {
                         crate::http_client::put_batches(
                             url,
-                            seq,
+                            block_num,
                             alloc::vec![(entry.table.as_ref(), entry.data.to_vec())],
                         )
                         .map_err(|error| ConsumerError::PutBatches { error })?;

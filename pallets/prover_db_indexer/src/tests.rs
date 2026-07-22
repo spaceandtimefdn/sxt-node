@@ -345,7 +345,7 @@ fn ocw_walks_multiple_extrinsics_in_one_block() {
     let (mut ext, state) = setup_with_url();
 
     // Two extrinsics in block 1 fire captures: ext 1 and ext 3. Ext 2
-    // didn't (a sparse block). hwm should be 3; the OCW probes 0..=3
+    // didn't (a sparse block). high_water_mark should be 3; the OCW probes 0..=3
     // and finds payloads at 1 and 3.
     let mut s = state.write();
     s.persistent_storage.set(
