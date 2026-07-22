@@ -123,6 +123,7 @@ pub mod pallet {
     use polkadot_sdk::sp_runtime::offchain::storage::StorageValueRef;
     use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
     use polkadot_sdk::sp_runtime::offchain::Duration;
+    use polkadot_sdk::sp_runtime::SaturatedConversion;
     use sxt_core::prover_db_indexer::{
         key_for_event,
         key_for_high_water,
@@ -187,11 +188,10 @@ pub mod pallet {
             // `block_number()` always fits in u64 in our runtime (BlockNumber
             // is u32); `extrinsic_index()` is always `Some` while we're inside
             // an extrinsic, which is the only path that reaches `capture_events`.
-            // The `unwrap_or(0)` fallbacks are defensive, not load-bearing.
-            let block: u64 = polkadot_sdk::frame_system::Pallet::<T>::block_number()
-                .try_into()
-                .unwrap_or(0);
-            let ext_idx = polkadot_sdk::frame_system::Pallet::<T>::extrinsic_index().unwrap_or(0);
+            let block: u64 =
+                polkadot_sdk::frame_system::Pallet::<T>::block_number().saturated_into();
+            let ext_idx =
+                polkadot_sdk::frame_system::Pallet::<T>::extrinsic_index().unwrap_or(u32::MAX);
 
             // Per-extrinsic event payload.
             polkadot_sdk::sp_io::offchain_index::set(
