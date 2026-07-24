@@ -11716,6 +11716,9 @@ name = "pallet-prover-db-indexer"
 version = "0.1.0"
 dependencies = [
  "commitment-sql",
+ "native",
+ "pallet-indexing",
+ "pallet-tables",
  "parity-scale-codec",
  "parking_lot 0.12.3",
  "polkadot-sdk 0.9.0",

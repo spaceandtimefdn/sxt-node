@@ -49,6 +49,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+mod client_events;
 mod http_client;
 mod offchain_consumer;
 
