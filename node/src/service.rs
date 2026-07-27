@@ -51,6 +51,7 @@ pub type HostFunctions = (
     sp_io::SubstrateHostFunctions,
     sp_statement_store::runtime_api::HostFunctions,
     native::interface::HostFunctions,
+    native::client::client::HostFunctions,
 );
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -58,6 +59,7 @@ pub type HostFunctions = (
     sp_io::SubstrateHostFunctions,
     sp_statement_store::runtime_api::HostFunctions,
     native::interface::HostFunctions,
+    native::client::client::HostFunctions,
     polkadot_sdk::frame_benchmarking::benchmarking::HostFunctions,
 );
 
@@ -631,8 +633,15 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
                 network_provider: Arc::new(network.clone()),
                 is_validator: role.is_authority(),
                 enable_http_requests: true,
-                custom_extensions: move |_| {
-                    vec![Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>]
+                custom_extensions: {
+                    let provider =
+                        Arc::new(crate::client_provider::FullClientHandle(client.clone()));
+                    move |_| {
+                        vec![
+                            Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>,
+                            Box::new(native::client::ClientExt(provider.clone())) as Box<_>,
+                        ]
+                    }
                 },
             })
             .run(client.clone(), task_manager.spawn_handle())
