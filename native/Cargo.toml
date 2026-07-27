@@ -13,8 +13,8 @@ commitment-sql = { workspace = true, optional = true, features = ["cpu-perf"] }
 log = "0.4.11"
 
 polkadot-sdk = { workspace = true, features = [
-	"sp-runtime-interface", "sp-runtime", "frame-support", 
-	"frame-benchmarking", "frame-system", "sp-core",
+	"sp-runtime-interface", "sp-runtime", "frame-support",
+	"frame-benchmarking", "frame-system", "sp-core", "sp-externalities",
 ]}
 
 # Required for the Native runtime_interface macro to work
@@ -40,6 +40,7 @@ arrow-ipc-no-std = { workspace = true, optional = true, features = ["std"] }
 proof-of-sql = { workspace = true }
 sqlparser.workspace = true
 rayon.workspace = true
+polkadot-sdk = { workspace = true, features = ["sp-io"] }
 
 [[bin]]
 name = "generate-backwards-compatibility-cases"
@@ -60,6 +61,7 @@ std = [
     "dep:proof-of-sql",
     "sxt-core/std",
     "dep:arrow-ipc-no-std",
+    "polkadot-sdk/sp-blockchain",
 ]
 generate_backwards_compatibility_cases = ["std", "dep:proptest", "dep:hex", "sxt-core/proptest", "proof-of-sql-commitment-map/proptest", "commitment-sql/proptest", "dep:proof-of-sql", "dep:clap"]
 runtime-benchmarks = ["sxt-core/runtime-benchmarks"]
