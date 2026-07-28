@@ -1,27 +1,33 @@
 //! Integration tests for the prover-db-indexer consumer (OCW).
 //!
-//! Tests pre-populate the offchain DB as if `EventCapture::capture_events`
-//! had run during block execution — that means writing the per-extrinsic
-//! event payload at `key_for_event(block, ext_idx)` and the per-block
-//! high-water-mark at `key_for_high_water(block)` — then drive
-//! `offchain_worker` and verify the OCW reads, forwards in order, and
-//! deletes consumed entries.
+//! `forward_block` reads a block's captured events straight from the
+//! node's client (`System::Events` at that block's hash) via
+//! [`crate::db_events::db_events_at`], so these tests seed the mocked
+//! client's responses instead of the old per-extrinsic offchain-DB queue.
+//! `MockClientProvider` hands out one queued response per `storage` call,
+//! and the OCW makes exactly one such call per block it walks, in
+//! increasing block-number order — so the queue order lines up with the
+//! block order these tests describe.
 
 use std::borrow::Cow;
-use std::sync::Arc;
 
 use codec::Encode;
-use native::client::ClientExt;
+use native_api::Api;
+use pallet_tables::{CommitmentCreationCmd, UpdateTable};
 use polkadot_sdk::frame_support::traits::Hooks;
+use polkadot_sdk::frame_support::BoundedVec;
+use polkadot_sdk::frame_system::EventRecord;
 use polkadot_sdk::sp_core::offchain::testing::{PendingRequest, TestOffchainExt};
 use polkadot_sdk::sp_core::offchain::{OffchainDbExt, OffchainStorage, OffchainWorkerExt};
+use polkadot_sdk::sp_core::storage::StorageData;
 use polkadot_sdk::sp_core::H256;
 use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
 use polkadot_sdk::sp_runtime::offchain::Duration;
+use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use prost::Message;
+use sxt_core::indexing::{BatchId, DataQuorum, SubmitterList};
 use sxt_core::prover_db_indexer::{
     key_for_event,
-    key_for_high_water,
     BlockEvent,
     CreateEntry,
     EventCapture,
@@ -29,7 +35,7 @@ use sxt_core::prover_db_indexer::{
     ProverDbConsumerConfig,
     TableIdentifierFilter,
 };
-use sxt_core::tables::TableIdentifier;
+use sxt_core::tables::{QuorumScope, Source, TableIdentifier, TableType};
 
 use crate::mock::*;
 use crate::{proto, PROVER_DB_CONFIG_KEY};
@@ -99,14 +105,46 @@ fn setup_with_config(
     (ext, state)
 }
 
-/// Mirror what the producer would write for a block: one event payload
-/// at `(block, ext_idx)` and the matching high-water-mark.
-fn seed_block_events(state: &StateArc, block: u64, ext_idx: u32, events: Vec<BlockEvent<'static>>) {
-    let mut s = state.write();
-    s.persistent_storage
-        .set(b"", &key_for_event(block, ext_idx), &events.encode());
-    s.persistent_storage
-        .set(b"", &key_for_high_water(block), &Encode::encode(&ext_idx));
+fn schema_updated_event(
+    identifier_create_statement_pairs: impl IntoIterator<Item = (TableIdentifier, Vec<u8>)>,
+) -> EventRecord<RuntimeEvent, H256> {
+    event_record(pallet_tables::Event::<Test>::SchemaUpdated(
+        None,
+        BoundedVec::truncate_from(
+            identifier_create_statement_pairs
+                .into_iter()
+                .map(|(ident, ddl)| UpdateTable {
+                    ident,
+                    create_statement: BoundedVec::truncate_from(ddl),
+                    table_type: TableType::default(),
+                    commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+                    source: Source::default(),
+                })
+                .collect(),
+        ),
+    ))
+}
+fn table_dropped_event(table: TableIdentifier) -> EventRecord<RuntimeEvent, H256> {
+    event_record(pallet_tables::Event::<Test>::TableDropped(
+        None,
+        TableType::default(),
+        table,
+        Source::default(),
+    ))
+}
+fn quorum_reached_event(table: TableIdentifier, data: Vec<u8>) -> EventRecord<RuntimeEvent, H256> {
+    event_record(pallet_indexing::Event::<Test, Api>::QuorumReached {
+        quorum: DataQuorum {
+            table,
+            batch_id: BatchId::default(),
+            data_hash: H256::zero(),
+            block_number: Default::default(),
+            agreements: SubmitterList::default(),
+            dissents: SubmitterList::default(),
+            quorum_scope: QuorumScope::Public,
+        },
+        data: BoundedVec::truncate_from(data),
+    })
 }
 
 // ─── Tests ──────────────────────────────────────────────────────────────
@@ -130,10 +168,10 @@ fn ocw_skips_when_not_configured() {
 #[test]
 fn ocw_skips_when_lock_is_held() {
     let (mut ext, _state) = setup_with_url();
-    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-        finalized_state: Some((H256::zero(), 1)),
-        storage_response: Ok(None),
-    })));
+    ext.register_extension(MockClientProvider::client_ext(
+        Some((H256::zero(), 1)),
+        [Ok(None)],
+    ));
 
     ext.execute_with(|| {
         let mut lock = StorageLock::<Time>::with_deadline(
@@ -148,23 +186,18 @@ fn ocw_skips_when_lock_is_held() {
 }
 
 #[test]
-fn ocw_forwards_and_deletes_offchain_entry() {
+fn ocw_forwards_create_table_event() {
     let (mut ext, state) = setup_with_url();
-    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-        finalized_state: Some((H256::zero(), 1)),
-        storage_response: Ok(None),
-    })));
-
     let ddl = b"CREATE TABLE PUBLIC.USERS (ID BIGINT NOT NULL)";
-    seed_block_events(
-        &state,
-        1,
-        0,
-        vec![BlockEvent::Create(CreateEntry {
-            ident: Cow::Owned(TableIdentifier::from_str_unchecked("USERS", "PUBLIC")),
-            ddl: ddl.to_vec().into(),
-        })],
-    );
+
+    let event = schema_updated_event([(
+        TableIdentifier::from_str_unchecked("USERS", "PUBLIC"),
+        ddl.to_vec(),
+    )]);
+    ext.register_extension(MockClientProvider::client_ext(
+        Some((H256::zero(), 1)),
+        [Ok(Some(StorageData(vec![event].encode())))],
+    ));
 
     {
         let mut s = state.write();
@@ -195,25 +228,16 @@ fn ocw_forwards_and_deletes_offchain_entry() {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
     });
-
-    let s = state.read();
-    assert!(
-        s.persistent_storage.get(&key_for_event(1, 0)).is_none(),
-        "consumed event payload should be deleted"
-    );
-    assert!(
-        s.persistent_storage.get(&key_for_high_water(1)).is_none(),
-        "high-water-mark should be deleted"
-    );
 }
 
 #[test]
-fn ocw_checkpoints_empty_blocks() {
+fn ocw_checkpoints_blocks_with_no_events() {
     let (mut ext, state) = setup_with_url();
-    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-        finalized_state: Some((H256::zero(), 1)),
-        storage_response: Ok(None),
-    })));
+    let storage_data = Vec::<EventRecord<RuntimeEvent, H256>>::new().encode();
+    ext.register_extension(MockClientProvider::client_ext(
+        Some((H256::zero(), 1)),
+        [Ok(Some(StorageData(storage_data)))],
+    ));
 
     {
         let mut s = state.write();
@@ -238,19 +262,11 @@ fn ocw_checkpoints_empty_blocks() {
 #[test]
 fn ocw_resumes_from_server_checkpoint() {
     let (mut ext, state) = setup_with_url();
-    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-        finalized_state: Some((H256::zero(), 6)),
-        storage_response: Ok(None),
-    })));
-
-    seed_block_events(
-        &state,
-        6,
-        0,
-        vec![BlockEvent::Drop(Cow::Owned(
-            TableIdentifier::from_str_unchecked("OLD", "NS"),
-        ))],
-    );
+    let event = table_dropped_event(TableIdentifier::from_str_unchecked("OLD", "NS"));
+    ext.register_extension(MockClientProvider::client_ext(
+        Some((H256::zero(), 6)),
+        [Ok(Some(StorageData(vec![event].encode())))],
+    ));
 
     {
         let mut s = state.write();
@@ -284,28 +300,21 @@ fn ocw_resumes_from_server_checkpoint() {
 #[test]
 fn ocw_processes_multiple_blocks_in_order() {
     let (mut ext, state) = setup_with_url();
-    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-        finalized_state: Some((H256::zero(), 3)),
-        storage_response: Ok(None),
-    })));
-
-    seed_block_events(
-        &state,
-        1,
-        0,
-        vec![BlockEvent::Drop(Cow::Owned(
-            TableIdentifier::from_str_unchecked("T1", "NS"),
-        ))],
-    );
-    seed_block_events(
-        &state,
-        2,
-        0,
-        vec![BlockEvent::Create(CreateEntry {
-            ident: Cow::Owned(TableIdentifier::from_str_unchecked("T2", "NS")),
-            ddl: b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec().into(),
-        })],
-    );
+    let event_1 = table_dropped_event(TableIdentifier::from_str_unchecked("T1", "NS"));
+    let event_2 = schema_updated_event([(
+        TableIdentifier::from_str_unchecked("T2", "NS"),
+        b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec(),
+    )]);
+    ext.register_extension(MockClientProvider::client_ext(
+        Some((H256::zero(), 3)),
+        [
+            Ok(Some(StorageData(vec![event_1].encode()))),
+            Ok(Some(StorageData(vec![event_2].encode()))),
+            Ok(Some(StorageData(
+                Vec::<EventRecord<RuntimeEvent, H256>>::new().encode(),
+            ))),
+        ],
+    ));
 
     {
         let mut s = state.write();
@@ -355,46 +364,20 @@ fn ocw_processes_multiple_blocks_in_order() {
         System::set_block_number(3);
         ProverDbIndexer::offchain_worker(3);
     });
-
-    let s = state.read();
-    assert!(s.persistent_storage.get(&key_for_event(1, 0)).is_none());
-    assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
-    assert!(s.persistent_storage.get(&key_for_event(2, 0)).is_none());
-    assert!(s.persistent_storage.get(&key_for_high_water(2)).is_none());
 }
 
 #[test]
-fn ocw_walks_multiple_extrinsics_in_one_block() {
+fn ocw_forwards_multiple_events_in_one_block() {
     let (mut ext, state) = setup_with_url();
-    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-        finalized_state: Some((H256::zero(), 1)),
-        storage_response: Ok(None),
-    })));
-
-    // Two extrinsics in block 1 fire captures: ext 1 and ext 3. Ext 2
-    // didn't (a sparse block). high_water_mark should be 3; the OCW probes 0..=3
-    // and finds payloads at 1 and 3.
-    let mut s = state.write();
-    s.persistent_storage.set(
-        b"",
-        &key_for_event(1, 1),
-        &vec![BlockEvent::Drop(Cow::Owned(
-            TableIdentifier::from_str_unchecked("T1", "NS"),
-        ))]
-        .encode(),
+    let event_1 = table_dropped_event(TableIdentifier::from_str_unchecked("T1", "NS"));
+    let event_2 = quorum_reached_event(
+        TableIdentifier::from_str_unchecked("T2", "NS"),
+        b"row-data".to_vec(),
     );
-    s.persistent_storage.set(
-        b"",
-        &key_for_event(1, 3),
-        &vec![BlockEvent::Insert(InsertEntry {
-            table: Cow::Owned(TableIdentifier::from_str_unchecked("T2", "NS")),
-            data: b"row-data".to_vec().into(),
-        })]
-        .encode(),
-    );
-    s.persistent_storage
-        .set(b"", &key_for_high_water(1), &Encode::encode(&3u32));
-    drop(s);
+    ext.register_extension(MockClientProvider::client_ext(
+        Some((H256::zero(), 1)),
+        [Ok(Some(StorageData(vec![event_1, event_2].encode())))],
+    ));
 
     {
         let mut s = state.write();
@@ -435,11 +418,6 @@ fn ocw_walks_multiple_extrinsics_in_one_block() {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
     });
-
-    let s = state.read();
-    assert!(s.persistent_storage.get(&key_for_event(1, 1)).is_none());
-    assert!(s.persistent_storage.get(&key_for_event(1, 3)).is_none());
-    assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
 }
 
 // ─── Include-set tests (consumer-side filter) ──────────────────────────
@@ -505,24 +483,30 @@ fn ocw_forwards_only_events_matching_include_set() {
         "ALPHA.*".parse().unwrap(),
         "BETA_NS.BETA_T".parse().unwrap(),
     ]);
-    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-        finalized_state: Some((H256::zero(), 1)),
-        storage_response: Ok(None),
-    })));
-
-    // Block 1, extrinsic 0: a mix of matching and non-matching events.
-    seed_block_events(
-        &state,
-        1,
-        0,
-        vec![
-            create_event("A", "ALPHA"),        // match (namespace)
-            insert_event("BETA_T", "BETA_NS"), // match (table)
-            drop_event("OTHER", "GAMMA"),      // skip
-            create_event("X", "GAMMA"),        // skip
-            insert_event("Y", "ALPHA"),        // match (namespace)
-        ],
+    let event_1 = schema_updated_event([(
+        TableIdentifier::from_str_unchecked("A", "ALPHA"),
+        b"CREATE TABLE ...".to_vec(),
+    )]);
+    let event_2 = quorum_reached_event(
+        TableIdentifier::from_str_unchecked("BETA_T", "BETA_NS"),
+        b"rows".to_vec(),
     );
+    let event_3 = table_dropped_event(TableIdentifier::from_str_unchecked("OTHER", "GAMMA"));
+    let event_4 = schema_updated_event([(
+        TableIdentifier::from_str_unchecked("X", "GAMMA"),
+        b"CREATE TABLE ...".to_vec(),
+    )]);
+    let event_5 = quorum_reached_event(
+        TableIdentifier::from_str_unchecked("Y", "ALPHA"),
+        b"rows".to_vec(),
+    );
+
+    ext.register_extension(MockClientProvider::client_ext(
+        Some((H256::zero(), 1)),
+        [Ok(Some(StorageData(
+            vec![event_1, event_2, event_3, event_4, event_5].encode(),
+        )))],
+    ));
 
     // Only the three matching events should reach the indexer. Drops
     // for the skipped GAMMA namespace get filtered too — uniform.
@@ -579,10 +563,6 @@ fn ocw_forwards_only_events_matching_include_set() {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
     });
-
-    let s = state.read();
-    assert!(s.persistent_storage.get(&key_for_event(1, 0)).is_none());
-    assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
 }
 
 /// Explicit `*.*` filter in offchain storage ⇒ forward every event —
@@ -591,21 +571,15 @@ fn ocw_forwards_only_events_matching_include_set() {
 #[test]
 fn ocw_with_wildcard_filter_forwards_everything() {
     let (mut ext, state) = setup_with_url();
-    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-        finalized_state: Some((H256::zero(), 1)),
-        storage_response: Ok(None),
-    })));
-
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
-    seed_block_events(
-        &state,
-        1,
-        0,
-        vec![BlockEvent::Create(CreateEntry {
-            ident: Cow::Owned(TableIdentifier::from_str_unchecked("ANY", "ANY")),
-            ddl: ddl.to_vec().into(),
-        })],
-    );
+    let event_1 = schema_updated_event([(
+        TableIdentifier::from_str_unchecked("ANY", "ANY"),
+        ddl.to_vec(),
+    )]);
+    ext.register_extension(MockClientProvider::client_ext(
+        Some((H256::zero(), 1)),
+        [Ok(Some(StorageData(vec![event_1].encode())))],
+    ));
 
     {
         let mut s = state.write();
@@ -647,21 +621,15 @@ fn ocw_with_wildcard_filter_forwards_everything() {
 #[test]
 fn ocw_with_empty_include_set_forwards_nothing() {
     let (mut ext, state) = setup_with_config(Vec::new());
-    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-        finalized_state: Some((H256::zero(), 1)),
-        storage_response: Ok(None),
-    })));
-
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
-    seed_block_events(
-        &state,
-        1,
-        0,
-        vec![BlockEvent::Create(CreateEntry {
-            ident: Cow::Owned(TableIdentifier::from_str_unchecked("ANY", "ANY")),
-            ddl: ddl.to_vec().into(),
-        })],
-    );
+    let event_1 = schema_updated_event([(
+        TableIdentifier::from_str_unchecked("ANY", "ANY"),
+        ddl.to_vec(),
+    )]);
+    ext.register_extension(MockClientProvider::client_ext(
+        Some((H256::zero(), 1)),
+        [Ok(Some(StorageData(vec![event_1].encode())))],
+    ));
 
     {
         let mut s = state.write();

@@ -115,31 +115,18 @@ where
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
-    use std::sync::Arc;
-
-    use codec::Encode;
-    use native::client::ClientExt;
     use native_api::Api;
     use pallet_tables::UpdateTableList;
     use polkadot_sdk::frame_support::BoundedVec;
-    use polkadot_sdk::frame_system::Phase;
+    use polkadot_sdk::pallet_balances;
     use polkadot_sdk::sp_core::storage::StorageData;
     use polkadot_sdk::sp_core::H256;
     use polkadot_sdk::sp_runtime::AccountId32;
-    use polkadot_sdk::{frame_system, pallet_balances};
     use sxt_core::indexing::{BatchId, DataQuorum, SubmitterList};
     use sxt_core::tables::{QuorumScope, Source, TableIdentifier, TableType};
 
-    use super::{db_events_at, DBEvent, DBEventError, EventRecord};
-    use crate::mock::{new_test_ext, MockClientProvider, RuntimeEvent, Test};
-
-    fn event_record(event: impl Into<RuntimeEvent>) -> EventRecord<Test> {
-        frame_system::EventRecord {
-            phase: Phase::Initialization,
-            event: event.into(),
-            topics: vec![],
-        }
-    }
+    use super::{db_events_at, DBEvent, DBEventError};
+    use crate::mock::{event_record, new_test_ext, MockClientProvider, Test};
 
     #[test]
     fn no_client_when_extension_not_registered() {
@@ -155,10 +142,10 @@ mod tests {
     #[test]
     fn lookup_error_is_forwarded() {
         let mut ext = new_test_ext();
-        ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-            finalized_state: None,
-            storage_response: Err("test error".to_string()),
-        })));
+        ext.register_extension(MockClientProvider::client_ext(
+            None,
+            [Err("test error".to_string())],
+        ));
         ext.execute_with(|| {
             let err = db_events_at::<Test, Api>(H256::zero()).err().unwrap();
             assert!(
@@ -170,10 +157,7 @@ mod tests {
     #[test]
     fn empty_when_no_value_at_key() {
         let mut ext = new_test_ext();
-        ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-            finalized_state: None,
-            storage_response: Ok(None),
-        })));
+        ext.register_extension(MockClientProvider::client_ext(None, [Ok(None)]));
         ext.execute_with(|| {
             assert!(matches!(
                 db_events_at::<Test, Api>(H256::zero()),
@@ -185,10 +169,10 @@ mod tests {
     #[test]
     fn decode_error_on_garbage_bytes() {
         let mut ext = new_test_ext();
-        ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-            finalized_state: None,
-            storage_response: Ok(Some(StorageData(alloc::vec![0xFF, 0xFF, 0xFF]))),
-        })));
+        ext.register_extension(MockClientProvider::client_ext(
+            None,
+            [Ok(Some(StorageData(alloc::vec![0xFF, 0xFF, 0xFF])))],
+        ));
         ext.execute_with(|| {
             assert!(matches!(
                 db_events_at::<Test, Api>(H256::zero()),
@@ -234,10 +218,10 @@ mod tests {
             }),
         ];
         let mut ext = new_test_ext();
-        ext.register_extension(ClientExt(Arc::new(MockClientProvider {
-            finalized_state: None,
-            storage_response: Ok(Some(StorageData(records.encode()))),
-        })));
+        ext.register_extension(MockClientProvider::client_ext(
+            None,
+            [Ok(Some(StorageData(codec::Encode::encode(&records))))],
+        ));
         ext.execute_with(|| {
             let events: Vec<_> = db_events_at::<Test, Api>(H256::zero()).unwrap().collect();
             assert_eq!(

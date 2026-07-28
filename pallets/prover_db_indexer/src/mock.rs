@@ -223,7 +223,25 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 #[cfg(all(test, feature = "std"))]
 pub struct MockClientProvider {
     pub finalized_state: Option<(H256, u32)>,
-    pub storage_response: Result<Option<sp_core::storage::StorageData>, String>,
+    storage_responses: std::sync::Mutex<
+        std::collections::VecDeque<Result<Option<sp_core::storage::StorageData>, String>>,
+    >,
+}
+
+#[cfg(all(test, feature = "std"))]
+impl MockClientProvider {
+    /// Builds a client extension backed by a fresh `MockClientProvider`.
+    pub fn client_ext(
+        finalized_state: Option<(H256, u32)>,
+        storage_responses: impl IntoIterator<
+            Item = Result<Option<sp_core::storage::StorageData>, String>,
+        >,
+    ) -> native::client::ClientExt {
+        native::client::ClientExt(std::sync::Arc::new(Self {
+            finalized_state,
+            storage_responses: std::sync::Mutex::new(storage_responses.into_iter().collect()),
+        }))
+    }
 }
 
 #[cfg(all(test, feature = "std"))]
@@ -237,8 +255,24 @@ impl native::client::ClientProvider for MockClientProvider {
         _hash: H256,
         _key: &sp_core::storage::StorageKey,
     ) -> polkadot_sdk::sp_blockchain::Result<Option<sp_core::storage::StorageData>> {
-        self.storage_response
-            .clone()
+        self.storage_responses
+            .lock()
+            .unwrap()
+            .pop_front()
+            .unwrap_or(Ok(None))
             .map_err(polkadot_sdk::sp_blockchain::Error::UnknownBlock)
+    }
+}
+
+/// Builds an `EventRecord` the way `frame_system` would have deposited it,
+/// for tests that seed `System::Events` storage bytes directly.
+#[cfg(all(test, feature = "std"))]
+pub fn event_record(
+    event: impl Into<RuntimeEvent>,
+) -> frame_system::EventRecord<RuntimeEvent, H256> {
+    frame_system::EventRecord {
+        phase: frame_system::Phase::Initialization,
+        event: event.into(),
+        topics: vec![],
     }
 }
