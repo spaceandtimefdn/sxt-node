@@ -8,11 +8,14 @@
 //! deletes consumed entries.
 
 use std::borrow::Cow;
+use std::sync::Arc;
 
 use codec::Encode;
+use native::client::ClientExt;
 use polkadot_sdk::frame_support::traits::Hooks;
 use polkadot_sdk::sp_core::offchain::testing::{PendingRequest, TestOffchainExt};
 use polkadot_sdk::sp_core::offchain::{OffchainDbExt, OffchainStorage, OffchainWorkerExt};
+use polkadot_sdk::sp_core::H256;
 use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
 use polkadot_sdk::sp_runtime::offchain::Duration;
 use prost::Message;
@@ -127,6 +130,10 @@ fn ocw_skips_when_not_configured() {
 #[test]
 fn ocw_skips_when_lock_is_held() {
     let (mut ext, _state) = setup_with_url();
+    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
+        finalized_state: Some((H256::zero(), 1)),
+        storage_response: Ok(None),
+    })));
 
     ext.execute_with(|| {
         let mut lock = StorageLock::<Time>::with_deadline(
@@ -143,6 +150,10 @@ fn ocw_skips_when_lock_is_held() {
 #[test]
 fn ocw_forwards_and_deletes_offchain_entry() {
     let (mut ext, state) = setup_with_url();
+    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
+        finalized_state: Some((H256::zero(), 1)),
+        storage_response: Ok(None),
+    })));
 
     let ddl = b"CREATE TABLE PUBLIC.USERS (ID BIGINT NOT NULL)";
     seed_block_events(
@@ -199,6 +210,10 @@ fn ocw_forwards_and_deletes_offchain_entry() {
 #[test]
 fn ocw_checkpoints_empty_blocks() {
     let (mut ext, state) = setup_with_url();
+    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
+        finalized_state: Some((H256::zero(), 1)),
+        storage_response: Ok(None),
+    })));
 
     {
         let mut s = state.write();
@@ -223,6 +238,10 @@ fn ocw_checkpoints_empty_blocks() {
 #[test]
 fn ocw_resumes_from_server_checkpoint() {
     let (mut ext, state) = setup_with_url();
+    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
+        finalized_state: Some((H256::zero(), 6)),
+        storage_response: Ok(None),
+    })));
 
     seed_block_events(
         &state,
@@ -265,6 +284,10 @@ fn ocw_resumes_from_server_checkpoint() {
 #[test]
 fn ocw_processes_multiple_blocks_in_order() {
     let (mut ext, state) = setup_with_url();
+    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
+        finalized_state: Some((H256::zero(), 3)),
+        storage_response: Ok(None),
+    })));
 
     seed_block_events(
         &state,
@@ -343,6 +366,10 @@ fn ocw_processes_multiple_blocks_in_order() {
 #[test]
 fn ocw_walks_multiple_extrinsics_in_one_block() {
     let (mut ext, state) = setup_with_url();
+    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
+        finalized_state: Some((H256::zero(), 1)),
+        storage_response: Ok(None),
+    })));
 
     // Two extrinsics in block 1 fire captures: ext 1 and ext 3. Ext 2
     // didn't (a sparse block). high_water_mark should be 3; the OCW probes 0..=3
@@ -478,6 +505,10 @@ fn ocw_forwards_only_events_matching_include_set() {
         "ALPHA.*".parse().unwrap(),
         "BETA_NS.BETA_T".parse().unwrap(),
     ]);
+    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
+        finalized_state: Some((H256::zero(), 1)),
+        storage_response: Ok(None),
+    })));
 
     // Block 1, extrinsic 0: a mix of matching and non-matching events.
     seed_block_events(
@@ -560,6 +591,10 @@ fn ocw_forwards_only_events_matching_include_set() {
 #[test]
 fn ocw_with_wildcard_filter_forwards_everything() {
     let (mut ext, state) = setup_with_url();
+    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
+        finalized_state: Some((H256::zero(), 1)),
+        storage_response: Ok(None),
+    })));
 
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
     seed_block_events(
@@ -612,6 +647,10 @@ fn ocw_with_wildcard_filter_forwards_everything() {
 #[test]
 fn ocw_with_empty_include_set_forwards_nothing() {
     let (mut ext, state) = setup_with_config(Vec::new());
+    ext.register_extension(ClientExt(Arc::new(MockClientProvider {
+        finalized_state: Some((H256::zero(), 1)),
+        storage_response: Ok(None),
+    })));
 
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
     seed_block_events(

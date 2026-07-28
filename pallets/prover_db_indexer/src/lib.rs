@@ -84,10 +84,6 @@ pub enum ConsumerError {
         /// Underlying parse error from the `url` crate.
         error: url::ParseError,
     },
-    /// The runtime's `BlockNumber` didn't fit in `u64` (defensive — in
-    /// practice `BlockNumber` is `u32` so this is unreachable).
-    #[snafu(display("block number does not fit in u64"))]
-    BlockNumberOverflow,
     /// `create_table` HTTP call failed.
     #[snafu(display("create_table failed: {error}"))]
     CreateTable {
@@ -121,6 +117,13 @@ pub enum ConsumerError {
     /// Another OCW round is already in progress (lock held by another thread).
     #[snafu(display("another OCW round is already in progress"))]
     ConsumerInProgress,
+    /// The [`ClientExt`] externalities extension is not registered, so the
+    /// OCW can't read the node's client.
+    #[snafu(display("no registered client"))]
+    NoRegisteredClient,
+    /// The node's client has no finalized state.
+    #[snafu(display("missing finalized state"))]
+    MissingFinalizedState,
 }
 
 #[polkadot_sdk::frame_support::pallet]
@@ -173,8 +176,8 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         // Fires at chain tip only (not during sync). Drains the offchain
         // DB queue, forwards to the HTTP server, deletes consumed entries.
-        fn offchain_worker(block_number: BlockNumberFor<T>) {
-            if let Err(e) = Self::run_consumer(block_number) {
+        fn offchain_worker(_block_number: BlockNumberFor<T>) {
+            if let Err(e) = Self::run_consumer() {
                 polkadot_sdk::sp_tracing::error!(
                     target: "prover_db_indexer",
                     "offchain indexer error: {}",
@@ -218,7 +221,7 @@ pub mod pallet {
         //  CONSUMER: drain offchain DB → HTTP → delete (called from OCW)
         // ═══════════════════════════════════════════════════════════════
 
-        fn run_consumer(block_number: BlockNumberFor<T>) -> Result<(), ConsumerError> {
+        fn run_consumer() -> Result<(), ConsumerError> {
             // Serialize concurrent OCW invocations. Substrate spawns
             // `offchain_worker` for every imported block, and rounds can
             // overlap if one runs longer than block time. Without a lock,
@@ -253,10 +256,12 @@ pub mod pallet {
                 url, include_filters.len(),
             );
 
-            // 2. Current block number — passed in by `offchain_worker`.
-            let current_block: u64 = block_number
-                .try_into()
-                .map_err(|_| ConsumerError::BlockNumberOverflow)?;
+            // 2. Last finalized block number, read from the node's client.
+            let current_block: u64 = native::client::client::finalized_state()
+                .ok_or(ConsumerError::NoRegisteredClient)?
+                .ok_or(ConsumerError::MissingFinalizedState)?
+                .1
+                .into();
 
             // 3. Ask the server for its last checkpoint. The server is the
             //    sole source of truth — no local cursor. This costs one HTTP
