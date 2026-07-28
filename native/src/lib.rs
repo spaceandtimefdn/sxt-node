@@ -6,6 +6,8 @@ extern crate alloc;
 /// Extension giving offchain workers read access to the node's client, and the
 /// runtime interface exposing it to the runtime.
 pub mod client;
+
+pub mod config;
 /// The space and time native code interface
 mod sxt;
 

@@ -1,6 +1,7 @@
 use polkadot_sdk::sc_cli::RunCmd;
 use polkadot_sdk::{frame_benchmarking_cli, sc_cli, sc_storage_monitor};
 use proof_of_sql_static_setups::io::ProofOfSqlPublicSetupArgs;
+use snafu::{OptionExt, Snafu};
 
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
@@ -33,6 +34,24 @@ pub struct Cli {
     /// Configuration for loading proof-of-sql public setups.
     #[clap(flatten)]
     pub proof_of_sql_public_setup_args: ProofOfSqlPublicSetupArgs,
+
+    /// Node-local `KEY=VALUE` configuration entries, exposed to offchain
+    /// workers via the `native::config` runtime interface. Repeat the flag once per entry.
+    #[clap(long, value_parser = parse_key_val)]
+    pub ocw_config: Vec<(String, String)>,
+}
+
+/// Error parsing a `KEY=VALUE` entry.
+#[derive(Debug, Snafu, PartialEq)]
+#[snafu(display("expected 'KEY=VALUE', got '{s}'"))]
+pub struct ParseKeyValError {
+    s: String,
+}
+
+fn parse_key_val(s: &str) -> Result<(String, String), ParseKeyValError> {
+    s.split_once('=')
+        .context(ParseKeyValSnafu { s })
+        .map(|(k, v)| (k.to_owned(), v.to_owned()))
 }
 
 /// Flattened consumer-side configuration. Lives on the top-level
@@ -111,4 +130,28 @@ pub enum Subcommand {
 
     /// Db meta columns information.
     ChainInfo(sc_cli::ChainInfoCmd),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_key_val, ParseKeyValError};
+
+    #[test]
+    fn we_can_parse_key_val() {
+        assert_eq!(
+            parse_key_val("cfg"),
+            Err(ParseKeyValError {
+                s: "cfg".to_owned()
+            })
+        );
+        assert_eq!(parse_key_val("cfg="), Ok(("cfg".to_owned(), "".to_owned())));
+        assert_eq!(
+            parse_key_val("cfg=foo"),
+            Ok(("cfg".to_owned(), "foo".to_owned()))
+        );
+        assert_eq!(
+            parse_key_val("cfg=foo=bar"),
+            Ok(("cfg".to_owned(), "foo=bar".to_owned()))
+        );
+    }
 }
