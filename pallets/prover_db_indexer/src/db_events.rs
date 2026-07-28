@@ -32,10 +32,10 @@ pub enum DBEventError {
     #[snafu(display("System::Events is empty at this block"))]
     Empty,
     /// This error occurs when the node's client is available, but the query for events returns a result that cannot be decoded.
-    #[snafu(display("failed to decode System::Events: {source}"))]
+    #[snafu(display("failed to decode System::Events: {error}"))]
     Decode {
         /// The error returned by the codec when decoding the result of the query for events fails.
-        source: codec::Error,
+        error: codec::Error,
     },
 }
 
@@ -108,7 +108,7 @@ where
         .ok_or(DBEventError::Empty)?;
 
     Ok(Vec::<EventRecord<T>>::decode(&mut raw.0.as_slice())
-        .map_err(|source| DBEventError::Decode { source })?
+        .map_err(|error| DBEventError::Decode { error })?
         .into_iter()
         .filter_map(|record| record.try_into().ok()))
 }

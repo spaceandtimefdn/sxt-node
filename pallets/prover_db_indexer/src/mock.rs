@@ -41,7 +41,7 @@ construct_runtime!(
         SystemTables: pallet_system_tables,
         Balances: pallet_balances,
         Staking: pallet_staking,
-        ProverDbIndexer: pallet_prover_db_indexer,
+        ProverDbIndexer: pallet_prover_db_indexer::native_pallet,
     }
 );
 
@@ -207,7 +207,7 @@ impl pallet_commitments::Config for Test {
     };
 }
 
-impl pallet_prover_db_indexer::Config for Test {
+impl pallet_prover_db_indexer::Config<Api> for Test {
     // Match runtime defaults so tests exercise the production limits.
     type MaxBlocksPerInvocation = ConstU64<100>;
     type OcwLockDeadlineMs = ConstU64<120_000>;

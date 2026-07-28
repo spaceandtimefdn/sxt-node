@@ -49,9 +49,10 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-#[expect(dead_code, reason = "Usage for this function is not yet implemented")]
 mod db_events;
 mod http_client;
+/// Wraps [`pallet`] with the concrete `native_api::Api` instance the runtime uses.
+pub mod native_pallet;
 mod offchain_consumer;
 
 /// Generated protobuf types for the indexer HTTP adapter wire format.
@@ -84,6 +85,10 @@ pub enum ConsumerError {
         /// Underlying parse error from the `url` crate.
         error: url::ParseError,
     },
+    /// The runtime's `BlockNumber` didn't fit in `u64` (defensive — in
+    /// practice `BlockNumber` is `u32` so this is unreachable).
+    #[snafu(display("block number does not fit in u64"))]
+    BlockNumberOverflow,
     /// `create_table` HTTP call failed.
     #[snafu(display("create_table failed: {error}"))]
     CreateTable {
@@ -124,6 +129,12 @@ pub enum ConsumerError {
     /// The node's client has no finalized state.
     #[snafu(display("missing finalized state"))]
     MissingFinalizedState,
+    /// Querying the node's client for a block's captured events failed.
+    #[snafu(display("failed to read captured events: {error}"))]
+    DBEvents {
+        /// Underlying error from [`crate::db_events::db_events_at`].
+        error: crate::db_events::DBEventError,
+    },
 }
 
 #[polkadot_sdk::frame_support::pallet]
@@ -133,10 +144,13 @@ pub mod pallet {
 
     use codec::Encode;
     use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_system;
     use polkadot_sdk::frame_system::pallet_prelude::*;
+    use polkadot_sdk::sp_core::H256;
     use polkadot_sdk::sp_runtime::offchain::storage::StorageValueRef;
     use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
     use polkadot_sdk::sp_runtime::offchain::Duration;
+    use polkadot_sdk::sp_runtime::traits::CheckedConversion;
     use polkadot_sdk::sp_runtime::SaturatedConversion;
     use sxt_core::prover_db_indexer::{
         key_for_event,
@@ -148,13 +162,18 @@ pub mod pallet {
         TableIdentifierFilter,
     };
 
+    use crate::db_events::{db_events_at, DBEvent};
     use crate::ConsumerError;
 
     #[pallet::pallet]
-    pub struct Pallet<T>(_);
+    pub struct Pallet<T, I = ()>(_);
 
     #[pallet::config]
-    pub trait Config: polkadot_sdk::frame_system::Config {
+    pub trait Config<I: 'static = ()>:
+        polkadot_sdk::frame_system::Config<Hash = H256>
+        + pallet_tables::Config
+        + pallet_indexing::Config<I>
+    {
         /// Maximum number of blocks the OCW will walk in a single
         /// invocation. Controls catch-up speed: with 6s block time and
         /// the default of 100, catch-up is ~100x realtime. Lower values
@@ -173,7 +192,11 @@ pub mod pallet {
     }
 
     #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+    impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I>
+    where
+        <T as polkadot_sdk::frame_system::Config>::RuntimeEvent:
+            TryInto<pallet_tables::Event<T>> + TryInto<pallet_indexing::Event<T, I>>,
+    {
         // Fires at chain tip only (not during sync). Drains the offchain
         // DB queue, forwards to the HTTP server, deletes consumed entries.
         fn offchain_worker(_block_number: BlockNumberFor<T>) {
@@ -187,7 +210,7 @@ pub mod pallet {
         }
     }
 
-    impl<T: Config> EventCapture for Pallet<T> {
+    impl<T: Config<I>, I: 'static> EventCapture for Pallet<T, I> {
         fn capture_events(events: Vec<BlockEvent<'_>>) {
             // Capture every event unconditionally. Per-node filtering is
             // applied later by the OCW consumer when forwarding to the
@@ -216,7 +239,11 @@ pub mod pallet {
         }
     }
 
-    impl<T: Config> Pallet<T> {
+    impl<T: Config<I>, I: 'static> Pallet<T, I>
+    where
+        <T as polkadot_sdk::frame_system::Config>::RuntimeEvent:
+            TryInto<pallet_tables::Event<T>> + TryInto<pallet_indexing::Event<T, I>>,
+    {
         // ═══════════════════════════════════════════════════════════════
         //  CONSUMER: drain offchain DB → HTTP → delete (called from OCW)
         // ═══════════════════════════════════════════════════════════════
@@ -295,75 +322,53 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Forward a single block's events in extrinsic-index order, then
-        /// clear the offchain entries we consumed. If the block had no
-        /// captures (no high-water-mark key), this is a no-op.
+        /// Forward a single block's events, read straight from the node's
+        /// client via [`crate::db_events::db_events_at`]. If the block has
+        /// no `System::Events` value at all, this is a no-op.
         fn forward_block(
             url: &url::Url,
             block_num: u64,
             include_filters: &[TableIdentifierFilter],
         ) -> Result<(), ConsumerError> {
-            let Some(high_water_mark) = crate::offchain_consumer::read_high_water(block_num) else {
-                return Ok(());
-            };
-
-            polkadot_sdk::sp_tracing::info!(
-                target: "prover_db_indexer",
-                "block {} — high-water-mark {}; probing for captured events",
-                block_num,
-                high_water_mark,
-            );
-
-            for ext_idx in 0..=high_water_mark {
-                let Some(events) = crate::offchain_consumer::read_events(block_num, ext_idx) else {
-                    continue;
-                };
-                Self::forward_events(url, block_num, &events, include_filters)?;
-                crate::offchain_consumer::clear_events(block_num, ext_idx);
-            }
-
-            crate::offchain_consumer::clear_high_water(block_num);
-            Ok(())
-        }
-
-        /// POST one extrinsic's captured events to the indexer in deposit
-        /// order, skipping any whose table doesn't match this node's
-        /// include set. The capture queue is unfiltered (every validator
-        /// records the full block), so the filter applies only to the
-        /// HTTP forwarding done by this node's OCW.
-        fn forward_events(
-            url: &url::Url,
-            block_num: u64,
-            events: &[BlockEvent<'_>],
-            include_filters: &[TableIdentifierFilter],
-        ) -> Result<(), ConsumerError> {
-            let filtered_events = events
-                .iter()
-                .filter(|event| table_matches_filters(event.table(), include_filters));
-            for event in filtered_events {
+            let events = db_events_at::<T, I>(frame_system::Pallet::<T>::block_hash(
+                block_num
+                    .checked_into::<BlockNumberFor<T>>()
+                    .ok_or(ConsumerError::BlockNumberOverflow)?,
+            ))
+            .map_err(|error| ConsumerError::DBEvents { error })?;
+            for event in events {
                 match event {
-                    BlockEvent::Drop(ident) => {
-                        crate::http_client::drop_table(url, block_num, ident)
-                            .map_err(|error| ConsumerError::DropTable { error })?;
+                    DBEvent::TableDropped(_, _, ident, _) => {
+                        if table_matches_filters(&ident, include_filters) {
+                            crate::http_client::drop_table(url, block_num, &ident)
+                                .map_err(|error| ConsumerError::DropTable { error })?;
+                        }
                     }
-                    BlockEvent::Create(entry) => {
-                        crate::http_client::create_table(
-                            url,
-                            block_num,
-                            &entry.ident,
-                            entry.ddl.to_vec(),
-                            commitment_sql::ROW_NUMBER_COLUMN_NAME.into(),
-                        )
-                        .map_err(|error| ConsumerError::CreateTable { error })?;
+                    DBEvent::SchemaUpdated(_, tables) => {
+                        for update in tables {
+                            if table_matches_filters(&update.ident, include_filters) {
+                                crate::http_client::create_table(
+                                    url,
+                                    block_num,
+                                    &update.ident,
+                                    update.create_statement.into_inner(),
+                                    commitment_sql::ROW_NUMBER_COLUMN_NAME.into(),
+                                )
+                                .map_err(|error| ConsumerError::CreateTable { error })?;
+                            }
+                        }
                     }
-                    BlockEvent::Insert(entry) => {
-                        crate::http_client::put_batches(
-                            url,
-                            block_num,
-                            alloc::vec![(entry.table.as_ref(), entry.data.to_vec())],
-                        )
-                        .map_err(|error| ConsumerError::PutBatches { error })?;
+                    DBEvent::QuorumReached { quorum, data } => {
+                        if table_matches_filters(&quorum.table, include_filters) {
+                            crate::http_client::put_batches(
+                                url,
+                                block_num,
+                                alloc::vec![(&quorum.table, data.into_inner())],
+                            )
+                            .map_err(|error| ConsumerError::PutBatches { error })?;
+                        }
                     }
+                    DBEvent::_Instance(_, _) => {}
                 }
             }
 

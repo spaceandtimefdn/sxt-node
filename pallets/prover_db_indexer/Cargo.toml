@@ -23,6 +23,7 @@ polkadot-sdk = { workspace = true, features = [
 sxt-core.workspace = true
 commitment-sql.workspace = true
 native.workspace = true
+native-api = { workspace = true, default-features = false }
 pallet-indexing.workspace = true
 pallet-tables.workspace = true
 prost = { version = "0.13", default-features = false, features = ["prost-derive"] }
@@ -37,7 +38,6 @@ polkadot-sdk = { workspace = true, features = [
     "sp-staking", "frame-election-provider-support", "pallet-staking-reward-curve",
     "pallet-timestamp", "pallet-balances", "pallet-staking", "pallet-session",
 ]}
-native-api = { workspace = true, features = ["std"] }
 pallet-permissions.workspace = true
 pallet-commitments.workspace = true
 pallet-system-tables.workspace = true
@@ -54,6 +54,7 @@ std = [
     "sxt-core/std",
     "commitment-sql/std",
     "native/std",
+    "native-api/std",
     "pallet-indexing/std",
     "pallet-tables/std",
     "prost/std",
