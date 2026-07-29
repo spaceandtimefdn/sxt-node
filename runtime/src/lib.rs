@@ -894,10 +894,7 @@ impl pallet_rewards::Config for Runtime {
     type MaxPayoutsPerBlock = ConstU32<3>;
 }
 
-impl pallet_prover_db_indexer::Config for Runtime {
-    type MaxBlocksPerInvocation = ConstU64<100>;
-    type OcwLockDeadlineMs = ConstU64<120_000>;
-}
+impl pallet_prover_db_indexer::Config for Runtime {}
 
 #[cfg(feature = "runtime-benchmarks")]
 impl frame_system_benchmarking::Config for Runtime {}

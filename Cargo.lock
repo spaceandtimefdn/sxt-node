@@ -21181,6 +21181,7 @@ dependencies = [
  "sp-runtime-interface",
  "sqlparser",
  "subxt",
+ "url",
 ]
 
 [[package]]
@@ -21208,7 +21209,6 @@ dependencies = [
  "substrate-build-script-utils",
  "sxt-core",
  "sxt-runtime",
- "url",
 ]
 
 [[package]]

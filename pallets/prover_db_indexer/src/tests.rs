@@ -24,27 +24,18 @@ use sxt_core::prover_db_indexer::{
     CreateEntry,
     EventCapture,
     InsertEntry,
-    ProverDbConsumerConfig,
-    TableIdentifierFilter,
+    PROVER_DB_CONFIG_INCLUDE_KEY,
+    PROVER_DB_CONFIG_URL_KEY,
 };
 use sxt_core::tables::TableIdentifier;
 
 use crate::mock::*;
-use crate::{proto, PROVER_DB_CONFIG_KEY};
+use crate::proto;
 
 type StateArc =
     std::sync::Arc<parking_lot::RwLock<polkadot_sdk::sp_core::offchain::testing::OffchainState>>;
 
 const MOCK_URL: &str = "http://127.0.0.1:9999";
-
-/// SCALE-encode the unified consumer config the same way the node
-/// service does at startup.
-fn encode_config(include: Vec<TableIdentifierFilter>) -> Vec<u8> {
-    codec::Encode::encode(&ProverDbConsumerConfig {
-        url: MOCK_URL.to_string(),
-        include,
-    })
-}
 
 fn expected_request(path: &str, body: Vec<u8>, response: Vec<u8>) -> PendingRequest {
     PendingRequest {
@@ -74,17 +65,14 @@ fn no_checkpoint_response() -> Vec<u8> {
     .encode_to_vec()
 }
 
-/// Seed a `*.*` filter — what the operator gets when omitting
-/// `--prover-db-include` (clap default). Every captured event should
-/// reach the indexer.
+/// Set a `*.*` filter.
 fn setup_with_url(finalized_block_num: u32) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
-    setup_with_config(vec!["*.*".parse().unwrap()], finalized_block_num)
+    setup_with_config("*.*", finalized_block_num)
 }
 
-/// Seed a non-empty include set under the unified config key. Used by
-/// the consumer-side filter tests.
+/// Set a non-empty include set. Used by the consumer-side filter tests.
 fn setup_with_config(
-    include: Vec<TableIdentifierFilter>,
+    filters: &str,
     finalized_block_num: u32,
 ) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
     let mut ext = new_test_ext();
@@ -95,10 +83,13 @@ fn setup_with_config(
         Some((H256::zero(), finalized_block_num)),
         [],
     ));
-    state
-        .write()
-        .persistent_storage
-        .set(b"", PROVER_DB_CONFIG_KEY, &encode_config(include));
+    let mut config_store = std::collections::HashMap::new();
+    config_store.insert(PROVER_DB_CONFIG_URL_KEY.to_string(), MOCK_URL.to_string());
+    config_store.insert(
+        PROVER_DB_CONFIG_INCLUDE_KEY.to_string(),
+        filters.to_string(),
+    );
+    ext.register_extension(native::config::ConfigExt(std::sync::Arc::new(config_store)));
     (ext, state)
 }
 
@@ -480,13 +471,7 @@ fn ocw_forwards_only_events_matching_include_set() {
     // service writes both URL + include atomically via a single
     // SCALE-encoded `ProverDbConsumerConfig` — same shape this test
     // mirrors.
-    let (mut ext, state) = setup_with_config(
-        vec![
-            "ALPHA.*".parse().unwrap(),
-            "BETA_NS.BETA_T".parse().unwrap(),
-        ],
-        1,
-    );
+    let (mut ext, state) = setup_with_config("ALPHA.*,BETA_NS.BETA_T", 1);
 
     // Block 1, extrinsic 0: a mix of matching and non-matching events.
     seed_block_events(
@@ -620,7 +605,7 @@ fn ocw_with_wildcard_filter_forwards_everything() {
 /// is the assertion.
 #[test]
 fn ocw_with_empty_include_set_forwards_nothing() {
-    let (mut ext, state) = setup_with_config(Vec::new(), 1);
+    let (mut ext, state) = setup_with_config("", 1);
 
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
     seed_block_events(

@@ -60,9 +60,6 @@ mod proto {
 }
 
 pub use pallet::*;
-/// Re-export of the canonical offchain local-storage key (defined in `sxt-core`),
-/// so the node service and any external tooling have a single import.
-pub use sxt_core::prover_db_indexer::PROVER_DB_CONFIG_KEY;
 
 /// Offchain DB key for the lock that serializes OCW consumer rounds.
 const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
@@ -78,11 +75,11 @@ const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
 /// every variant looks the same.
 #[derive(Debug, snafu::Snafu)]
 pub enum ConsumerError {
-    /// The configured indexer URL couldn't be parsed.
-    #[snafu(display("indexer URL is not a valid URL: {error}"))]
-    InvalidUrl {
-        /// Underlying parse error from the `url` crate.
-        error: url::ParseError,
+    /// Building the consumer configuration from node-supplied config failed.
+    #[snafu(transparent)]
+    Config {
+        /// Underlying config-parsing error.
+        source: sxt_core::prover_db_indexer::ProverDbConsumerConfigError,
     },
     /// The runtime's `BlockNumber` didn't fit in `u64` (defensive — in
     /// practice `BlockNumber` is `u32` so this is unreachable).
@@ -145,7 +142,6 @@ pub mod pallet {
     use polkadot_sdk::frame_system;
     use polkadot_sdk::frame_system::pallet_prelude::*;
     use polkadot_sdk::sp_core::H256;
-    use polkadot_sdk::sp_runtime::offchain::storage::StorageValueRef;
     use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
     use polkadot_sdk::sp_runtime::offchain::Duration;
     use polkadot_sdk::sp_runtime::traits::CheckedConversion;
@@ -166,23 +162,7 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config: polkadot_sdk::frame_system::Config<Hash = H256> {
-        /// Maximum number of blocks the OCW will walk in a single
-        /// invocation. Controls catch-up speed: with 6s block time and
-        /// the default of 100, catch-up is ~100x realtime. Lower values
-        /// keep the per-round cost bounded; higher values close a wider
-        /// gap faster after downtime.
-        #[pallet::constant]
-        type MaxBlocksPerInvocation: Get<u64>;
-
-        /// How long (in milliseconds) a held OCW lock stays valid before
-        /// being treated as abandoned (e.g. node crashed mid-round). Must
-        /// comfortably cover one full consumer round under normal
-        /// conditions while still letting the chain recover quickly from
-        /// a crashed validator.
-        #[pallet::constant]
-        type OcwLockDeadlineMs: Get<u64>;
-    }
+    pub trait Config: polkadot_sdk::frame_system::Config<Hash = H256> {}
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -234,6 +214,7 @@ pub mod pallet {
         // ═══════════════════════════════════════════════════════════════
 
         fn run_consumer() -> Result<(), ConsumerError> {
+            let config = ProverDbConsumerConfig::try_from_map(native::config::config::get)?;
             // Serialize concurrent OCW invocations. Substrate spawns
             // `offchain_worker` for every imported block, and rounds can
             // overlap if one runs longer than block time. Without a lock,
@@ -244,28 +225,16 @@ pub mod pallet {
             // makes overlapping invocations no-ops.
             let mut lock = StorageLock::<Time>::with_deadline(
                 crate::OCW_LOCK_KEY,
-                Duration::from_millis(T::OcwLockDeadlineMs::get()),
+                Duration::from_millis(config.ocw_lock_deadline_ms),
             );
             let _guard = lock
                 .try_lock()
                 .map_err(|_| ConsumerError::ConsumerInProgress)?;
 
-            // 1. Read the single offchain config. Absence ⇒ this node
-            //    isn't an indexer; OCW is dormant. The node service
-            //    writes the encoded `ProverDbConsumerConfig` at startup
-            //    iff `--prover-db-url` was provided.
-            let cfg_ref = StorageValueRef::persistent(crate::PROVER_DB_CONFIG_KEY);
-            let Some(cfg) = cfg_ref.get::<ProverDbConsumerConfig>().ok().flatten() else {
-                return Ok(());
-            };
-            let url =
-                url::Url::parse(&cfg.url).map_err(|error| ConsumerError::InvalidUrl { error })?;
-            let include_filters: Vec<TableIdentifierFilter> = cfg.include;
-
             polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
                 "consumer round starting; indexer base URL = {}; {} include filters",
-                url, include_filters.len(),
+                config.url, config.include.len(),
             );
 
             let (finalized_block_hash, finalized_block_num) =
@@ -280,7 +249,7 @@ pub mod pallet {
                 return Err(ConsumerError::FinalizedBlockHashMismatch);
             }
 
-            let cursor: u64 = crate::http_client::get_last_checkpoint(&url)
+            let cursor: u64 = crate::http_client::get_last_checkpoint(&config.url)
                 .map_err(|error| ConsumerError::GetLastCheckpoint { error })?
                 .unwrap_or(0);
 
@@ -292,12 +261,12 @@ pub mod pallet {
 
             for block_num in (cursor..=u64::from(finalized_block_num))
                 .skip(1)
-                .take(T::MaxBlocksPerInvocation::get().saturated_into())
+                .take(config.max_blocks_per_invocation)
             {
-                Self::forward_block(&url, block_num, &include_filters)?;
+                Self::forward_block(&config.url, block_num, &config.include)?;
 
                 // Checkpoint on the server (always, even for empty blocks).
-                crate::http_client::checkpoint(&url, block_num)
+                crate::http_client::checkpoint(&config.url, block_num)
                     .map_err(|error| ConsumerError::Checkpoint { error })?;
             }
 

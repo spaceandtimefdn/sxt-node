@@ -1,49 +1,141 @@
 //! Shared items for the prover-db-indexer pallet, the node service
-//! that seeds its configuration, and the producer call sites in
+//! that supplies its configuration, and the producer call sites in
 //! `pallet-tables` and `pallet-indexing`.
 
 use alloc::borrow::Cow;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use core::num::ParseIntError;
 use core::str::FromStr;
 
 use codec::{Decode, Encode};
-use snafu::Snafu;
+use snafu::{OptionExt, ResultExt, Snafu};
+use url::Url;
 
 use crate::tables::TableIdentifier;
 use crate::IDENT_LENGTH;
 
-/// Offchain local-storage key holding the prover-db indexer consumer's
-/// configuration. The embedding node writes a SCALE-encoded
-/// [`ProverDbConsumerConfig`] under this key at startup; the OCW reads
-/// it once per round. Absence of the key means "OCW is dormant".
-///
-/// One key for the whole consumer rather than one-per-field so the
-/// "consumer is enabled" and "consumer is disabled with stale filter
-/// settings" states are unrepresentable.
-pub const PROVER_DB_CONFIG_KEY: &[u8] = b"prover_db_indexer/consumer_config";
+/// Config key holding the prover-db indexer's target URL.
+pub const PROVER_DB_CONFIG_URL_KEY: &str = "prover_db_indexer/url";
 
-/// Per-node configuration that turns this node into a prover-db
-/// indexer: the upstream URL to POST forwarded events to, plus the
-/// optional include set that gates which events get forwarded.
-///
-/// Lives in offchain local storage under [`PROVER_DB_CONFIG_KEY`].
-/// `url` is non-optional: writing the config _is_ the act of enabling
-/// the consumer, and there's no enabled-without-URL state to express.
-/// `include` may be empty, which the OCW treats as "match every table"
-/// (same default as if the operator hadn't passed any include patterns
-/// at all).
-#[derive(Encode, Decode, Debug, Clone, Eq, PartialEq)]
+/// Config key holding the comma-separated `NAMESPACE.NAME` include filters.
+pub const PROVER_DB_CONFIG_INCLUDE_KEY: &str = "prover_db_indexer/include";
+
+/// Config key overriding [`DEFAULT_MAX_BLOCKS_PER_INVOCATION`].
+pub const MAX_BLOCKS_PER_INVOCATION_CONFIG_KEY: &str =
+    "prover_db_indexer/max_blocks_per_invocation";
+
+/// Default cap on blocks walked per OCW invocation.
+pub const DEFAULT_MAX_BLOCKS_PER_INVOCATION: usize = 100;
+
+/// Config key overriding [`DEFAULT_OCW_LOCK_DEADLINE_MS`].
+pub const OCW_LOCK_DEADLINE_MS_CONFIG_KEY: &str = "prover_db_indexer/ocw_lock_deadline_ms";
+
+/// Default OCW storage lock deadline, in milliseconds.
+pub const DEFAULT_OCW_LOCK_DEADLINE_MS: u64 = 120_000;
+
+/// Runtime configuration for the prover-db OCW consumer.
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ProverDbConsumerConfig {
-    /// HTTP base URL of the upstream prover-db indexer. Validated at
-    /// node start; stored as raw bytes so the pallet doesn't need to
-    /// pull in the `url` crate's full parsing surface.
-    pub url: String,
+    /// HTTP base URL of the upstream prover-db indexer.
+    pub url: Url,
     /// Per-node include set. An event is forwarded iff its
     /// `TableIdentifier` matches at least one filter. Empty ⇒ forward
     /// nothing; callers that want "forward everything" must include an
     /// explicit `*.*` filter.
     pub include: Vec<TableIdentifierFilter>,
+    /// Cap on blocks walked per OCW invocation.
+    pub max_blocks_per_invocation: usize,
+    /// OCW storage lock deadline, in milliseconds.
+    pub ocw_lock_deadline_ms: u64,
+}
+
+/// Errors from building a [`ProverDbConsumerConfig`] out of raw config strings.
+#[derive(Debug, Snafu)]
+pub enum ProverDbConsumerConfigError {
+    /// Config externality not registered.
+    #[snafu(display("config externality not registered"))]
+    NotRegistered,
+    /// [`PROVER_DB_CONFIG_URL_KEY`] is not set in the configuration.
+    #[snafu(display("configuration key '{PROVER_DB_CONFIG_URL_KEY}' is not set"))]
+    MissingUrl,
+    /// The configured URL failed to parse.
+    #[snafu(display(
+        "failed to parse value provided for '{PROVER_DB_CONFIG_URL_KEY}' key: {error}"
+    ))]
+    ParseUrl {
+        /// Underlying parse error from the `url` crate.
+        error: url::ParseError,
+    },
+    /// The configured include filter set failed to parse.
+    #[snafu(display(
+        "failed to parse value provided for '{PROVER_DB_CONFIG_INCLUDE_KEY}' key: {source}"
+    ))]
+    ParseFilter {
+        /// Underlying [`TableIdentifierFilter`] parse error.
+        source: TableIdentifierFilterParseError,
+    },
+    /// [`MAX_BLOCKS_PER_INVOCATION_CONFIG_KEY`] failed to parse as a `usize`.
+    #[snafu(display(
+        "failed to parse value provided for '{MAX_BLOCKS_PER_INVOCATION_CONFIG_KEY}' key: {source}"
+    ))]
+    ParseMaxBlocks {
+        /// Underlying integer parse error.
+        source: ParseIntError,
+    },
+    /// [`OCW_LOCK_DEADLINE_MS_CONFIG_KEY`] failed to parse as a `u64`.
+    #[snafu(display(
+        "failed to parse value provided for '{OCW_LOCK_DEADLINE_MS_CONFIG_KEY}' key: {source}"
+    ))]
+    ParseLockDeadline {
+        /// Underlying integer parse error.
+        source: ParseIntError,
+    },
+}
+
+impl ProverDbConsumerConfig {
+    /// Builds a config by looking up each setting via `get`, where
+    /// `get(key)` returns `None` if `key` isn't registered at all, or
+    /// `Some(None)` if it's registered but unset.
+    pub fn try_from_map<F: Fn(&str) -> Option<Option<String>>>(
+        get: F,
+    ) -> Result<Self, ProverDbConsumerConfigError> {
+        let url = get(PROVER_DB_CONFIG_URL_KEY)
+            .context(NotRegisteredSnafu)?
+            .context(MissingUrlSnafu)?
+            .parse()
+            .map_err(|error| ProverDbConsumerConfigError::ParseUrl { error })?;
+        let include = get(PROVER_DB_CONFIG_INCLUDE_KEY)
+            .context(NotRegisteredSnafu)?
+            .map(|s| {
+                if s.is_empty() {
+                    Ok(Vec::new())
+                } else {
+                    s.split(',').map(str::parse).collect::<Result<_, _>>()
+                }
+            })
+            .transpose()
+            .context(ParseFilterSnafu)?
+            .unwrap_or_default();
+        let max_blocks_per_invocation = get(MAX_BLOCKS_PER_INVOCATION_CONFIG_KEY)
+            .context(NotRegisteredSnafu)?
+            .map(|s| s.parse())
+            .transpose()
+            .context(ParseMaxBlocksSnafu)?
+            .unwrap_or(DEFAULT_MAX_BLOCKS_PER_INVOCATION);
+        let ocw_lock_deadline_ms = get(OCW_LOCK_DEADLINE_MS_CONFIG_KEY)
+            .context(NotRegisteredSnafu)?
+            .map(|s| s.parse())
+            .transpose()
+            .context(ParseLockDeadlineSnafu)?
+            .unwrap_or(DEFAULT_OCW_LOCK_DEADLINE_MS);
+        Ok(ProverDbConsumerConfig {
+            url,
+            include,
+            max_blocks_per_invocation,
+            ocw_lock_deadline_ms,
+        })
+    }
 }
 
 /// Offchain DB key prefix for per-extrinsic event payloads. SCALE-encoded
@@ -200,10 +292,6 @@ impl FromStr for IdentFilter {
 /// both sides match — so `*.*` is "everything", `NS.*` is "every table
 /// in NS", `NS.NAME` is exact, and `*.NAME` is "any namespace, this
 /// name".
-///
-/// Stored only in the indexer node's offchain local storage (as the
-/// `include` field of [`ProverDbConsumerConfig`]); not part of on-chain
-/// state. An empty list matches nothing — see [`table_matches_filters`].
 #[derive(Encode, Decode, Debug, Clone, Eq, PartialEq)]
 pub struct TableIdentifierFilter {
     /// Filter applied to `ident.namespace`.
@@ -285,6 +373,142 @@ mod tests {
 
     fn ident(name: &str, namespace: &str) -> TableIdentifier {
         TableIdentifier::from_str_unchecked(name, namespace)
+    }
+
+    // ── ProverDbConsumerConfig::try_from_map ─────────────────────────
+
+    /// Builds a `get` closure from an explicit key list. A key absent
+    /// from `entries` is "not registered" (`None`); a key present with
+    /// value `None` is "registered but unset" (`Some(None)`).
+    fn make_get(
+        entries: &'static [(&'static str, Option<&'static str>)],
+    ) -> impl Fn(&str) -> Option<Option<String>> {
+        move |key| {
+            entries
+                .iter()
+                .find(|(k, _)| *k == key)
+                .map(|(_, v)| v.map(String::from))
+        }
+    }
+
+    #[test]
+    fn try_from_map_fails_when_not_registered() {
+        assert!(matches!(
+            ProverDbConsumerConfig::try_from_map(make_get(&[])),
+            Err(ProverDbConsumerConfigError::NotRegistered),
+        ));
+        assert!(matches!(
+            ProverDbConsumerConfig::try_from_map(make_get(&[(
+                PROVER_DB_CONFIG_URL_KEY,
+                Some("http://example.com"),
+            )])),
+            Err(ProverDbConsumerConfigError::NotRegistered),
+        ));
+        assert!(matches!(
+            ProverDbConsumerConfig::try_from_map(make_get(&[
+                (PROVER_DB_CONFIG_URL_KEY, Some("http://example.com")),
+                (PROVER_DB_CONFIG_INCLUDE_KEY, None),
+            ])),
+            Err(ProverDbConsumerConfigError::NotRegistered),
+        ));
+        assert!(matches!(
+            ProverDbConsumerConfig::try_from_map(make_get(&[
+                (PROVER_DB_CONFIG_URL_KEY, Some("http://example.com")),
+                (PROVER_DB_CONFIG_INCLUDE_KEY, None),
+                (MAX_BLOCKS_PER_INVOCATION_CONFIG_KEY, None),
+            ])),
+            Err(ProverDbConsumerConfigError::NotRegistered),
+        ));
+    }
+
+    #[test]
+    fn try_from_map_fails_when_url_missing() {
+        assert!(matches!(
+            ProverDbConsumerConfig::try_from_map(make_get(&[(PROVER_DB_CONFIG_URL_KEY, None)])),
+            Err(ProverDbConsumerConfigError::MissingUrl),
+        ));
+    }
+
+    #[test]
+    fn try_from_map_fails_when_values_fail_to_parse() {
+        assert!(matches!(
+            ProverDbConsumerConfig::try_from_map(make_get(&[(
+                PROVER_DB_CONFIG_URL_KEY,
+                Some("not a url"),
+            )])),
+            Err(ProverDbConsumerConfigError::ParseUrl { .. }),
+        ));
+        assert!(matches!(
+            ProverDbConsumerConfig::try_from_map(make_get(&[
+                (PROVER_DB_CONFIG_URL_KEY, Some("http://example.com")),
+                (PROVER_DB_CONFIG_INCLUDE_KEY, Some("not-a-filter")),
+            ])),
+            Err(ProverDbConsumerConfigError::ParseFilter { .. }),
+        ));
+        assert!(matches!(
+            ProverDbConsumerConfig::try_from_map(make_get(&[
+                (PROVER_DB_CONFIG_URL_KEY, Some("http://example.com")),
+                (PROVER_DB_CONFIG_INCLUDE_KEY, None),
+                (MAX_BLOCKS_PER_INVOCATION_CONFIG_KEY, Some("not-a-number")),
+            ])),
+            Err(ProverDbConsumerConfigError::ParseMaxBlocks { .. }),
+        ));
+        assert!(matches!(
+            ProverDbConsumerConfig::try_from_map(make_get(&[
+                (PROVER_DB_CONFIG_URL_KEY, Some("http://example.com")),
+                (PROVER_DB_CONFIG_INCLUDE_KEY, None),
+                (MAX_BLOCKS_PER_INVOCATION_CONFIG_KEY, None),
+                (OCW_LOCK_DEADLINE_MS_CONFIG_KEY, Some("not-a-number")),
+            ])),
+            Err(ProverDbConsumerConfigError::ParseLockDeadline { .. }),
+        ));
+    }
+
+    #[test]
+    fn try_from_map_succeeds_with_provided_values() {
+        let config = ProverDbConsumerConfig::try_from_map(make_get(&[
+            (PROVER_DB_CONFIG_URL_KEY, Some("http://example.com")),
+            (PROVER_DB_CONFIG_INCLUDE_KEY, Some("ALPHA.T1,*.*")),
+            (MAX_BLOCKS_PER_INVOCATION_CONFIG_KEY, Some("42")),
+            (OCW_LOCK_DEADLINE_MS_CONFIG_KEY, Some("9999")),
+        ]))
+        .unwrap();
+        assert_eq!(config.url, Url::parse("http://example.com").unwrap());
+        assert_eq!(
+            config.include,
+            vec!["ALPHA.T1".parse().unwrap(), "*.*".parse().unwrap()],
+        );
+        assert_eq!(config.max_blocks_per_invocation, 42);
+        assert_eq!(config.ocw_lock_deadline_ms, 9999);
+    }
+
+    #[test]
+    fn try_from_map_succeeds_with_defaults_when_unset() {
+        let config = ProverDbConsumerConfig::try_from_map(make_get(&[
+            (PROVER_DB_CONFIG_URL_KEY, Some("http://example.com")),
+            (PROVER_DB_CONFIG_INCLUDE_KEY, None),
+            (MAX_BLOCKS_PER_INVOCATION_CONFIG_KEY, None),
+            (OCW_LOCK_DEADLINE_MS_CONFIG_KEY, None),
+        ]))
+        .unwrap();
+        assert_eq!(config.include, Vec::new());
+        assert_eq!(
+            config.max_blocks_per_invocation,
+            DEFAULT_MAX_BLOCKS_PER_INVOCATION,
+        );
+        assert_eq!(config.ocw_lock_deadline_ms, DEFAULT_OCW_LOCK_DEADLINE_MS);
+    }
+
+    #[test]
+    fn try_from_map_succeeds_with_empty_include() {
+        let config = ProverDbConsumerConfig::try_from_map(make_get(&[
+            (PROVER_DB_CONFIG_URL_KEY, Some("http://example.com")),
+            (PROVER_DB_CONFIG_INCLUDE_KEY, Some("")),
+            (MAX_BLOCKS_PER_INVOCATION_CONFIG_KEY, None),
+            (OCW_LOCK_DEADLINE_MS_CONFIG_KEY, None),
+        ]))
+        .unwrap();
+        assert_eq!(config.include, Vec::new());
     }
 
     // ── IdentFilter::matches ─────────────────────────────────────────

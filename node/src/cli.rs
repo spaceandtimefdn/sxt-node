@@ -20,13 +20,6 @@ pub struct Cli {
     #[clap(long)]
     pub event_forwarder_rpc: Option<String>,
 
-    /// Prover-db consumer settings. Setting `--prover-db-url` is what
-    /// turns this node into a prover-db indexer; the other fields in
-    /// the group only take effect when the URL is set. See the field
-    /// docs on [`ProverDbConsumerCli`] for grammar.
-    #[clap(flatten)]
-    pub prover_db: ProverDbConsumerCli,
-
     #[allow(missing_docs)]
     #[clap(flatten)]
     pub storage_monitor: sc_storage_monitor::StorageMonitorParams,
@@ -52,48 +45,6 @@ fn parse_key_val(s: &str) -> Result<(String, String), ParseKeyValError> {
     s.split_once('=')
         .context(ParseKeyValSnafu { s })
         .map(|(k, v)| (k.to_owned(), v.to_owned()))
-}
-
-/// Flattened consumer-side configuration. Lives on the top-level
-/// `Cli` via `#[clap(flatten)]`. Validated at service init into
-/// `sxt_core::prover_db_indexer::ProverDbConsumerConfig` before being
-/// written to offchain local storage; see
-/// `service::configure_prover_db_consumer`.
-///
-/// On the CLI side the fields are individually optional / repeatable —
-/// clap can't express "if URL is set, the group is active" in the type.
-/// The resolver in `service.rs` enforces that constraint and produces a
-/// concrete `ProverDbConsumerConfig` (URL non-optional) or refuses to
-/// start.
-#[derive(Debug, clap::Args)]
-pub struct ProverDbConsumerCli {
-    /// URL of the prover-db indexer to forward indexed events to.
-    /// Also configurable via the `PROVER_DB_URL` env var.
-    ///
-    /// Presence of this flag is what enables the consumer. If omitted,
-    /// the OCW stays dormant regardless of `--prover-db-include`.
-    #[clap(long, env)]
-    pub prover_db_url: Option<url::Url>,
-
-    /// Wildcard patterns naming which tables this node should forward
-    /// to the indexer. Repeat the flag, or pass a single comma-
-    /// separated value, or set `PROVER_DB_INCLUDE`.
-    ///
-    /// Each entry parses as a [`TableIdentifierFilter`]: two
-    /// dot-separated sides, each either a literal identifier or `*`.
-    /// Both sides match independently, so:
-    ///   - `*.*`             — every captured event (default if omitted).
-    ///   - `NAMESPACE.*`     — every table in NAMESPACE.
-    ///   - `*.NAME`          — every table called NAME, regardless of namespace.
-    ///   - `NAMESPACE.NAME`  — exactly that one table.
-    ///
-    /// Identifiers are uppercased before being written to offchain
-    /// storage so the byte-match against the on-chain canonical form
-    /// works without per-operator vigilance.
-    ///
-    /// [`TableIdentifierFilter`]: sxt_core::prover_db_indexer::TableIdentifierFilter
-    #[clap(long, env, value_delimiter = ',', default_value = "*.*")]
-    pub prover_db_include: Vec<sxt_core::prover_db_indexer::TableIdentifierFilter>,
 }
 
 #[derive(Debug, clap::Subcommand)]
