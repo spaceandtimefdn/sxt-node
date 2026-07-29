@@ -49,6 +49,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[expect(dead_code, reason = "Usage for this function is not yet implemented")]
+mod db_events;
 mod http_client;
 mod offchain_consumer;
 
