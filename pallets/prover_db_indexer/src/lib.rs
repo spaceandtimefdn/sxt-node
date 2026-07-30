@@ -67,13 +67,8 @@ const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
 /// Typed errors from the OCW consumer round. Each variant carries the
 /// underlying `http_client::Error` (when applicable) so the operator's
 /// log line names both the failing operation and the wire-level reason.
-///
-/// `source` fields aren't named `source` because `url::ParseError`
-/// doesn't implement `core::error::Error` in this crate's no_std build,
-/// which would break Snafu's source-chain wiring. `http_client::Error`
-/// could use the wired name, but we keep the convention uniform so
-/// every variant looks the same.
 #[derive(Debug, snafu::Snafu)]
+#[snafu(module)]
 pub enum ConsumerError {
     /// Building the consumer configuration from node-supplied config failed.
     #[snafu(transparent)]
@@ -86,34 +81,34 @@ pub enum ConsumerError {
     #[snafu(display("block number does not fit in u64"))]
     BlockNumberOverflow,
     /// `create_table` HTTP call failed.
-    #[snafu(display("create_table failed: {error}"))]
+    #[snafu(display("create_table failed: {source}"))]
     CreateTable {
         /// Underlying error from the HTTP client.
-        error: http_client::Error,
+        source: http_client::Error,
     },
     /// `drop_table` HTTP call failed.
-    #[snafu(display("drop_table failed: {error}"))]
+    #[snafu(display("drop_table failed: {source}"))]
     DropTable {
         /// Underlying error from the HTTP client.
-        error: http_client::Error,
+        source: http_client::Error,
     },
     /// `put_batches` HTTP call failed.
-    #[snafu(display("put_batches failed: {error}"))]
+    #[snafu(display("put_batches failed: {source}"))]
     PutBatches {
         /// Underlying error from the HTTP client.
-        error: http_client::Error,
+        source: http_client::Error,
     },
     /// `checkpoint` HTTP call failed.
-    #[snafu(display("checkpoint failed: {error}"))]
+    #[snafu(display("checkpoint failed: {source}"))]
     Checkpoint {
         /// Underlying error from the HTTP client.
-        error: http_client::Error,
+        source: http_client::Error,
     },
     /// `get_last_checkpoint` HTTP call failed.
-    #[snafu(display("get_last_checkpoint failed: {error}"))]
+    #[snafu(display("get_last_checkpoint failed: {source}"))]
     GetLastCheckpoint {
         /// Underlying error from the HTTP client.
-        error: http_client::Error,
+        source: http_client::Error,
     },
     /// Another OCW round is already in progress (lock held by another thread).
     #[snafu(display("another OCW round is already in progress"))]
@@ -146,6 +141,7 @@ pub mod pallet {
     use polkadot_sdk::sp_runtime::offchain::Duration;
     use polkadot_sdk::sp_runtime::traits::CheckedConversion;
     use polkadot_sdk::sp_runtime::SaturatedConversion;
+    use snafu::{OptionExt, ResultExt};
     use sxt_core::prover_db_indexer::{
         key_for_event,
         key_for_high_water,
@@ -156,6 +152,7 @@ pub mod pallet {
         TableIdentifierFilter,
     };
 
+    use crate::consumer_error::*;
     use crate::ConsumerError;
 
     #[pallet::pallet]
@@ -227,9 +224,7 @@ pub mod pallet {
                 crate::OCW_LOCK_KEY,
                 Duration::from_millis(config.ocw_lock_deadline_ms),
             );
-            let _guard = lock
-                .try_lock()
-                .map_err(|_| ConsumerError::ConsumerInProgress)?;
+            let _guard = lock.try_lock().ok().context(ConsumerInProgressSnafu)?;
 
             polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
@@ -239,18 +234,19 @@ pub mod pallet {
 
             let (finalized_block_hash, finalized_block_num) =
                 native::client::client::finalized_state()
-                    .ok_or(ConsumerError::NoRegisteredClient)?
-                    .ok_or(ConsumerError::MissingFinalizedState)?;
+                    .context(NoRegisteredClientSnafu)?
+                    .context(MissingFinalizedStateSnafu)?;
             let finalized_bn: BlockNumberFor<T> = finalized_block_num
                 .checked_into()
-                .ok_or(ConsumerError::BlockNumberOverflow)?;
+                .context(BlockNumberOverflowSnafu)?;
             let expected_hash = frame_system::Pallet::<T>::block_hash(finalized_bn);
-            if finalized_block_hash != expected_hash {
-                return Err(ConsumerError::FinalizedBlockHashMismatch);
-            }
+            snafu::ensure!(
+                finalized_block_hash == expected_hash,
+                FinalizedBlockHashMismatchSnafu
+            );
 
             let cursor: u64 = crate::http_client::get_last_checkpoint(&config.url)
-                .map_err(|error| ConsumerError::GetLastCheckpoint { error })?
+                .context(GetLastCheckpointSnafu)?
                 .unwrap_or(0);
 
             polkadot_sdk::sp_tracing::debug!(
@@ -266,8 +262,7 @@ pub mod pallet {
                 Self::forward_block(&config.url, block_num, &config.include)?;
 
                 // Checkpoint on the server (always, even for empty blocks).
-                crate::http_client::checkpoint(&config.url, block_num)
-                    .map_err(|error| ConsumerError::Checkpoint { error })?;
+                crate::http_client::checkpoint(&config.url, block_num).context(CheckpointSnafu)?;
             }
 
             Ok(())
@@ -322,7 +317,7 @@ pub mod pallet {
                 match event {
                     BlockEvent::Drop(ident) => {
                         crate::http_client::drop_table(url, block_num, ident)
-                            .map_err(|error| ConsumerError::DropTable { error })?;
+                            .context(DropTableSnafu)?;
                     }
                     BlockEvent::Create(entry) => {
                         crate::http_client::create_table(
@@ -332,7 +327,7 @@ pub mod pallet {
                             entry.ddl.to_vec(),
                             commitment_sql::ROW_NUMBER_COLUMN_NAME.into(),
                         )
-                        .map_err(|error| ConsumerError::CreateTable { error })?;
+                        .context(CreateTableSnafu)?;
                     }
                     BlockEvent::Insert(entry) => {
                         crate::http_client::put_batches(
@@ -340,7 +335,7 @@ pub mod pallet {
                             block_num,
                             alloc::vec![(entry.table.as_ref(), entry.data.to_vec())],
                         )
-                        .map_err(|error| ConsumerError::PutBatches { error })?;
+                        .context(PutBatchesSnafu)?;
                     }
                 }
             }
