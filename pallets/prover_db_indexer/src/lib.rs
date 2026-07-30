@@ -121,6 +121,18 @@ pub enum ConsumerError {
     /// Another OCW round is already in progress (lock held by another thread).
     #[snafu(display("another OCW round is already in progress"))]
     ConsumerInProgress,
+    /// The [`ClientExt`] externalities extension is not registered, so the
+    /// OCW can't read the node's client.
+    #[snafu(display("no registered client"))]
+    NoRegisteredClient,
+    /// The node's client has no finalized state.
+    #[snafu(display("missing finalized state"))]
+    MissingFinalizedState,
+    /// The finalized block hash from the node's client doesn't match the
+    /// hash of the finalized block number. This indicates a serious
+    /// inconsistency in the node's client state.
+    #[snafu(display("finalized block hash mismatch"))]
+    FinalizedBlockHashMismatch,
 }
 
 #[polkadot_sdk::frame_support::pallet]
@@ -130,10 +142,13 @@ pub mod pallet {
 
     use codec::Encode;
     use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_system;
     use polkadot_sdk::frame_system::pallet_prelude::*;
+    use polkadot_sdk::sp_core::H256;
     use polkadot_sdk::sp_runtime::offchain::storage::StorageValueRef;
     use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
     use polkadot_sdk::sp_runtime::offchain::Duration;
+    use polkadot_sdk::sp_runtime::traits::CheckedConversion;
     use polkadot_sdk::sp_runtime::SaturatedConversion;
     use sxt_core::prover_db_indexer::{
         key_for_event,
@@ -151,7 +166,7 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config: polkadot_sdk::frame_system::Config {
+    pub trait Config: polkadot_sdk::frame_system::Config<Hash = H256> {
         /// Maximum number of blocks the OCW will walk in a single
         /// invocation. Controls catch-up speed: with 6s block time and
         /// the default of 100, catch-up is ~100x realtime. Lower values
@@ -173,8 +188,8 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         // Fires at chain tip only (not during sync). Drains the offchain
         // DB queue, forwards to the HTTP server, deletes consumed entries.
-        fn offchain_worker(block_number: BlockNumberFor<T>) {
-            if let Err(e) = Self::run_consumer(block_number) {
+        fn offchain_worker(_block_number: BlockNumberFor<T>) {
+            if let Err(e) = Self::run_consumer() {
                 polkadot_sdk::sp_tracing::error!(
                     target: "prover_db_indexer",
                     "offchain indexer error: {}",
@@ -218,7 +233,7 @@ pub mod pallet {
         //  CONSUMER: drain offchain DB → HTTP → delete (called from OCW)
         // ═══════════════════════════════════════════════════════════════
 
-        fn run_consumer(block_number: BlockNumberFor<T>) -> Result<(), ConsumerError> {
+        fn run_consumer() -> Result<(), ConsumerError> {
             // Serialize concurrent OCW invocations. Substrate spawns
             // `offchain_worker` for every imported block, and rounds can
             // overlap if one runs longer than block time. Without a lock,
@@ -253,30 +268,29 @@ pub mod pallet {
                 url, include_filters.len(),
             );
 
-            // 2. Current block number — passed in by `offchain_worker`.
-            let current_block: u64 = block_number
-                .try_into()
-                .map_err(|_| ConsumerError::BlockNumberOverflow)?;
+            let (finalized_block_hash, finalized_block_num) =
+                native::client::client::finalized_state()
+                    .ok_or(ConsumerError::NoRegisteredClient)?
+                    .ok_or(ConsumerError::MissingFinalizedState)?;
+            let finalized_bn: BlockNumberFor<T> = finalized_block_num
+                .checked_into()
+                .ok_or(ConsumerError::BlockNumberOverflow)?;
+            let expected_hash = frame_system::Pallet::<T>::block_hash(finalized_bn);
+            if finalized_block_hash != expected_hash {
+                return Err(ConsumerError::FinalizedBlockHashMismatch);
+            }
 
-            // 3. Ask the server for its last checkpoint. The server is the
-            //    sole source of truth — no local cursor. This costs one HTTP
-            //    round-trip per OCW invocation but guarantees we never
-            //    diverge from what the server has actually committed.
-            //    A failure here is treated as transient: log and skip this
-            //    round; the next OCW will retry.
             let cursor: u64 = crate::http_client::get_last_checkpoint(&url)
                 .map_err(|error| ConsumerError::GetLastCheckpoint { error })?
                 .unwrap_or(0);
 
-            // 4. Walk blocks from cursor+1 to tip, capped.
-
             polkadot_sdk::sp_tracing::debug!(
                 target: "prover_db_indexer",
                 "processing blocks (server_checkpoint={}, tip={})",
-                cursor, current_block,
+                cursor, finalized_block_num,
             );
 
-            for block_num in (cursor..=current_block)
+            for block_num in (cursor..=u64::from(finalized_block_num))
                 .skip(1)
                 .take(T::MaxBlocksPerInvocation::get().saturated_into())
             {
