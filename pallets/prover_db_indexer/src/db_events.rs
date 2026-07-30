@@ -3,8 +3,6 @@
 
 use alloc::string::String;
 use alloc::vec::Vec;
-use core::convert::Infallible;
-use core::marker::PhantomData;
 
 use codec::Decode;
 use pallet_tables::UpdateTableList;
@@ -45,7 +43,7 @@ type EventRecord<T> = frame_system::EventRecord<RuntimeEvent<T>, <T as frame_sys
 type Events<T: frame_system::Config> = StorageValue<frame_system::Pallet<T>, Vec<EventRecord<T>>>;
 
 /// A captured event from the node's client
-pub enum DBEvent<T: pallet_tables::Config + pallet_indexing::Config<I>, I: 'static = ()> {
+pub enum DBEvent<T: frame_system::Config> {
     /// Table definitions have been updated.
     SchemaUpdated(Option<T::AccountId>, UpdateTableList),
     /// A table has been successfully dropped.
@@ -58,17 +56,13 @@ pub enum DBEvent<T: pallet_tables::Config + pallet_indexing::Config<I>, I: 'stat
         /// The finalized raw data in postcard serialized OnChainTable bytes
         data: BoundedVec<u8, ConstU32<DATA_MAX_LEN>>,
     },
-    /// Never constructed; carries the `pallet_indexing` instance this `DBEvent` was decoded
-    /// against, since none of the variants above otherwise name it.
-    #[doc(hidden)]
-    _Instance(PhantomData<I>, Infallible),
 }
 
-impl<T, I> TryFrom<EventRecord<T>> for DBEvent<T, I>
+impl<T> TryFrom<EventRecord<T>> for DBEvent<T>
 where
-    T: pallet_tables::Config + pallet_indexing::Config<I>,
-    I: 'static,
-    RuntimeEvent<T>: TryInto<pallet_tables::Event<T>> + TryInto<pallet_indexing::Event<T, I>>,
+    T: pallet_tables::Config + pallet_indexing::Config<native_api::Api>,
+    RuntimeEvent<T>:
+        TryInto<pallet_tables::Event<T>> + TryInto<pallet_indexing::Event<T, native_api::Api>>,
 {
     type Error = ();
 
@@ -94,12 +88,10 @@ where
 }
 
 /// Queries the node's client for captured events at the given block hash.
-pub fn db_events_at<T, I: 'static>(
-    block_hash: H256,
-) -> Result<impl Iterator<Item = DBEvent<T, I>>, DBEventError>
+pub fn db_events_at<T>(block_hash: H256) -> Result<impl Iterator<Item = DBEvent<T>>, DBEventError>
 where
-    T: pallet_tables::Config + pallet_indexing::Config<I>,
-    EventRecord<T>: TryInto<DBEvent<T, I>>,
+    T: pallet_tables::Config + pallet_indexing::Config<native_api::Api>,
+    EventRecord<T>: TryInto<DBEvent<T>>,
 {
     let raw = native::client::client::storage(block_hash, Events::<T>::hashed_key().to_vec())
         .ok_or(DBEventError::NoClient)?
@@ -132,7 +124,7 @@ mod tests {
         let mut ext = new_test_ext();
         ext.execute_with(|| {
             assert!(matches!(
-                db_events_at::<Test, Api>(H256::zero()),
+                db_events_at::<Test>(H256::zero()),
                 Err(DBEventError::NoClient)
             ));
         });
@@ -146,7 +138,7 @@ mod tests {
             [Err("test error".to_string())],
         ));
         ext.execute_with(|| {
-            let err = db_events_at::<Test, Api>(H256::zero()).err().unwrap();
+            let err = db_events_at::<Test>(H256::zero()).err().unwrap();
             assert!(
                 matches!(err, DBEventError::Lookup { message } if message == "UnknownBlock: test error")
             );
@@ -159,7 +151,7 @@ mod tests {
         ext.register_extension(MockClientProvider::client_ext(None, [Ok(None)]));
         ext.execute_with(|| {
             assert!(matches!(
-                db_events_at::<Test, Api>(H256::zero()),
+                db_events_at::<Test>(H256::zero()),
                 Err(DBEventError::Empty)
             ));
         });
@@ -174,7 +166,7 @@ mod tests {
         ));
         ext.execute_with(|| {
             assert!(matches!(
-                db_events_at::<Test, Api>(H256::zero()),
+                db_events_at::<Test>(H256::zero()),
                 Err(DBEventError::Decode { .. })
             ));
         });
@@ -222,7 +214,7 @@ mod tests {
             [Ok(Some(StorageData(codec::Encode::encode(&records))))],
         ));
         ext.execute_with(|| {
-            let events: Vec<_> = db_events_at::<Test, Api>(H256::zero()).unwrap().collect();
+            let events: Vec<_> = db_events_at::<Test>(H256::zero()).unwrap().collect();
             assert_eq!(
                 events.len(),
                 3
