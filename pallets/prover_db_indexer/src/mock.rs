@@ -207,11 +207,7 @@ impl pallet_commitments::Config for Test {
     };
 }
 
-impl pallet_prover_db_indexer::Config for Test {
-    // Match runtime defaults so tests exercise the production limits.
-    type MaxBlocksPerInvocation = ConstU64<100>;
-    type OcwLockDeadlineMs = ConstU64<120_000>;
-}
+impl pallet_prover_db_indexer::Config for Test {}
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
     frame_system::GenesisConfig::<Test>::default()

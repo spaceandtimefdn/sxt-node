@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-use codec::Encode;
 use futures::prelude::*;
 use polkadot_sdk::sc_client_api::{Backend, BlockBackend};
 use polkadot_sdk::sc_consensus_babe::{self, SlotProportion};
@@ -16,7 +15,6 @@ use polkadot_sdk::sc_service::error::Error as ServiceError;
 use polkadot_sdk::sc_service::TaskManager;
 use polkadot_sdk::sc_telemetry::{Telemetry, TelemetryWorker};
 use polkadot_sdk::sc_transaction_pool_api::OffchainTransactionPoolFactory;
-use polkadot_sdk::sp_core::offchain::{OffchainStorage, STORAGE_PREFIX};
 use polkadot_sdk::sp_runtime::traits::Block as BlockT;
 use polkadot_sdk::{
     sc_authority_discovery,
@@ -81,47 +79,6 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 /// The minimum period of blocks on which justifications will be
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
-
-/// Validate the consumer CLI group into a concrete
-/// `ProverDbConsumerConfig` (URL non-optional) and seed it under
-/// `PROVER_DB_CONFIG_KEY` in offchain persistent local storage.
-///
-/// `--prover-db-url` is the single switch that enables the consumer:
-/// present ⇒ write the config; absent ⇒ the OCW stays dormant and we
-/// don't write anything. `--prover-db-include` is allowed (with its
-/// `*.*` default) regardless of whether the URL is set; without a URL
-/// it just has nothing to filter.
-#[expect(
-    clippy::result_large_err,
-    reason = "ServiceError is from substrate and cannot be modified"
-)]
-fn configure_prover_db_consumer(
-    backend: &FullBackend,
-    cli: &crate::cli::ProverDbConsumerCli,
-) -> Result<(), ServiceError> {
-    let Some(url) = cli.prover_db_url.as_ref() else {
-        return Ok(());
-    };
-
-    let cfg = sxt_core::prover_db_indexer::ProverDbConsumerConfig {
-        url: url.as_str().to_string(),
-        include: cli.prover_db_include.clone(),
-    };
-
-    let Some(mut storage) = backend.offchain_storage() else {
-        return Err(ServiceError::Other(
-            "backend did not expose an offchain storage handle; \
-             cannot apply --prover-db-url / --prover-db-include"
-                .into(),
-        ));
-    };
-    storage.set(
-        STORAGE_PREFIX,
-        sxt_core::prover_db_indexer::PROVER_DB_CONFIG_KEY,
-        &cfg.encode(),
-    );
-    Ok(())
-}
 
 #[allow(clippy::type_complexity)]
 #[expect(
@@ -370,21 +327,6 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
         transaction_pool,
         other: (rpc_builder, import_setup, rpc_setup, mut telemetry, statement_store),
     } = new_partial(&config)?;
-
-    // The prover-db consumer (URL + include set) only takes effect when
-    // offchain indexing is enabled, since the OCW only runs in that
-    // case. Fail loud if the operator set --prover-db-url without
-    // enabling indexing, rather than silently ignoring it.
-    if cli.prover_db.prover_db_url.is_some() && !config.offchain_worker.indexing_enabled {
-        return Err(ServiceError::Other(
-            "--prover-db-url was set but --enable-offchain-indexing is not \
-             true; the prover-db-indexer offchain worker would be inactive. \
-             Restart with --enable-offchain-indexing=true, or omit \
-             --prover-db-url."
-                .into(),
-        ));
-    }
-    configure_prover_db_consumer(backend.as_ref(), &cli.prover_db)?;
 
     let metrics = N::register_notification_metrics(
         config.prometheus_config.as_ref().map(|cfg| &cfg.registry),
