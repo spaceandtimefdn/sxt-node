@@ -13,6 +13,7 @@ use codec::Encode;
 use polkadot_sdk::frame_support::traits::Hooks;
 use polkadot_sdk::sp_core::offchain::testing::{PendingRequest, TestOffchainExt};
 use polkadot_sdk::sp_core::offchain::{OffchainDbExt, OffchainStorage, OffchainWorkerExt};
+use polkadot_sdk::sp_core::H256;
 use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
 use polkadot_sdk::sp_runtime::offchain::Duration;
 use prost::Message;
@@ -76,19 +77,24 @@ fn no_checkpoint_response() -> Vec<u8> {
 /// Seed a `*.*` filter — what the operator gets when omitting
 /// `--prover-db-include` (clap default). Every captured event should
 /// reach the indexer.
-fn setup_with_url() -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
-    setup_with_config(vec!["*.*".parse().unwrap()])
+fn setup_with_url(finalized_block_num: u32) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
+    setup_with_config(vec!["*.*".parse().unwrap()], finalized_block_num)
 }
 
 /// Seed a non-empty include set under the unified config key. Used by
 /// the consumer-side filter tests.
 fn setup_with_config(
     include: Vec<TableIdentifierFilter>,
+    finalized_block_num: u32,
 ) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
     let mut ext = new_test_ext();
     let (offchain, state) = TestOffchainExt::new();
     ext.register_extension(OffchainWorkerExt::new(offchain.clone()));
     ext.register_extension(OffchainDbExt::new(offchain));
+    ext.register_extension(MockClientProvider::client_ext(
+        Some((H256::zero(), finalized_block_num)),
+        [],
+    ));
     state
         .write()
         .persistent_storage
@@ -126,7 +132,7 @@ fn ocw_skips_when_not_configured() {
 /// the absence of queued expectations is the assertion.
 #[test]
 fn ocw_skips_when_lock_is_held() {
-    let (mut ext, _state) = setup_with_url();
+    let (mut ext, _state) = setup_with_url(1);
 
     ext.execute_with(|| {
         let mut lock = StorageLock::<Time>::with_deadline(
@@ -142,7 +148,7 @@ fn ocw_skips_when_lock_is_held() {
 
 #[test]
 fn ocw_forwards_and_deletes_offchain_entry() {
-    let (mut ext, state) = setup_with_url();
+    let (mut ext, state) = setup_with_url(1);
 
     let ddl = b"CREATE TABLE PUBLIC.USERS (ID BIGINT NOT NULL)";
     seed_block_events(
@@ -198,7 +204,7 @@ fn ocw_forwards_and_deletes_offchain_entry() {
 
 #[test]
 fn ocw_checkpoints_empty_blocks() {
-    let (mut ext, state) = setup_with_url();
+    let (mut ext, state) = setup_with_url(1);
 
     {
         let mut s = state.write();
@@ -222,7 +228,7 @@ fn ocw_checkpoints_empty_blocks() {
 
 #[test]
 fn ocw_resumes_from_server_checkpoint() {
-    let (mut ext, state) = setup_with_url();
+    let (mut ext, state) = setup_with_url(6);
 
     seed_block_events(
         &state,
@@ -264,7 +270,7 @@ fn ocw_resumes_from_server_checkpoint() {
 
 #[test]
 fn ocw_processes_multiple_blocks_in_order() {
-    let (mut ext, state) = setup_with_url();
+    let (mut ext, state) = setup_with_url(3);
 
     seed_block_events(
         &state,
@@ -342,7 +348,7 @@ fn ocw_processes_multiple_blocks_in_order() {
 
 #[test]
 fn ocw_walks_multiple_extrinsics_in_one_block() {
-    let (mut ext, state) = setup_with_url();
+    let (mut ext, state) = setup_with_url(1);
 
     // Two extrinsics in block 1 fire captures: ext 1 and ext 3. Ext 2
     // didn't (a sparse block). high_water_mark should be 3; the OCW probes 0..=3
@@ -474,10 +480,13 @@ fn ocw_forwards_only_events_matching_include_set() {
     // service writes both URL + include atomically via a single
     // SCALE-encoded `ProverDbConsumerConfig` — same shape this test
     // mirrors.
-    let (mut ext, state) = setup_with_config(vec![
-        "ALPHA.*".parse().unwrap(),
-        "BETA_NS.BETA_T".parse().unwrap(),
-    ]);
+    let (mut ext, state) = setup_with_config(
+        vec![
+            "ALPHA.*".parse().unwrap(),
+            "BETA_NS.BETA_T".parse().unwrap(),
+        ],
+        1,
+    );
 
     // Block 1, extrinsic 0: a mix of matching and non-matching events.
     seed_block_events(
@@ -559,7 +568,7 @@ fn ocw_forwards_only_events_matching_include_set() {
 /// because the CLI default is `*.*`.
 #[test]
 fn ocw_with_wildcard_filter_forwards_everything() {
-    let (mut ext, state) = setup_with_url();
+    let (mut ext, state) = setup_with_url(1);
 
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
     seed_block_events(
@@ -611,7 +620,7 @@ fn ocw_with_wildcard_filter_forwards_everything() {
 /// is the assertion.
 #[test]
 fn ocw_with_empty_include_set_forwards_nothing() {
-    let (mut ext, state) = setup_with_config(Vec::new());
+    let (mut ext, state) = setup_with_config(Vec::new(), 1);
 
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
     seed_block_events(
