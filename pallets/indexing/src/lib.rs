@@ -20,6 +20,7 @@ pub mod weights;
 // Do not remove this or the same attribute for the pallet
 // The cargo doc command will fail because of a bug even though the code is working properly
 pub use pallet::*;
+use sxt_core::fees::{TARGET_BYTE_FEE, WEIGHT_FEE};
 pub use sxt_core::indexing::*;
 pub use weights::*;
 
@@ -40,11 +41,13 @@ pub mod pallet {
     use pallet_tables::pallet::BlockEnforcementMode;
     use pallet_tables::BlockEnforcement;
     use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_support::traits::fungible::Mutate;
+    use polkadot_sdk::frame_support::traits::tokens::Preservation;
     use polkadot_sdk::frame_support::Blake2_128Concat;
     use polkadot_sdk::frame_system;
     use polkadot_sdk::frame_system::pallet_prelude::*;
     use polkadot_sdk::sp_runtime::traits::Hash;
-    use polkadot_sdk::sp_runtime::BoundedVec;
+    use polkadot_sdk::sp_runtime::{BoundedVec, SaturatedConversion};
     use proof_of_sql_commitment_map::CommitmentScheme;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::prover_db_indexer::EventCapture;
@@ -68,6 +71,7 @@ pub mod pallet {
         + pallet_commitments::Config
         + pallet_tables::Config
         + pallet_system_tables::Config
+        + polkadot_sdk::pallet_balances::Config
     {
         /// Binding for the runtime event, typically provided by an implementation
         /// in runtime/lib.rs
@@ -169,6 +173,24 @@ pub mod pallet {
             agreements: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
             /// Voters against this quorum
             dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
+        },
+
+        /// The submission fee for a finalized quorum has been refunded to its submitters.
+        RefundProcessed {
+            /// The table identifier
+            table: TableIdentifier,
+            /// The batch that was refunded
+            batch_id: BatchId,
+            /// The amount refunded to each submitter
+            refund: T::Balance,
+        },
+
+        /// Emitted when a refund transfer to a submitter fails.
+        RefundError {
+            /// The submitter who was to receive the refund
+            recipient: T::AccountId,
+            /// The error received while processing the transfer
+            error: DispatchError,
         },
     }
 
@@ -515,10 +537,79 @@ pub mod pallet {
             &table_insert_quorum,
             &quorum_scope,
         )? {
-            finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
+            let cost = submission_extrinsic_fee::<T, I>(
+                &data_quorum.table,
+                &data_quorum.batch_id,
+                &data,
+                block_number,
+            );
+            finalize_quorum::<T, I>(&data_quorum, data, block_number, who)?;
+            refund_quorum::<T, I>(data_quorum, cost);
         }
 
         Ok(())
+    }
+
+    /// Estimates the fee paid to submit the data for a quorum, combining weight-based and
+    /// byte-length-based fee components, so it can be refunded to the quorum's submitters.
+    fn submission_extrinsic_fee<T, I>(
+        table: &TableIdentifier,
+        batch_id: &BatchId,
+        data: &RowData,
+        block_number: Option<u64>,
+    ) -> T::Balance
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let base_weight = <T as frame_system::Config>::BlockWeights::get()
+            .get(DispatchClass::Normal)
+            .base_extrinsic;
+        let call_weight = submit_data_weight::<T, I>(table, data);
+        let byte_len = match block_number {
+            Some(block_number) => (table, batch_id, data, block_number).encoded_size(),
+            None => (table, batch_id, data).encoded_size(),
+        };
+
+        u128::from(base_weight.saturating_add(call_weight).ref_time())
+            .saturating_mul(WEIGHT_FEE)
+            .saturating_add(
+                byte_len
+                    .saturated_into::<u128>()
+                    .saturating_mul(TARGET_BYTE_FEE),
+            )
+            .saturated_into::<T::Balance>()
+    }
+
+    /// Refunds the submission fee to each submitter of a finalized quorum, drawing from the
+    /// table's treasury account, and emits `RefundProcessed`/`RefundError` events accordingly.
+    fn refund_quorum<T, I>(quorum: DataQuorum<T::AccountId, T::Hash>, refund: T::Balance)
+    where
+        T: Config<I>,
+        I: NativeApi,
+    {
+        let Some(treasury) = sxt_core::utils::account_id_from_table_id::<T>(&quorum.table) else {
+            // This only occurs if `AccountId32` can not be converted to the runtime's `AccountId` type,
+            // which should never happen unless the `AccountId` type changes.
+            return;
+        };
+
+        for recipient in quorum.agreements {
+            if let Err(error) = polkadot_sdk::pallet_balances::Pallet::<T>::transfer(
+                &treasury,
+                &recipient,
+                refund,
+                Preservation::Expendable,
+            ) {
+                Pallet::<T, I>::deposit_event(Event::RefundError { recipient, error });
+            }
+        }
+
+        Pallet::<T, I>::deposit_event(Event::RefundProcessed {
+            table: quorum.table,
+            batch_id: quorum.batch_id,
+            refund,
+        });
     }
 
     /// Submit data and check if we have a quorum.
@@ -647,7 +738,7 @@ pub mod pallet {
     /// - emitting `QuorumReached` event
     /// - cleaning up submissions
     fn finalize_quorum<T, I>(
-        quorum: DataQuorum<T::AccountId, T::Hash>,
+        quorum: &DataQuorum<T::AccountId, T::Hash>,
         row_data: RowData,
         block_number: Option<u64>,
         submitter: T::AccountId,
@@ -656,7 +747,7 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
-        clean_up_and_record_quorum::<T, I>(&quorum);
+        clean_up_and_record_quorum::<T, I>(quorum);
 
         // Deserialize into Arrow-compatible OnChainTable
         let table_bytes = I::record_batch_to_onchain(sxt_core::native::RowData { row_data })

@@ -21,7 +21,7 @@ scale-info = { features = [
 	"derive",
 ], workspace = true }
 
-polkadot-sdk = { workspace = true, features = ["frame-benchmarking", "frame-support", "frame-system", "pallet-session", "sp-runtime", "sp-core"]}
+polkadot-sdk = { workspace = true, features = ["frame-benchmarking", "frame-support", "frame-system", "pallet-session", "pallet-balances", "sp-runtime", "sp-core"]}
 
 pallet-commitments.workspace = true
 pallet-permissions.workspace = true
