@@ -1,14 +1,3 @@
-//! Integration tests for the prover-db-indexer consumer (OCW).
-//!
-//! Tests pre-populate the offchain DB as if `EventCapture::capture_events`
-//! had run during block execution — that means writing the per-extrinsic
-//! event payload at `key_for_event(block, ext_idx)` and the per-block
-//! high-water-mark at `key_for_high_water(block)` — then drive
-//! `offchain_worker` and verify the OCW reads, forwards in order, and
-//! deletes consumed entries.
-
-use std::borrow::Cow;
-
 use codec::Encode;
 use native_api::Api;
 use pallet_tables::{CommitmentCreationCmd, UpdateTable};
@@ -133,8 +122,6 @@ fn quorum_reached_event(
         data: BoundedVec::truncate_from(data),
     })
 }
-
-// ─── Tests ──────────────────────────────────────────────────────────────
 
 #[test]
 fn ocw_skips_when_not_configured() {

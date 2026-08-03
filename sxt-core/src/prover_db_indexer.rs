@@ -1,6 +1,5 @@
-//! Shared items for the prover-db-indexer pallet, the node service
-//! that supplies its configuration, and the producer call sites in
-//! `pallet-tables` and `pallet-indexing`.
+//! Shared items for the prover-db-indexer pallet and the node service
+//! that supplies its configuration.
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;

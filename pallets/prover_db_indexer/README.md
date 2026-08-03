@@ -1,26 +1,19 @@
-# pallet-prover-db-indexer
+# Prover-Db Indexer Pallet
 
-Captures table lifecycle and data events at extrinsic time and persists
-them to the offchain DB, so a future consumer can ship them to an
-external prover-db indexer. This crate currently ships the **producer
-half only**; the offchain-worker consumer is added in a follow-up PR.
+Forwards table lifecycle and data events to an external prover-db
+indexer (HTTP) using protobuf-over-HTTP.
 
-`pallet-tables` and `pallet-indexing` call into this pallet via the
-`EventCapture` trait, immediately after depositing the relevant event.
-The producer's cost is paid by the calling extrinsic's declared weight,
-not by an `on_finalize` hook.
+The `offchain_worker` hook (fires at chain tip only) asks the
+indexer server for its last checkpoint sequence number, walks blocks
+`cursor+1..=current` (capped per invocation), and for each block
+reads `pallet-tables` / `pallet-indexing` events straight from the
+node's client via [`crate::db_events::db_events_at`]. Matching
+events forward via HTTP+protobuf:
+- `pallet_tables::SchemaUpdated` → `create_table`
+- `pallet_tables::TableDropped` → `drop_table`
+- `pallet_indexing::QuorumReached` → `put_batches`
 
-Captured events:
-- `pallet_tables::SchemaUpdated`
-- `pallet_tables::TableDropped`
-- `pallet_indexing::QuorumReached`
-
-## Operational requirements
-
-For the producer to actually persist payloads the host node must have
-**offchain indexing enabled**. Producer call sites write via
-`sp_io::offchain_index::set`, which is a no-op unless the host turns
-offchain indexing on. Substrate defaults it to off; the embedding node
-is responsible for exposing a way to enable it.
-
-How it's enabled is a property of the node binary, not this pallet.
+The consumer is configured via node-supplied config keys — see
+[`sxt_core::prover_db_indexer::ProverDbConsumerConfig`] for the
+indexer URL, include filters, block-per-invocation cap, and OCW
+lock deadline.

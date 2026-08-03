@@ -1,44 +1,4 @@
-//! # Prover-Db Indexer Pallet
-//!
-//! Forwards table lifecycle and data events to an external prover-db
-//! indexer (HTTP) using protobuf-over-HTTP.
-//!
-//! ## Architecture
-//!
-//! **Producer** (extrinsic-time, via the [`EventCapture`] trait):
-//!   `pallet-tables` and `pallet-indexing` call
-//!   `T::EventCapture::capture_events(...)` at the same call site that
-//!   deposits their schema/quorum events. The pallet writes the
-//!   per-extrinsic payload to the offchain DB at
-//!   `key_for_event(block, ext_idx)` and overwrites a per-block
-//!   "high-water-mark" key at `key_for_high_water(block)` carrying the
-//!   largest `ext_idx` that captured anything in this block. No on-chain
-//!   state is needed — `extrinsic_index` is already available to the
-//!   runtime, and absence of the high-water key means the block had no
-//!   captures.
-//!
-//! **Consumer** (`offchain_worker`, fires at chain tip only):
-//!   Asks the indexer server for its last checkpoint sequence number,
-//!   walks blocks `cursor+1..=current` (capped at
-//!   [`MAX_BLOCKS_PER_INVOCATION`]). For each block, reads the
-//!   high-water-mark; if absent, the block had zero captures and is
-//!   skipped. Otherwise probes `key_for_event(block, 0..=high_water_mark)`,
-//!   forwards each present payload via HTTP+protobuf, checkpoints on
-//!   the server, and deletes consumed entries from the offchain DB.
-//!
-//! ## Why extrinsic-time capture, not `on_finalize`?
-//!
-//! Any synchronous runtime work has to declare its weight up front, and
-//! `Hooks::on_finalize` declares its weight via the value `on_initialize`
-//! returns at the *start* of the block. We have no way to know at
-//! `on_initialize` how many table updates or quorum events the block
-//! will produce, so we can't bound `on_finalize`'s cost in advance.
-//! Capturing at the deposit-event call site instead lets the cost ride
-//! on the calling extrinsic's already-benchmarked weight: every byte of
-//! work is owned by an extrinsic that the chain has agreed to schedule.
-//!
-//! [`EventCapture`]: sxt_core::prover_db_indexer::EventCapture
-
+#![doc = include_str!("../README.md")]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
@@ -59,12 +19,8 @@ mod proto {
 
 pub use pallet::*;
 
-/// Offchain DB key for the lock that serializes OCW consumer rounds.
-const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
-
-/// Typed errors from the OCW consumer round. Each variant carries the
-/// underlying `http_client::Error` (when applicable) so the operator's
-/// log line names both the failing operation and the wire-level reason.
+/// Typed errors from the OCW consumer round. These are not `DispatchError`s
+/// since these are handled silently in the OCW and logged, not propagated to the runtime.
 #[derive(Debug, snafu::Snafu)]
 #[snafu(module)]
 pub enum ConsumerError {
@@ -168,8 +124,6 @@ pub mod pallet {
     where
         EventRecord<T>: TryInto<DBEvent<T>>,
     {
-        // Fires at chain tip only (not during sync). Drains the offchain
-        // DB queue, forwards to the HTTP server, deletes consumed entries.
         fn offchain_worker(_block_number: BlockNumberFor<T>) {
             if let Err(e) = Self::run_consumer() {
                 polkadot_sdk::sp_tracing::error!(
@@ -185,20 +139,11 @@ pub mod pallet {
     where
         EventRecord<T>: TryInto<DBEvent<T>>,
     {
-        // ═══════════════════════════════════════════════════════════════
-        //  CONSUMER: drain offchain DB → HTTP → delete (called from OCW)
-        // ═══════════════════════════════════════════════════════════════
-
         fn run_consumer() -> Result<(), ConsumerError> {
             let config = ProverDbConsumerConfig::try_from_map(native::config::config::get)?;
             // Serialize concurrent OCW invocations. Substrate spawns
             // `offchain_worker` for every imported block, and rounds can
-            // overlap if one runs longer than block time. Without a lock,
-            // both rounds would read the same server checkpoint and
-            // submit duplicate `put_batches`/`create_table`/`drop_table`
-            // calls; the second one's `checkpoint()` would then fail with
-            // `failed_precondition`. Holding this lock for the full round
-            // makes overlapping invocations no-ops.
+            // overlap if one runs longer than block time.
             let mut lock = StorageLock::<Time>::with_deadline(
                 OCW_LOCK_KEY,
                 Duration::from_millis(config.ocw_lock_deadline_ms),
