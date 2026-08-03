@@ -37,7 +37,8 @@ pub enum DBEventError {
 }
 
 type RuntimeEvent<T> = <T as frame_system::Config>::RuntimeEvent;
-type EventRecord<T> = frame_system::EventRecord<RuntimeEvent<T>, <T as frame_system::Config>::Hash>;
+pub type EventRecord<T> =
+    frame_system::EventRecord<RuntimeEvent<T>, <T as frame_system::Config>::Hash>;
 
 #[storage_alias]
 type Events<T: frame_system::Config> = StorageValue<frame_system::Pallet<T>, Vec<EventRecord<T>>>;
@@ -47,6 +48,7 @@ pub enum DBEvent<T: frame_system::Config> {
     /// Table definitions have been updated.
     SchemaUpdated(Option<T::AccountId>, UpdateTableList),
     /// A table has been successfully dropped.
+    #[allow(dead_code, reason = "We mirror the pallet_tables TableDropped event")]
     TableDropped(Option<T::AccountId>, TableType, TableIdentifier, Source),
     /// This event is emitted when a quorum is reached amongst submissions and the
     /// data is finalized.
