@@ -135,7 +135,6 @@ impl pallet_staking::Config for Test {
 impl pallet_indexing::pallet::Config<Api> for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Test>;
-    type EventCapture = ();
 }
 pub type BlockNumber = u64;
 
@@ -193,7 +192,6 @@ impl pallet_system_tables::Config for Test {
 impl pallet_tables::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
-    type EventCapture = ();
 }
 
 impl pallet_permissions::Config for Test {

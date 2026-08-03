@@ -134,9 +134,6 @@ pub enum ConsumerError {
 #[polkadot_sdk::frame_support::pallet]
 #[allow(clippy::manual_inspect)]
 pub mod pallet {
-    use alloc::vec::Vec;
-
-    use codec::Encode;
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_system;
     use polkadot_sdk::frame_system::pallet_prelude::*;
@@ -144,16 +141,8 @@ pub mod pallet {
     use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
     use polkadot_sdk::sp_runtime::offchain::Duration;
     use polkadot_sdk::sp_runtime::traits::CheckedConversion;
-    use polkadot_sdk::sp_runtime::SaturatedConversion;
     use snafu::{OptionExt, ResultExt};
-    use sxt_core::prover_db_indexer::{
-        key_for_event,
-        key_for_high_water,
-        table_matches_filters,
-        BlockEvent,
-        EventCapture,
-        ProverDbConsumerConfig,
-    };
+    use sxt_core::prover_db_indexer::{table_matches_filters, ProverDbConsumerConfig};
 
     use crate::consumer_error::*;
     use crate::db_events::{db_events_at, DBEvent, EventRecord};
@@ -185,35 +174,6 @@ pub mod pallet {
                     e,
                 );
             }
-        }
-    }
-
-    impl<T: Config> EventCapture for Pallet<T> {
-        fn capture_events(events: Vec<BlockEvent<'_>>) {
-            // Capture every event unconditionally. Per-node filtering is
-            // applied later by the OCW consumer when forwarding to the
-            // indexer; the offchain queue mirrors the full block so every
-            // validator carries the same data, regardless of which subset
-            // each indexer cares about.
-
-            // `block_number()` always fits in u64 in our runtime (BlockNumber
-            // is u32); `extrinsic_index()` is always `Some` while we're inside
-            // an extrinsic, which is the only path that reaches `capture_events`.
-            let block: u64 =
-                polkadot_sdk::frame_system::Pallet::<T>::block_number().saturated_into();
-            let ext_idx =
-                polkadot_sdk::frame_system::Pallet::<T>::extrinsic_index().unwrap_or(u32::MAX);
-
-            // Per-extrinsic event payload.
-            polkadot_sdk::sp_io::offchain_index::set(
-                &key_for_event(block, ext_idx),
-                &events.encode(),
-            );
-
-            // Per-block high-water-mark. Always overwrites; the OCW only
-            // cares about the final value, which is the largest ext_idx
-            // that fired this block.
-            polkadot_sdk::sp_io::offchain_index::set(&key_for_high_water(block), &ext_idx.encode());
         }
     }
 

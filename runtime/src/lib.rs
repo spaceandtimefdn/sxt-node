@@ -842,7 +842,6 @@ impl pallet_permissions::Config for Runtime {
 impl pallet_tables::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
-    type EventCapture = pallet_prover_db_indexer::Pallet<Runtime>;
 }
 
 impl pallet_commitments::Config for Runtime {
@@ -857,7 +856,6 @@ impl pallet_commitments::Config for Runtime {
 impl pallet_indexing::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
-    type EventCapture = pallet_prover_db_indexer::Pallet<Runtime>;
 }
 
 impl pallet_attestation::Config for Runtime {

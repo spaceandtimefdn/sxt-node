@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-
-use codec::{Decode, Encode};
 use polkadot_sdk::frame_support::derive_impl;
 use polkadot_sdk::frame_support::traits::ConstU128;
 use polkadot_sdk::sp_core::crypto::AccountId32;
@@ -9,7 +6,6 @@ use polkadot_sdk::sp_runtime::BuildStorage;
 use polkadot_sdk::{frame_support, frame_system, pallet_balances, sp_io};
 use proof_of_sql_commitment_map::generic_over_commitment::ConcreteType;
 use proof_of_sql_commitment_map::PerCommitmentScheme;
-use sxt_core::prover_db_indexer::{BlockEvent, EventCapture};
 
 use crate as pallet_tables;
 
@@ -40,32 +36,6 @@ impl frame_system::Config for Test {
 impl pallet_tables::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
-    type EventCapture = RecordingEventCapture;
-}
-
-thread_local! {
-    static CAPTURED_EVENTS: RefCell<Vec<BlockEvent<'static>>> = const { RefCell::new(Vec::new()) };
-}
-
-/// Test-only `EventCapture` impl that records every call into a thread-local
-/// buffer so tests can assert which `BlockEvent`s the pallet emitted. Roundtrips
-/// the input through SCALE so the stored events own their fields (`Cow::Owned`)
-/// and don't borrow from the caller's stack.
-pub struct RecordingEventCapture;
-
-impl EventCapture for RecordingEventCapture {
-    fn capture_events(events: Vec<BlockEvent<'_>>) {
-        let bytes = events.encode();
-        let owned = Vec::<BlockEvent<'static>>::decode(&mut &bytes[..])
-            .expect("encode/decode roundtrip is infallible");
-        CAPTURED_EVENTS.with(|c| c.borrow_mut().extend(owned));
-    }
-}
-
-/// Drain and return every event captured since the last call (or test start).
-/// Tests should call this *after* the action under test.
-pub fn drain_captured_events() -> Vec<BlockEvent<'static>> {
-    CAPTURED_EVENTS.with(|c| std::mem::take(&mut *c.borrow_mut()))
 }
 
 impl pallet_permissions::Config for Test {
@@ -90,9 +60,6 @@ impl pallet_balances::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    // Clear any captures from a previous test that may have run on this
-    // thread before us (cargo test reuses worker threads).
-    CAPTURED_EVENTS.with(|c| c.borrow_mut().clear());
     frame_system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap()
