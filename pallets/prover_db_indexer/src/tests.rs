@@ -10,16 +10,22 @@
 use std::borrow::Cow;
 
 use codec::Encode;
+use native_api::Api;
+use pallet_tables::{CommitmentCreationCmd, UpdateTable};
 use polkadot_sdk::frame_support::traits::Hooks;
+use polkadot_sdk::frame_support::BoundedVec;
+use polkadot_sdk::frame_system::EventRecord;
 use polkadot_sdk::sp_core::offchain::testing::{PendingRequest, TestOffchainExt};
-use polkadot_sdk::sp_core::offchain::{OffchainDbExt, OffchainStorage, OffchainWorkerExt};
+use polkadot_sdk::sp_core::offchain::{OffchainDbExt, OffchainWorkerExt};
+use polkadot_sdk::sp_core::storage::StorageData;
 use polkadot_sdk::sp_core::H256;
 use polkadot_sdk::sp_runtime::offchain::storage_lock::{StorageLock, Time};
 use polkadot_sdk::sp_runtime::offchain::Duration;
+use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use prost::Message;
+use sxt_core::indexing::{BatchId, DataQuorum, SubmitterList};
 use sxt_core::prover_db_indexer::{
     key_for_event,
-    key_for_high_water,
     BlockEvent,
     CreateEntry,
     EventCapture,
@@ -27,7 +33,7 @@ use sxt_core::prover_db_indexer::{
     PROVER_DB_CONFIG_INCLUDE_KEY,
     PROVER_DB_CONFIG_URL_KEY,
 };
-use sxt_core::tables::TableIdentifier;
+use sxt_core::tables::{QuorumScope, Source, TableIdentifier, TableType};
 
 use crate::mock::*;
 use crate::proto;
@@ -66,14 +72,18 @@ fn no_checkpoint_response() -> Vec<u8> {
 }
 
 /// Set a `*.*` filter.
-fn setup_with_url(finalized_block_num: u32) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
-    setup_with_config("*.*", finalized_block_num)
+fn setup_with_url(
+    finalized_block_num: u32,
+    events: impl IntoIterator<Item = Vec<EventRecord<RuntimeEvent, H256>>>,
+) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
+    setup_with_config("*.*", finalized_block_num, events)
 }
 
 /// Set a non-empty include set. Used by the consumer-side filter tests.
 fn setup_with_config(
     filters: &str,
     finalized_block_num: u32,
+    events: impl IntoIterator<Item = Vec<EventRecord<RuntimeEvent, H256>>>,
 ) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
     let mut ext = new_test_ext();
     let (offchain, state) = TestOffchainExt::new();
@@ -81,7 +91,9 @@ fn setup_with_config(
     ext.register_extension(OffchainDbExt::new(offchain));
     ext.register_extension(MockClientProvider::client_ext(
         Some((H256::zero(), finalized_block_num)),
-        [],
+        events
+            .into_iter()
+            .map(|e| Ok(Some(StorageData(e.encode())))),
     ));
     let mut config_store = std::collections::HashMap::new();
     config_store.insert(PROVER_DB_CONFIG_URL_KEY.to_string(), MOCK_URL.to_string());
@@ -93,14 +105,50 @@ fn setup_with_config(
     (ext, state)
 }
 
-/// Mirror what the producer would write for a block: one event payload
-/// at `(block, ext_idx)` and the matching high-water-mark.
-fn seed_block_events(state: &StateArc, block: u64, ext_idx: u32, events: Vec<BlockEvent<'static>>) {
-    let mut s = state.write();
-    s.persistent_storage
-        .set(b"", &key_for_event(block, ext_idx), &events.encode());
-    s.persistent_storage
-        .set(b"", &key_for_high_water(block), &Encode::encode(&ext_idx));
+fn schema_updated_event(
+    name_namespace_ddl_tuples: impl IntoIterator<Item = (&'static str, &'static str, Vec<u8>)>,
+) -> EventRecord<RuntimeEvent, H256> {
+    event_record(pallet_tables::Event::<Test>::SchemaUpdated(
+        None,
+        BoundedVec::truncate_from(
+            name_namespace_ddl_tuples
+                .into_iter()
+                .map(|(name, namespace, ddl)| UpdateTable {
+                    ident: TableIdentifier::from_str_unchecked(name, namespace),
+                    create_statement: BoundedVec::truncate_from(ddl),
+                    table_type: TableType::default(),
+                    commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+                    source: Source::default(),
+                })
+                .collect(),
+        ),
+    ))
+}
+fn table_dropped_event(name: &str, namespace: &str) -> EventRecord<RuntimeEvent, H256> {
+    event_record(pallet_tables::Event::<Test>::TableDropped(
+        None,
+        TableType::default(),
+        TableIdentifier::from_str_unchecked(name, namespace),
+        Source::default(),
+    ))
+}
+fn quorum_reached_event(
+    name: &str,
+    namespace: &str,
+    data: Vec<u8>,
+) -> EventRecord<RuntimeEvent, H256> {
+    event_record(pallet_indexing::Event::<Test, Api>::QuorumReached {
+        quorum: DataQuorum {
+            table: TableIdentifier::from_str_unchecked(name, namespace),
+            batch_id: BatchId::default(),
+            data_hash: H256::zero(),
+            block_number: Default::default(),
+            agreements: SubmitterList::default(),
+            dissents: SubmitterList::default(),
+            quorum_scope: QuorumScope::Public,
+        },
+        data: BoundedVec::truncate_from(data),
+    })
 }
 
 // ─── Tests ──────────────────────────────────────────────────────────────
@@ -123,7 +171,7 @@ fn ocw_skips_when_not_configured() {
 /// the absence of queued expectations is the assertion.
 #[test]
 fn ocw_skips_when_lock_is_held() {
-    let (mut ext, _state) = setup_with_url(1);
+    let (mut ext, _state) = setup_with_url(1, [vec![]]);
 
     ext.execute_with(|| {
         let mut lock = StorageLock::<Time>::with_deadline(
@@ -138,19 +186,10 @@ fn ocw_skips_when_lock_is_held() {
 }
 
 #[test]
-fn ocw_forwards_and_deletes_offchain_entry() {
-    let (mut ext, state) = setup_with_url(1);
-
+fn ocw_forwards_create_table_event() {
     let ddl = b"CREATE TABLE PUBLIC.USERS (ID BIGINT NOT NULL)";
-    seed_block_events(
-        &state,
-        1,
-        0,
-        vec![BlockEvent::Create(CreateEntry {
-            ident: Cow::Owned(TableIdentifier::from_str_unchecked("USERS", "PUBLIC")),
-            ddl: ddl.to_vec().into(),
-        })],
-    );
+    let event = schema_updated_event([("USERS", "PUBLIC", ddl.to_vec())]);
+    let (mut ext, state) = setup_with_url(1, [vec![event]]);
 
     {
         let mut s = state.write();
@@ -181,21 +220,11 @@ fn ocw_forwards_and_deletes_offchain_entry() {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
     });
-
-    let s = state.read();
-    assert!(
-        s.persistent_storage.get(&key_for_event(1, 0)).is_none(),
-        "consumed event payload should be deleted"
-    );
-    assert!(
-        s.persistent_storage.get(&key_for_high_water(1)).is_none(),
-        "high-water-mark should be deleted"
-    );
 }
 
 #[test]
 fn ocw_checkpoints_empty_blocks() {
-    let (mut ext, state) = setup_with_url(1);
+    let (mut ext, state) = setup_with_url(1, [vec![]]);
 
     {
         let mut s = state.write();
@@ -219,16 +248,7 @@ fn ocw_checkpoints_empty_blocks() {
 
 #[test]
 fn ocw_resumes_from_server_checkpoint() {
-    let (mut ext, state) = setup_with_url(6);
-
-    seed_block_events(
-        &state,
-        6,
-        0,
-        vec![BlockEvent::Drop(Cow::Owned(
-            TableIdentifier::from_str_unchecked("OLD", "NS"),
-        ))],
-    );
+    let (mut ext, state) = setup_with_url(6, [vec![table_dropped_event("OLD", "NS")]]);
 
     {
         let mut s = state.write();
@@ -261,25 +281,10 @@ fn ocw_resumes_from_server_checkpoint() {
 
 #[test]
 fn ocw_processes_multiple_blocks_in_order() {
-    let (mut ext, state) = setup_with_url(3);
-
-    seed_block_events(
-        &state,
-        1,
-        0,
-        vec![BlockEvent::Drop(Cow::Owned(
-            TableIdentifier::from_str_unchecked("T1", "NS"),
-        ))],
-    );
-    seed_block_events(
-        &state,
-        2,
-        0,
-        vec![BlockEvent::Create(CreateEntry {
-            ident: Cow::Owned(TableIdentifier::from_str_unchecked("T2", "NS")),
-            ddl: b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec().into(),
-        })],
-    );
+    let event_1 = table_dropped_event("T1", "NS");
+    let event_2 =
+        schema_updated_event([("T2", "NS", b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec())]);
+    let (mut ext, state) = setup_with_url(3, [vec![event_1], vec![event_2], vec![]]);
 
     {
         let mut s = state.write();
@@ -329,42 +334,13 @@ fn ocw_processes_multiple_blocks_in_order() {
         System::set_block_number(3);
         ProverDbIndexer::offchain_worker(3);
     });
-
-    let s = state.read();
-    assert!(s.persistent_storage.get(&key_for_event(1, 0)).is_none());
-    assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
-    assert!(s.persistent_storage.get(&key_for_event(2, 0)).is_none());
-    assert!(s.persistent_storage.get(&key_for_high_water(2)).is_none());
 }
 
 #[test]
-fn ocw_walks_multiple_extrinsics_in_one_block() {
-    let (mut ext, state) = setup_with_url(1);
-
-    // Two extrinsics in block 1 fire captures: ext 1 and ext 3. Ext 2
-    // didn't (a sparse block). high_water_mark should be 3; the OCW probes 0..=3
-    // and finds payloads at 1 and 3.
-    let mut s = state.write();
-    s.persistent_storage.set(
-        b"",
-        &key_for_event(1, 1),
-        &vec![BlockEvent::Drop(Cow::Owned(
-            TableIdentifier::from_str_unchecked("T1", "NS"),
-        ))]
-        .encode(),
-    );
-    s.persistent_storage.set(
-        b"",
-        &key_for_event(1, 3),
-        &vec![BlockEvent::Insert(InsertEntry {
-            table: Cow::Owned(TableIdentifier::from_str_unchecked("T2", "NS")),
-            data: b"row-data".to_vec().into(),
-        })]
-        .encode(),
-    );
-    s.persistent_storage
-        .set(b"", &key_for_high_water(1), &Encode::encode(&3u32));
-    drop(s);
+fn ocw_forwards_multiple_events_in_one_block() {
+    let event_1 = table_dropped_event("T1", "NS");
+    let event_2 = quorum_reached_event("T2", "NS", b"row-data".to_vec());
+    let (mut ext, state) = setup_with_url(1, [vec![event_1, event_2]]);
 
     {
         let mut s = state.write();
@@ -405,11 +381,6 @@ fn ocw_walks_multiple_extrinsics_in_one_block() {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
     });
-
-    let s = state.read();
-    assert!(s.persistent_storage.get(&key_for_event(1, 1)).is_none());
-    assert!(s.persistent_storage.get(&key_for_event(1, 3)).is_none());
-    assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
 }
 
 // ─── Include-set tests (consumer-side filter) ──────────────────────────
@@ -471,21 +442,13 @@ fn ocw_forwards_only_events_matching_include_set() {
     // service writes both URL + include atomically via a single
     // SCALE-encoded `ProverDbConsumerConfig` — same shape this test
     // mirrors.
-    let (mut ext, state) = setup_with_config("ALPHA.*,BETA_NS.BETA_T", 1);
-
-    // Block 1, extrinsic 0: a mix of matching and non-matching events.
-    seed_block_events(
-        &state,
-        1,
-        0,
-        vec![
-            create_event("A", "ALPHA"),        // match (namespace)
-            insert_event("BETA_T", "BETA_NS"), // match (table)
-            drop_event("OTHER", "GAMMA"),      // skip
-            create_event("X", "GAMMA"),        // skip
-            insert_event("Y", "ALPHA"),        // match (namespace)
-        ],
-    );
+    let event_1 = schema_updated_event([("A", "ALPHA", b"CREATE TABLE ...".to_vec())]);
+    let event_2 = quorum_reached_event("BETA_T", "BETA_NS", b"rows".to_vec());
+    let event_3 = table_dropped_event("GAMMA", "OTHER");
+    let event_4 = schema_updated_event([("GAMMA", "X", b"CREATE TABLE ...".to_vec())]);
+    let event_5 = quorum_reached_event("Y", "ALPHA", b"rows".to_vec());
+    let events = vec![event_1, event_2, event_3, event_4, event_5];
+    let (mut ext, state) = setup_with_config("ALPHA.*,BETA_NS.BETA_T", 1, [events]);
 
     // Only the three matching events should reach the indexer. Drops
     // for the skipped GAMMA namespace get filtered too — uniform.
@@ -542,10 +505,6 @@ fn ocw_forwards_only_events_matching_include_set() {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
     });
-
-    let s = state.read();
-    assert!(s.persistent_storage.get(&key_for_event(1, 0)).is_none());
-    assert!(s.persistent_storage.get(&key_for_high_water(1)).is_none());
 }
 
 /// Explicit `*.*` filter in offchain storage ⇒ forward every event —
@@ -553,18 +512,9 @@ fn ocw_forwards_only_events_matching_include_set() {
 /// because the CLI default is `*.*`.
 #[test]
 fn ocw_with_wildcard_filter_forwards_everything() {
-    let (mut ext, state) = setup_with_url(1);
-
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
-    seed_block_events(
-        &state,
-        1,
-        0,
-        vec![BlockEvent::Create(CreateEntry {
-            ident: Cow::Owned(TableIdentifier::from_str_unchecked("ANY", "ANY")),
-            ddl: ddl.to_vec().into(),
-        })],
-    );
+    let event = schema_updated_event([("ANY", "ANY", ddl.to_vec())]);
+    let (mut ext, state) = setup_with_url(1, [vec![event]]);
 
     {
         let mut s = state.write();
@@ -605,18 +555,9 @@ fn ocw_with_wildcard_filter_forwards_everything() {
 /// is the assertion.
 #[test]
 fn ocw_with_empty_include_set_forwards_nothing() {
-    let (mut ext, state) = setup_with_config("", 1);
-
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
-    seed_block_events(
-        &state,
-        1,
-        0,
-        vec![BlockEvent::Create(CreateEntry {
-            ident: Cow::Owned(TableIdentifier::from_str_unchecked("ANY", "ANY")),
-            ddl: ddl.to_vec().into(),
-        })],
-    );
+    let event = schema_updated_event([("ANY", "ANY", ddl.to_vec())]);
+    let (mut ext, state) = setup_with_config("", 1, [vec![event]]);
 
     {
         let mut s = state.write();
