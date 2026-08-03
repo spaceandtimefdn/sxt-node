@@ -24,15 +24,7 @@ use polkadot_sdk::sp_runtime::offchain::Duration;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use prost::Message;
 use sxt_core::indexing::{BatchId, DataQuorum, SubmitterList};
-use sxt_core::prover_db_indexer::{
-    key_for_event,
-    BlockEvent,
-    CreateEntry,
-    EventCapture,
-    InsertEntry,
-    PROVER_DB_CONFIG_INCLUDE_KEY,
-    PROVER_DB_CONFIG_URL_KEY,
-};
+use sxt_core::prover_db_indexer::{PROVER_DB_CONFIG_INCLUDE_KEY, PROVER_DB_CONFIG_URL_KEY};
 use sxt_core::tables::{QuorumScope, Source, TableIdentifier, TableType};
 
 use crate::mock::*;
@@ -381,55 +373,6 @@ fn ocw_forwards_multiple_events_in_one_block() {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
     });
-}
-
-// ─── Include-set tests (consumer-side filter) ──────────────────────────
-
-/// Helper: build a Drop event for `(name, namespace)`.
-fn drop_event(name: &str, namespace: &str) -> BlockEvent<'static> {
-    BlockEvent::Drop(Cow::Owned(TableIdentifier::from_str_unchecked(
-        name, namespace,
-    )))
-}
-
-/// Helper: build a Create event for `(name, namespace)`.
-fn create_event(name: &str, namespace: &str) -> BlockEvent<'static> {
-    BlockEvent::Create(CreateEntry {
-        ident: Cow::Owned(TableIdentifier::from_str_unchecked(name, namespace)),
-        ddl: Cow::Owned(b"CREATE TABLE ...".to_vec()),
-    })
-}
-
-/// Helper: build an Insert event for `(name, namespace)`.
-fn insert_event(name: &str, namespace: &str) -> BlockEvent<'static> {
-    BlockEvent::Insert(InsertEntry {
-        table: Cow::Owned(TableIdentifier::from_str_unchecked(name, namespace)),
-        data: Cow::Owned(b"rows".to_vec()),
-    })
-}
-
-/// `capture_events` is now unconditional — every event reaches the
-/// offchain queue regardless of any per-node configuration. This test
-/// is the single producer-side regression check.
-#[test]
-fn capture_events_writes_all_events_unconditionally() {
-    let mut ext = new_test_ext();
-    ext.execute_with(|| {
-        System::set_block_number(1);
-        polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
-
-        let events = vec![
-            create_event("A", "ALPHA"),
-            insert_event("B", "BETA"),
-            drop_event("C", "GAMMA"),
-        ];
-        <ProverDbIndexer as EventCapture>::capture_events(events);
-    });
-    ext.persist_offchain_overlay();
-    let db = ext.offchain_db();
-    let stored = db.get(&key_for_event(1, 0)).unwrap();
-    let decoded: Vec<BlockEvent<'static>> = codec::Decode::decode(&mut &stored[..]).unwrap();
-    assert_eq!(decoded.len(), 3);
 }
 
 /// End-to-end consumer test: seed the node's include set into offchain

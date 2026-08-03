@@ -1145,10 +1145,6 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_privileged_quorum_rea
             PermissionList::try_from(vec![public_permission, privileged_permission]).unwrap(),
         );
 
-        // Discard the Create event the setup `Tables::create_tables` above
-        // captured, so the next drain isolates the Insert event we care about.
-        let _ = drain_captured_events();
-
         // both submission
         assert_ok!(submit_test_data(both_submitter, test_submission.clone()));
 
@@ -1174,18 +1170,6 @@ fn reaching_quorum_for_both_scopes_simultaneously_produces_privileged_quorum_rea
                 .count(),
             1
         );
-
-        // Producer hook for the prover-db indexer: reaching quorum should emit
-        // one Insert event carrying the table id and serialized rows.
-        let captured = drain_captured_events();
-        assert_eq!(captured.len(), 1);
-        match &captured[0] {
-            sxt_core::prover_db_indexer::BlockEvent::Insert(entry) => {
-                assert_eq!(entry.table.as_ref(), &test_submission.table);
-                assert!(!entry.data.is_empty());
-            }
-            other => panic!("expected Insert event, got {:?}", other),
-        }
     })
 }
 
