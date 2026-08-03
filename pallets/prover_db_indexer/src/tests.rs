@@ -63,15 +63,6 @@ fn no_checkpoint_response() -> Vec<u8> {
     .encode_to_vec()
 }
 
-/// Set a `*.*` filter.
-fn setup_with_url(
-    finalized_block_num: u32,
-    events: impl IntoIterator<Item = Vec<EventRecord<RuntimeEvent, H256>>>,
-) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
-    setup_with_config("*.*", finalized_block_num, events)
-}
-
-/// Set a non-empty include set. Used by the consumer-side filter tests.
 fn setup_with_config(
     filters: &str,
     finalized_block_num: u32,
@@ -163,7 +154,7 @@ fn ocw_skips_when_not_configured() {
 /// the absence of queued expectations is the assertion.
 #[test]
 fn ocw_skips_when_lock_is_held() {
-    let (mut ext, _state) = setup_with_url(1, [vec![]]);
+    let (mut ext, _state) = setup_with_config("*.*", 1, [vec![]]);
 
     ext.execute_with(|| {
         let mut lock = StorageLock::<Time>::with_deadline(
@@ -181,7 +172,7 @@ fn ocw_skips_when_lock_is_held() {
 fn ocw_forwards_create_table_event() {
     let ddl = b"CREATE TABLE PUBLIC.USERS (ID BIGINT NOT NULL)";
     let event = schema_updated_event([("USERS", "PUBLIC", ddl.to_vec())]);
-    let (mut ext, state) = setup_with_url(1, [vec![event]]);
+    let (mut ext, state) = setup_with_config("*.*", 1, [vec![event]]);
 
     {
         let mut s = state.write();
@@ -215,8 +206,8 @@ fn ocw_forwards_create_table_event() {
 }
 
 #[test]
-fn ocw_checkpoints_empty_blocks() {
-    let (mut ext, state) = setup_with_url(1, [vec![]]);
+fn ocw_checkpoints_blocks_with_no_events() {
+    let (mut ext, state) = setup_with_config("*.*", 1, [vec![]]);
 
     {
         let mut s = state.write();
@@ -240,7 +231,8 @@ fn ocw_checkpoints_empty_blocks() {
 
 #[test]
 fn ocw_resumes_from_server_checkpoint() {
-    let (mut ext, state) = setup_with_url(6, [vec![table_dropped_event("OLD", "NS")]]);
+    let event = table_dropped_event("OLD", "NS");
+    let (mut ext, state) = setup_with_config("*.*", 6, [vec![event]]);
 
     {
         let mut s = state.write();
@@ -276,7 +268,7 @@ fn ocw_processes_multiple_blocks_in_order() {
     let event_1 = table_dropped_event("T1", "NS");
     let event_2 =
         schema_updated_event([("T2", "NS", b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec())]);
-    let (mut ext, state) = setup_with_url(3, [vec![event_1], vec![event_2], vec![]]);
+    let (mut ext, state) = setup_with_config("*.*", 3, [vec![event_1], vec![event_2], vec![]]);
 
     {
         let mut s = state.write();
@@ -332,7 +324,7 @@ fn ocw_processes_multiple_blocks_in_order() {
 fn ocw_forwards_multiple_events_in_one_block() {
     let event_1 = table_dropped_event("T1", "NS");
     let event_2 = quorum_reached_event("T2", "NS", b"row-data".to_vec());
-    let (mut ext, state) = setup_with_url(1, [vec![event_1, event_2]]);
+    let (mut ext, state) = setup_with_config("*.*", 1, [vec![event_1, event_2]]);
 
     {
         let mut s = state.write();
@@ -457,7 +449,7 @@ fn ocw_forwards_only_events_matching_include_set() {
 fn ocw_with_wildcard_filter_forwards_everything() {
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
     let event = schema_updated_event([("ANY", "ANY", ddl.to_vec())]);
-    let (mut ext, state) = setup_with_url(1, [vec![event]]);
+    let (mut ext, state) = setup_with_config("*.*", 1, [vec![event]]);
 
     {
         let mut s = state.write();

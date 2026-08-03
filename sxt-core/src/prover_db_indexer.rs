@@ -33,6 +33,9 @@ pub const OCW_LOCK_DEADLINE_MS_CONFIG_KEY: &str = "prover_db_indexer/ocw_lock_de
 /// Default OCW storage lock deadline, in milliseconds.
 pub const DEFAULT_OCW_LOCK_DEADLINE_MS: u64 = 120_000;
 
+/// Offchain DB key for the lock that serializes OCW consumer rounds.
+pub const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
+
 /// Runtime configuration for the prover-db OCW consumer.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ProverDbConsumerConfig {

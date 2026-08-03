@@ -142,7 +142,11 @@ pub mod pallet {
     use polkadot_sdk::sp_runtime::offchain::Duration;
     use polkadot_sdk::sp_runtime::traits::CheckedConversion;
     use snafu::{OptionExt, ResultExt};
-    use sxt_core::prover_db_indexer::{table_matches_filters, ProverDbConsumerConfig};
+    use sxt_core::prover_db_indexer::{
+        table_matches_filters,
+        ProverDbConsumerConfig,
+        OCW_LOCK_KEY,
+    };
 
     use crate::consumer_error::*;
     use crate::db_events::{db_events_at, DBEvent, EventRecord};
@@ -196,7 +200,7 @@ pub mod pallet {
             // `failed_precondition`. Holding this lock for the full round
             // makes overlapping invocations no-ops.
             let mut lock = StorageLock::<Time>::with_deadline(
-                crate::OCW_LOCK_KEY,
+                OCW_LOCK_KEY,
                 Duration::from_millis(config.ocw_lock_deadline_ms),
             );
             let _guard = lock.try_lock().ok().context(ConsumerInProgressSnafu)?;
