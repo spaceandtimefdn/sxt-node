@@ -1,14 +1,3 @@
-//! Integration tests for the prover-db-indexer consumer (OCW).
-//!
-//! Tests pre-populate the offchain DB as if `EventCapture::capture_events`
-//! had run during block execution — that means writing the per-extrinsic
-//! event payload at `key_for_event(block, ext_idx)` and the per-block
-//! high-water-mark at `key_for_high_water(block)` — then drive
-//! `offchain_worker` and verify the OCW reads, forwards in order, and
-//! deletes consumed entries.
-
-use std::borrow::Cow;
-
 use codec::Encode;
 use native_api::Api;
 use pallet_tables::{CommitmentCreationCmd, UpdateTable};
@@ -24,15 +13,7 @@ use polkadot_sdk::sp_runtime::offchain::Duration;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use prost::Message;
 use sxt_core::indexing::{BatchId, DataQuorum, SubmitterList};
-use sxt_core::prover_db_indexer::{
-    key_for_event,
-    BlockEvent,
-    CreateEntry,
-    EventCapture,
-    InsertEntry,
-    PROVER_DB_CONFIG_INCLUDE_KEY,
-    PROVER_DB_CONFIG_URL_KEY,
-};
+use sxt_core::prover_db_indexer::{PROVER_DB_CONFIG_INCLUDE_KEY, PROVER_DB_CONFIG_URL_KEY};
 use sxt_core::tables::{QuorumScope, Source, TableIdentifier, TableType};
 
 use crate::mock::*;
@@ -71,15 +52,6 @@ fn no_checkpoint_response() -> Vec<u8> {
     .encode_to_vec()
 }
 
-/// Set a `*.*` filter.
-fn setup_with_url(
-    finalized_block_num: u32,
-    events: impl IntoIterator<Item = Vec<EventRecord<RuntimeEvent, H256>>>,
-) -> (polkadot_sdk::sp_io::TestExternalities, StateArc) {
-    setup_with_config("*.*", finalized_block_num, events)
-}
-
-/// Set a non-empty include set. Used by the consumer-side filter tests.
 fn setup_with_config(
     filters: &str,
     finalized_block_num: u32,
@@ -151,8 +123,6 @@ fn quorum_reached_event(
     })
 }
 
-// ─── Tests ──────────────────────────────────────────────────────────────
-
 #[test]
 fn ocw_skips_when_not_configured() {
     let mut ext = new_test_ext();
@@ -171,7 +141,7 @@ fn ocw_skips_when_not_configured() {
 /// the absence of queued expectations is the assertion.
 #[test]
 fn ocw_skips_when_lock_is_held() {
-    let (mut ext, _state) = setup_with_url(1, [vec![]]);
+    let (mut ext, _state) = setup_with_config("*.*", 1, [vec![]]);
 
     ext.execute_with(|| {
         let mut lock = StorageLock::<Time>::with_deadline(
@@ -189,7 +159,7 @@ fn ocw_skips_when_lock_is_held() {
 fn ocw_forwards_create_table_event() {
     let ddl = b"CREATE TABLE PUBLIC.USERS (ID BIGINT NOT NULL)";
     let event = schema_updated_event([("USERS", "PUBLIC", ddl.to_vec())]);
-    let (mut ext, state) = setup_with_url(1, [vec![event]]);
+    let (mut ext, state) = setup_with_config("*.*", 1, [vec![event]]);
 
     {
         let mut s = state.write();
@@ -223,8 +193,8 @@ fn ocw_forwards_create_table_event() {
 }
 
 #[test]
-fn ocw_checkpoints_empty_blocks() {
-    let (mut ext, state) = setup_with_url(1, [vec![]]);
+fn ocw_checkpoints_blocks_with_no_events() {
+    let (mut ext, state) = setup_with_config("*.*", 1, [vec![]]);
 
     {
         let mut s = state.write();
@@ -248,7 +218,8 @@ fn ocw_checkpoints_empty_blocks() {
 
 #[test]
 fn ocw_resumes_from_server_checkpoint() {
-    let (mut ext, state) = setup_with_url(6, [vec![table_dropped_event("OLD", "NS")]]);
+    let event = table_dropped_event("OLD", "NS");
+    let (mut ext, state) = setup_with_config("*.*", 6, [vec![event]]);
 
     {
         let mut s = state.write();
@@ -284,7 +255,7 @@ fn ocw_processes_multiple_blocks_in_order() {
     let event_1 = table_dropped_event("T1", "NS");
     let event_2 =
         schema_updated_event([("T2", "NS", b"CREATE TABLE NS.T2 (X INT NOT NULL)".to_vec())]);
-    let (mut ext, state) = setup_with_url(3, [vec![event_1], vec![event_2], vec![]]);
+    let (mut ext, state) = setup_with_config("*.*", 3, [vec![event_1], vec![event_2], vec![]]);
 
     {
         let mut s = state.write();
@@ -340,7 +311,7 @@ fn ocw_processes_multiple_blocks_in_order() {
 fn ocw_forwards_multiple_events_in_one_block() {
     let event_1 = table_dropped_event("T1", "NS");
     let event_2 = quorum_reached_event("T2", "NS", b"row-data".to_vec());
-    let (mut ext, state) = setup_with_url(1, [vec![event_1, event_2]]);
+    let (mut ext, state) = setup_with_config("*.*", 1, [vec![event_1, event_2]]);
 
     {
         let mut s = state.write();
@@ -381,55 +352,6 @@ fn ocw_forwards_multiple_events_in_one_block() {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
     });
-}
-
-// ─── Include-set tests (consumer-side filter) ──────────────────────────
-
-/// Helper: build a Drop event for `(name, namespace)`.
-fn drop_event(name: &str, namespace: &str) -> BlockEvent<'static> {
-    BlockEvent::Drop(Cow::Owned(TableIdentifier::from_str_unchecked(
-        name, namespace,
-    )))
-}
-
-/// Helper: build a Create event for `(name, namespace)`.
-fn create_event(name: &str, namespace: &str) -> BlockEvent<'static> {
-    BlockEvent::Create(CreateEntry {
-        ident: Cow::Owned(TableIdentifier::from_str_unchecked(name, namespace)),
-        ddl: Cow::Owned(b"CREATE TABLE ...".to_vec()),
-    })
-}
-
-/// Helper: build an Insert event for `(name, namespace)`.
-fn insert_event(name: &str, namespace: &str) -> BlockEvent<'static> {
-    BlockEvent::Insert(InsertEntry {
-        table: Cow::Owned(TableIdentifier::from_str_unchecked(name, namespace)),
-        data: Cow::Owned(b"rows".to_vec()),
-    })
-}
-
-/// `capture_events` is now unconditional — every event reaches the
-/// offchain queue regardless of any per-node configuration. This test
-/// is the single producer-side regression check.
-#[test]
-fn capture_events_writes_all_events_unconditionally() {
-    let mut ext = new_test_ext();
-    ext.execute_with(|| {
-        System::set_block_number(1);
-        polkadot_sdk::frame_system::Pallet::<Test>::set_extrinsic_index(0);
-
-        let events = vec![
-            create_event("A", "ALPHA"),
-            insert_event("B", "BETA"),
-            drop_event("C", "GAMMA"),
-        ];
-        <ProverDbIndexer as EventCapture>::capture_events(events);
-    });
-    ext.persist_offchain_overlay();
-    let db = ext.offchain_db();
-    let stored = db.get(&key_for_event(1, 0)).unwrap();
-    let decoded: Vec<BlockEvent<'static>> = codec::Decode::decode(&mut &stored[..]).unwrap();
-    assert_eq!(decoded.len(), 3);
 }
 
 /// End-to-end consumer test: seed the node's include set into offchain
@@ -514,7 +436,7 @@ fn ocw_forwards_only_events_matching_include_set() {
 fn ocw_with_wildcard_filter_forwards_everything() {
     let ddl = b"CREATE TABLE ANY.ANY (ID BIGINT NOT NULL)";
     let event = schema_updated_event([("ANY", "ANY", ddl.to_vec())]);
-    let (mut ext, state) = setup_with_url(1, [vec![event]]);
+    let (mut ext, state) = setup_with_config("*.*", 1, [vec![event]]);
 
     {
         let mut s = state.write();

@@ -1,8 +1,6 @@
-//! Shared items for the prover-db-indexer pallet, the node service
-//! that supplies its configuration, and the producer call sites in
-//! `pallet-tables` and `pallet-indexing`.
+//! Shared items for the prover-db-indexer pallet and the node service
+//! that supplies its configuration.
 
-use alloc::borrow::Cow;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::num::ParseIntError;
@@ -33,6 +31,9 @@ pub const OCW_LOCK_DEADLINE_MS_CONFIG_KEY: &str = "prover_db_indexer/ocw_lock_de
 
 /// Default OCW storage lock deadline, in milliseconds.
 pub const DEFAULT_OCW_LOCK_DEADLINE_MS: u64 = 120_000;
+
+/// Offchain DB key for the lock that serializes OCW consumer rounds.
+pub const OCW_LOCK_KEY: &[u8] = b"prover_db_indexer/ocw_lock";
 
 /// Runtime configuration for the prover-db OCW consumer.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -136,99 +137,6 @@ impl ProverDbConsumerConfig {
             ocw_lock_deadline_ms,
         })
     }
-}
-
-/// Offchain DB key prefix for per-extrinsic event payloads. SCALE-encoded
-/// as part of a `(prefix, block, ext_idx)` tuple, so the tuple structure
-/// (not any trailing separator) provides the boundary between fields.
-const EVENT_KEY_PREFIX: &[u8] = b"prover_db_indexer/event";
-
-/// Offchain DB key prefix for per-block high-water-marks (the largest
-/// extrinsic index in a block that produced events). See [`EVENT_KEY_PREFIX`]
-/// for why there's no trailing separator.
-const HIGH_WATER_KEY_PREFIX: &[u8] = b"prover_db_indexer/high_water_mark";
-
-/// Compute the offchain DB key for a block's high-water-mark. The value
-/// at this key is a SCALE-encoded `u32`: the largest `extrinsic_index`
-/// in the block that called `EventCapture::capture_events`. The OCW
-/// reads it to know how far to probe `key_for_event(block, 0..=high_water_mark)`.
-/// Absence of this key means the block had zero captured events.
-pub fn key_for_high_water(block: u64) -> Vec<u8> {
-    (HIGH_WATER_KEY_PREFIX, block).encode()
-}
-
-/// Compute the offchain DB key for the events emitted by a single
-/// extrinsic in a given block. The value at this key is a SCALE-encoded
-/// `Vec<BlockEvent>` (one extrinsic may emit several `BlockEvent`s).
-pub fn key_for_event(block: u64, extrinsic_index: u32) -> Vec<u8> {
-    (EVENT_KEY_PREFIX, block, extrinsic_index).encode()
-}
-
-/// A table-creation event.
-///
-/// Fields are `Cow` so producer call sites can pass borrowed references
-/// (the captured event is encoded immediately and never outlives the
-/// caller's stack frame) while the OCW consumer decodes into `Cow::Owned`
-/// transparently — SCALE encodes `Cow<'_, T>` identically to `T`.
-#[derive(Encode, Decode, Debug, Clone)]
-pub struct CreateEntry<'a> {
-    /// Identifier of the table being created or updated.
-    pub ident: Cow<'a, TableIdentifier>,
-    /// DDL bytes describing the schema; forwarded to the indexer as-is.
-    pub ddl: Cow<'a, [u8]>,
-}
-
-/// A row-insert event triggered by a data quorum. See [`CreateEntry`]
-/// for the `Cow` rationale.
-#[derive(Encode, Decode, Debug, Clone)]
-pub struct InsertEntry<'a> {
-    /// Identifier of the table the rows belong to.
-    pub table: Cow<'a, TableIdentifier>,
-    /// Postcard-encoded `OnChainTable` bytes; forwarded to the indexer as-is.
-    pub data: Cow<'a, [u8]>,
-}
-
-/// A single event captured during block execution. Stored in the order
-/// events were deposited so the OCW replays them in the correct sequence.
-/// Variant names mirror the corresponding indexer DB operations.
-#[derive(Encode, Decode, Debug, Clone)]
-pub enum BlockEvent<'a> {
-    /// Table created or schema updated.
-    Create(CreateEntry<'a>),
-    /// Table dropped.
-    Drop(Cow<'a, TableIdentifier>),
-    /// Rows inserted (data quorum reached).
-    Insert(InsertEntry<'a>),
-}
-
-impl BlockEvent<'_> {
-    /// Returns the table identifier associated with this event.
-    pub fn table(&self) -> &TableIdentifier {
-        match self {
-            Self::Create(entry) => entry.ident.as_ref(),
-            Self::Drop(ident) => ident.as_ref(),
-            Self::Insert(entry) => entry.table.as_ref(),
-        }
-    }
-}
-
-/// Hook through which `pallet-tables` and `pallet-indexing` hand off
-/// indexable events at extrinsic time. The runtime wires this to
-/// `pallet-prover-db-indexer`; `()` is a no-op for runtimes that don't
-/// run the prover-db indexer.
-///
-/// Call at most once per extrinsic: the implementation keys the offchain
-/// blob by `extrinsic_index`, so a second call from the same extrinsic
-/// would overwrite the first.
-pub trait EventCapture {
-    /// Capture the events emitted by the currently-executing extrinsic.
-    /// Implementations must be cheap enough to count in the caller's
-    /// declared weight.
-    fn capture_events(events: Vec<BlockEvent<'_>>);
-}
-
-impl EventCapture for () {
-    fn capture_events(_events: Vec<BlockEvent<'_>>) {}
 }
 
 /// Filter for one side (namespace or name) of a `TableIdentifier`.

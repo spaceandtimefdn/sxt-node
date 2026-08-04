@@ -249,10 +249,6 @@ impl TryFrom<&TableIdentifier> for String {
 }
 
 impl core::fmt::Display for TableIdentifier {
-    /// Format as `namespace.name`. Lossy: non-UTF-8 bytes in either component
-    /// render as `?`, since `Display` is infallible. Use
-    /// `TryFrom<&TableIdentifier> for String` when you need to surface the
-    /// UTF-8 error instead.
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let ns = from_utf8(&self.namespace).unwrap_or("?");
         let name = from_utf8(&self.name).unwrap_or("?");

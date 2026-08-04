@@ -409,7 +409,7 @@ pub const TARGET_BYTE_FEE: u128 =
     AVERAGE_INSERT_TARGET_COST_PER_ROW.saturating_div(AVERAGE_INSERT_SIZE_BYTES_PER_ROW);
 
 /// This value should be the coefficient of a 1-element-insert, as measured in pallet-indexing's weights.rs
-pub const INSERT_CALL_WEIGHT_PER_ELEMENT: u128 = 33_837_719;
+pub const INSERT_CALL_WEIGHT_PER_ELEMENT: u128 = 33_482_779;
 /// The number of elements per row that the target cost should apply to
 pub const INSERT_FEE_TARGET_ROW_LENGTH: u128 = 16;
 
@@ -842,7 +842,6 @@ impl pallet_permissions::Config for Runtime {
 impl pallet_tables::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_tables::weights::SubstrateWeight<Runtime>;
-    type EventCapture = pallet_prover_db_indexer::Pallet<Runtime>;
 }
 
 impl pallet_commitments::Config for Runtime {
@@ -857,7 +856,6 @@ impl pallet_commitments::Config for Runtime {
 impl pallet_indexing::Config<native_api::Api> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_indexing::weights::SubstrateWeight<Runtime>;
-    type EventCapture = pallet_prover_db_indexer::Pallet<Runtime>;
 }
 
 impl pallet_attestation::Config for Runtime {
