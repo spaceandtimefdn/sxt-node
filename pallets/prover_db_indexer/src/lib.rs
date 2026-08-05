@@ -85,6 +85,17 @@ pub enum ConsumerError {
         /// Underlying error from [`crate::db_events::db_events_at`].
         source: crate::db_events::DBEventError,
     },
+    /// `HeaderBackend::hash` succeeded but returned `None`, meaning the
+    /// block number's header is not in the node's chain.
+    #[snafu(display("block number's header is not in the node's chain"))]
+    HeaderNotInChain,
+    /// The node's client failed to look up a block's hash by number.
+    #[snafu(display("client failed to look up block hash: {source}"))]
+    ClientHash {
+        /// Error from the underlying `HeaderBackend::hash` call.
+        #[snafu(source(false))]
+        source: alloc::string::String,
+    },
 }
 
 #[polkadot_sdk::frame_support::pallet]
@@ -197,9 +208,7 @@ pub mod pallet {
             block_num: u64,
             config: &ProverDbConsumerConfig,
         ) -> Result<(), ConsumerError> {
-            let bn: BlockNumberFor<T> =
-                block_num.checked_into().context(BlockNumberOverflowSnafu)?;
-            for event in db_events_at::<T>(frame_system::Pallet::<T>::block_hash(bn))? {
+            for event in db_events_at::<T>(Self::block_hash(block_num)?)? {
                 match event {
                     DBEvent::TableDropped(_, _, table, _) => {
                         if table_matches_filters(&table, &config.include) {
@@ -236,6 +245,22 @@ pub mod pallet {
             }
 
             Ok(())
+        }
+
+        /// Looks up a block number's hash, falling back to the node's client if `BlockHash` doesn't have it.
+        pub(crate) fn block_hash(block_num: u64) -> Result<H256, ConsumerError> {
+            let bn: BlockNumberFor<T> =
+                block_num.checked_into().context(BlockNumberOverflowSnafu)?;
+            let hash = match frame_system::pallet::BlockHash::<T>::try_get(bn) {
+                Ok(hash) => hash,
+                Err(()) => native::client::client::hash(
+                    block_num.checked_into().context(BlockNumberOverflowSnafu)?,
+                )
+                .context(NoRegisteredClientSnafu)?
+                .map_err(|source| ClientHashSnafu { source }.build())?
+                .context(HeaderNotInChainSnafu)?,
+            };
+            Ok(hash)
         }
     }
 }
