@@ -220,6 +220,7 @@ pub struct MockClientProvider {
     storage_responses: std::sync::Mutex<
         std::collections::VecDeque<Result<Option<sp_core::storage::StorageData>, String>>,
     >,
+    hash_responses: std::sync::Mutex<std::collections::VecDeque<Result<Option<H256>, String>>>,
 }
 
 #[cfg(all(test, feature = "std"))]
@@ -230,10 +231,12 @@ impl MockClientProvider {
         storage_responses: impl IntoIterator<
             Item = Result<Option<sp_core::storage::StorageData>, String>,
         >,
+        hash_responses: impl IntoIterator<Item = Result<Option<H256>, String>>,
     ) -> native::client::ClientExt {
         native::client::ClientExt(std::sync::Arc::new(Self {
             finalized_state,
             storage_responses: std::sync::Mutex::new(storage_responses.into_iter().collect()),
+            hash_responses: std::sync::Mutex::new(hash_responses.into_iter().collect()),
         }))
     }
 }
@@ -250,6 +253,15 @@ impl native::client::ClientProvider for MockClientProvider {
         _key: &sp_core::storage::StorageKey,
     ) -> polkadot_sdk::sp_blockchain::Result<Option<sp_core::storage::StorageData>> {
         self.storage_responses
+            .lock()
+            .unwrap()
+            .pop_front()
+            .unwrap_or(Ok(None))
+            .map_err(polkadot_sdk::sp_blockchain::Error::UnknownBlock)
+    }
+
+    fn hash(&self, _number: u32) -> polkadot_sdk::sp_blockchain::Result<Option<H256>> {
+        self.hash_responses
             .lock()
             .unwrap()
             .pop_front()

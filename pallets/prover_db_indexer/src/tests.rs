@@ -66,6 +66,7 @@ fn setup_with_config(
         events
             .into_iter()
             .map(|e| Ok(Some(StorageData(e.encode())))),
+        [],
     ));
     let mut config_store = std::collections::HashMap::new();
     config_store.insert(PROVER_DB_CONFIG_URL_KEY.to_string(), MOCK_URL.to_string());

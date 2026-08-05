@@ -19,6 +19,8 @@ pub trait ClientProvider: Send + Sync {
         hash: H256,
         key: &StorageKey,
     ) -> polkadot_sdk::sp_blockchain::Result<Option<StorageData>>;
+    /// Given a block's number, return the hash of that block.
+    fn hash(&self, number: u32) -> polkadot_sdk::sp_blockchain::Result<Option<H256>>;
 }
 
 #[cfg(feature = "std")]
@@ -54,6 +56,15 @@ pub trait Client {
                 .map_err(|error| error.to_string())
         })
     }
+
+    /// Given a block's number, return the hash of that block.
+    ///
+    /// Wraps [`ClientProvider::hash`], which is modeled off of `FullClient::hash`.
+    /// Returns `None` if the [`ClientExt`] extension is not registered. Otherwise, returns `Some(FullClient::hash(number))`.
+    fn hash(&mut self, number: u32) -> Option<Result<Option<H256>, String>> {
+        ExternalitiesExt::extension(self)
+            .map(|ClientExt(provider)| provider.hash(number).map_err(|error| error.to_string()))
+    }
 }
 
 #[cfg(all(test, feature = "std"))]
@@ -82,6 +93,10 @@ mod tests {
             self.storage_response
                 .clone()
                 .map_err(polkadot_sdk::sp_blockchain::Error::UnknownBlock)
+        }
+
+        fn hash(&self, number: u32) -> polkadot_sdk::sp_blockchain::Result<Option<H256>> {
+            Ok(Some(H256::repeat_byte(number as u8)))
         }
     }
 
