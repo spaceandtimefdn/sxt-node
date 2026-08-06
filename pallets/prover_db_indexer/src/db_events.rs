@@ -138,6 +138,7 @@ mod tests {
         ext.register_extension(MockClientProvider::client_ext(
             None,
             [Err("test error".to_string())],
+            [],
         ));
         ext.execute_with(|| {
             let err = db_events_at::<Test>(H256::zero()).err().unwrap();
@@ -150,7 +151,7 @@ mod tests {
     #[test]
     fn empty_when_no_value_at_key() {
         let mut ext = new_test_ext();
-        ext.register_extension(MockClientProvider::client_ext(None, [Ok(None)]));
+        ext.register_extension(MockClientProvider::client_ext(None, [Ok(None)], []));
         ext.execute_with(|| {
             assert!(matches!(
                 db_events_at::<Test>(H256::zero()),
@@ -165,6 +166,7 @@ mod tests {
         ext.register_extension(MockClientProvider::client_ext(
             None,
             [Ok(Some(StorageData(alloc::vec![0xFF, 0xFF, 0xFF])))],
+            [],
         ));
         ext.execute_with(|| {
             assert!(matches!(
@@ -214,6 +216,7 @@ mod tests {
         ext.register_extension(MockClientProvider::client_ext(
             None,
             [Ok(Some(StorageData(codec::Encode::encode(&records))))],
+            [],
         ));
         ext.execute_with(|| {
             let events: Vec<_> = db_events_at::<Test>(H256::zero()).unwrap().collect();

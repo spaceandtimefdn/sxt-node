@@ -3,6 +3,7 @@ use native_api::Api;
 use pallet_tables::{CommitmentCreationCmd, UpdateTable};
 use polkadot_sdk::frame_support::traits::Hooks;
 use polkadot_sdk::frame_support::BoundedVec;
+use polkadot_sdk::frame_system::pallet::BlockHash;
 use polkadot_sdk::frame_system::EventRecord;
 use polkadot_sdk::sp_core::offchain::testing::{PendingRequest, TestOffchainExt};
 use polkadot_sdk::sp_core::offchain::{OffchainDbExt, OffchainWorkerExt};
@@ -62,11 +63,20 @@ fn setup_with_config(
     ext.register_extension(OffchainWorkerExt::new(offchain.clone()));
     ext.register_extension(OffchainDbExt::new(offchain));
     ext.register_extension(MockClientProvider::client_ext(
-        Some((H256::zero(), finalized_block_num)),
+        Some((
+            H256::repeat_byte(finalized_block_num as u8),
+            finalized_block_num,
+        )),
         events
             .into_iter()
             .map(|e| Ok(Some(StorageData(e.encode())))),
+        [],
     ));
+    ext.execute_with(|| {
+        for bn in 1..=finalized_block_num {
+            BlockHash::<Test>::insert(bn as u64, H256::repeat_byte(bn as u8));
+        }
+    });
     let mut config_store = std::collections::HashMap::new();
     config_store.insert(PROVER_DB_CONFIG_URL_KEY.to_string(), MOCK_URL.to_string());
     config_store.insert(
@@ -498,5 +508,87 @@ fn ocw_with_empty_include_set_forwards_nothing() {
     ext.execute_with(|| {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
+    });
+}
+
+fn advance_block(parent_hash: &mut H256, i: u64) -> Option<H256> {
+    System::initialize(&(i + 1), parent_hash, &Default::default());
+    *parent_hash = System::finalize().hash();
+    Some(*parent_hash)
+}
+
+#[test]
+fn block_hash_falls_back_to_client_once_frame_system_prunes_the_entry() {
+    let mut ext = new_test_ext();
+    let fallback_hash = H256::repeat_byte(0xAB);
+    ext.register_extension(MockClientProvider::client_ext(
+        None,
+        [],
+        std::iter::repeat_n(Ok(Some(fallback_hash)), 6),
+    ));
+
+    ext.execute_with(|| {
+        let mut h: Vec<_> = (0..6).scan(H256::zero(), advance_block).collect();
+        for i in 0..5 {
+            assert_eq!(ProverDbIndexer::block_hash(i + 1).unwrap(), h[i as usize]);
+        }
+        h.extend((6..17).scan(h[5], advance_block));
+        for i in 0..6 {
+            assert_eq!(ProverDbIndexer::block_hash(i + 1).unwrap(), fallback_hash);
+        }
+        for i in 6..16 {
+            assert_eq!(ProverDbIndexer::block_hash(i + 1).unwrap(), h[i as usize]);
+        }
+    });
+}
+
+#[test]
+fn block_hash_returns_stored_hash_when_present() {
+    let mut ext = new_test_ext();
+    ext.execute_with(|| {
+        let hash = H256::repeat_byte(7);
+        BlockHash::<Test>::insert(5u64, hash);
+
+        assert_eq!(ProverDbIndexer::block_hash(5).unwrap(), hash);
+    });
+}
+
+#[test]
+fn block_hash_errors_when_client_not_registered() {
+    let mut ext = new_test_ext();
+    ext.execute_with(|| {
+        assert!(matches!(
+            ProverDbIndexer::block_hash(5),
+            Err(crate::ConsumerError::NoRegisteredClient)
+        ));
+    });
+}
+
+#[test]
+fn block_hash_errors_when_client_hash_lookup_fails() {
+    let mut ext = new_test_ext();
+    ext.register_extension(MockClientProvider::client_ext(
+        None,
+        [],
+        [Err("simulated client hash lookup failure".to_string())],
+    ));
+    ext.execute_with(|| {
+        assert!(matches!(
+            ProverDbIndexer::block_hash(5),
+            Err(crate::ConsumerError::ClientHash { source })
+                if source == "UnknownBlock: simulated client hash lookup failure"
+        ));
+    });
+}
+
+#[test]
+fn block_hash_errors_when_header_not_in_chain() {
+    let mut ext = new_test_ext();
+    ext.register_extension(MockClientProvider::client_ext(None, [], [Ok(None)]));
+    ext.execute_with(|| {
+        assert!(matches!(
+            ProverDbIndexer::block_hash(5),
+            Err(crate::ConsumerError::HeaderNotInChain)
+        ));
     });
 }

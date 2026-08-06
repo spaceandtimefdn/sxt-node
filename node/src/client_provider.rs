@@ -21,4 +21,8 @@ impl ClientProvider for FullClientHandle {
     fn storage(&self, hash: H256, key: &StorageKey) -> sp_blockchain::Result<Option<StorageData>> {
         self.0.storage(hash, key)
     }
+
+    fn hash(&self, number: u32) -> polkadot_sdk::sp_blockchain::Result<Option<H256>> {
+        self.0.hash(number)
+    }
 }
