@@ -14,7 +14,11 @@ use polkadot_sdk::sp_runtime::offchain::Duration;
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
 use prost::Message;
 use sxt_core::indexing::{BatchId, DataQuorum, SubmitterList};
-use sxt_core::prover_db_indexer::{PROVER_DB_CONFIG_INCLUDE_KEY, PROVER_DB_CONFIG_URL_KEY};
+use sxt_core::prover_db_indexer::{
+    PROVER_DB_CONFIG_ENABLED_KEY,
+    PROVER_DB_CONFIG_INCLUDE_KEY,
+    PROVER_DB_CONFIG_URL_KEY,
+};
 use sxt_core::tables::{QuorumScope, Source, TableIdentifier, TableType};
 
 use crate::mock::*;
@@ -78,6 +82,7 @@ fn setup_with_config(
         }
     });
     let mut config_store = std::collections::HashMap::new();
+    config_store.insert(PROVER_DB_CONFIG_ENABLED_KEY.to_string(), "true".to_string());
     config_store.insert(PROVER_DB_CONFIG_URL_KEY.to_string(), MOCK_URL.to_string());
     config_store.insert(
         PROVER_DB_CONFIG_INCLUDE_KEY.to_string(),
@@ -139,6 +144,22 @@ fn ocw_skips_when_not_configured() {
     let (offchain, _) = TestOffchainExt::new();
     ext.register_extension(OffchainWorkerExt::new(offchain.clone()));
     ext.register_extension(OffchainDbExt::new(offchain));
+    ext.execute_with(|| {
+        System::set_block_number(1);
+        ProverDbIndexer::offchain_worker(1);
+    });
+}
+
+/// Disabled by default, so a configured URL alone must not trigger a run.
+#[test]
+fn ocw_skips_when_disabled_even_with_url_configured() {
+    let mut ext = new_test_ext();
+    let (offchain, _) = TestOffchainExt::new();
+    ext.register_extension(OffchainWorkerExt::new(offchain.clone()));
+    ext.register_extension(OffchainDbExt::new(offchain));
+    let mut config_store = std::collections::HashMap::new();
+    config_store.insert(PROVER_DB_CONFIG_URL_KEY.to_string(), MOCK_URL.to_string());
+    ext.register_extension(native::config::ConfigExt(std::sync::Arc::new(config_store)));
     ext.execute_with(|| {
         System::set_block_number(1);
         ProverDbIndexer::offchain_worker(1);
