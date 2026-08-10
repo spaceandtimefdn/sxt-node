@@ -13,6 +13,9 @@ use url::Url;
 use crate::tables::TableIdentifier;
 use crate::IDENT_LENGTH;
 
+/// Config key gating whether the prover-db OCW consumer runs at all; defaults to disabled.
+pub const PROVER_DB_CONFIG_ENABLED_KEY: &str = "prover_db_indexer/enable";
+
 /// Config key holding the prover-db indexer's target URL.
 pub const PROVER_DB_CONFIG_URL_KEY: &str = "prover_db_indexer/url";
 
@@ -95,6 +98,14 @@ pub enum ProverDbConsumerConfigError {
 }
 
 impl ProverDbConsumerConfig {
+    /// Whether [`PROVER_DB_CONFIG_ENABLED_KEY`] is set to `true`; defaults to `false`.
+    pub fn enabled<F: Fn(&str) -> Option<Option<String>>>(get: F) -> bool {
+        get(PROVER_DB_CONFIG_ENABLED_KEY)
+            .flatten()
+            .and_then(|s| s.parse::<bool>().ok())
+            .unwrap_or(false)
+    }
+
     /// Builds a config by looking up each setting via `get`, where
     /// `get(key)` returns `None` if `key` isn't registered at all, or
     /// `Some(None)` if it's registered but unset.
@@ -281,6 +292,33 @@ mod tests {
 
     fn ident(name: &str, namespace: &str) -> TableIdentifier {
         TableIdentifier::from_str_unchecked(name, namespace)
+    }
+
+    // ── ProverDbConsumerConfig::enabled ──────────────────────────────
+
+    #[test]
+    fn enabled_defaults_to_false() {
+        assert!(!ProverDbConsumerConfig::enabled(make_get(&[])));
+        assert!(!ProverDbConsumerConfig::enabled(make_get(&[(
+            PROVER_DB_CONFIG_ENABLED_KEY,
+            None,
+        )])));
+        assert!(!ProverDbConsumerConfig::enabled(make_get(&[(
+            PROVER_DB_CONFIG_ENABLED_KEY,
+            Some("not-a-bool"),
+        )])));
+    }
+
+    #[test]
+    fn enabled_true_when_explicitly_set() {
+        assert!(ProverDbConsumerConfig::enabled(make_get(&[(
+            PROVER_DB_CONFIG_ENABLED_KEY,
+            Some("true"),
+        )])));
+        assert!(!ProverDbConsumerConfig::enabled(make_get(&[(
+            PROVER_DB_CONFIG_ENABLED_KEY,
+            Some("false"),
+        )])));
     }
 
     // ── ProverDbConsumerConfig::try_from_map ─────────────────────────

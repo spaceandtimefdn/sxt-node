@@ -151,6 +151,9 @@ pub mod pallet {
         EventRecord<T>: TryInto<DBEvent<T>>,
     {
         fn run_consumer() -> Result<(), ConsumerError> {
+            if !ProverDbConsumerConfig::enabled(native::config::config::get) {
+                return Ok(());
+            }
             let config = ProverDbConsumerConfig::try_from_map(native::config::config::get)?;
             // Serialize concurrent OCW invocations. Substrate spawns
             // `offchain_worker` for every imported block, and rounds can

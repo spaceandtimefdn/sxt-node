@@ -13,7 +13,8 @@ events forward via HTTP+protobuf:
 - `pallet_tables::TableDropped` → `drop_table`
 - `pallet_indexing::QuorumReached` → `put_batches`
 
-The consumer is configured via node-supplied config keys — see
+Gated by `prover_db_indexer/enabled` (default `false`). Once enabled,
+the consumer is configured via node-supplied config keys — see
 [`sxt_core::prover_db_indexer::ProverDbConsumerConfig`] for the
 indexer URL, include filters, block-per-invocation cap, and OCW
 lock deadline.
