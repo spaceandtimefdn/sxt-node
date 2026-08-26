@@ -55,12 +55,15 @@ docker run -it --rm \
 
 ### 1.3. Mainnet Bootnodes
 
-Bootnodes on SXT networks are trusted peers on the network that a new node will first connect to and find more peers to download blocks from. The three bootnodes listed below are hosted by Space and Time:
+Bootnodes on SXT networks are trusted peers on the network that a new node will first connect to and find more peers to download blocks from. The six bootnodes listed below are hosted by Space and Time and trusted partners:
 
 ```
 /dns/validator0.mainnet.sxt.network/tcp/30333/p2p/12D3KooWK4MUYTiz8H6gG98JwN3bT11keivvFLYjtwEv5sqhwkAt
-/dns/validator1.mainnet.sxt.network/tcp/30333/p2p/12D3KooWF92asK6nd1DTo4Hng3ekGpV2UYW9mSXJaXqB9RKGtyFU
-/dns/validator2.mainnet.sxt.network/tcp/30333/p2p/12D3KooWRdhvrmMziPGeLxB7jtbe7h5q54Qth8KWjoCPaLn9Hv4v
+/dns/validator.mainnet-sxt.ethernodes.io/tcp/30333/p2p/12D3KooWMEq9xSwmr8uTthCb6KM86av1T7AYe44kDPxWovEqzq1w
+/dns/bootnode1.sxt.blockhunters.services/tcp/30333/p2p/12D3KooWN8ZsZDNVr1ooMWJtsqMNHCVaQ4cvxvB8kELqrZeqct79
+/dns/bootnode2.sxt.blockhunters.services/tcp/30333/p2p/12D3KooWSvSQNVHGmK965dKcCDGaxtyeY1XPCMwFUSLC8opguG1T
+/ip4/51.210.3.173/tcp/30333/p2p/12D3KooWRUd3BqRyiGfhxVb2BSyUDLK5nHHNXTddZpqzqvQ73C9u
+/ip4/141.95.65.179/tcp/30683/p2p/12D3KooWQ8xPXuBww4qSumnjycjjKDThFUj4nDgGS3UPoLyRBvqJ
 ```
 
 ### 1.4. Node Keys
@@ -89,7 +92,74 @@ The generated key should now be in a file called `subkey.key` in the sxt-node-ke
 
 Here we assume the setup uses the following volumes: `sxt-mainnet-data` is the block storage volume and the volume where the generated node key is stored is `sxt-node-key`.
 
-### 2.1. Docker Run
+### 2.1. Snapshot Download and Extraction
+
+When starting a new node, the initial syncing of blocks with the rest of the network can take multiple days.
+To alleviate this, it is recommended to download and extract a snapshot of the `paritydb` database prior to booting your node.
+It is recommended to only do this when starting a new node as the database of a running node runs the risk of having its block storage corrupted.
+If you want to use snapshots on a running node, be sure to stop the node first.
+
+Once you start your node from the snapshot, it will sync from the block at the tip of the snapshot to the most recent block.
+Space and Time roughly publishes snapshots on a two-week cadence, so you should only have to sync up to 15 days worth of blocks with the rest of the network.
+
+The date of the latest snapshot (in `YYYY-MM-DD` format) can be found at https://snapshots.mainnet.sxt.network/latest.txt
+The snapshot and checksum for the corresponding date can then be downloaded at the following URLs, respectively
+(where `${DATE}` is once again in `YYYY-MM-DD` format).
+
+```
+https://snapshots.mainnet.sxt.network/${DATE}/sxt-mainnet.tar.gz
+https://snapshots.mainnet.sxt.network/${DATE}/sxt-mainnet.sha1
+```
+
+Once downloaded, extract the contents of the archive onto the `<block-storage-volume-mount-path>/chains` directory.
+In the [example below](#22-docker-run), the block storage volume is getting mounted onto `/data`, so you'd be extracting onto `/data/chains`.
+The tarball contents, once extracted, should have the following directory structure:
+
+```mermaid
+treeView-beta
+    sxt-mainnet/
+        paritydb/
+            full/
+```
+
+A correct extraction of the tarball will have the following directory structure:
+
+```mermaid
+treeView-beta
+    <block-storage-volume-mount-path>/
+        chains/
+            sxt-mainnet/
+                paritydb/
+                    full/
+```
+
+The following snippet downloads and extracts the snapshot as described above.
+To use the snippet below, the following tools are required:
+
+- [aria2](https://aria2.github.io/) (used to speed up the download using parallel workers)
+- [curl](https://curl.se/)
+- [tar](https://man7.org/linux/man-pages/man1/tar.1.html)
+- [sha1sum](https://man7.org/linux/man-pages/man1/sha1sum.1.html)
+
+Note that before the `sxt-mainnet.tar.gz` archive gets deleted in the snippet below, you'll be required to have enough disk space
+to host both the archive and the exploded directory, which roughly equates to 2.5TB. To get around this requirement, a separate
+volume that gets temporarily mounted to download the snapshot is recommended. A streaming solution would likely be the most space efficient,
+but it has not yet been developed.
+
+```bash
+set -euo pipefail
+LATEST_DATE="$(curl -s https://snapshots.mainnet.sxt.network/latest.txt)"
+pushd /data  # Directory that will be mounted as the block storage volume in docker
+aria2c -x 16 -s 16 "https://snapshots.mainnet.sxt.network/${LATEST_DATE}/sxt-mainnet.tar.gz"
+curl -O "https://snapshots.mainnet.sxt.network/${LATEST_DATE}/sxt-mainnet.sha1"
+sha1sum --check "sxt-mainnet.sha1"
+mkdir -p chains
+tar xf sxt-mainnet.tar.gz -C chains
+rm -f sxt-mainnet.tar.gz sxt-mainnet.sha1
+popd
+```
+
+### 2.2. Docker Run
 
 Make sure to set VALIDATOR_NAME to make it easier to identify your node in the telemetry dashboard.
 
@@ -113,8 +183,12 @@ docker run -d --restart always \
   --keystore-path /key \
   --node-key-file /node-key/subkey.key \
   --bootnodes "/dns/validator0.mainnet.sxt.network/tcp/30333/p2p/12D3KooWK4MUYTiz8H6gG98JwN3bT11keivvFLYjtwEv5sqhwkAt" \
-  --bootnodes "/dns/validator1.mainnet.sxt.network/tcp/30333/p2p/12D3KooWF92asK6nd1DTo4Hng3ekGpV2UYW9mSXJaXqB9RKGtyFU" \
-  --bootnodes "/dns/validator2.mainnet.sxt.network/tcp/30333/p2p/12D3KooWRdhvrmMziPGeLxB7jtbe7h5q54Qth8KWjoCPaLn9Hv4v" \
+  --bootnodes "/dns/validator.mainnet-sxt.ethernodes.io/tcp/30333/p2p/12D3KooWMEq9xSwmr8uTthCb6KM86av1T7AYe44kDPxWovEqzq1w" \
+  --bootnodes "/dns/bootnode1.sxt.blockhunters.services/tcp/30333/p2p/12D3KooWN8ZsZDNVr1ooMWJtsqMNHCVaQ4cvxvB8kELqrZeqct79" \
+  --bootnodes "/dns/bootnode2.sxt.blockhunters.services/tcp/30333/p2p/12D3KooWSvSQNVHGmK965dKcCDGaxtyeY1XPCMwFUSLC8opguG1T" \
+  --bootnodes "/ip4/51.210.3.173/tcp/30333/p2p/12D3KooWRUd3BqRyiGfhxVb2BSyUDLK5nHHNXTddZpqzqvQ73C9u" \
+  --bootnodes "/ip4/141.95.65.179/tcp/30683/p2p/12D3KooWQ8xPXuBww4qSumnjycjjKDThFUj4nDgGS3UPoLyRBvqJ" \
+  --database "paritydb" \
   --validator \
   --port 30333 \
   --log info \
@@ -124,7 +198,7 @@ docker run -d --restart always \
   --name ${VALIDATOR_NAME?}
 ```
 
-### 2.2. Docker Compose
+### 2.3. Docker Compose
 
 Prepare a `docker-compose.yaml` file as follows:
 
@@ -158,8 +232,12 @@ services:
       --keystore-path /key
       --node-key-file /node-key/subkey.key
       --bootnodes "/dns/validator0.mainnet.sxt.network/tcp/30333/p2p/12D3KooWK4MUYTiz8H6gG98JwN3bT11keivvFLYjtwEv5sqhwkAt"
-      --bootnodes "/dns/validator1.mainnet.sxt.network/tcp/30333/p2p/12D3KooWF92asK6nd1DTo4Hng3ekGpV2UYW9mSXJaXqB9RKGtyFU"
-      --bootnodes "/dns/validator2.mainnet.sxt.network/tcp/30333/p2p/12D3KooWRdhvrmMziPGeLxB7jtbe7h5q54Qth8KWjoCPaLn9Hv4v"
+      --bootnodes "/dns/validator.mainnet-sxt.ethernodes.io/tcp/30333/p2p/12D3KooWMEq9xSwmr8uTthCb6KM86av1T7AYe44kDPxWovEqzq1w"
+      --bootnodes "/dns/bootnode1.sxt.blockhunters.services/tcp/30333/p2p/12D3KooWN8ZsZDNVr1ooMWJtsqMNHCVaQ4cvxvB8kELqrZeqct79"
+      --bootnodes "/dns/bootnode2.sxt.blockhunters.services/tcp/30333/p2p/12D3KooWSvSQNVHGmK965dKcCDGaxtyeY1XPCMwFUSLC8opguG1T"
+      --bootnodes "/ip4/51.210.3.173/tcp/30333/p2p/12D3KooWRUd3BqRyiGfhxVb2BSyUDLK5nHHNXTddZpqzqvQ73C9u"
+      --bootnodes "/ip4/141.95.65.179/tcp/30683/p2p/12D3KooWQ8xPXuBww4qSumnjycjjKDThFUj4nDgGS3UPoLyRBvqJ"
+      --database "paritydb"
       --validator
       --port 30333
       --log info

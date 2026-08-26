@@ -24,6 +24,7 @@
           (mkShell.override {stdenv = gcc13Stdenv;}) {
             buildInputs = [
               openssl
+              perl # secretly a dependency of openssl
               (rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
               protobuf
               pkg-config
