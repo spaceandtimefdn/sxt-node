@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![warn(unused_crate_dependencies)]
 
 /// Hash and key types for attestation tree nodes.
 mod hash_and_key;

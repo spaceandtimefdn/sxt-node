@@ -3345,7 +3345,6 @@ dependencies = [
  "env_logger 0.11.6",
  "event-forwarder",
  "futures",
- "hex",
  "lazy_static",
  "log",
  "prometheus 0.14.0",
@@ -3749,7 +3748,6 @@ name = "commitment-sql"
 version = "0.1.0"
 dependencies = [
  "ahash 0.8.11",
- "const_format",
  "indexmap 2.8.0",
  "itertools 0.12.1",
  "on-chain-table",
@@ -3759,8 +3757,6 @@ dependencies = [
  "proof-of-sql-static-setups",
  "proof-of-sql-unversioned",
  "proptest",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
  "rayon",
  "snafu 0.8.5",
  "sqlparser",
@@ -11291,8 +11287,6 @@ dependencies = [
  "arrow 54.2.1",
  "arrow-ipc-no-std",
  "commitment-sql",
- "hex",
- "native",
  "native-api",
  "on-chain-table",
  "pallet-commitments",
@@ -11930,9 +11924,6 @@ dependencies = [
 name = "pallet-rewards"
 version = "0.1.0"
 dependencies = [
- "arrow 54.2.1",
- "env_logger 0.11.6",
- "native",
  "pallet-commitments",
  "pallet-permissions",
  "pallet-tables",
@@ -12100,8 +12091,6 @@ dependencies = [
 name = "pallet-smartcontracts"
 version = "0.1.0"
 dependencies = [
- "arrow 54.2.1",
- "native",
  "native-api",
  "pallet-commitments",
  "pallet-indexing",
@@ -12112,7 +12101,6 @@ dependencies = [
  "parity-scale-codec",
  "polkadot-sdk 0.9.0",
  "proof-of-sql-commitment-map",
- "proof-of-sql-static-setups",
  "scale-info",
  "sxt-core",
 ]
@@ -12257,7 +12245,6 @@ name = "pallet-system-tables"
 version = "0.1.0"
 dependencies = [
  "arrow 54.2.1",
- "env_logger 0.11.6",
  "hex",
  "itertools 0.12.1",
  "log",
@@ -12286,7 +12273,6 @@ dependencies = [
  "pallet-permissions",
  "parity-scale-codec",
  "polkadot-sdk 0.9.0",
- "proof-of-sql",
  "proof-of-sql-commitment-map",
  "scale-info",
  "snafu 0.8.5",
@@ -21188,26 +21174,20 @@ dependencies = [
 name = "sxt-node"
 version = "1.4.0"
 dependencies = [
- "bs58 0.5.1",
  "clap 4.5.32",
  "dotenv",
  "futures",
  "jsonrpsee",
  "native",
  "node-rpc",
- "parity-scale-codec",
  "polkadot-sdk 0.9.0",
- "proof-of-sql-commitment-map",
  "proof-of-sql-static-setups",
- "rand 0.8.5",
  "sc-cli",
  "sc-client-db",
  "serde",
  "serde_json",
  "snafu 0.8.5",
- "sqlparser",
  "substrate-build-script-utils",
- "sxt-core",
  "sxt-runtime",
 ]
 

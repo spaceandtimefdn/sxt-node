@@ -1,6 +1,7 @@
 //! Defines the SxT chain runtime.
 #![allow(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(unused_crate_dependencies)]
 // runtime construction via `frame_support::runtime` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 

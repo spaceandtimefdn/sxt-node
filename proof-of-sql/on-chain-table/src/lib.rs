@@ -1,5 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![doc = include_str!("../README.md")]
+#![cfg_attr(
+    all(feature = "arrow", feature = "proptest"),
+    warn(unused_crate_dependencies)
+)]
 #![warn(missing_docs)]
 
 extern crate alloc;

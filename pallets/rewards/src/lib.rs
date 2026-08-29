@@ -5,6 +5,7 @@
 //! rewards and payout one page of nominators(512) at a time for up to 3 validators per block until
 //! all pages for all validators are paid.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(unused_crate_dependencies)]
 
 extern crate alloc;
 extern crate core;

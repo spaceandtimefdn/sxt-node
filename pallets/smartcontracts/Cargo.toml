@@ -39,9 +39,6 @@ proof-of-sql-commitment-map = { workspace = true }
 pallet-commitments.workspace = true
 pallet-system-tables.workspace = true
 pallet-zkpay.workspace = true
-proof-of-sql-static-setups = { workspace = true, features = ["io"] }
-native.workspace = true
-arrow.workspace = true
 
 [features]
 default = ["std"]

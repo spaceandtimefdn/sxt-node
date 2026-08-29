@@ -7,6 +7,7 @@
 
 // We make sure this pallet uses `no_std` for compiling to Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(feature = "runtime-benchmarks", warn(unused_crate_dependencies))]
 
 extern crate alloc;
 extern crate core;
