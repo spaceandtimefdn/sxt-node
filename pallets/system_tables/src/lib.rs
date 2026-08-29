@@ -265,11 +265,11 @@ pub mod pallet {
 
                         Ok(())
                     }
-                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                    _ => emit_missing_expected_field_error::<T>(),
                 }
             })
-            .for_each(emit_for_error::<T>);
-        Ok(())
+            .collect::<Result<Vec<_>, _>>()
+            .map(|_| ())
     }
 
     /// Process a Nominate SystemRequest
@@ -296,9 +296,10 @@ pub mod pallet {
                                 errors
                             );
 
-                            errors
-                                .into_iter()
-                                .for_each(|e| emit_for_error::<T>(Result::<(), _>::Err(e)));
+                            for error in errors.iter().copied() {
+                                emit_error::<T>(error);
+                            }
+                            Err(*errors.first().expect("There is at least one error"))?;
                         }
 
                         if nominations.is_empty() {
@@ -313,12 +314,11 @@ pub mod pallet {
                         pallet_staking::Pallet::<T>::nominate(nominator_signer, nominations)?;
                         Ok(())
                     }
-                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                    _ => emit_missing_expected_field_error::<T>(),
                 }
             })
-            .for_each(emit_for_error::<T>);
-
-        Ok(())
+            .collect::<Result<Vec<_>, _>>()
+            .map(|_| ())
     }
 
     /// Processes the actual withdrawal once the Unstaked event is emitted from the Ethereum
@@ -348,12 +348,11 @@ pub mod pallet {
 
                         Ok(())
                     }
-                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                    _ => emit_missing_expected_field_error::<T>(),
                 }
             })
-            .for_each(emit_for_error::<T>);
-
-        Ok(())
+            .collect::<Result<Vec<_>, _>>()
+            .map(|_| ())
     }
 
     /// Processes an unstake claimed event and updates chain state appropriately
@@ -416,11 +415,11 @@ pub mod pallet {
 
                         Ok(())
                     }
-                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                    _ => emit_missing_expected_field_error::<T>(),
                 }
             })
-            .for_each(emit_for_error::<T>);
-        Ok(())
+            .collect::<Result<Vec<_>, _>>()
+            .map(|_| ())
     }
 
     /// Parse a system request to initiate unstaking
@@ -469,12 +468,11 @@ pub mod pallet {
 
                         Ok(())
                     }
-                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                    _ => emit_missing_expected_field_error::<T>(),
                 }
             })
-            .for_each(emit_for_error::<T>);
-
-        Ok(())
+            .collect::<Result<Vec<_>, _>>()
+            .map(|_| ())
     }
 
     /// Process a request to cancel unstakng
@@ -497,18 +495,21 @@ pub mod pallet {
                             .map_err(|e| e.error)?;
                         Ok(())
                     }
-                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                    _ => emit_missing_expected_field_error::<T>(),
                 }
             })
-            .for_each(emit_for_error::<T>);
-        Ok(())
+            .collect::<Result<Vec<_>, _>>()
+            .map(|_| ())
     }
 
-    fn emit_for_error<T: Config>(r: DispatchResult) {
-        if let Err(error) = r {
-            // Emit an event for any errors
-            Pallet::<T>::deposit_event(Event::<T>::MessageProcessingError { error });
-        }
+    fn emit_error<T: Config>(error: DispatchError) {
+        Pallet::<T>::deposit_event(Event::<T>::MessageProcessingError { error });
+    }
+
+    fn emit_missing_expected_field_error<T: Config>() -> DispatchResult {
+        let error = Error::<T>::MissingExpectedField.into();
+        emit_error::<T>(error);
+        Err(error)
     }
 
     #[pallet::storage]
@@ -564,12 +565,11 @@ pub mod pallet {
                         LastProcessedUserNonce::<T>::set(eth_sender, Some(nonce));
                         Ok(())
                     }
-                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                    _ => emit_missing_expected_field_error::<T>(),
                 }
             })
-            .for_each(emit_for_error::<T>);
-
-        Ok(())
+            .collect::<Result<Vec<_>, _>>()
+            .map(|_| ())
     }
 
     /// Process a funded message received from our EVM contract
@@ -605,12 +605,11 @@ pub mod pallet {
                         LastProcessedUserNonce::<T>::set(eth_sender, Some(nonce));
                         Ok(())
                     }
-                    _ => Err(Error::<T>::MissingExpectedField.into()),
+                    _ => emit_missing_expected_field_error::<T>(),
                 }
             })
-            .for_each(emit_for_error::<T>);
-
-        Ok(())
+            .collect::<Result<Vec<_>, _>>()
+            .map(|_| ())
     }
 
     /// A custom offence handler that chills validators when they offend
