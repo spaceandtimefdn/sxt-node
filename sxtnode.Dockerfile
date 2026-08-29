@@ -1,5 +1,7 @@
 # Build SxT Node Image
-FROM docker.io/parity/base-bin:latest
+# Ubuntu 24.04 LTS provides glibc 2.39, which covers all GLIBC symbol
+# versions referenced by the Nix-built binary. See PR #198.
+FROM docker.io/library/ubuntu:24.04
 
 # Switch to root user to make system-wide changes
 USER root
@@ -9,8 +11,9 @@ RUN useradd -m -u 1001 -U -s /bin/sh -d /sxtuser sxtuser && \
     mkdir -p  /data /key /sxtuser/.local/share && \
     chown -R sxtuser:sxtuser /data /key && \
     ln -s /data /sxtuser/.local/share/sxtuser && \
-    apt-get update --allow-insecure-repositories && \
+    apt-get update && \
     apt-get install -y \
+    ca-certificates \
     curl \
     apache2-utils \
     && apt-get clean && \
