@@ -4,7 +4,10 @@ use polkadot_sdk::frame_election_provider_support::bounds::{
     ElectionBoundsBuilder,
 };
 use polkadot_sdk::frame_election_provider_support::{onchain, SequentialPhragmen};
+use polkadot_sdk::frame_support::weights::ConstantMultiplier;
 use polkadot_sdk::frame_support::{derive_impl, parameter_types};
+#[allow(deprecated)]
+use polkadot_sdk::pallet_transaction_payment::CurrencyAdapter;
 use polkadot_sdk::sp_core::{ConstU32, ConstU64, H256};
 use polkadot_sdk::sp_runtime::traits::{IdentityLookup, OpaqueKeys};
 use polkadot_sdk::sp_runtime::{BuildStorage, KeyTypeId};
@@ -16,6 +19,7 @@ use polkadot_sdk::{
     pallet_staking,
     pallet_staking_reward_curve,
     pallet_timestamp,
+    pallet_transaction_payment,
     sp_core,
     sp_io,
     sp_runtime,
@@ -43,6 +47,7 @@ frame_support::construct_runtime!(
         Balances: pallet_balances,
         ZkPay: pallet_zkpay,
         Staking: pallet_staking,
+        TransactionPayment: pallet_transaction_payment,
     }
 );
 
@@ -74,6 +79,22 @@ impl pallet_balances::Config for Test {
     type MaxLocks = ();
     type MaxReserves = ();
     type MaxFreezes = ();
+}
+
+parameter_types! {
+    pub const WeightFeePerRefTime: Balance = 1;
+    pub const TransactionByteFee: Balance = 1;
+    pub const OperationalFeeMultiplier: u8 = 5;
+}
+
+impl pallet_transaction_payment::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    #[allow(deprecated)]
+    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
+    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
+    type FeeMultiplierUpdate = ();
+    type OperationalFeeMultiplier = OperationalFeeMultiplier;
 }
 
 pallet_staking_reward_curve::build! {

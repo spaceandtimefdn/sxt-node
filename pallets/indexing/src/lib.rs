@@ -41,10 +41,10 @@ pub mod pallet {
     use pallet_tables::BlockEnforcement;
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_support::Blake2_128Concat;
-    use polkadot_sdk::frame_system;
     use polkadot_sdk::frame_system::pallet_prelude::*;
     use polkadot_sdk::sp_runtime::traits::Hash;
     use polkadot_sdk::sp_runtime::BoundedVec;
+    use polkadot_sdk::{frame_system, pallet_balances, pallet_transaction_payment};
     use proof_of_sql_commitment_map::CommitmentScheme;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::record_batch::record_batch_bytes_dimensions;
@@ -67,6 +67,8 @@ pub mod pallet {
         + pallet_commitments::Config
         + pallet_tables::Config
         + pallet_system_tables::Config
+        + pallet_balances::Config
+        + pallet_transaction_payment::Config
     {
         /// Binding for the runtime event, typically provided by an implementation
         /// in runtime/lib.rs
