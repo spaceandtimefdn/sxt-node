@@ -1,7 +1,8 @@
 use alloc::vec::Vec;
 
-use codec::Decode;
+use codec::{Decode, Encode};
 use polkadot_sdk::frame_system::Config as SystemConfig;
+use polkadot_sdk::sp_core::blake2_256;
 use polkadot_sdk::sp_core::crypto::AccountId32;
 use polkadot_sdk::sp_runtime::traits::StaticLookup;
 use polkadot_sdk::sp_runtime::DispatchError;
@@ -69,6 +70,19 @@ pub fn eth_address_to_substrate_account_id<T: frame_system::Config>(
     let raw_bytes = hex::decode(hex_str).map_err(|_| "Invalid hex address")?;
 
     try_get_account_from_20_byte_vec::<T>(raw_bytes)
+}
+
+/// Takes a table identifier and returns the deterministic `AccountId` of its treasury.
+pub fn account_id_from_table_id<T: frame_system::Config>(
+    table: &crate::tables::TableIdentifier,
+) -> Option<T::AccountId>
+where
+    T::AccountId: Decode,
+{
+    convert_account_id::<T>(AccountId32::new(
+        (b"sxt/table", &table.namespace, &table.name).using_encoded(blake2_256),
+    ))
+    .ok()
 }
 
 /// Convert the supplied AccountId32 to the runtime's AccountId type
