@@ -21,6 +21,10 @@ pub type BatchId = BoundedVec<u8, ConstU32<ID_LEN>>;
 
 /// The maximum number of submitters for a particular batch id
 pub const MAX_SUBMITTERS: u32 = 32;
+
+/// `TableMetadata` domain for a table's fee refund percentage as a SCALE `u16` (`100` = fee paid, above `100` pays more); absent or invalid means no refund.
+pub const REFUND_PERCENTAGE_DOMAIN: &[u8] = b"REFUND_PERCENTAGE";
+
 /// A list of submitter account IDs, We use the generic to allow us to use the runtime's
 /// accountId, regardless of the underlying implementation of that Id
 pub type SubmitterList<T> = BoundedBTreeSet<T, ConstU32<MAX_SUBMITTERS>>;
