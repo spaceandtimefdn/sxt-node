@@ -91,3 +91,32 @@ pub fn proof_of_sql_bincode_config<const ALLOCATION_LIMIT: usize>() -> impl binc
         .with_big_endian()
         .with_limit::<ALLOCATION_LIMIT>()
 }
+
+#[cfg(test)]
+mod tests {
+    use polkadot_sdk::frame_support::derive_impl;
+
+    use super::*;
+
+    polkadot_sdk::frame_support::construct_runtime!(
+        pub enum Test {
+            System: frame_system,
+        }
+    );
+
+    #[derive_impl(frame_system::config_preludes::TestDefaultConfig as frame_system::DefaultConfig)]
+    impl frame_system::Config for Test {
+        type Block = frame_system::mocking::MockBlock<Test>;
+        type AccountId = AccountId32;
+        type Lookup = sp_runtime::traits::IdentityLookup<AccountId32>;
+    }
+
+    #[test]
+    fn convert_account_id_round_trips_through_accountid32() {
+        let account = AccountId32::new([7u8; 32]);
+
+        let converted = convert_account_id::<Test>(account.clone()).unwrap();
+
+        assert_eq!(converted, account);
+    }
+}
