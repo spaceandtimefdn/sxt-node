@@ -21108,7 +21108,7 @@ dependencies = [
 
 [[package]]
 name = "sxt-node"
-version = "1.4.0"
+version = "1.5.0"
 dependencies = [
  "bs58 0.5.1",
  "clap 4.5.32",
