@@ -21,7 +21,7 @@ scale-info = { features = [
 	"derive",
 ], workspace = true }
 
-polkadot-sdk = { workspace = true, features = ["frame-benchmarking", "frame-support", "frame-system", "pallet-session", "sp-runtime", "sp-core"]}
+polkadot-sdk = { workspace = true, features = ["frame-benchmarking", "frame-support", "frame-system", "pallet-session", "pallet-balances", "pallet-transaction-payment", "sp-runtime", "sp-core"]}
 
 pallet-commitments.workspace = true
 pallet-permissions.workspace = true
@@ -40,7 +40,7 @@ arrow-ipc-no-std.workspace = true
 snafu.workspace = true
 
 [dev-dependencies]
-polkadot-sdk = { workspace = true, features = ["sp-staking", "frame-election-provider-support", "pallet-staking-reward-curve", "pallet-timestamp", "pallet-balances", "pallet-staking", "sp-core", "sp-io", "sp-runtime"]}
+polkadot-sdk = { workspace = true, features = ["sp-staking", "frame-election-provider-support", "pallet-staking-reward-curve", "pallet-timestamp", "pallet-balances", "pallet-staking", "pallet-transaction-payment", "sp-core", "sp-io", "sp-runtime"]}
 
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
 native.workspace = true

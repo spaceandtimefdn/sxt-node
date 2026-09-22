@@ -1,9 +1,9 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
+use codec::Encode;
 use futures::prelude::*;
 use polkadot_sdk::sc_client_api::{Backend, BlockBackend};
 use polkadot_sdk::sc_consensus_babe::{self, SlotProportion};
@@ -15,6 +15,7 @@ use polkadot_sdk::sc_service::error::Error as ServiceError;
 use polkadot_sdk::sc_service::TaskManager;
 use polkadot_sdk::sc_telemetry::{Telemetry, TelemetryWorker};
 use polkadot_sdk::sc_transaction_pool_api::OffchainTransactionPoolFactory;
+use polkadot_sdk::sp_core::offchain::{OffchainStorage, STORAGE_PREFIX};
 use polkadot_sdk::sp_runtime::traits::Block as BlockT;
 use polkadot_sdk::{
     sc_authority_discovery,
@@ -50,8 +51,6 @@ pub type HostFunctions = (
     sp_io::SubstrateHostFunctions,
     sp_statement_store::runtime_api::HostFunctions,
     native::interface::HostFunctions,
-    native::client::client::HostFunctions,
-    native::config::config::HostFunctions,
 );
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -59,8 +58,6 @@ pub type HostFunctions = (
     sp_io::SubstrateHostFunctions,
     sp_statement_store::runtime_api::HostFunctions,
     native::interface::HostFunctions,
-    native::client::client::HostFunctions,
-    native::config::config::HostFunctions,
     polkadot_sdk::frame_benchmarking::benchmarking::HostFunctions,
 );
 
@@ -79,6 +76,32 @@ pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
 /// The minimum period of blocks on which justifications will be
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
+
+/// Seed the prover-db indexer URL into offchain persistent local storage
+/// at startup, before the first block is authored.
+///
+/// Stored under `sxt_core::prover_db_indexer::PROVER_DB_URL_KEY` as a
+/// SCALE-encoded `Vec<u8>` of the URL bytes.
+#[expect(
+    clippy::result_large_err,
+    reason = "ServiceError is from substrate and cannot be modified"
+)]
+fn configure_prover_db_url(backend: &FullBackend, url: &url::Url) -> Result<(), ServiceError> {
+    let Some(mut storage) = backend.offchain_storage() else {
+        return Err(ServiceError::Other(
+            "backend did not expose an offchain storage handle; \
+             cannot apply --prover-db-url"
+                .into(),
+        ));
+    };
+    let encoded = url.as_str().as_bytes().to_vec().encode();
+    storage.set(
+        STORAGE_PREFIX,
+        sxt_core::prover_db_indexer::PROVER_DB_URL_KEY,
+        &encoded,
+    );
+    Ok(())
+}
 
 #[allow(clippy::type_complexity)]
 #[expect(
@@ -328,6 +351,23 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
         other: (rpc_builder, import_setup, rpc_setup, mut telemetry, statement_store),
     } = new_partial(&config)?;
 
+    // `--prover-db-url` only takes effect when offchain indexing is
+    // enabled, since the prover-db-indexer OCW only runs in that case.
+    // Fail loud if the operator set the URL without enabling indexing,
+    // rather than silently ignoring it.
+    if let Some(url) = cli.prover_db_url.as_ref() {
+        if !config.offchain_worker.indexing_enabled {
+            return Err(ServiceError::Other(
+                "--prover-db-url was set but --enable-offchain-indexing is not \
+                 true; the prover-db-indexer offchain worker would be inactive. \
+                 Restart with --enable-offchain-indexing=true, or omit \
+                 --prover-db-url."
+                    .into(),
+            ));
+        }
+        configure_prover_db_url(backend.as_ref(), url)?;
+    }
+
     let metrics = N::register_notification_metrics(
         config.prometheus_config.as_ref().map(|cfg| &cfg.registry),
     );
@@ -565,8 +605,6 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
     );
 
     if enable_offchain_worker {
-        let client_provider = Arc::new(crate::client_provider::FullClientHandle(client.clone()));
-        let config_store = Arc::new(HashMap::from_iter(cli.ocw_config.iter().cloned()));
         task_manager.spawn_handle().spawn(
             "offchain-workers-runner",
             "offchain-work",
@@ -581,11 +619,7 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
                 is_validator: role.is_authority(),
                 enable_http_requests: true,
                 custom_extensions: move |_| {
-                    vec![
-                        Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>,
-                        Box::new(native::client::ClientExt(client_provider.clone())) as Box<_>,
-                        Box::new(native::config::ConfigExt(config_store.clone())) as Box<_>,
-                    ]
+                    vec![Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>]
                 },
             })
             .run(client.clone(), task_manager.spawn_handle())

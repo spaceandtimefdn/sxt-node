@@ -13,8 +13,6 @@ mod cli;
 /// Service Configuration
 mod command;
 
-mod client_provider;
-
 /// Service instantiation
 mod service;
 

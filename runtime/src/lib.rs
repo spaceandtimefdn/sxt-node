@@ -143,7 +143,6 @@ pub use {
     pallet_indexing,
     pallet_keystore,
     pallet_permissions,
-    pallet_prover_db_indexer,
     pallet_rewards,
     pallet_smartcontracts,
     pallet_system_contracts,
@@ -208,7 +207,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 250,
+    spec_version: 251,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -892,8 +891,6 @@ impl pallet_rewards::Config for Runtime {
     type MaxPayoutsPerBlock = ConstU32<3>;
 }
 
-impl pallet_prover_db_indexer::Config for Runtime {}
-
 #[cfg(feature = "runtime-benchmarks")]
 impl frame_system_benchmarking::Config for Runtime {}
 
@@ -1002,8 +999,6 @@ mod runtime {
     pub type Rewards = pallet_rewards;
     #[runtime::pallet_index(110)]
     pub type ZkPay = pallet_zkpay;
-    #[runtime::pallet_index(111)]
-    pub type ProverDbIndexer = pallet_prover_db_indexer::Pallet<Runtime>;
 }
 
 /// The address format for describing accounts.

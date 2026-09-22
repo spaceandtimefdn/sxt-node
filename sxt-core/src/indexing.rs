@@ -21,6 +21,14 @@ pub type BatchId = BoundedVec<u8, ConstU32<ID_LEN>>;
 
 /// The maximum number of submitters for a particular batch id
 pub const MAX_SUBMITTERS: u32 = 32;
+
+/// The `pallet_tables::TableMetadata` domain key used to store a table's submission fee refund
+/// percentage.
+///
+/// The value is a SCALE-encoded `u16` (`100` = full refund, `150` = 1.5x, etc). A missing entry,
+/// or one that fails to decode, is treated as "no refund" for the table.
+pub const REFUND_PERCENTAGE_DOMAIN: &[u8] = b"REFUND_PERCENTAGE";
+
 /// A list of submitter account IDs, We use the generic to allow us to use the runtime's
 /// accountId, regardless of the underlying implementation of that Id
 pub type SubmitterList<T> = BoundedBTreeSet<T, ConstU32<MAX_SUBMITTERS>>;
