@@ -1,11 +1,6 @@
 //! Space and Time's crate for no_std code that is needed in the runtime and is made available through generated WASM bindings
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate alloc;
-
-pub mod client;
-
-pub mod config;
 /// The space and time native code interface
 mod sxt;
 
