@@ -1,6 +1,5 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -50,8 +49,6 @@ pub type HostFunctions = (
     sp_io::SubstrateHostFunctions,
     sp_statement_store::runtime_api::HostFunctions,
     native::interface::HostFunctions,
-    native::client::client::HostFunctions,
-    native::config::config::HostFunctions,
 );
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -59,8 +56,6 @@ pub type HostFunctions = (
     sp_io::SubstrateHostFunctions,
     sp_statement_store::runtime_api::HostFunctions,
     native::interface::HostFunctions,
-    native::client::client::HostFunctions,
-    native::config::config::HostFunctions,
     polkadot_sdk::frame_benchmarking::benchmarking::HostFunctions,
 );
 
@@ -295,7 +290,6 @@ pub struct NewFullBase {
 )]
 pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
     config: Configuration,
-    cli: &Cli,
 ) -> Result<NewFullBase, ServiceError> {
     let role = config.role;
     let force_authoring = config.force_authoring;
@@ -565,8 +559,6 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
     );
 
     if enable_offchain_worker {
-        let client_provider = Arc::new(crate::client_provider::FullClientHandle(client.clone()));
-        let config_store = Arc::new(HashMap::from_iter(cli.ocw_config.iter().cloned()));
         task_manager.spawn_handle().spawn(
             "offchain-workers-runner",
             "offchain-work",
@@ -581,11 +573,7 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
                 is_validator: role.is_authority(),
                 enable_http_requests: true,
                 custom_extensions: move |_| {
-                    vec![
-                        Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>,
-                        Box::new(native::client::ClientExt(client_provider.clone())) as Box<_>,
-                        Box::new(native::config::ConfigExt(config_store.clone())) as Box<_>,
-                    ]
+                    vec![Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>]
                 },
             })
             .run(client.clone(), task_manager.spawn_handle())
@@ -617,11 +605,11 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 
     let task_manager = match config.network.network_backend {
         sc_network::config::NetworkBackendType::Libp2p => {
-            new_full_base::<sc_network::NetworkWorker<_, _>>(config, &cli)
+            new_full_base::<sc_network::NetworkWorker<_, _>>(config)
                 .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
         sc_network::config::NetworkBackendType::Litep2p => {
-            new_full_base::<sc_network::Litep2pNetworkBackend>(config, &cli)
+            new_full_base::<sc_network::Litep2pNetworkBackend>(config)
                 .map(|NewFullBase { task_manager, .. }| task_manager)?
         }
     };
