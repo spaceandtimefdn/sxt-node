@@ -41,7 +41,6 @@ rand_chacha = { workspace = true, default-features = false }
 proptest = { workspace = true, features = ["std"], optional = true }
 proptest-derive = { workspace = true, optional = true }
 arrow-ipc-no-std.workspace = true
-url = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true, features = ["std"] }
@@ -61,8 +60,7 @@ std = [
 	"on-chain-table/arrow",
 	"scale-info/std",
 	"dep:arrow",
-    "dep:subxt",
-	"url/std",
+        "dep:subxt",
 ]
 runtime-benchmarks = []
 proptest = ["std", "dep:proptest", "on-chain-table/proptest", "dep:proptest-derive"]
