@@ -25,23 +25,32 @@ use crate::Pallet as Indexing;
             OnChargeTransaction<T, Balance = T::Balance>,
 )]
 mod benchmarks {
+    use codec::Encode;
     use native_api::NativeApi;
     use on_chain_table::{OnChainColumn, OnChainTable};
     use pallet_tables::benchmarking::schema_bytes_and_ddl_and_source;
     use pallet_tables::pallet::BlockEnforcementMode;
     use pallet_tables::{BlockEnforcement, CommitmentCreationCmd, UpdateTable};
+    use polkadot_sdk::frame_support::traits::fungible::Mutate;
+    use polkadot_sdk::frame_support::traits::Get;
+    use polkadot_sdk::pallet_balances;
+    use polkadot_sdk::sp_runtime::traits::Bounded;
     use proof_of_sql_commitment_map::CommitmentSchemeFlags;
     use sqlparser::ast::Ident;
+    use sxt_core::indexing::REFUND_PERCENTAGE_DOMAIN;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
     use sxt_core::tables::{
         InsertQuorumSize,
         Source,
         TableIdentifier,
+        TableMetadataBytes,
         TableName,
         TableNamespace,
         TableType,
         MAX_COLS_PER_TABLE,
     };
+    use sxt_core::utils::table_treasury_account;
+    use sxt_core::ByteString;
 
     use super::*;
 
@@ -119,7 +128,13 @@ mod benchmarks {
         num_cols: usize,
         commitment_schemes: CommitmentSchemeFlags,
     ) -> (UpdateTable, BatchId, RowData) {
-        let update_table = expensive_update_table(commitment_schemes, num_cols);
+        let update_table = UpdateTable {
+            table_type: TableType::Testing(InsertQuorumSize {
+                public: Some(MAX_SUBMITTERS as u8 - 1),
+                privileged: None,
+            }),
+            ..expensive_update_table(commitment_schemes, num_cols)
+        };
 
         let batch_id = BatchId::try_from(b"benchmark".to_vec()).unwrap();
 
@@ -174,37 +189,39 @@ mod benchmarks {
         )])
         .unwrap();
 
-        let caller: T::AccountId = account("alice", 0, 0);
+        for i in 0..MAX_SUBMITTERS - 1 {
+            let submitter: T::AccountId = account("submitter", i, 0);
+            pallet_permissions::Permissions::<T>::insert(&submitter, &permissions);
+            pallet_balances::Pallet::<T>::mint_into(
+                &submitter,
+                <T as pallet_balances::Config>::ExistentialDeposit::get(),
+            )
+            .unwrap();
+            Indexing::<T, I>::submit_data(
+                RawOrigin::Signed(submitter).into(),
+                update_table.ident.clone(),
+                batch_id.clone(),
+                row_data.clone(),
+            )
+            .unwrap();
+        }
+
+        let caller: T::AccountId = account("caller", 0, 0);
         pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
-        Indexing::<T, I>::submit_data(
-            RawOrigin::Signed(caller).into(),
-            update_table.ident.clone(),
-            batch_id.clone(),
-            row_data.clone(),
+        pallet_balances::Pallet::<T>::mint_into(
+            &caller,
+            <T as pallet_balances::Config>::ExistentialDeposit::get(),
         )
         .unwrap();
 
-        let caller: T::AccountId = account("bob", 0, 0);
-        pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
-        Indexing::<T, I>::submit_data(
-            RawOrigin::Signed(caller).into(),
-            update_table.ident.clone(),
-            batch_id.clone(),
-            row_data.clone(),
-        )
-        .unwrap();
-        let caller: T::AccountId = account("carol", 0, 0);
-        pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
-        Indexing::<T, I>::submit_data(
-            RawOrigin::Signed(caller).into(),
-            update_table.ident.clone(),
-            batch_id.clone(),
-            row_data.clone(),
-        )
-        .unwrap();
-
-        let caller: T::AccountId = account("dave", 0, 0);
-        pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
+        pallet_tables::TableMetadata::<T>::insert(
+            ByteString::try_from(REFUND_PERCENTAGE_DOMAIN.to_vec()).unwrap(),
+            &update_table.ident,
+            TableMetadataBytes::try_from(100u16.encode()).unwrap(),
+        );
+        let treasury = table_treasury_account::<T>(&update_table.ident).unwrap();
+        pallet_balances::Pallet::<T>::mint_into(&treasury, T::Balance::max_value() / 2u32.into())
+            .unwrap();
 
         (caller, update_table.ident, batch_id, row_data)
     }
