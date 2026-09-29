@@ -28,7 +28,6 @@ mod benchmarking;
 
 mod error_conversions;
 
-#[allow(dead_code)]
 mod submit_data_call;
 
 /// Native wrapper around the indexing pallet.
@@ -42,10 +41,12 @@ pub mod pallet {
     use on_chain_table::OnChainTable;
     use pallet_tables::pallet::BlockEnforcementMode;
     use pallet_tables::BlockEnforcement;
+    use polkadot_sdk::frame_support::dispatch::DispatchInfo;
     use polkadot_sdk::frame_support::pallet_prelude::*;
     use polkadot_sdk::frame_support::Blake2_128Concat;
     use polkadot_sdk::frame_system::pallet_prelude::*;
-    use polkadot_sdk::sp_runtime::traits::Hash;
+    use polkadot_sdk::pallet_transaction_payment::OnChargeTransaction;
+    use polkadot_sdk::sp_runtime::traits::{Dispatchable, Hash};
     use polkadot_sdk::sp_runtime::BoundedVec;
     use polkadot_sdk::{frame_system, pallet_balances, pallet_transaction_payment};
     use proof_of_sql_commitment_map::CommitmentScheme;
@@ -54,6 +55,7 @@ pub mod pallet {
     use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
 
     use super::*;
+    use crate::submit_data_call::SubmitDataCall;
 
     /// Domain-separation prefix for empty-block submission hashes.
     ///
@@ -242,6 +244,9 @@ pub mod pallet {
     where
         T: pallet_tables::Config,
         I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
     {
         /// Submit an IPC-formatted record batch for a given table.
         ///
@@ -276,7 +281,14 @@ pub mod pallet {
             batch_id: BatchId,
             data: RowData,
         ) -> DispatchResult {
-            submit_data_inner::<T, I>(origin, table, batch_id, data, None)
+            submit_data_inner::<T, I>(
+                origin,
+                SubmitDataCall::submit_data {
+                    table,
+                    batch_id,
+                    data,
+                },
+            )
         }
 
         /// Submit an IPC-formatted record batch for a given table with block number metadata.
@@ -315,7 +327,15 @@ pub mod pallet {
             data: RowData,
             block_number: u64,
         ) -> DispatchResult {
-            submit_data_inner::<T, I>(origin, table, batch_id, data, Some(block_number))
+            submit_data_inner::<T, I>(
+                origin,
+                SubmitDataCall::submit_blockchain_data {
+                    table,
+                    batch_id,
+                    data,
+                    block_number,
+                },
+            )
         }
 
         /// Set the block number for a table.
@@ -486,18 +506,17 @@ pub mod pallet {
         Ok((quorum_scope, table_insert_quorum))
     }
 
-    fn submit_data_inner<T, I>(
-        origin: OriginFor<T>,
-        table: TableIdentifier,
-        outer_batch_id: BatchId,
-        data: RowData,
-        block_number: Option<u64>,
-    ) -> DispatchResult
+    fn submit_data_inner<T, I>(origin: OriginFor<T>, call: SubmitDataCall) -> DispatchResult
     where
         T: Config<I>,
         I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
     {
         let who = ensure_signed(origin.clone())?;
+
+        let (table, outer_batch_id, data, block_number, _len) = call.into_parts_and_len::<T, I>();
 
         let (quorum_scope, table_insert_quorum) =
             get_submission_permissions::<T, I>(origin, &table)?;
