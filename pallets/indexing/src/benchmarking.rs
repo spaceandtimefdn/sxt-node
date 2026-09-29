@@ -2,9 +2,12 @@
 use alloc::vec;
 
 use polkadot_sdk::frame_benchmarking::v2::*;
+use polkadot_sdk::frame_support::dispatch::DispatchInfo;
 use polkadot_sdk::frame_system;
 use polkadot_sdk::frame_system::RawOrigin;
+use polkadot_sdk::pallet_transaction_payment::{self, OnChargeTransaction};
 use polkadot_sdk::sp_core::crypto::Ss58Codec;
+use polkadot_sdk::sp_runtime::traits::Dispatchable;
 
 use super::*;
 #[cfg(test)]
@@ -17,25 +20,37 @@ use crate::Pallet as Indexing;
     where
         <T as frame_system::Config>::AccountId: Ss58Codec,
         I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
 )]
 mod benchmarks {
+    use codec::Encode;
     use native_api::NativeApi;
     use on_chain_table::{OnChainColumn, OnChainTable};
     use pallet_tables::benchmarking::schema_bytes_and_ddl_and_source;
     use pallet_tables::pallet::BlockEnforcementMode;
     use pallet_tables::{BlockEnforcement, CommitmentCreationCmd, UpdateTable};
+    use polkadot_sdk::frame_support::traits::fungible::Mutate;
+    use polkadot_sdk::frame_support::traits::Get;
+    use polkadot_sdk::pallet_balances;
+    use polkadot_sdk::sp_runtime::traits::Bounded;
     use proof_of_sql_commitment_map::CommitmentSchemeFlags;
     use sqlparser::ast::Ident;
+    use sxt_core::indexing::REFUND_PERCENTAGE_DOMAIN;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel, PermissionList};
     use sxt_core::tables::{
         InsertQuorumSize,
         Source,
         TableIdentifier,
+        TableMetadataBytes,
         TableName,
         TableNamespace,
         TableType,
         MAX_COLS_PER_TABLE,
     };
+    use sxt_core::utils::table_treasury_account;
+    use sxt_core::ByteString;
 
     use super::*;
 
@@ -139,9 +154,16 @@ mod benchmarks {
         T: Config<I>,
         <T as frame_system::Config>::AccountId: Ss58Codec,
         I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
     {
-        let (update_table, batch_id, row_data) =
+        let (mut update_table, batch_id, row_data) =
             benchmark_expensive_table_and_data::<I>(num_rows, num_cols, commitment_schemes);
+        update_table.table_type = TableType::Testing(InsertQuorumSize {
+            public: Some(MAX_SUBMITTERS as u8 - 1),
+            privileged: None,
+        });
         let (namespace, namespace_ddl, source) = schema_bytes_and_ddl_and_source("BENCHMARK");
 
         pallet_tables::Pallet::<T>::create_namespace(
@@ -165,37 +187,39 @@ mod benchmarks {
         )])
         .unwrap();
 
-        let caller: T::AccountId = account("alice", 0, 0);
+        for i in 0..MAX_SUBMITTERS - 1 {
+            let submitter: T::AccountId = account("submitter", i, 0);
+            pallet_permissions::Permissions::<T>::insert(&submitter, &permissions);
+            pallet_balances::Pallet::<T>::mint_into(
+                &submitter,
+                <T as pallet_balances::Config>::ExistentialDeposit::get(),
+            )
+            .unwrap();
+            Indexing::<T, I>::submit_data(
+                RawOrigin::Signed(submitter).into(),
+                update_table.ident.clone(),
+                batch_id.clone(),
+                row_data.clone(),
+            )
+            .unwrap();
+        }
+
+        let caller: T::AccountId = account("caller", 0, 0);
         pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
-        Indexing::<T, I>::submit_data(
-            RawOrigin::Signed(caller).into(),
-            update_table.ident.clone(),
-            batch_id.clone(),
-            row_data.clone(),
+        pallet_balances::Pallet::<T>::mint_into(
+            &caller,
+            <T as pallet_balances::Config>::ExistentialDeposit::get(),
         )
         .unwrap();
 
-        let caller: T::AccountId = account("bob", 0, 0);
-        pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
-        Indexing::<T, I>::submit_data(
-            RawOrigin::Signed(caller).into(),
-            update_table.ident.clone(),
-            batch_id.clone(),
-            row_data.clone(),
-        )
-        .unwrap();
-        let caller: T::AccountId = account("carol", 0, 0);
-        pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
-        Indexing::<T, I>::submit_data(
-            RawOrigin::Signed(caller).into(),
-            update_table.ident.clone(),
-            batch_id.clone(),
-            row_data.clone(),
-        )
-        .unwrap();
-
-        let caller: T::AccountId = account("dave", 0, 0);
-        pallet_permissions::Permissions::<T>::insert(&caller, &permissions);
+        pallet_tables::TableMetadata::<T>::insert(
+            ByteString::try_from(REFUND_PERCENTAGE_DOMAIN.to_vec()).unwrap(),
+            &update_table.ident,
+            TableMetadataBytes::try_from(100u16.encode()).unwrap(),
+        );
+        let treasury = table_treasury_account::<T>(&update_table.ident).unwrap();
+        pallet_balances::Pallet::<T>::mint_into(&treasury, T::Balance::max_value() / 2u32.into())
+            .unwrap();
 
         (caller, update_table.ident, batch_id, row_data)
     }

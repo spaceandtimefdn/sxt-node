@@ -269,6 +269,9 @@ pub mod pallet {
     where
         T: pallet_tables::Config,
         I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
     {
         /// Submit an IPC-formatted record batch for a given table.
         ///
@@ -532,9 +535,13 @@ pub mod pallet {
     where
         T: Config<I>,
         I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
     {
         let who = ensure_signed(origin.clone())?;
 
+        let len = (<Pallet<T, I> as PalletInfoAccess>::index() as u8, &call).encoded_size() as u32;
         let (table, outer_batch_id, data, block_number) = match call {
             Call::submit_data {
                 table,
@@ -567,14 +574,15 @@ pub mod pallet {
             &table_insert_quorum,
             &quorum_scope,
         )? {
+            let weight = submit_data_weight::<T, I>(&data_quorum.table, &data);
             finalize_quorum::<T, I>(&data_quorum, data, block_number, who)?;
+            refund_quorum::<T, I>(data_quorum, weight, len);
         }
 
         Ok(())
     }
 
     /// Refunds each quorum submitter the weight and length fee of their call, scaled by [`REFUND_PERCENTAGE_DOMAIN`].
-    #[cfg_attr(not(test), expect(dead_code))]
     pub(crate) fn refund_quorum<T, I>(
         quorum: DataQuorum<T::AccountId, T::Hash>,
         weight: Weight,

@@ -12,13 +12,14 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use native_api::Api;
 use pallet_tables::{CommitmentCreationCmd, UpdateTable};
 use polkadot_sdk::frame_support::__private::RuntimeDebug;
-use polkadot_sdk::frame_support::dispatch::DispatchResult;
+use polkadot_sdk::frame_support::dispatch::{DispatchResult, GetDispatchInfo};
 use polkadot_sdk::frame_support::pallet_prelude::TypeInfo;
 use polkadot_sdk::frame_support::traits::fungible::Mutate;
 use polkadot_sdk::frame_support::weights::Weight;
 use polkadot_sdk::frame_support::{assert_err, assert_ok};
 use polkadot_sdk::frame_system::ensure_signed;
 use polkadot_sdk::sp_core::Hasher;
+use polkadot_sdk::sp_runtime::traits::Dispatchable;
 use polkadot_sdk::sp_runtime::BoundedVec;
 use polkadot_sdk::{frame_system, sp_runtime};
 use proof_of_sql_commitment_map::CommitmentSchemeFlags;
@@ -2532,6 +2533,167 @@ fn submit_empty_blocks_respects_quorum() {
             crate::Error::<Test, Api>::LateBatch,
         );
     });
+}
+
+#[test]
+fn refund_is_paid_to_submitter_when_quorum_is_reached() {
+    for block_number in [None, Some(12345)] {
+        new_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            let (table, create_statement) = sample_table_definition();
+            Tables::create_tables(
+                RuntimeOrigin::root(),
+                vec![UpdateTable {
+                    ident: table.clone(),
+                    create_statement,
+                    table_type: TableType::Testing(InsertQuorumSize {
+                        public: Some(0),
+                        privileged: None,
+                    }),
+                    commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                        hyper_kzg: true,
+                        dynamic_dory: true,
+                    }),
+                    source: sxt_core::tables::Source::Ethereum,
+                }]
+                .try_into()
+                .unwrap(),
+            )
+            .unwrap();
+            set_refund_percentage(&table, 100);
+            let treasury = table_treasury_account::<Test>(&table).unwrap();
+            assert_ok!(Balances::mint_into(&treasury, 1_000_000_000_000_000_000));
+            let submitter = sp_runtime::AccountId32::new([1; 32]);
+            pallet_permissions::Permissions::<Test>::insert(
+                submitter.clone(),
+                PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+                    IndexingPalletPermission::SubmitDataForPublicQuorum,
+                )])
+                .unwrap(),
+            );
+            let batch_id = BatchId::try_from(b"test_batch".to_vec()).unwrap();
+            let origin = RuntimeOrigin::signed(submitter.clone());
+
+            assert_ok!(match block_number {
+                None => Indexing::submit_data(origin, table.clone(), batch_id.clone(), row_data()),
+                Some(n) => Indexing::submit_blockchain_data(
+                    origin,
+                    table.clone(),
+                    batch_id.clone(),
+                    row_data(),
+                    n,
+                ),
+            });
+
+            let refund = Balances::free_balance(&submitter);
+            assert!(refund > 0, "submitter should have been refunded");
+            System::assert_has_event(
+                Event::<Test, Api>::RefundProcessed {
+                    batch_id: build_inner_batch_id::<Test, Api>(&batch_id, &table),
+                    table,
+                    refund,
+                }
+                .into(),
+            );
+        });
+    }
+}
+
+#[test]
+fn unrefunded_fee_is_constant_across_batch_sizes() {
+    let mut expected_unrefunded_fee = None;
+    let mut per_call_refund = None;
+    for size in [1, 2, 4, 8] {
+        let (fee, refund) = new_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            let namespace = sample_table_definition().0.namespace;
+            let tables: Vec<_> = (0..size)
+                .map(|i| TableIdentifier {
+                    namespace: namespace.clone(),
+                    name: TableName::try_from(format!("TEST_TABLE_{i}").into_bytes()).unwrap(),
+                })
+                .collect();
+            Tables::create_tables(
+                RuntimeOrigin::root(),
+                (0..size)
+                    .map(|i| UpdateTable {
+                        ident: tables[i].clone(),
+                        create_statement: CreateStatement::try_from(
+                            format!("CREATE TABLE TEST_NAMESPACE.TEST_TABLE_{i} (int_column INT NOT NULL)")
+                                .into_bytes(),
+                        )
+                        .unwrap(),
+                        table_type: TableType::Testing(InsertQuorumSize {
+                            public: Some(0),
+                            privileged: None,
+                        }),
+                        commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags {
+                            hyper_kzg: true,
+                            dynamic_dory: true,
+                        }),
+                        source: sxt_core::tables::Source::Ethereum,
+                    })
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap(),
+            )
+            .unwrap();
+            for table in &tables {
+                set_refund_percentage(table, 100);
+                assert_ok!(Balances::mint_into(
+                    &table_treasury_account::<Test>(table).unwrap(),
+                    1_000_000_000_000_000_000,
+                ));
+            }
+            let submitter = sp_runtime::AccountId32::new([1; 32]);
+            pallet_permissions::Permissions::<Test>::insert(
+                submitter.clone(),
+                PermissionList::try_from(vec![PermissionLevel::IndexingPallet(
+                    IndexingPalletPermission::SubmitDataForPublicQuorum,
+                )])
+                .unwrap(),
+            );
+
+            let batch = RuntimeCall::Utility(polkadot_sdk::pallet_utility::Call::batch_all {
+                calls: tables
+                    .into_iter()
+                    .map(|table| {
+                        crate::Call::<Test, Api>::submit_data {
+                            table,
+                            batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
+                            data: row_data(),
+                        }
+                        .into()
+                    })
+                    .collect(),
+            });
+            let info = batch.get_dispatch_info();
+            let post_info = batch
+                .clone()
+                .dispatch(RuntimeOrigin::signed(submitter.clone()))
+                .unwrap();
+            let fee = TransactionPayment::compute_actual_fee(
+                batch.encoded_size() as u32,
+                &info,
+                &post_info,
+                0,
+            ) - TransactionPayment::weight_to_fee(
+                <() as polkadot_sdk::pallet_utility::WeightInfo>::batch_all(size as u32),
+            );
+
+            (fee, Balances::free_balance(&submitter))
+        });
+        assert_eq!(
+            refund,
+            *per_call_refund.get_or_insert(refund) * size as u128,
+            "batch of {size}"
+        );
+        assert_eq!(
+            *expected_unrefunded_fee.get_or_insert(fee - refund),
+            fee - refund,
+            "batch of {size}"
+        );
+    }
 }
 
 #[test]
