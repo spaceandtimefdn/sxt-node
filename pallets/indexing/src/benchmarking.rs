@@ -2,9 +2,12 @@
 use alloc::vec;
 
 use polkadot_sdk::frame_benchmarking::v2::*;
+use polkadot_sdk::frame_support::dispatch::DispatchInfo;
 use polkadot_sdk::frame_system;
 use polkadot_sdk::frame_system::RawOrigin;
+use polkadot_sdk::pallet_transaction_payment::{self, OnChargeTransaction};
 use polkadot_sdk::sp_core::crypto::Ss58Codec;
+use polkadot_sdk::sp_runtime::traits::Dispatchable;
 
 use super::*;
 #[cfg(test)]
@@ -17,6 +20,9 @@ use crate::Pallet as Indexing;
     where
         <T as frame_system::Config>::AccountId: Ss58Codec,
         I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
 )]
 mod benchmarks {
     use native_api::NativeApi;
@@ -139,6 +145,9 @@ mod benchmarks {
         T: Config<I>,
         <T as frame_system::Config>::AccountId: Ss58Codec,
         I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
     {
         let (update_table, batch_id, row_data) =
             benchmark_expensive_table_and_data::<I>(num_rows, num_cols, commitment_schemes);
