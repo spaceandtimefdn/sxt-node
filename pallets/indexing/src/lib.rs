@@ -551,7 +551,7 @@ pub mod pallet {
     {
         let who = ensure_signed(origin.clone())?;
 
-        let (table, outer_batch_id, data, block_number, _len) = call.into_parts_and_len::<T, I>();
+        let (table, outer_batch_id, data, block_number, len) = call.into_parts_and_len::<T, I>();
 
         let (quorum_scope, table_insert_quorum) =
             get_submission_permissions::<T, I>(origin, &table)?;
@@ -570,14 +570,15 @@ pub mod pallet {
             &table_insert_quorum,
             &quorum_scope,
         )? {
+            let weight = submit_data_weight::<T, I>(&data_quorum.table, &data);
             finalize_quorum::<T, I>(&data_quorum, data, block_number, who)?;
+            refund_quorum::<T, I>(data_quorum, weight, len);
         }
 
         Ok(())
     }
 
     /// Refunds each quorum submitter the weight and length fee of their call, scaled by [`REFUND_PERCENTAGE_DOMAIN`].
-    #[cfg_attr(not(test), expect(dead_code))]
     pub(crate) fn refund_quorum<T, I>(
         quorum: DataQuorum<T::AccountId, T::Hash>,
         weight: Weight,
