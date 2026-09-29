@@ -230,6 +230,8 @@ pub mod pallet {
         ArrowRowCountOutOfBounds,
         /// Arrow schema contains no fields.
         ArrowSchemaMissingFields,
+        /// The call is not a data submission.
+        UnsupportedCall,
     }
 
     #[pallet::call]
@@ -271,7 +273,14 @@ pub mod pallet {
             batch_id: BatchId,
             data: RowData,
         ) -> DispatchResult {
-            submit_data_inner::<T, I>(origin, table, batch_id, data, None)
+            submit_data_inner::<T, I>(
+                origin,
+                Call::submit_data {
+                    table,
+                    batch_id,
+                    data,
+                },
+            )
         }
 
         /// Submit an IPC-formatted record batch for a given table with block number metadata.
@@ -310,7 +319,15 @@ pub mod pallet {
             data: RowData,
             block_number: u64,
         ) -> DispatchResult {
-            submit_data_inner::<T, I>(origin, table, batch_id, data, Some(block_number))
+            submit_data_inner::<T, I>(
+                origin,
+                Call::submit_blockchain_data {
+                    table,
+                    batch_id,
+                    data,
+                    block_number,
+                },
+            )
         }
 
         /// Set the block number for a table.
@@ -481,18 +498,27 @@ pub mod pallet {
         Ok((quorum_scope, table_insert_quorum))
     }
 
-    fn submit_data_inner<T, I>(
-        origin: OriginFor<T>,
-        table: TableIdentifier,
-        outer_batch_id: BatchId,
-        data: RowData,
-        block_number: Option<u64>,
-    ) -> DispatchResult
+    fn submit_data_inner<T, I>(origin: OriginFor<T>, call: Call<T, I>) -> DispatchResult
     where
         T: Config<I>,
         I: NativeApi,
     {
         let who = ensure_signed(origin.clone())?;
+
+        let (table, outer_batch_id, data, block_number) = match call {
+            Call::submit_data {
+                table,
+                batch_id,
+                data,
+            } => (table, batch_id, data, None),
+            Call::submit_blockchain_data {
+                table,
+                batch_id,
+                data,
+                block_number,
+            } => (table, batch_id, data, Some(block_number)),
+            _ => Err(Error::<T, I>::UnsupportedCall)?,
+        };
 
         let (quorum_scope, table_insert_quorum) =
             get_submission_permissions::<T, I>(origin, &table)?;
