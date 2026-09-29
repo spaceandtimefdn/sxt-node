@@ -14,6 +14,8 @@ use pallet_tables::{CommitmentCreationCmd, UpdateTable};
 use polkadot_sdk::frame_support::__private::RuntimeDebug;
 use polkadot_sdk::frame_support::dispatch::DispatchResult;
 use polkadot_sdk::frame_support::pallet_prelude::TypeInfo;
+use polkadot_sdk::frame_support::traits::fungible::Mutate;
+use polkadot_sdk::frame_support::weights::Weight;
 use polkadot_sdk::frame_support::{assert_err, assert_ok};
 use polkadot_sdk::frame_system::ensure_signed;
 use polkadot_sdk::sp_core::Hasher;
@@ -28,10 +30,13 @@ use sxt_core::tables::{
     InsertQuorumSize,
     QuorumScope,
     TableIdentifier,
+    TableMetadataBytes,
     TableName,
     TableNamespace,
     TableType,
 };
+use sxt_core::utils::table_treasury_account;
+use sxt_core::ByteString;
 
 use crate::mock::*;
 use crate::{build_inner_batch_id, BatchId, Event, RowData};
@@ -99,6 +104,17 @@ fn record_batch_to_row_data(batch: RecordBatch, schema: Arc<Schema>) -> RowData 
     let data = data.into_inner().clone();
 
     RowData::try_from(data).unwrap()
+}
+
+fn set_refund_percentage(table: &TableIdentifier, percentage: u16) {
+    let domain = ByteString::try_from(crate::REFUND_PERCENTAGE_DOMAIN.to_vec()).unwrap();
+    let bytes = TableMetadataBytes::try_from(percentage.encode()).unwrap();
+    assert_ok!(Tables::set_table_metadata(
+        RuntimeOrigin::root(),
+        domain,
+        table.clone(),
+        Some(bytes),
+    ));
 }
 
 fn sample_table_definition() -> (TableIdentifier, CreateStatement) {
@@ -2515,5 +2531,123 @@ fn submit_empty_blocks_respects_quorum() {
             Indexing::submit_empty_blocks(signer3, table_id.clone(), batch_id.clone(), 10, 20,),
             crate::Error::<Test, Api>::LateBatch,
         );
+    });
+}
+
+#[test]
+fn refund_quorum_pays_each_agreement_its_fee_scaled_by_percentage() {
+    for (percentage, expected_refund) in [(100, 1_001_000), (150, 1_501_500), (200, 2_002_000)] {
+        new_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            let submitters = [
+                sp_runtime::AccountId32::new([1; 32]),
+                sp_runtime::AccountId32::new([2; 32]),
+            ];
+            let quorum = crate::DataQuorum {
+                table: sample_table_definition().0,
+                batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
+                data_hash: Default::default(),
+                block_number: Default::default(),
+                agreements: std::collections::BTreeSet::from(submitters.clone())
+                    .try_into()
+                    .unwrap(),
+                dissents: Default::default(),
+                quorum_scope: QuorumScope::Public,
+            };
+            set_refund_percentage(&quorum.table, percentage);
+            let treasury = table_treasury_account::<Test>(&quorum.table).unwrap();
+            assert_ok!(Balances::mint_into(&treasury, 1_000_000_000));
+
+            crate::refund_quorum::<Test, Api>(
+                quorum.clone(),
+                Weight::from_parts(1_000_000, 0),
+                1_000,
+            );
+
+            for submitter in &submitters {
+                assert_eq!(Balances::free_balance(submitter), expected_refund);
+            }
+            assert_eq!(
+                Balances::free_balance(&treasury),
+                1_000_000_000 - 2 * expected_refund
+            );
+            assert_eq!(
+                System::read_events_for_pallet::<Event<Test, Api>>(),
+                vec![Event::RefundProcessed {
+                    table: quorum.table,
+                    batch_id: quorum.batch_id,
+                    refund: expected_refund,
+                }]
+            );
+        });
+    }
+}
+
+#[test]
+fn refund_quorum_skips_when_percentage_is_missing_or_invalid() {
+    for metadata in [None, Some(vec![0u8])] {
+        new_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            let submitter = sp_runtime::AccountId32::new([1; 32]);
+            let quorum = crate::DataQuorum {
+                table: sample_table_definition().0,
+                batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
+                data_hash: Default::default(),
+                block_number: Default::default(),
+                agreements: std::collections::BTreeSet::from([submitter.clone()])
+                    .try_into()
+                    .unwrap(),
+                dissents: Default::default(),
+                quorum_scope: QuorumScope::Public,
+            };
+            if let Some(bytes) = metadata {
+                assert_ok!(Tables::set_table_metadata(
+                    RuntimeOrigin::root(),
+                    ByteString::try_from(crate::REFUND_PERCENTAGE_DOMAIN.to_vec()).unwrap(),
+                    quorum.table.clone(),
+                    Some(TableMetadataBytes::try_from(bytes).unwrap()),
+                ));
+            }
+            assert_ok!(Balances::mint_into(
+                &table_treasury_account::<Test>(&quorum.table).unwrap(),
+                1_000_000_000
+            ));
+
+            crate::refund_quorum::<Test, Api>(quorum, Weight::from_parts(1_000_000, 0), 1_000);
+
+            assert_eq!(Balances::free_balance(&submitter), 0);
+            assert!(System::read_events_for_pallet::<Event<Test, Api>>().is_empty());
+        });
+    }
+}
+
+#[test]
+fn refund_quorum_emits_refund_error_when_treasury_is_unfunded() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let submitter = sp_runtime::AccountId32::new([1; 32]);
+        let quorum = crate::DataQuorum {
+            table: sample_table_definition().0,
+            batch_id: BatchId::try_from(b"test_batch".to_vec()).unwrap(),
+            data_hash: Default::default(),
+            block_number: Default::default(),
+            agreements: std::collections::BTreeSet::from([submitter.clone()])
+                .try_into()
+                .unwrap(),
+            dissents: Default::default(),
+            quorum_scope: QuorumScope::Public,
+        };
+        set_refund_percentage(&quorum.table, 100);
+
+        crate::refund_quorum::<Test, Api>(quorum.clone(), Weight::from_parts(1_000_000, 0), 1_000);
+
+        assert_eq!(Balances::free_balance(&submitter), 0);
+        assert!(matches!(
+            System::read_events_for_pallet::<Event<Test, Api>>().as_slice(),
+            [
+                Event::RefundError { table, batch_id, recipient, .. },
+                Event::RefundProcessed { .. },
+            ] if recipient == &submitter && table == &quorum.table && batch_id == &quorum.batch_id
+        ));
     });
 }
