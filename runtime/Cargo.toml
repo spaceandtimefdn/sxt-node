@@ -49,6 +49,7 @@ polkadot-sdk = { workspace = true, features = [
 	"pallet-authorship",
 	"pallet-im-online",
 	"pallet-offences",
+	"pallet-parameters",
 	"pallet-authority-discovery",
 	"pallet-election-provider-multi-phase",
 	"pallet-babe",

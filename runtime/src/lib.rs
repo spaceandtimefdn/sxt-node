@@ -20,9 +20,11 @@ use polkadot_sdk::frame_election_provider_support::{
     SequentialPhragmen,
 };
 use polkadot_sdk::frame_support::dispatch::DispatchClass;
+use polkadot_sdk::frame_support::dynamic_params::{dynamic_pallet_params, dynamic_params};
 use polkadot_sdk::frame_support::genesis_builder_helper::{build_state, get_preset};
 use polkadot_sdk::frame_support::traits::VariantCountOf;
 pub use polkadot_sdk::frame_support::traits::{
+    AsEnsureOriginWithArg,
     ConstBool,
     ConstU128,
     ConstU32,
@@ -109,6 +111,7 @@ use polkadot_sdk::{
     pallet_migrations,
     pallet_multisig,
     pallet_offences,
+    pallet_parameters,
     pallet_session,
     pallet_staking,
     pallet_staking_runtime_api,
@@ -885,6 +888,38 @@ impl pallet_smartcontracts::Config<native_api::Api> for Runtime {
     type WeightInfo = pallet_smartcontracts::weights::SubstrateWeight<Runtime>;
 }
 
+/// Root-settable runtime parameters.
+#[dynamic_params(RuntimeParameters, pallet_parameters::Parameters::<Runtime>)]
+pub mod dynamic_params {
+    use super::*;
+
+    /// Validator reward parameters.
+    #[dynamic_pallet_params]
+    #[codec(index = 0)]
+    pub mod rewards {
+        /// The daily validator reward rate, applied to total stake; defaults to 9.7% per year.
+        #[codec(index = 0)]
+        pub static PerDiemRate: Perbill = Perbill::from_rational(97u64, 365_250u64);
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for RuntimeParameters {
+    fn default() -> Self {
+        RuntimeParameters::Rewards(dynamic_params::rewards::Parameters::PerDiemRate(
+            dynamic_params::rewards::PerDiemRate,
+            Some(Perbill::from_percent(1)),
+        ))
+    }
+}
+
+impl pallet_parameters::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeParameters = RuntimeParameters;
+    type AdminOrigin = AsEnsureOriginWithArg<EnsureRoot<AccountId>>;
+    type WeightInfo = ();
+}
+
 impl pallet_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     // Payout up to 3 pages per block
@@ -976,6 +1011,9 @@ mod runtime {
     #[runtime::pallet_index(72)]
     pub type MultiBlockMigrations = pallet_migrations::Pallet<Runtime>;
 
+    #[runtime::pallet_index(73)]
+    pub type Parameters = pallet_parameters::Pallet<Runtime>;
+
     // Custom pallets start at index 100 to ensure room for future consensus work
     #[runtime::pallet_index(100)]
     pub type Permissions = pallet_permissions::Pallet<Runtime>;
@@ -1063,6 +1101,7 @@ mod benches {
         [pallet_staking, Staking]
         [pallet_sudo, Sudo]
         [pallet_multisig, Multisig]
+        [pallet_parameters, Parameters]
         [pallet_migrations, MultiBlockMigrations]
         [frame_system, SystemBench::<Runtime>]
         [pallet_timestamp, Timestamp]
