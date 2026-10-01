@@ -31,6 +31,7 @@ pub use polkadot_sdk::frame_support::traits::{
     ConstU64,
     ConstU8,
     Currency,
+    Get,
     KeyOwnerProofSystem,
     Randomness,
     StorageInfo,
@@ -59,7 +60,6 @@ pub use polkadot_sdk::pallet_timestamp::Call as TimestampCall;
 #[allow(deprecated)]
 use polkadot_sdk::pallet_transaction_payment::{CurrencyAdapter, Multiplier};
 use polkadot_sdk::sp_api::impl_runtime_apis;
-use polkadot_sdk::sp_arithmetic::traits::UniqueSaturatedInto;
 use polkadot_sdk::sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use polkadot_sdk::sp_consensus_babe::AuthorityId as BabeId;
 use polkadot_sdk::sp_core::crypto::KeyTypeId;
@@ -247,6 +247,7 @@ macro_rules! prod_or_dev {
 /// <https://research.web3.foundation/Polkadot/protocols/block-production/Babe#6-practical-results>
 pub const MILLISECS_PER_BLOCK: u64 = 3000;
 pub const SECS_PER_BLOCK: u64 = MILLISECS_PER_BLOCK / 1000;
+pub const MILLISECONDS_PER_DAY: u64 = 1000 * 3600 * 24;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -541,17 +542,14 @@ impl pallet_staking::EraPayout<Balance> for EraPayout {
         _total_issuance: Balance,
         era_duration_millis: u64,
     ) -> (Balance, Balance) {
-        const MILLISECONDS_PER_YEAR: u64 = (1000 * 3600 * 24 * 36525) / 100;
-        // A normal-sized era will have 1 / 365.25 here:
-        let relative_era_len =
-            FixedU128::from_rational(era_duration_millis.into(), MILLISECONDS_PER_YEAR.into());
-
-        let base_rate = FixedU128::from_rational(97, 1000);
-        let yearly_emission = base_rate.saturating_mul_int(total_staked);
-
-        let era_emission = relative_era_len.saturating_mul_int(yearly_emission);
-
-        (era_emission.unique_saturated_into(), Balance::zero())
+        (
+            FixedU128::from_rational(era_duration_millis.into(), MILLISECONDS_PER_DAY.into())
+                .saturating_mul_int(
+                    dynamic_params::rewards::PerDiemRate::get().mul_floor(total_staked),
+                )
+                .saturating_add(pallet_rewards::CollectedFees::<Runtime>::take()),
+            Balance::zero(),
+        )
     }
 }
 

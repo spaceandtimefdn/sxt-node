@@ -28,6 +28,7 @@ use crate::{
     SignedPayload,
     UncheckedExtrinsic,
     DOLLARS,
+    MILLISECONDS_PER_DAY,
 };
 
 fn set_per_diem_rate(origin: RuntimeOrigin, rate: Perbill) -> DispatchResult {
@@ -45,19 +46,51 @@ fn set_per_diem_rate_as_root(rate: Perbill) {
 }
 
 #[test]
-fn era_payout_calculation_works() {
-    let test_staked: Balance = Balance::from(100 * DOLLARS);
-    let test_issued: Balance = Balance::from(1000 * DOLLARS);
+fn era_payout_defaults_to_yearly_rate_of_9_7_percent() {
+    TestExternalities::default().execute_with(|| {
+        let (payout, rest) =
+            SXTPayout::era_payout(365_250 * DOLLARS, 1000 * DOLLARS, MILLISECONDS_PER_DAY);
+        assert_eq!(rest, Balance::zero());
+        assert!(payout.abs_diff(97 * DOLLARS) <= 97 * DOLLARS / 100_000);
+    });
+}
 
-    // One day of Milliseconds
-    let test_ms_per_era = 1000 * 3600 * 24;
+#[test]
+fn era_payout_pays_per_diem_rate_of_total_stake() {
+    TestExternalities::default().execute_with(|| {
+        set_per_diem_rate_as_root(Perbill::from_percent(1));
 
-    let (to_stakers, to_treasury) =
-        SXTPayout::era_payout(test_staked, test_issued, test_ms_per_era);
-    assert_eq!(to_treasury, Balance::zero());
+        assert_eq!(
+            SXTPayout::era_payout(100 * DOLLARS, 1000 * DOLLARS, MILLISECONDS_PER_DAY),
+            (DOLLARS, Balance::zero())
+        );
+        assert_eq!(
+            SXTPayout::era_payout(100 * DOLLARS, 1000 * DOLLARS, MILLISECONDS_PER_DAY / 2),
+            (DOLLARS / 2, Balance::zero())
+        );
+        assert_eq!(
+            SXTPayout::era_payout(100 * DOLLARS, 1000 * DOLLARS, 7 * MILLISECONDS_PER_DAY),
+            (7 * DOLLARS, Balance::zero())
+        );
+    });
+}
 
-    let single_era_payout = Balance::from(26557152635181379u128);
-    assert_eq!(to_stakers, single_era_payout);
+#[test]
+fn era_payout_includes_and_drains_collected_fees() {
+    TestExternalities::default().execute_with(|| {
+        set_per_diem_rate_as_root(Perbill::from_percent(1));
+        CollectedFees::<Runtime>::put(5 * DOLLARS);
+
+        assert_eq!(
+            SXTPayout::era_payout(100 * DOLLARS, 1000 * DOLLARS, MILLISECONDS_PER_DAY),
+            (6 * DOLLARS, Balance::zero())
+        );
+        assert_eq!(CollectedFees::<Runtime>::get(), Balance::zero());
+        assert_eq!(
+            SXTPayout::era_payout(100 * DOLLARS, 1000 * DOLLARS, MILLISECONDS_PER_DAY),
+            (DOLLARS, Balance::zero())
+        );
+    });
 }
 
 #[test]
