@@ -58,7 +58,7 @@ use polkadot_sdk::pallet_grandpa::AuthorityId as GrandpaId;
 pub use polkadot_sdk::pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 pub use polkadot_sdk::pallet_timestamp::Call as TimestampCall;
 #[allow(deprecated)]
-use polkadot_sdk::pallet_transaction_payment::{CurrencyAdapter, Multiplier};
+use polkadot_sdk::pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier};
 use polkadot_sdk::sp_api::impl_runtime_apis;
 use polkadot_sdk::sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use polkadot_sdk::sp_consensus_babe::AuthorityId as BabeId;
@@ -426,6 +426,7 @@ parameter_types! {
     pub const TransactionByteFee: Balance = TARGET_BYTE_FEE;
     pub const WeightFeePerRefTime: Balance = WEIGHT_FEE;
     pub const OperationalFeeMultiplier: u8 = 5;
+    pub const FeeMultiplier: Multiplier = Multiplier::from_u32(0);
     pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(80);
     pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
     pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
@@ -438,7 +439,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type OnChargeTransaction = CurrencyAdapter<Balances, pallet_rewards::DealWithFees<Runtime>>;
     type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    type FeeMultiplierUpdate = ();
+    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
 }
 
