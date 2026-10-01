@@ -22,6 +22,7 @@ use polkadot_sdk::frame_election_provider_support::{
 use polkadot_sdk::frame_support::dispatch::DispatchClass;
 use polkadot_sdk::frame_support::dynamic_params::{dynamic_pallet_params, dynamic_params};
 use polkadot_sdk::frame_support::genesis_builder_helper::{build_state, get_preset};
+use polkadot_sdk::frame_support::pallet_prelude::ValueQuery;
 use polkadot_sdk::frame_support::traits::VariantCountOf;
 pub use polkadot_sdk::frame_support::traits::{
     AsEnsureOriginWithArg,
@@ -31,7 +32,9 @@ pub use polkadot_sdk::frame_support::traits::{
     ConstU64,
     ConstU8,
     Currency,
+    Imbalance,
     KeyOwnerProofSystem,
+    OnUnbalanced,
     Randomness,
     StorageInfo,
 };
@@ -47,6 +50,7 @@ pub use polkadot_sdk::frame_support::{
     construct_runtime,
     derive_impl,
     parameter_types,
+    storage_alias,
     StorageValue,
 };
 pub use polkadot_sdk::frame_system::Call as SystemCall;
@@ -431,10 +435,23 @@ parameter_types! {
     pub MaximumMultiplier: Multiplier = Bounded::max_value();
 }
 
+/// Transaction fees collected for inclusion in the next era's validator payout.
+#[storage_alias]
+pub type CollectedFees = StorageValue<Rewards, Balance, ValueQuery>;
+
+/// Adds transaction fees to [`CollectedFees`].
+pub struct DealWithFees;
+
+impl OnUnbalanced<pallet_balances::NegativeImbalance<Runtime>> for DealWithFees {
+    fn on_nonzero_unbalanced(credit: pallet_balances::NegativeImbalance<Runtime>) {
+        CollectedFees::mutate(|total| *total = total.saturating_add(credit.peek()));
+    }
+}
+
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[allow(deprecated)]
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees>;
     type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ();
