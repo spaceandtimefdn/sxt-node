@@ -423,10 +423,7 @@ pub const WEIGHT_FEE: u128 =
     AVERAGE_INSERT_TARGET_COST_PER_ROW.saturating_div(INSERT_FEE_TARGET_CALL_WEIGHT);
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = TARGET_BYTE_FEE;
-    pub const WeightFeePerRefTime: Balance = WEIGHT_FEE;
     pub const OperationalFeeMultiplier: u8 = 5;
-    pub const FeeMultiplier: Multiplier = Multiplier::from_u32(0);
     pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(80);
     pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
     pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
@@ -437,9 +434,12 @@ impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[allow(deprecated)]
     type OnChargeTransaction = CurrencyAdapter<Balances, pallet_rewards::DealWithFees<Runtime>>;
-    type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
-    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+    type WeightToFee =
+        ConstantMultiplier<Balance, dynamic_params::transaction_payment::WeightFeePerRefTime>;
+    type LengthToFee =
+        ConstantMultiplier<Balance, dynamic_params::transaction_payment::TransactionByteFee>;
+    type FeeMultiplierUpdate =
+        ConstFeeMultiplier<dynamic_params::transaction_payment::FeeMultiplier>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
 }
 
@@ -899,6 +899,23 @@ pub mod dynamic_params {
         /// The daily validator reward rate, applied to total stake; defaults to 9.7% per year.
         #[codec(index = 0)]
         pub static PerDiemRate: Perbill = Perbill::from_rational(97u64, 365_250u64);
+    }
+
+    /// Transaction fee parameters.
+    #[dynamic_pallet_params]
+    #[codec(index = 1)]
+    pub mod transaction_payment {
+        /// Fee per unit of `ref_time`, applied to the base fee and the multiplied weight fee.
+        #[codec(index = 0)]
+        pub static WeightFeePerRefTime: Balance = WEIGHT_FEE;
+
+        /// Fee per byte of extrinsic length.
+        #[codec(index = 1)]
+        pub static TransactionByteFee: Balance = TARGET_BYTE_FEE;
+
+        /// Multiplier applied to the weight fee, excluding the base fee.
+        #[codec(index = 2)]
+        pub static FeeMultiplier: Multiplier = Multiplier::from_u32(0);
     }
 }
 

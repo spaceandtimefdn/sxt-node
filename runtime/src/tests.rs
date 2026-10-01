@@ -1,7 +1,7 @@
 use codec::Encode;
 use pallet_rewards::CollectedFees;
 use polkadot_sdk::frame_support::traits::fungible::Mutate;
-use polkadot_sdk::frame_support::traits::Get;
+use polkadot_sdk::frame_support::traits::{Get, Hooks};
 use polkadot_sdk::frame_support::{assert_noop, assert_ok};
 use polkadot_sdk::pallet_staking::EraPayout;
 use polkadot_sdk::pallet_transaction_payment::{Config, OnChargeTransaction};
@@ -20,15 +20,20 @@ use crate::{
     BuildStorage,
     EraPayout as SXTPayout,
     Executive,
+    Multiplier,
     Parameters,
     Runtime,
     RuntimeCall,
     RuntimeOrigin,
     RuntimeParameters,
     SignedPayload,
+    TransactionPayment,
     UncheckedExtrinsic,
+    Weight,
     DOLLARS,
     MILLISECONDS_PER_DAY,
+    TARGET_BYTE_FEE,
+    WEIGHT_FEE,
 };
 
 fn set_per_diem_rate(origin: RuntimeOrigin, rate: Perbill) -> DispatchResult {
@@ -43,6 +48,13 @@ fn set_per_diem_rate(origin: RuntimeOrigin, rate: Perbill) -> DispatchResult {
 
 fn set_per_diem_rate_as_root(rate: Perbill) {
     assert_ok!(set_per_diem_rate(RuntimeOrigin::root(), rate));
+}
+
+fn set_transaction_payment_parameter(
+    origin: RuntimeOrigin,
+    parameter: dynamic_params::transaction_payment::Parameters,
+) -> DispatchResult {
+    Parameters::set_parameter(origin, RuntimeParameters::TransactionPayment(parameter))
 }
 
 #[test]
@@ -179,6 +191,96 @@ fn non_root_cannot_set_per_diem_rate() {
                 Perbill::from_percent(1)
             ),
             DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
+fn transaction_fee_parameters_default_to_current_fees() {
+    TestExternalities::default().execute_with(|| {
+        assert_eq!(
+            TransactionPayment::weight_to_fee(Weight::from_parts(1, 0)),
+            WEIGHT_FEE
+        );
+        assert_eq!(TransactionPayment::length_to_fee(1), TARGET_BYTE_FEE);
+
+        TransactionPayment::on_finalize(1);
+
+        assert_eq!(
+            TransactionPayment::next_fee_multiplier(),
+            Multiplier::zero()
+        );
+    });
+}
+
+#[test]
+fn root_can_set_weight_and_length_fees() {
+    TestExternalities::default().execute_with(|| {
+        assert_ok!(set_transaction_payment_parameter(
+            RuntimeOrigin::root(),
+            dynamic_params::transaction_payment::Parameters::WeightFeePerRefTime(
+                dynamic_params::transaction_payment::WeightFeePerRefTime,
+                Some(7),
+            ),
+        ));
+        assert_ok!(set_transaction_payment_parameter(
+            RuntimeOrigin::root(),
+            dynamic_params::transaction_payment::Parameters::TransactionByteFee(
+                dynamic_params::transaction_payment::TransactionByteFee,
+                Some(11),
+            ),
+        ));
+
+        assert_eq!(
+            TransactionPayment::weight_to_fee(Weight::from_parts(10, 0)),
+            70
+        );
+        assert_eq!(TransactionPayment::length_to_fee(10), 110);
+    });
+}
+
+#[test]
+fn non_root_cannot_set_transaction_fees() {
+    TestExternalities::default().execute_with(|| {
+        let origin = RuntimeOrigin::signed(AccountId::from([1; 32]));
+        for parameter in [
+            dynamic_params::transaction_payment::Parameters::WeightFeePerRefTime(
+                dynamic_params::transaction_payment::WeightFeePerRefTime,
+                Some(7),
+            ),
+            dynamic_params::transaction_payment::Parameters::TransactionByteFee(
+                dynamic_params::transaction_payment::TransactionByteFee,
+                Some(11),
+            ),
+            dynamic_params::transaction_payment::Parameters::FeeMultiplier(
+                dynamic_params::transaction_payment::FeeMultiplier,
+                Some(Multiplier::from_u32(2)),
+            ),
+        ] {
+            assert_noop!(
+                set_transaction_payment_parameter(origin.clone(), parameter),
+                DispatchError::BadOrigin
+            );
+        }
+    });
+}
+
+#[test]
+fn fee_multiplier_parameter_sets_next_fee_multiplier() {
+    TestExternalities::default().execute_with(|| {
+        assert_ok!(set_transaction_payment_parameter(
+            RuntimeOrigin::root(),
+            dynamic_params::transaction_payment::Parameters::FeeMultiplier(
+                dynamic_params::transaction_payment::FeeMultiplier,
+                Some(Multiplier::from_u32(2)),
+            ),
+        ));
+
+        TransactionPayment::on_finalize(1);
+
+        assert_eq!(
+            TransactionPayment::next_fee_multiplier(),
+            Multiplier::from_u32(2)
         );
     });
 }
