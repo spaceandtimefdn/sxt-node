@@ -39,16 +39,22 @@ pub mod pallet {
     use on_chain_table::OnChainTable;
     use pallet_tables::pallet::BlockEnforcementMode;
     use pallet_tables::BlockEnforcement;
+    use polkadot_sdk::frame_support::dispatch::DispatchInfo;
     use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_support::traits::fungible::Mutate;
+    use polkadot_sdk::frame_support::traits::tokens::Preservation;
     use polkadot_sdk::frame_support::Blake2_128Concat;
-    use polkadot_sdk::frame_system;
     use polkadot_sdk::frame_system::pallet_prelude::*;
-    use polkadot_sdk::sp_runtime::traits::Hash;
-    use polkadot_sdk::sp_runtime::BoundedVec;
+    use polkadot_sdk::pallet_transaction_payment::{FeeDetails, InclusionFee, OnChargeTransaction};
+    use polkadot_sdk::sp_runtime::traits::{Dispatchable, Hash, Zero};
+    use polkadot_sdk::sp_runtime::{BoundedVec, Saturating};
+    use polkadot_sdk::{frame_system, pallet_balances, pallet_transaction_payment};
     use proof_of_sql_commitment_map::CommitmentScheme;
     use sxt_core::permissions::{IndexingPalletPermission, PermissionLevel};
     use sxt_core::record_batch::record_batch_bytes_dimensions;
     use sxt_core::tables::{InsertQuorumSize, QuorumScope, TableIdentifier};
+    use sxt_core::utils::table_treasury_account;
+    use sxt_core::ByteString;
 
     use super::*;
 
@@ -67,6 +73,8 @@ pub mod pallet {
         + pallet_commitments::Config
         + pallet_tables::Config
         + pallet_system_tables::Config
+        + pallet_balances::Config
+        + pallet_transaction_payment::Config
     {
         /// Binding for the runtime event, typically provided by an implementation
         /// in runtime/lib.rs
@@ -166,6 +174,28 @@ pub mod pallet {
             /// Voters against this quorum
             dissents: BoundedBTreeSet<T::AccountId, ConstU32<MAX_SUBMITTERS>>,
         },
+
+        /// The submission fee for a finalized quorum has been refunded to its submitters.
+        RefundProcessed {
+            /// The table identifier
+            table: TableIdentifier,
+            /// The batch that was refunded
+            batch_id: BatchId,
+            /// The amount refunded to each submitter
+            refund: T::Balance,
+        },
+
+        /// Emitted when a refund transfer to a submitter fails.
+        RefundError {
+            /// The table identifier
+            table: TableIdentifier,
+            /// The batch whose refund failed
+            batch_id: BatchId,
+            /// The submitter who was to receive the refund
+            recipient: T::AccountId,
+            /// The error received while processing the transfer
+            error: DispatchError,
+        },
     }
 
     #[pallet::error]
@@ -230,6 +260,8 @@ pub mod pallet {
         ArrowRowCountOutOfBounds,
         /// Arrow schema contains no fields.
         ArrowSchemaMissingFields,
+        /// The call is not a data submission.
+        UnsupportedCall,
     }
 
     #[pallet::call]
@@ -237,6 +269,9 @@ pub mod pallet {
     where
         T: pallet_tables::Config,
         I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
     {
         /// Submit an IPC-formatted record batch for a given table.
         ///
@@ -271,7 +306,14 @@ pub mod pallet {
             batch_id: BatchId,
             data: RowData,
         ) -> DispatchResult {
-            submit_data_inner::<T, I>(origin, table, batch_id, data, None)
+            submit_data_inner::<T, I>(
+                origin,
+                Call::submit_data {
+                    table,
+                    batch_id,
+                    data,
+                },
+            )
         }
 
         /// Submit an IPC-formatted record batch for a given table with block number metadata.
@@ -310,7 +352,15 @@ pub mod pallet {
             data: RowData,
             block_number: u64,
         ) -> DispatchResult {
-            submit_data_inner::<T, I>(origin, table, batch_id, data, Some(block_number))
+            submit_data_inner::<T, I>(
+                origin,
+                Call::submit_blockchain_data {
+                    table,
+                    batch_id,
+                    data,
+                    block_number,
+                },
+            )
         }
 
         /// Set the block number for a table.
@@ -481,18 +531,31 @@ pub mod pallet {
         Ok((quorum_scope, table_insert_quorum))
     }
 
-    fn submit_data_inner<T, I>(
-        origin: OriginFor<T>,
-        table: TableIdentifier,
-        outer_batch_id: BatchId,
-        data: RowData,
-        block_number: Option<u64>,
-    ) -> DispatchResult
+    fn submit_data_inner<T, I>(origin: OriginFor<T>, call: Call<T, I>) -> DispatchResult
     where
         T: Config<I>,
         I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
     {
         let who = ensure_signed(origin.clone())?;
+
+        let len = (<Pallet<T, I> as PalletInfoAccess>::index() as u8, &call).encoded_size() as u32;
+        let (table, outer_batch_id, data, block_number) = match call {
+            Call::submit_data {
+                table,
+                batch_id,
+                data,
+            } => (table, batch_id, data, None),
+            Call::submit_blockchain_data {
+                table,
+                batch_id,
+                data,
+                block_number,
+            } => (table, batch_id, data, Some(block_number)),
+            _ => Err(Error::<T, I>::UnsupportedCall)?,
+        };
 
         let (quorum_scope, table_insert_quorum) =
             get_submission_permissions::<T, I>(origin, &table)?;
@@ -511,10 +574,77 @@ pub mod pallet {
             &table_insert_quorum,
             &quorum_scope,
         )? {
-            finalize_quorum::<T, I>(data_quorum, data, block_number, who)?;
+            let weight = submit_data_weight::<T, I>(&data_quorum.table, &data);
+            finalize_quorum::<T, I>(&data_quorum, data, block_number, who)?;
+            refund_quorum::<T, I>(data_quorum, weight, len);
         }
 
         Ok(())
+    }
+
+    /// Refunds each quorum submitter the weight and length fee of their call, scaled by [`REFUND_PERCENTAGE_DOMAIN`].
+    pub(crate) fn refund_quorum<T, I>(
+        quorum: DataQuorum<T::AccountId, T::Hash>,
+        weight: Weight,
+        len: u32,
+    ) where
+        T: Config<I>,
+        I: NativeApi,
+        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+        <T as pallet_transaction_payment::Config>::OnChargeTransaction:
+            OnChargeTransaction<T, Balance = T::Balance>,
+    {
+        let Some(percentage) = ByteString::try_from(REFUND_PERCENTAGE_DOMAIN.to_vec())
+            .ok()
+            .and_then(|domain| pallet_tables::TableMetadata::<T>::get(&domain, &quorum.table))
+            .and_then(|bytes| u16::decode(&mut bytes.as_slice()).ok())
+        else {
+            return;
+        };
+
+        let Some(treasury) = table_treasury_account::<T>(&quorum.table) else {
+            // Unreachable unless the runtime's `AccountId` stops decoding from `AccountId32`.
+            return;
+        };
+
+        let info = DispatchInfo {
+            weight,
+            class: DispatchClass::Normal,
+            pays_fee: Pays::Yes,
+        };
+        let details =
+            pallet_transaction_payment::Pallet::<T>::compute_fee_details(len, &info, Zero::zero());
+        let cost = FeeDetails {
+            inclusion_fee: details.inclusion_fee.map(|fee| InclusionFee {
+                base_fee: Zero::zero(),
+                ..fee
+            }),
+            ..details
+        }
+        .final_fee();
+        let refund = cost.saturating_mul(percentage.into()) / 100u16.into();
+
+        for recipient in quorum.agreements {
+            if let Err(error) = pallet_balances::Pallet::<T>::transfer(
+                &treasury,
+                &recipient,
+                refund,
+                Preservation::Expendable,
+            ) {
+                Pallet::<T, I>::deposit_event(Event::RefundError {
+                    table: quorum.table.clone(),
+                    batch_id: quorum.batch_id.clone(),
+                    recipient,
+                    error,
+                });
+            }
+        }
+
+        Pallet::<T, I>::deposit_event(Event::RefundProcessed {
+            table: quorum.table,
+            batch_id: quorum.batch_id,
+            refund,
+        });
     }
 
     /// Submit data and check if we have a quorum.
@@ -643,7 +773,7 @@ pub mod pallet {
     /// - emitting `QuorumReached` event
     /// - cleaning up submissions
     fn finalize_quorum<T, I>(
-        quorum: DataQuorum<T::AccountId, T::Hash>,
+        quorum: &DataQuorum<T::AccountId, T::Hash>,
         row_data: RowData,
         block_number: Option<u64>,
         submitter: T::AccountId,
@@ -652,7 +782,7 @@ pub mod pallet {
         T: Config<I>,
         I: NativeApi,
     {
-        clean_up_and_record_quorum::<T, I>(&quorum);
+        clean_up_and_record_quorum::<T, I>(quorum);
 
         // Deserialize into Arrow-compatible OnChainTable
         let table_bytes = I::record_batch_to_onchain(sxt_core::native::RowData { row_data })

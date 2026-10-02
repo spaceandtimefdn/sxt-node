@@ -6,7 +6,10 @@ use polkadot_sdk::frame_election_provider_support::bounds::{
 use polkadot_sdk::frame_election_provider_support::{onchain, SequentialPhragmen};
 use polkadot_sdk::frame_support::pallet_prelude::ConstU32;
 use polkadot_sdk::frame_support::traits::ConstU128;
+use polkadot_sdk::frame_support::weights::ConstantMultiplier;
 use polkadot_sdk::frame_support::{derive_impl, parameter_types};
+#[allow(deprecated)]
+use polkadot_sdk::pallet_transaction_payment::CurrencyAdapter;
 use polkadot_sdk::sp_core::{ConstU64, H256};
 use polkadot_sdk::sp_runtime::traits::{IdentityLookup, OpaqueKeys};
 use polkadot_sdk::sp_runtime::{BuildStorage, KeyTypeId};
@@ -18,6 +21,8 @@ use polkadot_sdk::{
     pallet_staking,
     pallet_staking_reward_curve,
     pallet_timestamp,
+    pallet_transaction_payment,
+    pallet_utility,
     sp_core,
     sp_io,
     sp_runtime,
@@ -44,6 +49,8 @@ frame_support::construct_runtime!(
         SystemTables: pallet_system_tables,
         Balances: pallet_balances,
         Staking: pallet_staking,
+        TransactionPayment: pallet_transaction_payment,
+        Utility: pallet_utility,
     }
 );
 
@@ -75,6 +82,29 @@ impl pallet_balances::Config for Test {
     type MaxLocks = ();
     type MaxReserves = ();
     type MaxFreezes = ();
+}
+
+parameter_types! {
+    pub const WeightFeePerRefTime: Balance = 1;
+    pub const TransactionByteFee: Balance = 1;
+    pub const OperationalFeeMultiplier: u8 = 5;
+}
+
+impl pallet_transaction_payment::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    #[allow(deprecated)]
+    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
+    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
+    type FeeMultiplierUpdate = ();
+    type OperationalFeeMultiplier = OperationalFeeMultiplier;
+}
+
+impl pallet_utility::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type PalletsOrigin = OriginCaller;
+    type WeightInfo = ();
 }
 
 impl pallet_timestamp::Config for Test {
