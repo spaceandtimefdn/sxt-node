@@ -434,7 +434,7 @@ parameter_types! {
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[allow(deprecated)]
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, pallet_rewards::DealWithFees<Runtime>>;
     type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ();
@@ -924,6 +924,7 @@ impl pallet_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     // Payout up to 3 pages per block
     type MaxPayoutsPerBlock = ConstU32<3>;
+    type Currency = Balances;
 }
 
 #[cfg(feature = "runtime-benchmarks")]

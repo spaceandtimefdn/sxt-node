@@ -24,12 +24,23 @@ pub use pallet::*;
 pub mod pallet {
     // Import various useful types required by all FRAME pallets.
     use polkadot_sdk::frame_support::pallet_prelude::*;
+    use polkadot_sdk::frame_support::traits::{Currency, Imbalance, OnUnbalanced};
     use polkadot_sdk::frame_support::weights::Weight;
     use polkadot_sdk::frame_system::pallet_prelude::{BlockNumberFor, OriginFor};
     use polkadot_sdk::pallet_staking::WeightInfo;
+    use polkadot_sdk::sp_runtime::Saturating;
     use polkadot_sdk::{frame_system, pallet_staking, sp_staking};
 
     use super::*;
+
+    /// The balance type of [`Config::Currency`].
+    pub type BalanceOf<T> =
+        <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
+    /// The negative imbalance type of [`Config::Currency`].
+    type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<
+        <T as frame_system::Config>::AccountId,
+    >>::NegativeImbalance;
 
     /// Rewards pallet, providing automated reward payouts for validator block rewards
     #[pallet::pallet]
@@ -44,6 +55,8 @@ pub mod pallet {
             + IsType<<Self as polkadot_sdk::frame_system::Config>::RuntimeEvent>;
         /// How many payout calls may be made per block (prevents overweight).
         type MaxPayoutsPerBlock: Get<u32>;
+        /// The currency transaction fees are collected in.
+        type Currency: Currency<Self::AccountId>;
     }
 
     /// The next era that we expect to pay out.
@@ -55,6 +68,19 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn payer_account)]
     pub type PayerAccount<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
+
+    /// Transaction fees collected for inclusion in the next era's validator payout.
+    #[pallet::storage]
+    pub type CollectedFees<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery>;
+
+    /// Adds transaction fees to [`CollectedFees`].
+    pub struct DealWithFees<T>(PhantomData<T>);
+
+    impl<T: Config> OnUnbalanced<NegativeImbalanceOf<T>> for DealWithFees<T> {
+        fn on_nonzero_unbalanced(credit: NegativeImbalanceOf<T>) {
+            CollectedFees::<T>::mutate(|total| *total = total.saturating_add(credit.peek()));
+        }
+    }
 
     /// Errors that could occur while processing validator rewards for payout
     #[pallet::error]
