@@ -28,6 +28,9 @@ mod benchmarking;
 
 mod error_conversions;
 
+#[allow(dead_code)]
+mod submit_data_call;
+
 /// Native wrapper around the indexing pallet.
 pub mod native_pallet;
 
