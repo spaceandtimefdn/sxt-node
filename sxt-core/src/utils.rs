@@ -1,7 +1,8 @@
 use alloc::vec::Vec;
 
-use codec::Decode;
+use codec::{Decode, Encode};
 use polkadot_sdk::frame_system::Config as SystemConfig;
+use polkadot_sdk::sp_core::blake2_256;
 use polkadot_sdk::sp_core::crypto::AccountId32;
 use polkadot_sdk::sp_runtime::traits::StaticLookup;
 use polkadot_sdk::sp_runtime::DispatchError;
@@ -71,6 +72,19 @@ pub fn eth_address_to_substrate_account_id<T: frame_system::Config>(
     try_get_account_from_20_byte_vec::<T>(raw_bytes)
 }
 
+/// Takes a table identifier and returns the deterministic `AccountId` of its treasury.
+pub fn table_treasury_account<T: frame_system::Config>(
+    table: &crate::tables::TableIdentifier,
+) -> Option<T::AccountId>
+where
+    T::AccountId: Decode,
+{
+    convert_account_id::<T>(AccountId32::new(
+        (b"sxt/table", &table.namespace, &table.name).using_encoded(blake2_256),
+    ))
+    .ok()
+}
+
 /// Convert the supplied AccountId32 to the runtime's AccountId type
 pub fn convert_account_id<T: frame_system::Config>(
     account_id32: AccountId32,
@@ -90,4 +104,53 @@ pub fn proof_of_sql_bincode_config<const ALLOCATION_LIMIT: usize>() -> impl binc
         .with_fixed_int_encoding()
         .with_big_endian()
         .with_limit::<ALLOCATION_LIMIT>()
+}
+
+#[cfg(test)]
+mod tests {
+    use polkadot_sdk::frame_support::derive_impl;
+    use polkadot_sdk::sp_core::crypto::Ss58Codec;
+
+    use super::*;
+    use crate::tables::{TableIdentifier, TableName, TableNamespace};
+
+    polkadot_sdk::frame_support::construct_runtime!(
+        pub enum Test {
+            System: frame_system,
+        }
+    );
+
+    #[derive_impl(frame_system::config_preludes::TestDefaultConfig as frame_system::DefaultConfig)]
+    impl frame_system::Config for Test {
+        type Block = frame_system::mocking::MockBlock<Test>;
+        type AccountId = AccountId32;
+        type Lookup = sp_runtime::traits::IdentityLookup<AccountId32>;
+    }
+
+    #[test]
+    fn convert_account_id_round_trips_through_accountid32() {
+        let account = AccountId32::new([7u8; 32]);
+
+        let converted = convert_account_id::<Test>(account.clone()).unwrap();
+
+        assert_eq!(converted, account);
+    }
+
+    #[test]
+    fn table_treasury_account_matches_known_derivation() {
+        let table = TableIdentifier {
+            namespace: TableNamespace::try_from(
+                b"EACAGGREGATORPROXY_V1_FA74C8D117B4BD0F3F9C6B10F6C47CE66DC499A0".to_vec(),
+            )
+            .unwrap(),
+            name: TableName::try_from(b"OWNERSHIP_TRANSFERRED".to_vec()).unwrap(),
+        };
+
+        let treasury = table_treasury_account::<Test>(&table).unwrap();
+
+        assert_eq!(
+            treasury.to_ss58check(),
+            "5FgaiRaTgngHbkoLipwLVHXSUyHuyUvBHXW1HwTTDNfp5HTs"
+        );
+    }
 }
