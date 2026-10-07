@@ -20,15 +20,18 @@ use polkadot_sdk::frame_election_provider_support::{
     SequentialPhragmen,
 };
 use polkadot_sdk::frame_support::dispatch::DispatchClass;
+use polkadot_sdk::frame_support::dynamic_params::{dynamic_pallet_params, dynamic_params};
 use polkadot_sdk::frame_support::genesis_builder_helper::{build_state, get_preset};
 use polkadot_sdk::frame_support::traits::VariantCountOf;
 pub use polkadot_sdk::frame_support::traits::{
+    AsEnsureOriginWithArg,
     ConstBool,
     ConstU128,
     ConstU32,
     ConstU64,
     ConstU8,
     Currency,
+    Get,
     KeyOwnerProofSystem,
     Randomness,
     StorageInfo,
@@ -55,9 +58,8 @@ use polkadot_sdk::pallet_grandpa::AuthorityId as GrandpaId;
 pub use polkadot_sdk::pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 pub use polkadot_sdk::pallet_timestamp::Call as TimestampCall;
 #[allow(deprecated)]
-use polkadot_sdk::pallet_transaction_payment::{CurrencyAdapter, Multiplier};
+use polkadot_sdk::pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier};
 use polkadot_sdk::sp_api::impl_runtime_apis;
-use polkadot_sdk::sp_arithmetic::traits::UniqueSaturatedInto;
 use polkadot_sdk::sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use polkadot_sdk::sp_consensus_babe::AuthorityId as BabeId;
 use polkadot_sdk::sp_core::crypto::KeyTypeId;
@@ -109,6 +111,7 @@ use polkadot_sdk::{
     pallet_migrations,
     pallet_multisig,
     pallet_offences,
+    pallet_parameters,
     pallet_session,
     pallet_staking,
     pallet_staking_runtime_api,
@@ -244,6 +247,7 @@ macro_rules! prod_or_dev {
 /// <https://research.web3.foundation/Polkadot/protocols/block-production/Babe#6-practical-results>
 pub const MILLISECS_PER_BLOCK: u64 = 3000;
 pub const SECS_PER_BLOCK: u64 = MILLISECS_PER_BLOCK / 1000;
+pub const MILLISECONDS_PER_DAY: u64 = 1000 * 3600 * 24;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -419,8 +423,6 @@ pub const WEIGHT_FEE: u128 =
     AVERAGE_INSERT_TARGET_COST_PER_ROW.saturating_div(INSERT_FEE_TARGET_CALL_WEIGHT);
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = TARGET_BYTE_FEE;
-    pub const WeightFeePerRefTime: Balance = WEIGHT_FEE;
     pub const OperationalFeeMultiplier: u8 = 5;
     pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(80);
     pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
@@ -431,10 +433,13 @@ parameter_types! {
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[allow(deprecated)]
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
-    type WeightToFee = ConstantMultiplier<Balance, WeightFeePerRefTime>;
-    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    type FeeMultiplierUpdate = ();
+    type OnChargeTransaction = CurrencyAdapter<Balances, pallet_rewards::DealWithFees<Runtime>>;
+    type WeightToFee =
+        ConstantMultiplier<Balance, dynamic_params::transaction_payment::WeightFeePerRefTime>;
+    type LengthToFee =
+        ConstantMultiplier<Balance, dynamic_params::transaction_payment::TransactionByteFee>;
+    type FeeMultiplierUpdate =
+        ConstFeeMultiplier<dynamic_params::transaction_payment::FeeMultiplier>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
 }
 
@@ -538,17 +543,14 @@ impl pallet_staking::EraPayout<Balance> for EraPayout {
         _total_issuance: Balance,
         era_duration_millis: u64,
     ) -> (Balance, Balance) {
-        const MILLISECONDS_PER_YEAR: u64 = (1000 * 3600 * 24 * 36525) / 100;
-        // A normal-sized era will have 1 / 365.25 here:
-        let relative_era_len =
-            FixedU128::from_rational(era_duration_millis.into(), MILLISECONDS_PER_YEAR.into());
-
-        let base_rate = FixedU128::from_rational(97, 1000);
-        let yearly_emission = base_rate.saturating_mul_int(total_staked);
-
-        let era_emission = relative_era_len.saturating_mul_int(yearly_emission);
-
-        (era_emission.unique_saturated_into(), Balance::zero())
+        (
+            FixedU128::from_rational(era_duration_millis.into(), MILLISECONDS_PER_DAY.into())
+                .saturating_mul_int(
+                    dynamic_params::rewards::PerDiemRate::get().mul_floor(total_staked),
+                )
+                .saturating_add(pallet_rewards::CollectedFees::<Runtime>::take()),
+            Balance::zero(),
+        )
     }
 }
 
@@ -885,10 +887,60 @@ impl pallet_smartcontracts::Config<native_api::Api> for Runtime {
     type WeightInfo = pallet_smartcontracts::weights::SubstrateWeight<Runtime>;
 }
 
+/// Root-settable runtime parameters.
+#[dynamic_params(RuntimeParameters, pallet_parameters::Parameters::<Runtime>)]
+pub mod dynamic_params {
+    use super::*;
+
+    /// Validator reward parameters.
+    #[dynamic_pallet_params]
+    #[codec(index = 0)]
+    pub mod rewards {
+        /// The daily validator reward rate, applied to total stake; defaults to 9.7% per year.
+        #[codec(index = 0)]
+        pub static PerDiemRate: Perbill = Perbill::from_rational(97u64, 365_250u64);
+    }
+
+    /// Transaction fee parameters.
+    #[dynamic_pallet_params]
+    #[codec(index = 1)]
+    pub mod transaction_payment {
+        /// Fee per unit of `ref_time`, applied to the base fee and the multiplied weight fee.
+        #[codec(index = 0)]
+        pub static WeightFeePerRefTime: Balance = WEIGHT_FEE;
+
+        /// Fee per byte of extrinsic length.
+        #[codec(index = 1)]
+        pub static TransactionByteFee: Balance = TARGET_BYTE_FEE;
+
+        /// Multiplier applied to the weight fee, excluding the base fee.
+        #[codec(index = 2)]
+        pub static FeeMultiplier: Multiplier = Multiplier::from_u32(0);
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for RuntimeParameters {
+    fn default() -> Self {
+        RuntimeParameters::Rewards(dynamic_params::rewards::Parameters::PerDiemRate(
+            dynamic_params::rewards::PerDiemRate,
+            Some(Perbill::from_percent(1)),
+        ))
+    }
+}
+
+impl pallet_parameters::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeParameters = RuntimeParameters;
+    type AdminOrigin = AsEnsureOriginWithArg<EnsureRoot<AccountId>>;
+    type WeightInfo = ();
+}
+
 impl pallet_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     // Payout up to 3 pages per block
     type MaxPayoutsPerBlock = ConstU32<3>;
+    type Currency = Balances;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -975,6 +1027,9 @@ mod runtime {
 
     #[runtime::pallet_index(72)]
     pub type MultiBlockMigrations = pallet_migrations::Pallet<Runtime>;
+
+    #[runtime::pallet_index(73)]
+    pub type Parameters = pallet_parameters::Pallet<Runtime>;
 
     // Custom pallets start at index 100 to ensure room for future consensus work
     #[runtime::pallet_index(100)]
@@ -1063,6 +1118,7 @@ mod benches {
         [pallet_staking, Staking]
         [pallet_sudo, Sudo]
         [pallet_multisig, Multisig]
+        [pallet_parameters, Parameters]
         [pallet_migrations, MultiBlockMigrations]
         [frame_system, SystemBench::<Runtime>]
         [pallet_timestamp, Timestamp]
