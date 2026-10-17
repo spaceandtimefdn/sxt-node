@@ -2,6 +2,7 @@
 //! the SXT Chain. It provides support for creating, dropping, and editing tables and
 //! schemas.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(unused_crate_dependencies)]
 
 pub use pallet::*;
 

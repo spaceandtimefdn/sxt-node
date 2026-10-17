@@ -8,7 +8,6 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-const_format.workspace = true
 ahash.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
@@ -24,8 +23,6 @@ proptest = { workspace = true, features = ["std"], optional = true }
 
 [dev-dependencies]
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
-rand.workspace = true
-rand_chacha.workspace = true
 primitive-types.workspace = true
 sxt-core = { workspace = true, features = ["std"] }
 

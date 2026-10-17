@@ -23,10 +23,11 @@ scale-info = { features = [
 polkadot-sdk = { workspace = true, features = ["frame-benchmarking", "frame-support", "frame-system"] }
 
 sxt-core.workspace = true
-k256 = { version = "0.13.4", default-features = false }
-sha3 = { version = "0.10.8", default-features = false }
+k256 = { workspace = true, default-features = false, optional = true }
+sha3 = { workspace = true, default-features = false, optional = true }
 
 [dev-dependencies]
+k256 = { version = "0.13.4", default-features = false }
 polkadot-sdk = { workspace = true, features = ["sp-core", "sp-io", "sp-runtime",] }
 
 [features]
@@ -41,6 +42,8 @@ std = [
 ]
 runtime-benchmarks = [
 	"polkadot-sdk/runtime-benchmarks",
+        "dep:k256",
+        "dep:sha3",
 ]
 try-runtime = [
 	"polkadot-sdk/try-runtime",

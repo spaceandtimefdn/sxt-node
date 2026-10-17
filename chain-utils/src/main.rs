@@ -1,5 +1,6 @@
 //! This utility is built to read a DDL file from a given path and submit it to the SxT Chain
 //! using a given private key.
+#![warn(unused_crate_dependencies)]
 
 mod common;
 mod fetch_submissions;

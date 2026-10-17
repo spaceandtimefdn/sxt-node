@@ -37,7 +37,6 @@ snafu.workspace = true
 polkadot-sdk = { workspace = true, features = [
 	"sp-core", "sp-io", "sp-runtime",
 ]}
-proof-of-sql.workspace = true
 
 [features]
 default = ["std"]
@@ -46,7 +45,6 @@ std = [
 	"codec/std",
 	"scale-info/std",
 	"pallet-commitments/std",
-	"proof-of-sql/std",
 ]
 runtime-benchmarks = [
 	"polkadot-sdk/runtime-benchmarks",

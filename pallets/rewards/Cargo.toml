@@ -22,18 +22,15 @@ scale-info = { features = [
 
 polkadot-sdk = { workspace = true, features = ["frame-benchmarking", "frame-support", "frame-system", "pallet-balances", "pallet-staking", "pallet-session", "sp-staking", "sp-runtime", "sp-core"] }
 
-pallet-commitments.workspace = true
 
 [dev-dependencies]
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
 
 polkadot-sdk = { workspace = true, features = ["pallet-balances", "pallet-staking", "sp-authority-discovery", "sp-consensus-babe", "sp-runtime", "sp-staking", "frame-election-provider-support", "pallet-staking-reward-curve", "pallet-authorship", "pallet-timestamp", "pallet-grandpa", "pallet-babe", "pallet-authority-discovery", "sp-core", "sp-io"]}
-env_logger.workspace = true
-native.workspace = true
-arrow.workspace = true
 proof-of-sql-commitment-map.workspace = true
 pallet-permissions.workspace = true
 pallet-tables.workspace = true
+pallet-commitments.workspace = true
 
 [features]
 default = ["std"]

@@ -1,5 +1,6 @@
 //! This crate enables unchecked deserialization for certain types, in particular `TableCommitment<DynamicDoryCommitment>``.
 #![no_std]
+#![warn(unused_crate_dependencies)]
 
 extern crate alloc;
 

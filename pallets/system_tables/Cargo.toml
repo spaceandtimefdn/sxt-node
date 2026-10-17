@@ -28,12 +28,10 @@ polkadot-sdk = { workspace = true, features = [
 
 pallet-zkpay.workspace = true
 pallet-tables.workspace = true
-pallet-commitments.workspace = true
 sxt-core = { default-features = false, workspace = true }
 on-chain-table = { workspace = true, default-features = false }
 spin.workspace = true
 hex.workspace = true
-serde_json = { workspace = true, default-features = false, features = ["alloc"] }
 log.workspace = true
 itertools.workspace = true
 
@@ -44,12 +42,13 @@ polkadot-sdk = { workspace = true, features = [
 	"pallet-authority-discovery", "sp-authority-discovery", "sp-consensus-babe", 
 	"sp-core", "sp-io", "sp-runtime",
 	]}
+pallet-commitments.workspace = true
 
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
 pallet-permissions.workspace = true
 arrow = { workspace = true }
-env_logger.workspace = true
 proof-of-sql-commitment-map.workspace = true
+serde_json = { workspace = true, default-features = false, features = ["alloc"] }
 
 [features]
 default = ["std"]

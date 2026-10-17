@@ -30,22 +30,18 @@ polkadot-sdk = { workspace = true, features = [
 	"pallet-staking", "sp-authority-discovery",
 	"pallet-transaction-payment", "pallet-transaction-payment-rpc", "frame-benchmarking", "frame-benchmarking-cli",
 ]}
+
+# functionally unused, but these features need to be enabled for rocksdb support
 sc-cli = { workspace = true, features = ["rocksdb"] }
 sc-client-db = { workspace = true, features = ["rocksdb"] }
 
 sxt-runtime.workspace = true
 native.workspace = true
-sxt-core.workspace = true
-proof-of-sql-commitment-map = { workspace = true, features = [ "substrate"] }
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
-sqlparser = { workspace = true, default-features = false }
-bs58 = "0.5.1"
 dotenv = "0.15.0"
 
-rand.workspace = true
 node-rpc.workspace = true
 serde.workspace = true
-codec = { workspace = true, default-features = true }
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true
@@ -56,7 +52,6 @@ default = ["std"]
 std = [
 	"sxt-runtime/std",
 	"native/std",
-	"sxt-core/std",
 ]
 # Dependencies that are only required if runtime benchmarking should be build.
 runtime-benchmarks = [

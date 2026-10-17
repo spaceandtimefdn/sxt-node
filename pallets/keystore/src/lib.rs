@@ -2,6 +2,7 @@
 //! Currently only Ethereum style ECDSA keys are supported
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(feature = "runtime-benchmarks", warn(unused_crate_dependencies))]
 
 pub use pallet::*;
 

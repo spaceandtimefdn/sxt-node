@@ -1,5 +1,9 @@
 //! Substrate Node Template CLI library.
 #![warn(missing_docs)]
+#![warn(unused_crate_dependencies)]
+
+// functionally unused, but these features need to be enabled for rocksdb support
+use {sc_cli as _, sc_client_db as _};
 
 /// benchmarking
 mod benchmarking;

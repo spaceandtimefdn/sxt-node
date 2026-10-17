@@ -2,6 +2,7 @@
 //! This pallet holds logic for parsing insert statements received via indexing and
 //! performing any system related on-chain state transitions
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(unused_crate_dependencies)]
 
 extern crate alloc;
 extern crate core;

@@ -62,7 +62,6 @@ arrow = { version = "54.2.1", default-features = false }
 attestation_tree = { path = "./attestation_tree/", default-features = false }
 bigdecimal = { version = "0.4.5", default-features = false }
 bincode = { version = "2.0.0", default-features = false }
-const_format = { version = "0.2.33", default-features = false }
 commitment-sql = { path = "./proof-of-sql/commitment-sql/", default-features = false }
 datafusion = { version = "38.0.0", default-features = false }
 eth-ecdsa = { path = "./eth-ecdsa", default-features = false }

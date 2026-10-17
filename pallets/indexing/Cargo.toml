@@ -27,12 +27,10 @@ pallet-commitments.workspace = true
 pallet-permissions.workspace = true
 pallet-tables.workspace = true
 pallet-system-tables.workspace = true
-hex.workspace = true
 sxt-core.workspace = true
 
 native-api = { workspace = true, default-features = false}
 postcard.workspace = true
-proof-of-sql-static-setups = { workspace = true, features = ["io"], optional = true }
 on-chain-table = { workspace = true, default-features = false }
 proof-of-sql-commitment-map.workspace = true
 sqlparser = { workspace = true, optional = true }
@@ -43,7 +41,6 @@ snafu.workspace = true
 polkadot-sdk = { workspace = true, features = ["sp-staking", "frame-election-provider-support", "pallet-staking-reward-curve", "pallet-timestamp", "pallet-balances", "pallet-staking", "sp-core", "sp-io", "sp-runtime"]}
 
 proof-of-sql-static-setups = { workspace = true, features = ["io"] }
-native.workspace = true
 arrow.workspace = true
 proof-of-sql-commitment-map.workspace = true
 pallet-zkpay.workspace = true
@@ -57,7 +54,6 @@ std = [
 	"polkadot-sdk/std",
 	"codec/std",
 	"scale-info/std",
-	"native/std",
 	"native-api/std",
 	"on-chain-table/std",
 	"pallet-commitments/std",
