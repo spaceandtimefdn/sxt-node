@@ -19,6 +19,17 @@ pub struct Cli {
     #[clap(long)]
     pub event_forwarder_rpc: Option<String>,
 
+    /// If set, writes the URL into OCW persistent local storage under
+    /// `prover_db_indexer::prover_db_url` at startup, telling the
+    /// prover-db-indexer OCW where to POST forwarded events. Seeds the
+    /// storage before the first block is authored, so no events are
+    /// missed between node-up and URL-configured.
+    ///
+    /// Parsed as a `url::Url` so an invalid value rejects at startup
+    /// rather than silently failing on the first OCW HTTP request.
+    #[clap(long)]
+    pub prover_db_url: Option<url::Url>,
+
     #[allow(missing_docs)]
     #[clap(flatten)]
     pub storage_monitor: sc_storage_monitor::StorageMonitorParams,

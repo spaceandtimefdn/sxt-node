@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package io.spaceandtime.indexer;
+
+// Stripped-down version of the indexer proto for HTTP+protobuf transport.
+// The OCW encodes these messages with prost and POSTs them as
+// Content-Type: application/x-protobuf to the indexer HTTP endpoint.
+// google.protobuf.Empty responses are represented by empty HTTP 200 bodies.
+
+message CreateTableRequest {
+  uint64 sequence_number = 1;
+  string table_name = 2;
+  bytes arrow_schema = 3;
+  string key = 4;
+}
+
+message TableBatch {
+  string table_name = 1;
+  bytes record_batch = 2;
+}
+
+message PutBatchesRequest {
+  uint64 sequence_number = 1;
+  repeated TableBatch batches = 2;
+}
+
+// Control-plane messages use JSON-in-string on the gRPC side, but for HTTP
+// transport we use proper protobuf fields to avoid double-encoding.
+
+message DropTableRequest {
+  uint64 sequence_number = 1;
+  string table_name = 2;
+}
+
+message CheckpointRequest {
+  uint64 sequence_number = 1;
+}
+
+message GetLastCheckpointResponse {
+  uint64 sequence_number = 1;
+  bool has_checkpoint = 2;
+}
