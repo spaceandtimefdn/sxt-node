@@ -2228,3 +2228,135 @@ fn update_table_quorum_fails_without_any_permission() {
         );
     });
 }
+
+/// Helper: create a community table owned by `user(1)` in the test namespace.
+/// Returns the normalised `TableIdentifier`.
+fn create_community_table_for_user1() -> TableIdentifier {
+    let (who, signer) = user(1);
+    let test_identifier = TableIdentifier::from_str_unchecked_with_preserved_casing(
+        "VOTES",
+        "FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+    );
+    let ddl = "CREATE TABLE IF NOT EXISTS FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT.VOTES (TIME_STAMP TIMESTAMP NOT NULL, BLOCK_NUMBER BIGINT NOT NULL, PRIMARY KEY (BLOCK_NUMBER));";
+    let create_statement: CreateStatement =
+        BoundedVec::try_from(ddl.as_bytes().to_vec()).expect("fits");
+    let tables: UpdateTableList = BoundedVec::try_from(vec![UpdateTable {
+        ident: test_identifier.clone(),
+        create_statement,
+        table_type: TableType::Community,
+        commitment: CommitmentCreationCmd::Empty(CommitmentSchemeFlags::default()),
+        source: Source::Ethereum,
+    }])
+    .expect("fits");
+    assert_ok!(pallet_balances::Pallet::<Test>::mint_into(
+        &who,
+        crate::CREATE_COST * 10,
+    ));
+    assert_ok!(Tables::create_tables(signer, tables));
+    test_identifier.try_normalize().unwrap()
+}
+
+#[test]
+fn transfer_table_ownership_by_owner_works() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+
+        let (who1, signer1) = user(1);
+        let (who2, _) = user(2);
+        let ident = create_community_table_for_user1();
+        assert_eq!(TableOwners::<Test>::get(&ident), Some(who1.clone()));
+
+        System::reset_events();
+        assert_ok!(Tables::transfer_table_ownership(
+            signer1,
+            ident.clone(),
+            Some(who2.clone()),
+        ));
+
+        assert_eq!(TableOwners::<Test>::get(&ident), Some(who2.clone()));
+        System::assert_has_event(RuntimeEvent::Tables(Event::TableOwnershipTransferred {
+            table: ident,
+            old_owner: Some(who1),
+            new_owner: Some(who2),
+        }));
+    });
+}
+
+#[test]
+fn transfer_table_ownership_by_sudo_works() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+
+        let (who1, _) = user(1);
+        let (who2, _) = user(2);
+        let ident = create_community_table_for_user1();
+        assert_eq!(TableOwners::<Test>::get(&ident), Some(who1.clone()));
+
+        assert_ok!(Tables::transfer_table_ownership(
+            RuntimeOrigin::root(),
+            ident.clone(),
+            Some(who2.clone()),
+        ));
+
+        assert_eq!(TableOwners::<Test>::get(&ident), Some(who2));
+    });
+}
+
+#[test]
+fn transfer_table_ownership_fails_for_non_owner() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+
+        let ident = create_community_table_for_user1();
+        let (who2, signer2) = user(2);
+
+        assert_err!(
+            Tables::transfer_table_ownership(signer2, ident, Some(who2)),
+            pallet_permissions::Error::<Test>::InsufficientPermissions,
+        );
+    });
+}
+
+#[test]
+fn transfer_table_ownership_to_none_removes_owner() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        create_namespace_for_testing("FUNNAME_5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT");
+
+        let (who1, signer1) = user(1);
+        let ident = create_community_table_for_user1();
+        assert_eq!(TableOwners::<Test>::get(&ident), Some(who1.clone()));
+
+        System::reset_events();
+        assert_ok!(Tables::transfer_table_ownership(
+            signer1,
+            ident.clone(),
+            None,
+        ));
+
+        assert_eq!(TableOwners::<Test>::get(&ident), None);
+        System::assert_has_event(RuntimeEvent::Tables(Event::TableOwnershipTransferred {
+            table: ident,
+            old_owner: Some(who1),
+            new_owner: None,
+        }));
+    });
+}
+
+#[test]
+fn transfer_table_ownership_fails_when_no_owner() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+
+        let table = TableIdentifier::from_str_unchecked("MY_TABLE", "TEST_NAMESPACE");
+        let (who, signer) = user(1);
+
+        assert_err!(
+            Tables::transfer_table_ownership(signer, table, Some(who)),
+            pallet_permissions::Error::<Test>::InsufficientPermissions,
+        );
+    });
+}

@@ -47,6 +47,7 @@ pub trait WeightInfo {
 	fn set_block_enforcement() -> Weight;
 	fn set_table_metadata() -> Weight;
 	fn create_table_with_sci_metadata() -> Weight;
+	fn transfer_table_ownership() -> Weight;
 }
 
 /// Weights for `pallet_tables` using the Substrate node and recommended hardware.
@@ -264,6 +265,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1030_u64))
 			.saturating_add(T::DbWeight::get().writes(11_u64))
 	}
+	fn transfer_table_ownership() -> Weight {
+		Weight::from_parts(15_000_000, 2656)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -479,5 +485,10 @@ impl WeightInfo for () {
 		Weight::from_parts(6_700_695_000, 276827554)
 			.saturating_add(RocksDbWeight::get().reads(1030_u64))
 			.saturating_add(RocksDbWeight::get().writes(11_u64))
+	}
+	fn transfer_table_ownership() -> Weight {
+		Weight::from_parts(15_000_000, 2656)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }
