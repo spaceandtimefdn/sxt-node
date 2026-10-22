@@ -74,6 +74,7 @@ pub const MAX_AUTHORITIES: u32 = 100_000u32;
 impl pallet_rewards::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type MaxPayoutsPerBlock = ConstU32<3>;
+    type Currency = Balances;
 }
 
 parameter_types! {
