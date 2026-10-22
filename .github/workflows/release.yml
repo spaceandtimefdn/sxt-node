@@ -147,6 +147,15 @@ jobs:
         with:
           name: artifact_sxtnode
           path: target/release/
+      - name: Patch ELF interpreter for Ubuntu base image
+        run: |
+          set -eux
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y patchelf file
+          chmod +x target/release/sxt-node
+          file target/release/sxt-node
+          patchelf --set-interpreter /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 target/release/sxt-node
+          file target/release/sxt-node
       - name: Build and Release Dockerfile
         env:
           VERSION: ${{ needs.setup.outputs.VERSION }}
