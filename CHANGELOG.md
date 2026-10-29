@@ -1,3 +1,39 @@
+# [1.70.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.69.1...v1.70.0) (2026-10-29)
+
+
+### Bug Fixes
+
+* default prover-db indexer to disabled unless explicitly enabled ([360803d](https://github.com/spaceandtimefdn/sxt-node/commit/360803dbafa42b2501fd7c1c4c99d450ab778414))
+* fallback to client hash when `BlockHash` is missing ([95794da](https://github.com/spaceandtimefdn/sxt-node/commit/95794da45e258bbcb5cdb6edb9cea1b8b4997efc))
+* make on chain indexer keys saturate rather than default to `0` ([5f794de](https://github.com/spaceandtimefdn/sxt-node/commit/5f794de76f0bb67b632c64e39f0a6f4422a810e1))
+* measure pallet-indexing weights for runtime 250 ([8c30d41](https://github.com/spaceandtimefdn/sxt-node/commit/8c30d41b6e7c1b27d6e5950fa3f353c672f76b1f)), closes [#219](https://github.com/spaceandtimefdn/sxt-node/issues/219)
+* rollback to git commit hash 6e668a97b5ffad477aa44318475ab381c4312524 ([3d9b9d4](https://github.com/spaceandtimefdn/sxt-node/commit/3d9b9d462a23d839d2150cd3094ce094fbbe0953))
+* use finalized block in prover-db-indexer ([50438ab](https://github.com/spaceandtimefdn/sxt-node/commit/50438abdc58364ae4cae18119d3db1582a88fd51))
+
+
+### Features
+
+* add `db_events_at` helper that queries the client for `DBEvent`s. ([4fc3952](https://github.com/spaceandtimefdn/sxt-node/commit/4fc39528ab8ff6480c4b6be724372a866afd023b))
+* add `REFUND_PERCENTAGE_DOMAIN` table metadata domain ([21c396c](https://github.com/spaceandtimefdn/sxt-node/commit/21c396c29919b70c28f2a2bcbed03cecb2c7a741))
+* add `refund_quorum` for refunding quorum submitters ([a39eb60](https://github.com/spaceandtimefdn/sxt-node/commit/a39eb60c168fcfdb4724010f4387a8b2bdeac561))
+* add `SubmitDataCall` type ([ae14a7d](https://github.com/spaceandtimefdn/sxt-node/commit/ae14a7ddd152c69fd465c16f93e006745e465f2a))
+* add `table_treasury_account` helper ([7c99cf6](https://github.com/spaceandtimefdn/sxt-node/commit/7c99cf6c7b169add4d90665727c2ddbc9ce1775a))
+* add client native interface and extenality ([d9c6c4d](https://github.com/spaceandtimefdn/sxt-node/commit/d9c6c4d6dbd4deb6eb6d50aa8206bf4f282e44fe))
+* add generic config key-value store for offchain workers ([117b845](https://github.com/spaceandtimefdn/sxt-node/commit/117b845c7e1c028ba7705e261c263d15fda84f28))
+* add pallet-parameters with root-settable per-diem reward rate ([b45ad6d](https://github.com/spaceandtimefdn/sxt-node/commit/b45ad6d55588fcae8ad8d40338553adf2a69923b))
+* adds `client::hash` ([a5b581d](https://github.com/spaceandtimefdn/sxt-node/commit/a5b581d0c3eae8e2f6dedc7767ff8757e4a88e06))
+* collect transaction fees in pallet-rewards ([262a625](https://github.com/spaceandtimefdn/sxt-node/commit/262a6257f59a34bac651833320db60ee7937a077))
+* Document Snapshot Download Process ([4c2608b](https://github.com/spaceandtimefdn/sxt-node/commit/4c2608b1a55b989b261c35a20f84472d20387598))
+* drop `EventCapture` from prover_db_indexer ([b3381c5](https://github.com/spaceandtimefdn/sxt-node/commit/b3381c56c1a7a26594f71ec509f38a3a0b01f3e4))
+* make transaction fees root-settable ([af95e40](https://github.com/spaceandtimefdn/sxt-node/commit/af95e40d30950ced96a65cd7c4a47405c23166f9))
+* pay validators a per-diem rate of total stake plus collected fees ([6aa6496](https://github.com/spaceandtimefdn/sxt-node/commit/6aa6496262def149639f9808b10a80b30e9a14e3))
+* refund submission fee to quorum submitters ([47c7eaa](https://github.com/spaceandtimefdn/sxt-node/commit/47c7eaa927ee89f0c05ad8a863f5dca76998dee1))
+* register client externality to offchain worker ([338c213](https://github.com/spaceandtimefdn/sxt-node/commit/338c2134941e196551915ef620152d5a5bd4d6b4))
+* use client for `prover_db_indexer` ([6679c06](https://github.com/spaceandtimefdn/sxt-node/commit/6679c06303b13bdb538b225352e9411e4741a92e))
+* use generic key value config for prover_db_indexing instead of storage/CLI based config ([faff564](https://github.com/spaceandtimefdn/sxt-node/commit/faff564feef8fff2f72848718c13a9a5b79771d9))
+
+
+
 ## [1.69.1](https://github.com/spaceandtimefdn/sxt-node/compare/v1.69.0...v1.69.1) (2026-06-25)
 
 
@@ -99,15 +135,6 @@
 * add ensure_root_or_any_permissioned and tests ([b21c079](https://github.com/spaceandtimefdn/sxt-node/commit/b21c07992d1c5e8b73100c1da047fafa5ed033fc))
 * add has_any_permissions and tests ([76e038a](https://github.com/spaceandtimefdn/sxt-node/commit/76e038a59f901d35041493164535e954fa278e3d))
 * use ensure_root_or_any_permissioned in update_table_quorum to allow UpdateTableQuorum permission ([f17e23f](https://github.com/spaceandtimefdn/sxt-node/commit/f17e23fbc5a417a5e301bd628537067c65f6da4f))
-
-
-
-# [1.66.0](https://github.com/spaceandtimefdn/sxt-node/compare/v1.65.0...v1.66.0) (2026-03-23)
-
-
-### Features
-
-* allow SCI table creation without special permissions ([c9631de](https://github.com/spaceandtimefdn/sxt-node/commit/c9631de06084396aa92e370fbe74895f5c7d4e0e))
 
 
 
